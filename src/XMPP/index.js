@@ -2,7 +2,6 @@
 const { createClient } = require('stanza');
 const UUID = require('uuid/v4');
 const Endpoints = require('../../resources/Endpoints');
-const ClientPresenceMeta = require('../Structures/ClientPresenceMeta');
 const FriendMessage = require('../Structures/FriendMessage');
 const FriendPresence = require('../Structures/FriendPresence');
 const Friend = require('../Structures/Friend');
@@ -13,7 +12,6 @@ class XMPP {
     this.stream = undefined;
     this.connected = false;
     this.isReconnecting = false;
-    this.presenceMeta = new ClientPresenceMeta(this.Client);
 
     this.uuid = UUID().replace(/-/g, '').toUpperCase();
     this.resource = `V2:Fortnite:${this.Client.config.platform}::${this.uuid}`;
@@ -52,7 +50,7 @@ class XMPP {
     return new Promise((res) => {
       this.stream.once('session:started', async () => {
         this.connected = true;
-        await this.Client.setStatus(this.Client.config.status || 'Playing Battle Royale');
+        this.sendStatus(this.Client.config.status || 'Playing Battle Royale');
         if (!isReconnect) this.Client.debug(`XMPP-Client successfully connected (${((Date.now() - startConnect) / 1000).toFixed(2)}s)`);
         else this.Client.debug(`XMPP-Client successfully reconnected (${((Date.now() - startConnect) / 1000).toFixed(2)}s)`);
         res({ success: true });

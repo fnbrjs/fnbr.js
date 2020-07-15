@@ -105,6 +105,12 @@ class Client extends EventEmitter {
      */
     this.parseError = (err) => typeof err === 'object' ? JSON.stringify(err) : err;
 
+    /**
+     * Convert an objects keys to camel case
+     * @param {Object} obj object to convert
+     */
+    this.makeCamelCase = Client.makeCamelCase;
+
     onExit(async (callback) => {
       await this.logout();
       callback();
@@ -238,6 +244,21 @@ class Client extends EventEmitter {
   }
 
   /**
+   * Convert an objects keys to camel case
+   * @param {Object} obj object to convert
+   */
+  static makeCamelCase(obj) {
+    const returnObj = {};
+    for (const key of Object.keys(obj)) {
+      returnObj[key.split('_').map((s, i) => {
+        if (i > 0) return `${s.charAt(0).toUpperCase()}${s.slice(1)}`;
+        return s;
+      }).join('')] = obj[key];
+    }
+    return returnObj;
+  }
+
+  /**
    * Wait for a client event
    * @param {String|Symbol} event event to wait for
    * @param {Number|5000} timeout timeout in ms to throw an error
@@ -334,8 +355,11 @@ class Client extends EventEmitter {
     if (to) {
       const cachedFriend = this.friends.find((f) => f.id === to || f.displayName === to);
       if (!cachedFriend) throw new Error(`Failed sending a status to ${to}: Friend not existing`);
-      id = this.Xmpp.sendStatus({ ...this.Xmpp.presenceMeta.schema, Status: status }, `${cachedFriend.id}@${Endpoints.EPIC_PROD_ENV}`);
-    } else id = this.Xmpp.presenceMeta.setStatus(status);
+      id = this.Xmpp.sendStatus(status, `${cachedFriend.id}@${Endpoints.EPIC_PROD_ENV}`);
+    } else {
+      this.config.status = status;
+      id = this.Xmpp.sendStatus(status);
+    }
 
     return new Promise((res, rej) => {
       this.Xmpp.stream.on(`presence#${id}:sent`, () => res());

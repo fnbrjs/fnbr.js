@@ -16,7 +16,7 @@ class Party {
 
     this.id = data.id;
     this.createdAt = new Date(data.created_at);
-    this.config = data.config;
+    this.config = this.Client.makeCamelCase(data.config);
     this.members = new List();
     data.members.forEach((m) => this.members.set(m.account_id, m));
     this.revision = data.revision;
@@ -57,24 +57,54 @@ class Party {
     this.Client.party = this;
   }
 
+  patchPresence() {
+    const partyJoinInfoData = this.config.privacy.presencePermission === 'None'
+      || (this.Client.party.config.privacy.presencePermission === 'Leader' && this.leader.id === this.Client.account.id)
+      ? {
+        bIsPrivate: true,
+      } : {
+        sourceId: this.Client.account.id,
+        sourceDisplayName: this.Client.account.displayName,
+        sourcePlatform: this.Client.config.platform,
+        partyId: this.id,
+        partyTypeId: 286331153,
+        key: 'k',
+        appId: 'Fortnite',
+        buildId: '1:1:',
+        partyFlags: -2024557306,
+        notAcceptingReason: 0,
+        pc: this.members.size,
+      };
+    const properties = {
+      'party.joininfodata.286331153_j': partyJoinInfoData,
+      FortBasicInfo_j: {
+        homeBaseRating: 1,
+      },
+      FortLFG_I: '0',
+      FortPartySize_i: 1,
+      FortSubGame_i: 1,
+      InUnjoinableMatch_b: false,
+      FortGameplayStats_j: {
+        state: '',
+        playlist: 'None',
+        numKills: 0,
+        bFellToDeath: false,
+      },
+    };
+    const presence = {
+      Status: '',
+      bIsPlaying: true,
+      bIsJoinable: false,
+      bHasVoiceSupport: false,
+      SessionId: '',
+      Properties: properties,
+    };
+    this.Client.Xmpp.sendStatus(presence);
+  }
+
   async leave(createNew = true) {
     const party = await this.Client.Http.send(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.account.id}`, `bearer ${this.Client.Auth.auths.token}`, null, {
-        connection: {
-          id: this.Client.Xmpp.stream.jid,
-          meta: {
-            'urn:epic:conn:platform_s': this.Client.config.platform,
-            'urn:epic:conn:type_s': 'game',
-          },
-          yield_leadership: false,
-        },
-        meta: {
-          'urn:epic:member:dn_s': this.Client.account.displayName,
-          'urn:epic:member:type_s': 'game',
-          'urn:epic:member:platform_s': this.Client.config.platform,
-          'urn:epic:member:joinrequest_j': '{"CrossplayPreference_i":"1"}',
-        },
-      });
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.account.id}`, `bearer ${this.Client.Auth.auths.token}`);
     if (!party.success) throw new Error(`Failed leaving party: ${this.Client.parseError(party.response)}`);
     this.Client.party = undefined;
 
@@ -127,8 +157,8 @@ class Party {
 
     if (!party.success) throw new Error(`Failed creating party: ${client.parseError(party.response)}`);
 
+    party.response.config = { ...partyConfig, ...party.response.config || {} };
     const clientParty = new Party(client, party.response);
-    clientParty.config = { ...partyConfig, ...party.response.config || {} };
 
     client.party = clientParty;
     return clientParty;

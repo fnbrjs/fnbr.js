@@ -17,6 +17,7 @@ const CreatorCode = require('../Structures/CreatorCode');
 const Enums = require('../../enums');
 const List = require('../Util/List');
 const FriendMessage = require('../Structures/FriendMessage.js');
+const Party = require('../Structures/Party.js');
 
 /**
  * The main client
@@ -50,9 +51,6 @@ class Client extends EventEmitter {
         joinConfirmation: false,
         joinability: 'OPEN',
         maxSize: 16,
-        subType: 'default',
-        type: 'default',
-        inviteTTL: 14400,
         chatEnabled: true,
         ...args.partyConfig,
       },
@@ -107,6 +105,10 @@ class Client extends EventEmitter {
     });
   }
 
+  static get Party() {
+    return Party;
+  }
+
   // -------------------------------------GENERAL-------------------------------------
 
   /**
@@ -122,9 +124,10 @@ class Client extends EventEmitter {
     if (!clientInfo.success) throw new Error(`Clientaccount lookup failed: ${this.parseError(clientInfo.response)}`);
     this.account = new ClientUser(this, clientInfo.response);
 
+    this.Xmpp.setup();
+
     await this.updateCache();
 
-    this.Xmpp.setup();
     const xmpp = await this.Xmpp.connect();
     if (!xmpp.success) throw new Error(`XMPP-client connecting failed: ${this.parseError(xmpp.response)}`);
 

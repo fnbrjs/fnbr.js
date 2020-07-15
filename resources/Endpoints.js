@@ -26,6 +26,7 @@ module.exports = Object.freeze({
   BR_NEWS: 'https://fortnitecontent-website-prod07.ol.epicgames.com/content/api/pages/fortnite-game',
   BR_EVENT_FLAGS: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/calendar/v1/timeline',
   BR_SAC_SEARCH: 'https://payment-website-pci.ol.epicgames.com/affiliate/search-by-slug',
+  BR_PARTY: 'https://party-service-prod.ol.epicgames.com/party/api/v1/Fortnite',
 
   // ACCOUNT
   ACCOUNT: 'https://account-public-service-prod03.ol.epicgames.com/account/api/public/account',

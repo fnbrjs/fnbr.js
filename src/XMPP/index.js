@@ -15,20 +15,13 @@ class XMPP {
     this.isReconnecting = false;
     this.presenceMeta = new ClientPresenceMeta(this.Client);
 
-    this.keepAlive = () => {
-      this.stream.sendPresence({
-        to: this.stream.jid,
-        type: 'probe',
-      });
-    };
-    this.keepAliveInterval = undefined;
-
     this.uuid = UUID().replace(/-/g, '').toUpperCase();
     this.resource = `V2:Fortnite:${this.Client.config.platform}::${this.uuid}`;
   }
 
   setup() {
     this.stream = createClient({
+      wsURL: `wss://${Endpoints.XMPP_SERVER}`,
       server: Endpoints.EPIC_PROD_ENV,
       transports: {
         websocket: `wss://${Endpoints.XMPP_SERVER}`,
@@ -43,6 +36,10 @@ class XMPP {
       resource: this.resource,
     });
 
+    this.stream.enableKeepAlive({
+      interval: 60,
+    });
+
     this.setupEvents();
   }
 
@@ -55,8 +52,6 @@ class XMPP {
     return new Promise((res) => {
       this.stream.once('session:started', async () => {
         this.connected = true;
-        if (this.keepAliveInterval) clearInterval(this.keepAliveInterval);
-        this.keepAliveInterval = setInterval(() => this.keepAlive(), 60000);
         await this.Client.setStatus(this.Client.config.status || 'Playing Battle Royale');
         if (!isReconnect) this.Client.debug(`XMPP-Client successfully connected (${((Date.now() - startConnect) / 1000).toFixed(2)}s)`);
         else this.Client.debug(`XMPP-Client successfully reconnected (${((Date.now() - startConnect) / 1000).toFixed(2)}s)`);
@@ -74,7 +69,6 @@ class XMPP {
     this.connected = false;
     return new Promise((res) => {
       this.stream.once('disconnected', () => {
-        if (this.keepAliveInterval) clearInterval(this.keepAliveInterval);
         this.Client.debug(`XMPP-Client successfully disconnected (${((Date.now() - startDisconnect) / 1000).toFixed(2)}s)`);
         res({ success: true });
       });
@@ -223,11 +217,16 @@ class XMPP {
     });
   }
 
-  sendStatus(status, to) {
+  sendStatus(status, to = null) {
     if (!status) this.stream.sendPresence(null);
+    if (to) {
+      return this.stream.sendPresence({
+        status: JSON.stringify(typeof status === 'object' ? status : { Status: status }),
+        to,
+      });
+    }
     return this.stream.sendPresence({
       status: JSON.stringify(typeof status === 'object' ? status : { Status: status }),
-      to,
     });
   }
 }

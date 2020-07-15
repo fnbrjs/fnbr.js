@@ -1,0 +1,22 @@
+{
+  "name": "fnbr.js",
+  "version": "0.0.1",
+  "description": "A library to interact with fortnites http and xmpp services",
+  "main": "index.js",
+  "scripts": {
+    "test": "test.js"
+  },
+  "author": "This Nils",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^7.3.1",
+    "eslint-config-airbnb-base": "^14.2.0",
+    "eslint-plugin-import": "^2.22.0"
+  },
+  "dependencies": {
+    "async-exit-hook": "^2.2.1",
+    "request-promise": "^4.2.5",
+    "stanza": "12.5.0",
+    "uuid": "3.4.0"
+  }
+}

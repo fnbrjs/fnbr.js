@@ -1,4 +1,6 @@
+/* eslint-disable no-param-reassign */
 const Endpoints = require('../../resources/Endpoints');
+const List = require('../Util/List');
 
 /**
  * A party
@@ -12,7 +14,71 @@ class Party {
     Object.defineProperty(this, 'Client', { value: client });
     Object.defineProperty(this, 'data', { value: data });
 
+    this.id = data.id;
+    this.createdAt = new Date(data.created_at);
+    this.config = data.config;
+    this.members = new List();
+    data.members.forEach((m) => this.members.set(m.account_id, m));
+    this.revision = data.revision;
+
     if (!this.id) throw new Error('Cannot initialize party without an id');
+  }
+
+  async join() {
+    if (this.Client.party) await this.Client.party.leave();
+    const party = await this.Client.Http.send(true, 'POST',
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.account.id}/join`, `bearer ${this.Client.Auth.auths.token}`, null, {
+        connection: {
+          id: this.Client.Xmpp.stream.jid,
+          meta: {
+            'urn:epic:conn:platform_s': this.Client.config.platform,
+            'urn:epic:conn:type_s': 'game',
+          },
+          yield_leadership: false,
+        },
+        meta: {
+          'urn:epic:member:dn_s': this.Client.account.displayName,
+          'urn:epic:member:joinrequestusers_j': JSON.stringify({
+            users: [
+              {
+                id: this.Client.account.id,
+                dn: this.Client.account.displayName,
+                plat: this.Client.config.short,
+                data: JSON.stringify({
+                  CrossplayPreference: '1',
+                  SubGame_u: '1',
+                }),
+              },
+            ],
+          }),
+        },
+      });
+    if (!party.success) throw new Error(`Failed joining party: ${this.Client.parseError(party.response)}`);
+    this.Client.party = this;
+  }
+
+  async leave(createNew = true) {
+    const party = await this.Client.Http.send(true, 'DELETE',
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.account.id}`, `bearer ${this.Client.Auth.auths.token}`, null, {
+        connection: {
+          id: this.Client.Xmpp.stream.jid,
+          meta: {
+            'urn:epic:conn:platform_s': this.Client.config.platform,
+            'urn:epic:conn:type_s': 'game',
+          },
+          yield_leadership: false,
+        },
+        meta: {
+          'urn:epic:member:dn_s': this.Client.account.displayName,
+          'urn:epic:member:type_s': 'game',
+          'urn:epic:member:platform_s': this.Client.config.platform,
+          'urn:epic:member:joinrequest_j': '{"CrossplayPreference_i":"1"}',
+        },
+      });
+    if (!party.success) throw new Error(`Failed leaving party: ${this.Client.parseError(party.response)}`);
+    this.Client.party = undefined;
+
+    if (createNew) await Party.Create(this.Client);
   }
 
   /**
@@ -21,7 +87,9 @@ class Party {
    */
   static async LookupSelf(client) {
     const party = await client.Http.send(true, 'GET', `${Endpoints.BR_PARTY}/user/${client.account.id}`, `bearer ${client.Auth.auths.token}`);
-    return party;
+    if (!party.success) throw new Error(`Failed looking up clientparty: ${client.parseError(party.response)}`);
+    if (!party.response.current[0]) return undefined;
+    return new Party(client, party.response.current[0]);
   }
 
   /**
@@ -30,7 +98,7 @@ class Party {
    */
   static async Create(client, config) {
     const partyConfig = { ...client.config.partyConfig, ...config };
-    const party = await client.Http.send(true, 'POST', `${Endpoints.BR_PARTY}/parties`, `bearer ${client.Auth.auths.token}`, { 'Content-Type': 'application/json' }, {
+    const party = await client.Http.send(true, 'POST', `${Endpoints.BR_PARTY}/parties`, `bearer ${client.Auth.auths.token}`, null, {
       config: {
         join_confirmation: partyConfig.joinConfirmation,
         joinability: partyConfig.joinability,
@@ -56,7 +124,14 @@ class Party {
         'urn:epic:cfg:chat-enabled_b': partyConfig.chatEnabled.toString(),
       },
     });
-    return party;
+
+    if (!party.success) throw new Error(`Failed creating party: ${client.parseError(party.response)}`);
+
+    const clientParty = new Party(client, party.response);
+    clientParty.config = { ...partyConfig, ...party.response.config || {} };
+
+    client.party = clientParty;
+    return clientParty;
   }
 }
 

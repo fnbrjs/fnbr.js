@@ -68,6 +68,12 @@ class Client extends EventEmitter {
     this.account = undefined;
 
     /**
+     * The paryt the client is in
+     * @type {Party}
+     */
+    this.party = undefined;
+
+    /**
      * Client authenticator
      */
     this.Auth = new Authenticator(this);
@@ -130,6 +136,10 @@ class Client extends EventEmitter {
 
     const xmpp = await this.Xmpp.connect();
     if (!xmpp.success) throw new Error(`XMPP-client connecting failed: ${this.parseError(xmpp.response)}`);
+
+    await this.refreshParty();
+    if (this.party) this.party.leave(false);
+    await Party.Create(this);
 
     this.emit('ready');
     this.isReady = true;
@@ -201,6 +211,10 @@ class Client extends EventEmitter {
       const friend = this.pendingFriends.get(outgoingFriend.accountId);
       this.friends.set(outgoingFriend.accountId, new Friend(this, { ...friend, ...outgoingFriend }));
     }
+  }
+
+  async refreshParty() {
+    this.party = await Party.LookupSelf(this);
   }
 
   /**

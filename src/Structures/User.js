@@ -1,4 +1,11 @@
+/**
+ * A user
+ */
 class User {
+  /**
+   * @param {Object} client main client
+   * @param {Object} data user data
+   */
   constructor(client, data) {
     Object.defineProperty(this, 'Client', { value: client });
     Object.defineProperty(this, 'data', { value: data });

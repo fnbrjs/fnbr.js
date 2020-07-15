@@ -2,6 +2,7 @@ const User = require('./User');
 
 /**
  * A pending friend
+ * @extends {User}
  */
 class PendingFriend extends User {
   /**

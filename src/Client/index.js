@@ -45,6 +45,17 @@ class Client extends EventEmitter {
         checkEULA: true,
         ...args.auth,
       },
+      partyConfig: {
+        privacy: Enums.PartyPrivacy.PUBLIC,
+        joinConfirmation: false,
+        joinability: 'OPEN',
+        maxSize: 16,
+        subType: 'default',
+        type: 'default',
+        inviteTTL: 14400,
+        chatEnabled: true,
+        ...args.partyConfig,
+      },
     };
 
     /**

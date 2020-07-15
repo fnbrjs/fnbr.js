@@ -38,7 +38,7 @@ class Party {
       },
       join_info: {
         connection: {
-          id: `${client.Xmpp.stream.jid}/${client.Xmpp.resource}`,
+          id: client.Xmpp.stream.jid,
           meta: {
             'urn:epic:conn:platform_s': client.config.platform,
             'urn:epic:conn:type_s': 'game',

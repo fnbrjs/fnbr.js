@@ -388,14 +388,12 @@ class Client extends EventEmitter {
    */
   async addFriend(user) {
     let userId;
-    if (typeof user === 'string') {
-      if (user.length === 32 && !user.includes('@')) userId = user;
-      else {
-        const lookedUpUser = await this.getProfile(user);
-        if (!lookedUpUser) throw new Error(`Adding ${user} as a friend failed: Account not found`);
-        userId = lookedUpUser.id;
-      }
-    } else if (typeof user === 'object') userId = user.accountId;
+    if (user.length === 32 && !user.includes('@')) userId = user;
+    else {
+      const lookedUpUser = await this.getProfile(user);
+      if (!lookedUpUser) throw new Error(`Adding ${user} as a friend failed: Account not found`);
+      userId = lookedUpUser.id;
+    }
     const userRequest = await this.Http.send(true, 'POST', `${Endpoints.FRIEND_ADD}/${this.account.id}/${userId}`, `bearer ${this.Auth.auths.token}`);
     if (!userRequest.success) throw new Error(`Adding ${user} as a friend failed: ${this.parseError(userRequest.response)}`);
   }
@@ -406,7 +404,7 @@ class Client extends EventEmitter {
    */
   async removeFriend(user) {
     let userId;
-    if (user.length === 32) userId = user;
+    if (user.length === 32 && !user.includes('@')) userId = user;
     else {
       const lookedUpUser = await this.getProfile(user);
       if (!lookedUpUser) throw new Error(`Removing ${user} as a friend failed: Account not found`);

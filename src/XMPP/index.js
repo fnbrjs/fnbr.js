@@ -5,7 +5,7 @@ const Endpoints = require('../../resources/Endpoints');
 const FriendMessage = require('../Structures/FriendMessage');
 const FriendPresence = require('../Structures/FriendPresence');
 const Friend = require('../Structures/Friend');
-
+const PendingFriend = require('../Structures/Friend');
 
 class XMPP {
   constructor(client) {
@@ -161,7 +161,7 @@ class XMPP {
             } else if (status === 'PENDING') {
               this.Client.debug('XMPP: Pending friend under construction!');
               const friend = new Friend(this.Client, { ...user, _status: 'PENDING', favorite: payload.favorite });
-              const friendRequest = new FriendRequest(this.Client, { friend, direction: (payload.direction === 'INBOUND') ? 'INCOMING' : 'OUTGOING' });
+              const friendRequest = new PendingFriend(this.Client, { friend, direction: (payload.direction === 'INBOUND') ? 'INCOMING' : 'OUTGOING' });
               this.Client.pendingFriends.set(friend.id, friendRequest);
               this.Client.emit('friend:request', friendRequest);
               this.Client.emit(`friend#${id}:request`, friendRequest);
@@ -210,57 +210,31 @@ class XMPP {
             }
           } break;
 
-          case 'com.epicgames.friends.core.apiobjects.BlockListEntryAdded': {
-            
-          } break;
+          case 'com.epicgames.friends.core.apiobjects.BlockListEntryAdded': break;
 
-          case 'com.epicgames.friends.core.apiobjects.BlockListEntryRemoved': {
-            
-          } break;
+          case 'com.epicgames.friends.core.apiobjects.BlockListEntryRemoved': break;
 
-          case 'com.epicgames.social.party.notification.v0.PING': {
-            
-          } break;
+          case 'com.epicgames.social.party.notification.v0.PING': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_JOINED': {
-            
-          } break;
+          case 'com.epicgames.social.party.notification.v0.MEMBER_JOINED': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_LEFT': {
-            
-          } break;
+          case 'com.epicgames.social.party.notification.v0.MEMBER_LEFT': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_EXPIRED': {
-            
-          } break;
+          case 'com.epicgames.social.party.notification.v0.MEMBER_EXPIRED': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_KICKED': {
-            
-          } break;
+          case 'com.epicgames.social.party.notification.v0.MEMBER_KICKED': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_DISCONNECTED': {
-            
-          } break;
+          case 'com.epicgames.social.party.notification.v0.MEMBER_DISCONNECTED': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_NEW_CAPTAIN': {
-            
-          } break;
+          case 'com.epicgames.social.party.notification.v0.MEMBER_NEW_CAPTAIN': break;
 
-          case 'com.epicgames.social.party.notification.v0.PARTY_UPDATED': {
-            
-          } break;
+          case 'com.epicgames.social.party.notification.v0.PARTY_UPDATED': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_STATE_UPDATED': {
-            
-          } break;
+          case 'com.epicgames.social.party.notification.v0.MEMBER_STATE_UPDATED': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_REQUIRE_CONFIRMATION': {
-            
-          } break;
+          case 'com.epicgames.social.party.notification.v0.MEMBER_REQUIRE_CONFIRMATION': break;
 
-          case 'com.epicgames.social.party.notification.v0.INVITE_DECLINED': {
-            
-          } break;
+          case 'com.epicgames.social.party.notification.v0.INVITE_DECLINED': break;
 
           default: this.Client.debug(`New Unknown XMPP message: ${JSON.stringify(m)}`); break;
         }

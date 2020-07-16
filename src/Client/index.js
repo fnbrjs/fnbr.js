@@ -395,7 +395,7 @@ class Client extends EventEmitter {
         if (!lookedUpUser) throw new Error(`Adding ${user} as a friend failed: Account not found`);
         userId = lookedUpUser.id;
       }
-    } else if (typeof user === 'object') userId = user.id;
+    } else if (typeof user === 'object') userId = user.accountId;
     const userRequest = await this.Http.send(true, 'POST', `${Endpoints.FRIEND_ADD}/${this.account.id}/${userId}`, `bearer ${this.Auth.auths.token}`);
     if (!userRequest.success) throw new Error(`Adding ${user} as a friend failed: ${this.parseError(userRequest.response)}`);
   }

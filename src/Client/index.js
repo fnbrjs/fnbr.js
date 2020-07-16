@@ -163,6 +163,7 @@ class Client extends EventEmitter {
   async logout() {
     if (this.tokenCheckInterval) clearInterval(this.tokenCheckInterval);
     this.removeAllListeners();
+    if (this.party) await this.party.leave(false);
     if (this.Xmpp.connected) await this.Xmpp.disconnect();
     if (this.Auth.auths.token) await this.Http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${this.Auth.auths.token}`, `bearer ${this.Auth.auths.token}`);
 
@@ -179,6 +180,7 @@ class Client extends EventEmitter {
    */
   async restart() {
     if (this.tokenCheckInterval) clearInterval(this.tokenCheckInterval);
+    if (this.party) await this.party.leave(false);
     if (this.Xmpp.connected) await this.Xmpp.disconnect();
     await this.Http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${this.Auth.auths.token}`, `bearer ${this.Auth.auths.token}`);
 

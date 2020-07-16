@@ -200,6 +200,10 @@ class Client extends EventEmitter {
     if (!rawFriends.success) throw new Error(`Cannot update friend cache: ${this.parseError(rawFriends.response)}`);
     if (!friendsSummary.success) throw new Error(`Cannot update friend cache: ${this.parseError(friendsSummary.response)}`);
 
+    this.friends.clear();
+    this.blockedFriends.clear();
+    this.pendingFriends.clear();
+
     for (const rawFriend of rawFriends.response) {
       if (rawFriend.status === 'ACCEPTED') this.friends.set(rawFriend.accountId, rawFriend);
       else if (rawFriend.status === 'PENDING') this.pendingFriends.set(rawFriend.accountId, rawFriend);
@@ -207,19 +211,16 @@ class Client extends EventEmitter {
       else this.debug(rawFriend.status);
     }
 
-    this.friends.clear();
     for (const friendedFriend of friendsSummary.response.friends) {
       const friend = this.friends.get(friendedFriend.accountId);
       this.friends.set(friendedFriend.accountId, new Friend(this, { ...friend, ...friendedFriend }));
     }
 
-    this.blockedFriends.clear();
     for (const blockedFriend of friendsSummary.response.blocklist) {
       const friend = this.blockedFriends.get(blockedFriend.accountId);
       this.friends.set(blockedFriend.accountId, new Friend(this, { ...friend, ...blockedFriend }));
     }
 
-    this.pendingFriends.clear();
     for (const incomingFriend of friendsSummary.response.incoming) {
       const friend = this.pendingFriends.get(incomingFriend.accountId);
       this.friends.set(incomingFriend.accountId, new Friend(this, { ...friend, ...incomingFriend }));

@@ -1,7 +1,11 @@
+/* eslint-disable max-len */
 /* eslint-disable no-param-reassign */
 const Endpoints = require('../../resources/Endpoints');
 const List = require('../Util/List');
 const PartyMeta = require('./PartyMeta');
+const PartyMember = require('./PartyMember');
+const ClientPartyMember = require('./ClientPartyMember');
+const { PartyPrivacy } = require('../../enums');
 
 /**
  * A party
@@ -19,12 +23,25 @@ class Party {
     this.createdAt = new Date(data.created_at);
     this.config = this.Client.makeCamelCase(data.config);
     this.members = new List();
-    data.members.forEach((m) => this.members.set(m.account_id, m));
+    data.members.forEach((m) => {
+      if (this.id === this.Client.account.id) this.members.set(m.account_id, new ClientPartyMember(this, m));
+      else this.members.set(m.account_id, new PartyMember(this, m));
+    });
 
+    this.currentlyPatching = false;
+    this.patchQueue = [];
     this.meta = new PartyMeta(this, data.meta);
-    this.revision = data.revision;
+    this.revision = data.revision || 0;
 
     if (!this.id) throw new Error('Cannot initialize party without an id');
+  }
+
+  get me() {
+    return this.members.get(this.Client.account.id);
+  }
+
+  get leader() {
+    return this.members.find((m) => m.isLeader);
   }
 
   async join() {
@@ -112,6 +129,67 @@ class Party {
     this.Client.party = undefined;
 
     if (createNew) await Party.Create(this.Client);
+  }
+
+  /**
+   * Send a patch with the latest meta
+   * @param {Object} updated updated data
+   * @param {Boolean} isForced if the patch should ignore current patches
+   */
+  async sendPatch(updated, isForced) {
+    if (!this.Client.party || !this.Client.party.me || this.id !== this.Client.party.id) {
+      return;
+    }
+    if (!isForced && this.currentlyPatching) {
+      this.patchQueue.push([updated]);
+      return;
+    }
+    this.currentlyPatching = true;
+
+    const patch = await this.Client.Http.send(true, 'PATCH',
+      `${Endpoints.BR_PARTY}/parties/${this.Party.id}/members/${this.id}/meta`, `bearer ${this.Client.Auth.auths.token}`, null, {
+        delete: [],
+        revision: this.revision,
+        update: updated || this.meta.schema,
+      });
+    if (patch.success) {
+      this.revision += 1;
+    } else {
+      switch (patch.response.errorCode) {
+        case 'errors.com.epicgames.social.party.stale_revision':
+          [, this.revision] = patch.response.messageVars;
+          this.patchQueue.push([updated]);
+          break;
+        default: return;
+      }
+    }
+
+    if (this.patchQueue.length > 0) {
+      const args = this.patchQueue.shift();
+      this.sendPatch(...args, true);
+    } else {
+      this.currentlyPatching = false;
+    }
+    if (this.Client.config.savePartyMemberMeta) this.Client.lastMemberMeta = this.meta.schema;
+  }
+
+  update(data) {
+    if (data.revision > this.revision) this.revision = data.revision;
+    this.meta.update(data.party_state_updated, true);
+    this.meta.remove(data.party_state_removed);
+
+    this.config.joinability = data.party_privacy_type;
+    this.config.maxSize = data.max_number_of_members;
+    this.config.subType = data.party_sub_type;
+    this.config.type = data.party_type;
+    this.config.inviteTTL = data.invite_ttl_seconds;
+
+    let privacy = this.meta.get('PrivacySettings_j');
+    privacy = Object.values(PartyPrivacy)
+      .find((val) => val.partyType === privacy.PrivacySettings.partyType
+        && val.inviteRestriction === privacy.PrivacySettings.partyInviteRestriction
+        && val.onlyLeaderFriendsCanJoin === privacy.PrivacySettings.bOnlyLeaderFriendsCanJoin);
+    if (privacy) this.config.privacy = privacy;
   }
 
   /**

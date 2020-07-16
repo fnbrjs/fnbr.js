@@ -37,6 +37,7 @@ class Client extends EventEmitter {
       xmppDebug: false,
       status: '',
       platform: Enums.Platform.WINDOWS,
+      memberMeta: undefined,
       ...args,
       auth: {
         deviceAuth: undefined,
@@ -60,6 +61,11 @@ class Client extends EventEmitter {
      * If client is ready
      */
     this.isReady = false;
+
+    /**
+     * Used to store outfit, etc of the client even if he switches parties
+     */
+    this.lastMemberMeta = this.config.memberMeta;
 
     /**
      * Client user account

@@ -7,21 +7,21 @@ class PartyMeta extends Meta {
     Object.defineProperty(this, 'Party', { value: party });
 
     this.schema = {
-      PrimaryGameSessionId_s: '',
-      PartyState_s: 'BattleRoyaleView',
-      LobbyConnectionStarted_b: 'false',
-      MatchmakingResult_s: 'NoResults',
-      MatchmakingState_s: 'NotMatchmaking',
-      SessionIsCriticalMission_b: 'false',
-      ZoneTileIndex_U: '-1',
-      ZoneInstanceId_s: '',
-      TheaterId_s: '',
-      TileStates_j: JSON.stringify({
+      'Default:PrimaryGameSessionId_s': '',
+      'Default:PartyState_s': 'BattleRoyaleView',
+      'Default:LobbyConnectionStarted_b': 'false',
+      'Default:MatchmakingResult_s': 'NoResults',
+      'Default:MatchmakingState_s': 'NotMatchmaking',
+      'Default:SessionIsCriticalMission_b': 'false',
+      'Default:ZoneTileIndex_U': '-1',
+      'Default:ZoneInstanceId_s': '',
+      'Default:TheaterId_s': '',
+      'Default:TileStates_j': JSON.stringify({
         TileStates: [],
       }),
-      MatchmakingInfoString_s: '',
-      CustomMatchKey_s: '',
-      PlaylistData_j: JSON.stringify({
+      'Default:MatchmakingInfoString_s': '',
+      'Default:CustomMatchKey_s': '',
+      'Default:PlaylistData_j': JSON.stringify({
         PlaylistData: {
           playlistName: 'Playlist_DefaultSquad',
           tournamentId: '',
@@ -29,20 +29,20 @@ class PartyMeta extends Meta {
           regionId: 'EU',
         },
       }),
-      AthenaSquadFill_b: 'true',
-      AllowJoinInProgress_b: 'false',
-      LFGTime_s: '0001-01-01T00:00:00.000Z',
-      PartyIsJoinedInProgress_b: 'false',
-      GameSessionKey_s: '',
-      RawSquadAssignments_j: '',
-      PrivacySettings_j: JSON.stringify({
+      'Default:AthenaSquadFill_b': 'true',
+      'Default:AllowJoinInProgress_b': 'false',
+      'Default:LFGTime_s': '0001-01-01T00:00:00.000Z',
+      'Default:PartyIsJoinedInProgress_b': 'false',
+      'Default:GameSessionKey_s': '',
+      'Default:RawSquadAssignments_j': '',
+      'Default:PrivacySettings_j': JSON.stringify({
         PrivacySettings: {
           partyType: this.Party.config.privacy.partyType,
           partyInviteRestriction: this.Party.config.privacy.inviteRestriction,
           bOnlyLeaderFriendsCanJoin: this.Party.config.privacy.onlyLeaderFriendsCanJoin,
         },
       }),
-      PlatformSessions_j: JSON.stringify({
+      'Default:PlatformSessions_j': JSON.stringify({
         PlatformSessions: [],
       }),
     };
@@ -67,7 +67,7 @@ class PartyMeta extends Meta {
         });
       }
     });
-    return this.set('RawSquadAssignments_j', {
+    return this.set('Default:RawSquadAssignments_j', {
       RawSquadAssignments: assignments,
     });
   }

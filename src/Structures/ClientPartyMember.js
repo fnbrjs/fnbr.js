@@ -179,9 +179,6 @@ class ClientPartyMember extends PartyMember {
    * @param {Boolean} isForced if the patch should ignore current patches
    */
   async sendPatch(updated, isForced) {
-    if (!this.Client.party || !this.Client.party.me || this.Client.party.id !== this.Party.id) {
-      return;
-    }
     if (!isForced && this.currentlyPatching) {
       this.patchQueue.push([updated]);
       return;

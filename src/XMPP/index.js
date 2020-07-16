@@ -37,7 +37,7 @@ class XMPP {
     });
 
     this.stream.enableKeepAlive({
-      interval: 60,
+      interval: 40,
     });
 
     this.setupEvents();
@@ -153,6 +153,7 @@ class XMPP {
             break;
           }
           if (status === 'ACCEPTED') {
+            await this.Client.waitUntilReady();
             const friend = new Friend(this.Client, {
               ...user, favorite: payload.favorite, created: body.timestamp,
             });
@@ -173,6 +174,7 @@ class XMPP {
         } break;
 
         case 'FRIENDSHIP_REMOVE': {
+          await this.Client.waitUntilReady();
           const { reason } = body;
           const id = (body.from === this.Client.account.id) ? body.to : body.from;
           if (reason === 'ABORTED') {
@@ -197,6 +199,7 @@ class XMPP {
         } break;
 
         case 'USER_BLOCKLIST_UPDATE': {
+          await this.Client.waitUntilReady();
           const { status } = body;
           const id = body.accountId;
           if (status === 'BLOCKED') {
@@ -215,18 +218,19 @@ class XMPP {
         case 'com.epicgames.social.party.notification.v0.PING': break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_JOINED': {
-          await this.Client.waitUntilReady();
+          if (!this.Client.party) await this.Client.waitUntilReady();
           const accountId = body.account_id;
           if (accountId === this.Client.account.id) {
-            this.Client.party.me.sendPatch(body);
+            await this.Client.party.me.sendPatch();
           } else this.Client.party.members.set(accountId, new PartyMember(this.Client.party, body));
           const partyMember = this.Client.party.members.get(accountId);
+          this.Client.party.patchPresence();
+          if (this.Client.party.me.isLeader) await this.Client.party.refreshSquadAssignments();
           this.Client.emit('party:member:joined', partyMember);
           this.Client.emit(`party:member#${accountId}:joined`, partyMember);
         } break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_STATE_UPDATED': {
-          await this.Client.waitUntilReady();
           const accountId = body.account_id;
           const partyMember = this.Client.party.members.get(accountId);
           partyMember.update(body);
@@ -235,12 +239,12 @@ class XMPP {
         } break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_LEFT': {
-          await this.Client.waitUntilReady();
           const accountId = body.account_id;
           const partyMember = this.Client.party.members.delete(accountId);
-          partyMember.update(body);
-          this.Client.emit('party:member:updated', partyMember);
-          this.Client.emit(`party:member#${accountId}:updated`, partyMember);
+          this.Client.party.patchPresence();
+          if (this.Client.party.me.isLeader) await this.Client.party.refreshSquadAssignments();
+          this.Client.emit('party:member:left', partyMember);
+          this.Client.emit(`party:member#${accountId}:left`, partyMember);
         } break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_EXPIRED': break;
@@ -252,13 +256,18 @@ class XMPP {
         case 'com.epicgames.social.party.notification.v0.MEMBER_NEW_CAPTAIN': break;
 
         case 'com.epicgames.social.party.notification.v0.PARTY_UPDATED':
-          await this.Client.waitUntilReady();
+          if (!this.Client.party) break;
           this.Client.party.update(body);
           this.Client.party.patchPresence();
           this.Client.emit('party:updated', this.Client.party);
           break;
 
-        case 'com.epicgames.social.party.notification.v0.MEMBER_REQUIRE_CONFIRMATION': break;
+        case 'com.epicgames.social.party.notification.v0.MEMBER_REQUIRE_CONFIRMATION':
+          if (this.Client.party.me.isLeader) {
+            await this.Client.Http.send(true, 'POST',
+              `${Endpoints.BR_PARTY}/parties/${this.Client.party.id}/members/${body.account_id}/confirm`, `bearer ${this.Client.Auth.auths.token}`);
+          }
+          break;
 
         case 'com.epicgames.social.party.notification.v0.INVITE_DECLINED': break;
 

@@ -39,7 +39,7 @@ class Party {
      */
     this.members = new List();
     data.members.forEach((m) => {
-      if (this.id === this.Client.account.id) this.members.set(m.account_id, new ClientPartyMember(this, m));
+      if (m.account_id === this.Client.account.id) this.members.set(m.account_id, new ClientPartyMember(this, m));
       else this.members.set(m.account_id, new PartyMember(this, m));
     });
 

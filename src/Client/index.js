@@ -225,7 +225,7 @@ class Client extends EventEmitter {
       const friend = this.pendingFriends.get(incomingFriend.accountId);
       this.friends.set(incomingFriend.accountId, new Friend(this, { ...friend, ...incomingFriend }));
     }
-    for (const outgoingFriend of friendsSummary.response.incoming) {
+    for (const outgoingFriend of friendsSummary.response.outgoing) {
       const friend = this.pendingFriends.get(outgoingFriend.accountId);
       this.friends.set(outgoingFriend.accountId, new Friend(this, { ...friend, ...outgoingFriend }));
     }

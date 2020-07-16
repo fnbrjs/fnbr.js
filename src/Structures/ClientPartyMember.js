@@ -174,6 +174,26 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
+   * Clears the clients emote in party
+   */
+  async clearEmote() {
+    const data = {
+      emoteItemDef: 'None',
+    };
+    let loadout = this.meta.get('Default:FrontendEmote_j');
+    loadout = this.meta.set('Default:FrontendEmote_j', {
+      ...loadout,
+      FrontendEmote: {
+        ...loadout.FrontendEmote,
+        ...data,
+      },
+    });
+    await this.sendPatch({
+      'Default:FrontendEmote_j': loadout,
+    });
+  }
+
+  /**
    * Send a patch with the latest meta
    * @param {Object} updated updated data
    * @param {Boolean} isForced if the patch should ignore current patches

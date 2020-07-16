@@ -253,7 +253,7 @@ class Party {
     this.config.type = data.party_type;
     this.config.inviteTTL = data.invite_ttl_seconds;
 
-    let privacy = this.meta.get('PrivacySettings_j');
+    let privacy = this.meta.get('Default:PrivacySettings_j');
     privacy = Object.values(PartyPrivacy)
       .find((val) => val.partyType === privacy.PrivacySettings.partyType
         && val.inviteRestriction === privacy.PrivacySettings.partyInviteRestriction

@@ -221,11 +221,11 @@ class XMPP {
           if (!this.Client.party) await this.Client.waitUntilReady();
           const accountId = body.account_id;
           if (accountId === this.Client.account.id) {
-            await this.Client.party.me.sendPatch();
+            this.Client.party.me.sendPatch();
           } else this.Client.party.members.set(accountId, new PartyMember(this.Client.party, body));
           const partyMember = this.Client.party.members.get(accountId);
           this.Client.party.patchPresence();
-          if (this.Client.party.me.isLeader) await this.Client.party.refreshSquadAssignments();
+          if (this.Client.party.me.isLeader) this.Client.party.refreshSquadAssignments();
           this.Client.emit('party:member:joined', partyMember);
           this.Client.emit(`party:member#${accountId}:joined`, partyMember);
         } break;
@@ -242,7 +242,7 @@ class XMPP {
           const accountId = body.account_id;
           const partyMember = this.Client.party.members.delete(accountId);
           this.Client.party.patchPresence();
-          if (this.Client.party.me.isLeader) await this.Client.party.refreshSquadAssignments();
+          if (this.Client.party.me.isLeader) this.Client.party.refreshSquadAssignments();
           this.Client.emit('party:member:left', partyMember);
           this.Client.emit(`party:member#${accountId}:left`, partyMember);
         } break;
@@ -271,7 +271,7 @@ class XMPP {
 
         case 'com.epicgames.social.party.notification.v0.INVITE_DECLINED': break;
 
-        default: this.Client.debug(`New Unknown XMPP message: ${JSON.stringify(m)}`); break;
+        default: if (this.Client.config.xmppDebug) this.Client.debug(`New Unknown XMPP message: ${JSON.stringify(m)}`); break;
       }
     });
   }

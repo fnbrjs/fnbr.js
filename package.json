@@ -14,7 +14,7 @@
     "eslint-plugin-import": "^2.22.0"
   },
   "dependencies": {
-    "async-exit-hook": "^2.2.1",
+    "async-exit-hook": "^2.0.1",
     "request-promise": "^4.2.5",
     "stanza": "12.5.0",
     "uuid": "3.4.0"

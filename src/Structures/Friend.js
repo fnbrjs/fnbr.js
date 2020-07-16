@@ -45,6 +45,11 @@ class Friend extends User {
      * This friends last recieved presence
      */
     this.presence = data.presence;
+
+    /**
+     * If this friend is blocked
+     */
+    this.isBlocked = data.blocked || false;
   }
 
   /**
@@ -69,6 +74,22 @@ class Friend extends User {
    */
   async sendMessage(message) {
     return this.Client.sendFriendMessage(this.id, message);
+  }
+
+  /**
+   * Block this friend
+   */
+  async block() {
+    await this.Client.blockFriend(this.id);
+    this.isBlocked = true;
+  }
+
+  /**
+   * Unblock this friend
+   */
+  async unblock() {
+    await this.Client.unblockFriend(this.id);
+    this.isBlocked = false;
   }
 }
 

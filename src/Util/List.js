@@ -10,22 +10,45 @@ class List extends Map {
     super(iterable);
   }
 
+  /**
+   * Finds a key in the List and returns its value
+   * https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Map/get
+   * @param {*} key key to find
+   */
   get(key) {
     return super.get(key);
   }
 
+  /**
+   * Maps a key to a value
+   * https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Map/set
+   * @param {*} key key
+   * @param {*} value value
+   */
   set(key, value) {
     return super.set(key, value);
   }
 
+  /**
+   * Finds a key and delets the key-value-pair
+   * https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Map/delete
+   * @param {*} key key of the pair to delete
+   */
   delete(key) {
     return super.delete(key);
   }
 
+  /**
+   * Clears the entire list
+   * https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Map/clear
+   */
   clear() {
     return super.clear();
   }
 
+  /**
+   * Returns a list of all key-value-pairs
+   */
   toArray() {
     const listArray = [];
     for (const key of this.keys()) {
@@ -36,6 +59,10 @@ class List extends Map {
     return listArray;
   }
 
+  /**
+   * Finds a value with a function
+   * @param {Function} fn function
+   */
   find(fn) {
     for (const [key, val] of this) {
       if (fn(val, key, this)) return val;
@@ -43,6 +70,11 @@ class List extends Map {
     return undefined;
   }
 
+  /**
+   * Filter this list
+   * @param {Function} fn function
+   * @returns {List}
+   */
   filter(fn) {
     const filteredList = new List();
     for (const [key, val] of this) {
@@ -51,10 +83,19 @@ class List extends Map {
     return filteredList;
   }
 
+  /**
+   * Checks if list has a key
+   * https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Map/has
+   * @param {*} key key
+   */
   has(key) {
     return super.has(key);
   }
 
+  /**
+   * Checks if list has a value using a function
+   * @param {Function} fn function
+   */
   some(fn) {
     for (const [key, val] of this) {
       if (fn(val, key, this)) return true;
@@ -62,6 +103,10 @@ class List extends Map {
     return false;
   }
 
+  /**
+   * Maps this list (like Array.map)
+   * @param {Function} fn function
+   */
   map(fn) {
     const mappedList = new List();
     for (const [key, val] of this) {

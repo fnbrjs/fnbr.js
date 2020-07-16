@@ -328,7 +328,7 @@ class Client extends EventEmitter {
       else user = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURI(query)}`, `bearer ${this.Auth.auths.token}`);
 
       return user.success ? new User(this, user.response) : undefined;
-    } if (typeof query === 'object') {
+    } if (query instanceof Array) {
       const ids = [];
       const names = [];
       const emails = [];
@@ -387,12 +387,14 @@ class Client extends EventEmitter {
    */
   async addFriend(user) {
     let userId;
-    if (user.length === 32) userId = user;
-    else {
-      const lookedUpUser = await this.getProfile(user);
-      if (!lookedUpUser) throw new Error(`Adding ${user} as a friend failed: Account not found`);
-      userId = lookedUpUser.id;
-    }
+    if (typeof user === 'string') {
+      if (user.length === 32 && !user.includes('@')) userId = user;
+      else {
+        const lookedUpUser = await this.getProfile(user);
+        if (!lookedUpUser) throw new Error(`Adding ${user} as a friend failed: Account not found`);
+        userId = lookedUpUser.id;
+      }
+    } else if (typeof user === 'object') userId = user.id;
     const userRequest = await this.Http.send(true, 'POST', `${Endpoints.FRIEND_ADD}/${this.account.id}/${userId}`, `bearer ${this.Auth.auths.token}`);
     if (!userRequest.success) throw new Error(`Adding ${user} as a friend failed: ${this.parseError(userRequest.response)}`);
   }

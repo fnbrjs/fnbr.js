@@ -136,111 +136,103 @@ class XMPP {
     });
 
     this.stream.on('message', async (m) => {
-      if (m.type === 'normal') {
-        const body = JSON.parse(m.body);
-        if (!body.type) return;
-        switch (body.type) {
-          case 'com.epicgames.friends.core.apiobjects.Friend': {
-            await this.Client.waitUntilReady();
-            const { payload } = body;
-            const { status } = payload;
-            const id = payload.accountId;
-            let user;
-            try {
-              user = await this.Client.getProfile(id);
-            } catch (err) {
-              break;
-            }
-            if (status === 'ACCEPTED') {
-              const friend = new Friend(this.Client, {
-                ...user, favorite: payload.favorite, created: body.timestamp,
-              });
-              this.Client.friends.set(friend.id, friend);
-              if (this.Client.pendingFriends.some((f) => f.friend.id === id)) {
-                this.Client.pendingFriends.delete(id);
-              }
-              this.Client.emit('friend:added', friend);
-              this.Client.emit(`friend#${id}:added`, friend);
-            } else if (status === 'PENDING') {
-              this.Client.debug('XMPP: Pending friend under construction!');
-              const friend = new Friend(this.Client, { ...user, _status: 'PENDING', favorite: payload.favorite });
-              const friendRequest = new PendingFriend(this.Client, { friend, direction: (payload.direction === 'INBOUND') ? 'INCOMING' : 'OUTGOING' });
-              this.Client.pendingFriends.set(friend.id, friendRequest);
-              this.Client.emit('friend:request', friendRequest);
-              this.Client.emit(`friend#${id}:request`, friendRequest);
-            }
-          } break;
-
-          case 'FRIENDSHIP_REMOVE': {
-            const { reason } = body;
-            const id = (body.from === this.Client.account.id) ? body.to : body.from;
-
-            if (reason === 'ABORTED') {
-              const friendRequest = this.Client.pendingFriends.get(id);
+      const body = JSON.parse(m.body);
+      if (!body.type) return;
+      switch (body.type) {
+        case 'com.epicgames.friends.core.apiobjects.Friend': {
+          await this.Client.waitUntilReady();
+          const { payload } = body;
+          const { status } = payload;
+          const id = payload.accountId;
+          let user;
+          try {
+            user = await this.Client.getProfile(id);
+          } catch (err) {
+            break;
+          }
+          if (status === 'ACCEPTED') {
+            const friend = new Friend(this.Client, {
+              ...user, favorite: payload.favorite, created: body.timestamp,
+            });
+            this.Client.friends.set(friend.id, friend);
+            if (this.Client.pendingFriends.some((f) => f.friend.id === id)) {
               this.Client.pendingFriends.delete(id);
-              friendRequest.status = 'DECLINED';
-              this.Client.emit('friend:request:abort', friendRequest);
-              this.Client.emit(`friend#${id}:request:abort`, friendRequest);
-            } else if (reason === 'REJECTED') {
-              const friendRequest = this.Client.pendingFriends.get(id);
-              this.Client.pendingFriends.delete(id);
-              friendRequest.status = 'DECLINED';
-              this.Client.emit('friend:request:decline', friendRequest);
-              this.Client.emit(`friend#${id}:request:decline`, friendRequest);
-            } else {
-              const friend = this.Client.friends.get(id);
-              this.Client.friends.delete(id);
-              friend.status = 'REMOVED';
-              this.Client.emit('friend:removed', friend);
-              this.Client.emit(`friend#${id}:removed`, friend);
             }
-          } break;
+            this.Client.emit('friend:added', friend);
+            this.Client.emit(`friend#${id}:added`, friend);
+          } else if (status === 'PENDING') {
+            this.Client.debug('XMPP: Pending friend under construction!');
+            const friend = new Friend(this.Client, { ...user, _status: 'PENDING', favorite: payload.favorite });
+            const friendRequest = new PendingFriend(this.Client, { friend, direction: (payload.direction === 'INBOUND') ? 'INCOMING' : 'OUTGOING' });
+            this.Client.pendingFriends.set(friend.id, friendRequest);
+            this.Client.emit('friend:request', friendRequest);
+            this.Client.emit(`friend#${id}:request`, friendRequest);
+          }
+        } break;
 
-          case 'USER_BLOCKLIST_UPDATE': {
-            const { status } = body;
-            const id = body.accountId;
+        case 'FRIENDSHIP_REMOVE': {
+          const { reason } = body;
+          const id = (body.from === this.Client.account.id) ? body.to : body.from;
+          if (reason === 'ABORTED') {
+            const friendRequest = this.Client.pendingFriends.get(id);
+            this.Client.pendingFriends.delete(id);
+            friendRequest.status = 'DECLINED';
+            this.Client.emit('friend:request:abort', friendRequest);
+            this.Client.emit(`friend#${id}:request:abort`, friendRequest);
+          } else if (reason === 'REJECTED') {
+            const friendRequest = this.Client.pendingFriends.get(id);
+            this.Client.pendingFriends.delete(id);
+            friendRequest.status = 'DECLINED';
+            this.Client.emit('friend:request:decline', friendRequest);
+            this.Client.emit(`friend#${id}:request:decline`, friendRequest);
+          } else {
+            const friend = this.Client.friends.get(id);
+            this.Client.friends.delete(id);
+            friend.status = 'REMOVED';
+            this.Client.emit('friend:removed', friend);
+            this.Client.emit(`friend#${id}:removed`, friend);
+          }
+        } break;
 
-            if (status === 'BLOCKED') {
-              const friend = this.Client.friends.get(id);
-              friend.status = 'BLOCKED';
-              this.Client.blockedFriends.set(id, friend);
-              this.Client.friends.delete(id);
-            } else if (status === 'UNBLOCKED') {
-              const friend = this.Client.blockedFriends.get(id);
-              friend.status = 'FRIENDED';
-              this.Client.friends.set(id, friend);
-              this.Client.blockedFriends.delete(id);
-            }
-          } break;
+        case 'USER_BLOCKLIST_UPDATE': {
+          const { status } = body;
+          const id = body.accountId;
+          if (status === 'BLOCKED') {
+            const friend = this.Client.friends.get(id);
+            friend.status = 'BLOCKED';
+            this.Client.blockedFriends.set(id, friend);
+            this.Client.friends.delete(id);
+          } else if (status === 'UNBLOCKED') {
+            const friend = this.Client.blockedFriends.get(id);
+            friend.status = 'FRIENDED';
+            this.Client.friends.set(id, friend);
+            this.Client.blockedFriends.delete(id);
+          }
+        } break;
 
-          case 'com.epicgames.friends.core.apiobjects.BlockListEntryAdded': break;
+        case 'com.epicgames.social.party.notification.v0.PING': break;
 
-          case 'com.epicgames.friends.core.apiobjects.BlockListEntryRemoved': break;
+        case 'com.epicgames.social.party.notification.v0.MEMBER_JOINED': break;
 
-          case 'com.epicgames.social.party.notification.v0.PING': break;
+        case 'com.epicgames.social.party.notification.v0.MEMBER_LEFT': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_JOINED': break;
+        case 'com.epicgames.social.party.notification.v0.MEMBER_EXPIRED': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_LEFT': break;
+        case 'com.epicgames.social.party.notification.v0.MEMBER_KICKED': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_EXPIRED': break;
+        case 'com.epicgames.social.party.notification.v0.MEMBER_DISCONNECTED': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_KICKED': break;
+        case 'com.epicgames.social.party.notification.v0.MEMBER_NEW_CAPTAIN': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_DISCONNECTED': break;
+        case 'com.epicgames.social.party.notification.v0.PARTY_UPDATED': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_NEW_CAPTAIN': break;
+        case 'com.epicgames.social.party.notification.v0.MEMBER_STATE_UPDATED': break;
 
-          case 'com.epicgames.social.party.notification.v0.PARTY_UPDATED': break;
+        case 'com.epicgames.social.party.notification.v0.MEMBER_REQUIRE_CONFIRMATION': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_STATE_UPDATED': break;
+        case 'com.epicgames.social.party.notification.v0.INVITE_DECLINED': break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_REQUIRE_CONFIRMATION': break;
-
-          case 'com.epicgames.social.party.notification.v0.INVITE_DECLINED': break;
-
-          default: this.Client.debug(`New Unknown XMPP message: ${JSON.stringify(m)}`); break;
-        }
+        default: this.Client.debug(`New Unknown XMPP message: ${JSON.stringify(m)}`); break;
       }
     });
   }

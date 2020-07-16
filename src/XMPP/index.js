@@ -123,10 +123,7 @@ class XMPP {
       const fromId = p.from.split('@')[0];
       if (fromId === this.Client.account.id) this.stream.emit(`presence#${p.id}:sent`);
       const friendPresence = new FriendPresence(this.Client, JSON.parse(p.status), fromId);
-      // const friend = this.Client.friends.get(fromId);
-      // eslint-disable-next-line no-console
-      console.log(fromId);
-      // friend.presence = friendPresence;
+      this.Client.friends.get(fromId).presence = friendPresence;
       this.Client.emit('friend:presence', friendPresence);
     });
 

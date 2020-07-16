@@ -85,14 +85,17 @@ class PartyMemberMeta extends Meta {
       }),
       'Default:Platform_j': JSON.stringify({
         Platform: {
-          platformStr: this.Member.Client.config.platform.short,
+          platformStr: this.Member.Client.config.platform,
         },
       }),
       'Default:PlatformUniqueId_s': 'INVALID',
       'Default:PlatformSessionId_s': '',
       'Default:CrossplayPreference_s': 'OptedIn',
-      'Default:VoiceChatEnabled_b': 'true',
+      'Default:VoiceChatEnabled_b': true,
       'Default:VoiceConnectionId_s': '',
+      'Default:SpectateAPartyMemberAvailable_b': false,
+      'Default:FeatDefinition_s': 'None',
+      'Default:VoiceChatStatus_s': 'Disabled',
     };
 
     if (meta) this.update(meta, true);

@@ -191,7 +191,7 @@ class ClientPartyMember extends PartyMember {
     const patch = await this.Client.Http.send(true, 'PATCH',
       `${Endpoints.BR_PARTY}/parties/${this.Party.id}/members/${this.id}/meta`, `bearer ${this.Client.Auth.auths.token}`, null, {
         delete: [],
-        revision: this.revision,
+        revision: parseInt(this.revision, 10),
         update: updated || this.meta.schema,
       });
     if (patch.success) {

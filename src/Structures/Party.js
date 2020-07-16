@@ -156,7 +156,7 @@ class Party {
       },
     };
     const presence = {
-      Status: '',
+      Status: this.Client.config.status || `Battle Royale Lobby - ${this.members.size} / ${this.config.maxSize}`,
       bIsPlaying: true,
       bIsJoinable: false,
       bHasVoiceSupport: false,
@@ -176,7 +176,7 @@ class Party {
     if (!party.success) {
       if (party.response.errorCode === 'errors.com.epicgames.social.party.party_not_found') {
         await this.Client.refreshParty();
-        await this.Client.party.leave(createNew);
+        if (this.Client.party) await this.Client.party.leave(createNew);
       } else throw new Error(`Failed leaving party: ${this.Client.parseError(party.response)}`);
     }
     this.Client.party = undefined;

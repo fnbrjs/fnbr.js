@@ -1,12 +1,33 @@
 const PartyMember = require('./PartyMember');
 const Endpoints = require('../../resources/Endpoints');
 
+/**
+ * The client in a party
+ * @extends {PartyMember}
+ */
 class ClientPartyMember extends PartyMember {
-  constructor(party, meta) {
-    super(party, meta);
+  /**
+   * @param {Object} party the party of this member
+   * @param {Object} data this members data
+   */
+  constructor(party, data) {
+    super(party, data);
 
+    /**
+     * If the client member is currently sending a patch.
+     * Needed for revision
+     */
     this.currentlyPatching = false;
+
+    /**
+     * Queue to push patches into while currentlyPatching is true
+     * Needed for revision
+     */
     this.patchQueue = [];
+
+    /**
+     * The revision of this member
+     */
     this.revision = 0;
 
     if (this.Client.lastMemberMeta) this.meta.update(this.Client.lastMemberMeta, true);

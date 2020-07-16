@@ -74,7 +74,7 @@ class Client extends EventEmitter {
     this.account = undefined;
 
     /**
-     * The paryt the client is in
+     * The party the client is in
      * @type {Party}
      */
     this.party = undefined;

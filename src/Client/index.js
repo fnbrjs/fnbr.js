@@ -195,6 +195,9 @@ class Client extends EventEmitter {
       this.Http.send(true, 'GET', `${Endpoints.FRIENDS}/v1/${this.account.id}/summary?displayNames=true`, `bearer ${this.Auth.auths.token}`),
     ]);
 
+    if (!rawFriends.success) throw new Error(`Cannot update friend cache: ${this.parseError(rawFriends.response)}`);
+    if (!friendsSummary.success) throw new Error(`Cannot update friend cache: ${this.parseError(friendsSummary.response)}`);
+
     for (const rawFriend of rawFriends.response) {
       if (rawFriend.status === 'ACCEPTED') this.friends.set(rawFriend.accountId, rawFriend);
       else if (rawFriend.status === 'PENDING') this.pendingFriends.set(rawFriend.accountId, rawFriend);

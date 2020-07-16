@@ -19,31 +19,72 @@ class Party {
     Object.defineProperty(this, 'Client', { value: client });
     Object.defineProperty(this, 'data', { value: data });
 
+    /**
+     * The id of this party
+     */
     this.id = data.id;
+
+    /**
+     * Date when this party was created
+     */
     this.createdAt = new Date(data.created_at);
-    this.config = this.Client.makeCamelCase(data.config);
+
+    /**
+     * This parties config
+     */
+    this.config = { ...this.Client.config.partyConfig, ...this.Client.makeCamelCase(data.config) };
+
+    /**
+     * The parties members
+     */
     this.members = new List();
     data.members.forEach((m) => {
       if (this.id === this.Client.account.id) this.members.set(m.account_id, new ClientPartyMember(this, m));
       else this.members.set(m.account_id, new PartyMember(this, m));
     });
 
+    /**
+     * If the party is currently sending a patch
+     */
     this.currentlyPatching = false;
+
+    /**
+     * The queue for patches
+     */
     this.patchQueue = [];
+
+    /**
+     * This parties meta
+     */
     this.meta = new PartyMeta(this, data.meta);
+
+    /**
+     * This parties revision
+     */
     this.revision = data.revision || 0;
 
     if (!this.id) throw new Error('Cannot initialize party without an id');
   }
 
+  /**
+   * The client party member
+   * @type {ClientPartyMember}
+   */
   get me() {
     return this.members.get(this.Client.account.id);
   }
 
+  /**
+   * The party leader
+   * @type {PartyMember}
+   */
   get leader() {
     return this.members.find((m) => m.isLeader);
   }
 
+  /**
+   * Join this party
+   */
   async join() {
     if (this.Client.party) await this.Client.party.leave();
     const party = await this.Client.Http.send(true, 'POST',
@@ -77,6 +118,9 @@ class Party {
     this.Client.party = this;
   }
 
+  /**
+   * Send an updated presence via xmpp
+   */
   patchPresence() {
     const partyJoinInfoData = this.config.privacy.presencePermission === 'None'
       || (this.Client.party.config.privacy.presencePermission === 'Leader' && this.leader.id === this.Client.account.id)
@@ -122,6 +166,10 @@ class Party {
     this.Client.Xmpp.sendStatus(presence);
   }
 
+  /**
+   * Leave this party
+   * @param {Boolean} createNew if a new party should be created
+   */
   async leave(createNew = true) {
     const party = await this.Client.Http.send(true, 'DELETE',
       `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.account.id}`, `bearer ${this.Client.Auth.auths.token}`);
@@ -136,10 +184,7 @@ class Party {
    * @param {Object} updated updated data
    * @param {Boolean} isForced if the patch should ignore current patches
    */
-  async sendPatch(updated, isForced) {
-    if (!this.Client.party || !this.Client.party.me || this.id !== this.Client.party.id) {
-      return;
-    }
+  async sendPatch(updated, deleted, isForced) {
     if (!isForced && this.currentlyPatching) {
       this.patchQueue.push([updated]);
       return;
@@ -147,10 +192,23 @@ class Party {
     this.currentlyPatching = true;
 
     const patch = await this.Client.Http.send(true, 'PATCH',
-      `${Endpoints.BR_PARTY}/parties/${this.Party.id}/members/${this.id}/meta`, `bearer ${this.Client.Auth.auths.token}`, null, {
-        delete: [],
+      `${Endpoints.BR_PARTY}/parties/${this.id}`, `bearer ${this.Client.Auth.auths.token}`, null, {
+        config: {
+          join_confirmation: this.config.joinConfirmation,
+          joinability: this.config.joinability,
+          max_size: this.config.maxSize,
+        },
+        meta: {
+          delete: deleted || [],
+          update: updated || this.meta.schema,
+        },
+        party_state_overridden: {},
+        party_privacy_type: this.config.joinability,
+        party_type: this.config.type,
+        party_sub_type: this.config.subType,
+        max_number_of_members: this.config.maxSize,
+        invite_ttl_seconds: this.config.inviteTTL,
         revision: this.revision,
-        update: updated || this.meta.schema,
       });
     if (patch.success) {
       this.revision += 1;
@@ -160,7 +218,9 @@ class Party {
           [, this.revision] = patch.response.messageVars;
           this.patchQueue.push([updated]);
           break;
-        default: return;
+        case 'errors.com.epicgames.social.party.party_change_forbidden':
+          throw new Error('Cannot patch party as client isnt party leader');
+        default: break;
       }
     }
 
@@ -173,6 +233,10 @@ class Party {
     if (this.Client.config.savePartyMemberMeta) this.Client.lastMemberMeta = this.meta.schema;
   }
 
+  /**
+   * Update this parties meta with xmpp data
+   * @param {Object} data xmpp data
+   */
   update(data) {
     if (data.revision > this.revision) this.revision = data.revision;
     this.meta.update(data.party_state_updated, true);
@@ -190,6 +254,39 @@ class Party {
         && val.inviteRestriction === privacy.PrivacySettings.partyInviteRestriction
         && val.onlyLeaderFriendsCanJoin === privacy.PrivacySettings.bOnlyLeaderFriendsCanJoin);
     if (privacy) this.config.privacy = privacy;
+  }
+
+  /**
+   * Set this parties privacy
+   * @param privacy updated privacy
+   */
+  async setPrivacy(privacy) {
+    const updated = {};
+    const deleted = [];
+
+    const privacySettings = this.meta.get('Default:PrivacySettings_j');
+    if (privacySettings) {
+      updated.PrivacySettings_j = this.meta.set('Default:PrivacySettings_j', {
+        PrivacySettings: {
+          ...privacySettings.PrivacySettings,
+          partyType: privacy.partyType,
+          bOnlyLeaderFriendsCanJoin: privacy.onlyLeaderFriendsCanJoin,
+          partyInviteRestriction: privacy.inviteRestriction,
+        },
+      });
+    }
+
+    updated['urn:epic:cfg:presence-perm_s'] = this.meta.set('urn:epic:cfg:presence-perm_s', privacy.presencePermission);
+    updated['urn:epic:cfg:accepting-members_b'] = this.meta.set('urn:epic:cfg:accepting-members_b', privacy.acceptingMembers);
+    updated['urn:epic:cfg:invite-perm_s'] = this.meta.set('urn:epic:cfg:invite-perm_s', privacy.invitePermission);
+
+    if (['Public', 'FriendsOnly'].indexOf(privacy.partyType) > -1) deleted.push('urn:epic:cfg:not-accepting-members');
+
+    if (privacy.partyType === 'Private') {
+      updated['urn:epic:cfg:not-accepting-members-reason_i'] = 7;
+    } else deleted.push('urn:epic:cfg:not-accepting-members-reason_i');
+
+    await this.sendPatch(updated, deleted);
   }
 
   /**
@@ -240,6 +337,7 @@ class Party {
 
     party.response.config = { ...partyConfig, ...party.response.config || {} };
     const clientParty = new Party(client, party.response);
+    await clientParty.setPrivacy(clientParty.config.privacy);
 
     client.party = clientParty;
     return clientParty;

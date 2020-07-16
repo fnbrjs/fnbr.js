@@ -13,22 +13,37 @@ class PartyMember {
     this.meta = new PartyMemberMeta(this, data.meta);
   }
 
+  /**
+   * The asset and id of this members pickaxe
+   */
   get pickaxe() {
     return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.pickaxeDef;
   }
 
+  /**
+   * The asset and id of this members outfit
+   */
   get outfit() {
     return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.characterDef;
   }
 
+  /**
+   * The asset and id of this members emote
+   */
   get emote() {
     return this.meta.get('Default:FrontendEmote_j').FrontendEmote.emoteItemDef;
   }
 
+  /**
+   * If this member is ready
+   */
   get isReady() {
     return this.meta.get('Default:GameReadiness_s') === 'Ready';
   }
 
+  /**
+   * If this member is leader of the party
+   */
   get isLeader() {
     return this.role === 'CAPTAIN';
   }

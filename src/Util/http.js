@@ -6,7 +6,7 @@ class Http {
     this.Client = client;
     this.jar = Request.jar();
     this.options = {
-      timeout: 5000,
+      timeout: 10000,
       headers: { },
       json: true,
       jar: this.jar,
@@ -42,11 +42,10 @@ class Http {
 
     try {
       if (this.Client.config.httpDebug) this.Client.debug(`${method} ${url}`);
-      // if (this.Client.config.httpDebug && headers) this.Client.debug(headers);
-      // if (this.Client.config.httpDebug && form) this.Client.debug(form);
       const response = await this.request(reqOptions);
       return { success: true, response };
     } catch (err) {
+      if (err.error.errorCode === 'errors.com.epicgames.common.authentication.authentication_failed') await this.Client.restart();
       return { success: false, response: err.error };
     }
   }

@@ -149,7 +149,7 @@ class Authenticator {
         return { success: false, response: `The file ${deviceAuth} is not existing or formatted incorrectly` };
       } break;
       case 'object': parsedDeviceAuth = deviceAuth; break;
-      default: return { success: false, response: `${typeof deviceAuth} is not a valid exchangeCode type` };
+      default: return { success: false, response: `${typeof deviceAuth} is not a valid deviceAuth type` };
     }
 
     const authFormData = {

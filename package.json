@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "async-exit-hook": "^2.0.1",
+    "request": "^2.88.2",
     "request-promise": "^4.2.5",
     "stanza": "12.5.0",
     "uuid": "3.4.0"

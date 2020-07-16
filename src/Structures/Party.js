@@ -156,7 +156,7 @@ class Party {
       },
     };
     const presence = {
-      Status: '',
+      Status: this.Client.config.status || `Battle Royale Lobby - ${this.members.size} / ${this.config.maxSize}`,
       bIsPlaying: true,
       bIsJoinable: false,
       bHasVoiceSupport: false,
@@ -173,7 +173,12 @@ class Party {
   async leave(createNew = true) {
     const party = await this.Client.Http.send(true, 'DELETE',
       `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.account.id}`, `bearer ${this.Client.Auth.auths.token}`);
-    if (!party.success) throw new Error(`Failed leaving party: ${this.Client.parseError(party.response)}`);
+    if (!party.success) {
+      if (party.response.errorCode === 'errors.com.epicgames.social.party.party_not_found') {
+        await this.Client.refreshParty();
+        if (this.Client.party) await this.Client.party.leave(createNew);
+      } else throw new Error(`Failed leaving party: ${this.Client.parseError(party.response)}`);
+    }
     this.Client.party = undefined;
 
     if (createNew) await Party.Create(this.Client);
@@ -287,6 +292,10 @@ class Party {
     } else deleted.push('urn:epic:cfg:not-accepting-members-reason_i');
 
     await this.sendPatch(updated, deleted);
+  }
+
+  async refreshSquadAssignments() {
+    await this.sendPatch({ 'Default:RawSquadAssignments_j': this.meta.updateSquadAssignments() });
   }
 
   /**

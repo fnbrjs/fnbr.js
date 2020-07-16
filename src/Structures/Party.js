@@ -1,6 +1,7 @@
 /* eslint-disable no-param-reassign */
 const Endpoints = require('../../resources/Endpoints');
 const List = require('../Util/List');
+const PartyMeta = require('./PartyMeta');
 
 /**
  * A party
@@ -19,6 +20,8 @@ class Party {
     this.config = this.Client.makeCamelCase(data.config);
     this.members = new List();
     data.members.forEach((m) => this.members.set(m.account_id, m));
+
+    this.meta = new PartyMeta(this, data.meta);
     this.revision = data.revision;
 
     if (!this.id) throw new Error('Cannot initialize party without an id');

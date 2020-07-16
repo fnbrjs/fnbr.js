@@ -132,9 +132,9 @@ class Client extends EventEmitter {
 
     this.tokenCheckInterval = setInterval(() => this.Auth.refreshToken(true), 20 * 60000);
 
-    const clientInfo = await this.Http.send(false, 'GET', `${Endpoints.ACCOUNT}/${this.Auth.account.id}`, `bearer ${this.Auth.auths.token}`);
+    const clientInfo = await this.Http.send(false, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${this.Auth.account.id}`, `bearer ${this.Auth.auths.token}`);
     if (!clientInfo.success) throw new Error(`Clientaccount lookup failed: ${this.parseError(clientInfo.response)}`);
-    this.account = new ClientUser(this, clientInfo.response);
+    this.account = new ClientUser(this, clientInfo.response[0]);
 
     this.Xmpp.setup();
 
@@ -331,7 +331,7 @@ class Client extends EventEmitter {
         .filter((name) => name.success).map((name) => new User(this, name.response));
       const emailResults = (await Promise.all(emails.map((email) => this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_EMAIL}/${encodeURI(email)}`, `bearer ${this.Auth.auths.token}`))))
         .filter((email) => email.success).map((email) => new User(this, email.response));
-      let idResults = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT}?accountId=${ids.join('&accountId=')}`, `bearer ${this.Auth.auths.token}`);
+      let idResults = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${ids.join('&accountId=')}`, `bearer ${this.Auth.auths.token}`);
       if (idResults.success) idResults = idResults.response.map((idr) => new User(this, idr));
       else idResults = [];
 
@@ -459,7 +459,8 @@ class Client extends EventEmitter {
     const news = await this.Http.send(false, 'GET', `${Endpoints.BR_NEWS}?lang=${language}`);
     if (!news.success) throw new Error(`Fetching news failed: ${this.parseError(news.response)}`);
 
-    return news.response[`${mode}news`].news.motds;
+    if (mode === Enums.Gamemode.BATTLE_ROYALE) return news.response[`${mode}news`].news.motds;
+    return news.response[`${mode}news`].news;
   }
 
   /**
@@ -506,6 +507,18 @@ class Client extends EventEmitter {
     }
 
     return showSimilar ? parsedCodes : parsedCodes[0];
+  }
+
+  /**
+   * Fetch the current battle royale store
+   * @param {Enums.Language} language language to fetch the news in
+   * @returns {Promise<Array>} news motds
+   */
+  async getBrStore(language = Enums.Language.ENGLISH) {
+    const shop = await this.Http.send(true, 'GET', `${Endpoints.BR_STORE}?lang=${language}`, `bearer ${this.Auth.auths.token}`);
+    if (!shop.success) throw new Error(`Fetching shop failed: ${this.parseError(shop.response)}`);
+
+    return shop.response;
   }
 }
 

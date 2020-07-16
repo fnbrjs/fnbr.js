@@ -29,7 +29,7 @@ module.exports = Object.freeze({
   BR_PARTY: 'https://party-service-prod.ol.epicgames.com/party/api/v1/Fortnite',
 
   // ACCOUNT
-  ACCOUNT: 'https://account-public-service-prod03.ol.epicgames.com/account/api/public/account',
+  ACCOUNT_MULTIPLE: 'https://account-public-service-prod.ol.epicgames.com/account/api/public/account',
   ACCOUNT_DISPLAYNAME: 'https://account-public-service-prod03.ol.epicgames.com/account/api/public/account/displayName',
   ACCOUNT_ID: 'https://account-public-service-prod03.ol.epicgames.com/account/api/public/account',
   ACCOUNT_EMAIL: 'https://account-public-service-prod03.ol.epicgames.com/account/api/public/account/email',

@@ -395,7 +395,7 @@ class Client extends EventEmitter {
       userId = lookedUpUser.id;
     }
     const userRequest = await this.Http.send(true, 'POST', `${Endpoints.FRIEND_ADD}/${this.account.id}/${userId}`, `bearer ${this.Auth.auths.token}`);
-    if (!userRequest.success) throw new Error(`Adding ${user} as a friend failed: ${this.parseError(userRequest.response)}`);
+    if (!userRequest.success) throw new Error(`Adding ${userId} as a friend failed: ${this.parseError(userRequest.response)}`);
   }
 
   /**
@@ -427,7 +427,7 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Block a friend
+   * Unblock a friend
    * @param {String} friend id, name or email of the friend to block
    */
   async unblockFriend(friend) {

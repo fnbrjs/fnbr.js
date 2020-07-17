@@ -1,4 +1,5 @@
 const User = require('./User');
+const Party = require('./Party');
 
 /**
  * A friend of the client
@@ -62,6 +63,15 @@ class Friend extends User {
   }
 
   /**
+   * If the client can join this friends party.
+   * This may be slighly inaccurate as it uses presence
+   */
+  get isJoinable() {
+    if (!this.isOnline || !this.presence.partyData.id) return false;
+    return !this.presence.partyData.isPrivate;
+  }
+
+  /**
    * Remove this user as a friend
    */
   async remove() {
@@ -90,6 +100,12 @@ class Friend extends User {
   async unblock() {
     await this.Client.unblockFriend(this.id);
     this.isBlocked = false;
+  }
+
+  async joinParty() {
+    if (!this.isJoinable) throw new Error('Cannot join friend party: Party not joinable');
+    const party = await Party.Lookup(this.Client, this.presence.partyData.id);
+    await party.join();
   }
 }
 

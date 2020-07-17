@@ -86,7 +86,7 @@ class Party {
    * Join this party
    */
   async join() {
-    if (this.Client.party) await this.Client.party.leave();
+    if (this.Client.party) await this.Client.party.leave(false);
     const party = await this.Client.Http.send(true, 'POST',
       `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.account.id}/join`, `bearer ${this.Client.Auth.auths.token}`, null, {
         connection: {
@@ -171,6 +171,9 @@ class Party {
    * @param {Boolean} createNew if a new party should be created
    */
   async leave(createNew = true) {
+    this.Client.party = undefined;
+    this.patchQueue = [];
+    if (this.me) this.me.patchQueue = [];
     const party = await this.Client.Http.send(true, 'DELETE',
       `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.account.id}`, `bearer ${this.Client.Auth.auths.token}`);
     if (!party.success) {
@@ -179,7 +182,6 @@ class Party {
         if (this.Client.party) await this.Client.party.leave(createNew);
       } else throw new Error(`Failed leaving party: ${this.Client.parseError(party.response)}`);
     }
-    this.Client.party = undefined;
 
     if (createNew) await Party.Create(this.Client);
   }
@@ -299,26 +301,48 @@ class Party {
    * @param {String} key - The custom matchmaking key
    */
   async setCustomMatchmakingKey(key) {
-    return new Promise((res) => {
-      setTimeout(async () => {
-        await this.sendPatch({
-          'Default:CustomMatchKey_s': this.meta.set('Default:CustomMatchKey_s', key || ''),
-        });
-        res();
-      }, 1000);
+    await new Promise((res) => setTimeout(() => res(), 1000));
+    await this.sendPatch({
+      'Default:CustomMatchKey_s': this.meta.set('Default:CustomMatchKey_s', key || ''),
     });
   }
 
-  async promote(accountId) {
-    await this.Client.Http.send(true, 'POST', `${Endpoints.BR_PARTY}/parties/${this.id}/members/${accountId}/promote`, `bearer ${this.Client.Auth.auths.token}`);
+  /**
+   * Promote a party member
+   * @param {String} member member to promote
+   */
+  async promote(member) {
+    if (!this.me.isLeader) throw new Error(`Cannot promote ${member}: Client isn't party leader`);
+    const partyMember = this.members.find((m) => m.id === member || m.displayName === member);
+    if (!partyMember) throw new Error(`Cannot promote ${member}: Member not in party`);
+    const promotion = await this.Client.Http.send(true, 'POST',
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}/promote`, `bearer ${this.Client.Auth.auths.token}`);
+    if (!promotion.success) throw new Error(`Cannot promote ${member}: ${this.Client.parseError(promotion.response)}`);
   }
 
+  /**
+   * Kick a party member
+   * @param {String} member member to kick
+   */
+  async kick(member) {
+    if (!this.me.isLeader) throw new Error(`Cannot promote ${member}: Client isn't party leader`);
+    const partyMember = this.members.find((m) => m.id === member || m.displayName === member);
+    if (!partyMember) throw new Error(`Cannot promote ${member}: Member not in party`);
+    const kick = await this.Client.Http.send(true, 'DELETE',
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}`, `bearer ${this.Client.Auth.auths.token}`);
+    if (!kick.success) throw new Error(`Cannot promote ${member}: ${this.Client.parseError(kick.response)}`);
+  }
+
+  /**
+   * Refreshes the parties member positions.
+   * This should not be called manually
+   */
   async refreshSquadAssignments() {
     await this.sendPatch({ 'Default:RawSquadAssignments_j': this.meta.updateSquadAssignments() });
   }
 
   /**
-   * Lookup which parties the client user is in / got invited to
+   * Lookup which party the client user is in
    * @param {Object} client the main client
    */
   static async LookupSelf(client) {
@@ -326,6 +350,18 @@ class Party {
     if (!party.success) throw new Error(`Failed looking up clientparty: ${client.parseError(party.response)}`);
     if (!party.response.current[0]) return undefined;
     return new Party(client, party.response.current[0]);
+  }
+
+  /**
+   * Lookup a public party by id
+   * @param {Object} client the main client
+   * @param {String} id id of the party to lookup
+   */
+  static async Lookup(client, id) {
+    const party = await client.Http.send(true, 'GET', `${Endpoints.BR_PARTY}/parties/${id}`, `bearer ${client.Auth.auths.token}`);
+    if (!party.success) throw new Error(`Failed looking up party: ${client.parseError(party.response)}`);
+    if (!party.response) throw new Error(`Failed looking up party: Party ${id} not found`);
+    return new Party(client, party.response);
   }
 
   /**

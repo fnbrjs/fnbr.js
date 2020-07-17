@@ -1,4 +1,5 @@
 /* eslint-disable max-len */
+
 /**
  * A presence of a friend recieved via XMPP
  */
@@ -120,6 +121,31 @@ class FriendPresence {
         serverPlayerCount,
       };
     }
+
+    /**
+     * Data of the party this friend is currently in
+     */
+    this.partyData = {
+      id: undefined,
+      isPrivate: undefined,
+      memberCount: undefined,
+      platform: undefined,
+      buildId: undefined,
+    };
+
+    const party = data.Properties
+      ? data.Properties[Object.keys(data.Properties).find((p) => /party\.joininfodata\.\d+_j/.test(p))] : undefined;
+
+    if (party) {
+      this.partyData = {
+        id: party.partyId,
+        isPrivate: party.bIsPrivate || false,
+        memberCount: party.pc ? parseInt(party.pc, 10) : undefined,
+        platform: party.sourcePlatform,
+        buildId: party.buildId,
+      };
+    }
+    console.log(this.partyData);
   }
 }
 

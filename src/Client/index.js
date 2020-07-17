@@ -124,10 +124,6 @@ class Client extends EventEmitter {
     });
   }
 
-  static get Party() {
-    return Party;
-  }
-
   // -------------------------------------GENERAL-------------------------------------
 
   /**

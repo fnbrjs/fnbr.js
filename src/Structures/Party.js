@@ -88,7 +88,6 @@ class Party {
   async join() {
     if (this.Client.party) await this.Client.party.leave(false);
     this.Client.partyJoinLock.active = true;
-    console.log('jl on');
     const party = await this.Client.Http.send(true, 'POST',
       `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.account.id}/join`, `bearer ${this.Client.Auth.auths.token}`, null, {
         connection: {
@@ -122,7 +121,6 @@ class Party {
     }
     this.Client.party = this;
     this.Client.partyJoinLock.active = false;
-    console.log('jl off');
   }
 
   /**

@@ -32,9 +32,16 @@ class PendingFriend extends User {
   }
 
   /**
-   * Decline/Abort this request
+   * Reject this request
    */
-  async decline() {
+  async reject() {
+    await this.Client.removeFriend(this.id);
+  }
+
+  /**
+   * Abort this request
+   */
+  async abort() {
     await this.Client.removeFriend(this.id);
   }
 

@@ -5,7 +5,7 @@ const Endpoints = require('../../resources/Endpoints');
 const FriendMessage = require('../Structures/FriendMessage');
 const FriendPresence = require('../Structures/FriendPresence');
 const Friend = require('../Structures/Friend');
-const PendingFriend = require('../Structures/Friend');
+const PendingFriend = require('../Structures/PendingFriend');
 const PartyMember = require('../Structures/PartyMember');
 
 class XMPP {
@@ -120,20 +120,24 @@ class XMPP {
       this.stream.emit(`message#${m.id}:sent`);
     });
 
-    this.stream.on('presence', (p) => {
+    this.stream.on('presence', async (p) => {
+      if (p.type === 'unavailable') return;
       const fromId = p.from.split('@')[0];
       if (fromId === this.Client.account.id) {
         this.stream.emit(`presence#${p.id}:sent`);
         return;
       }
+      if (this.Client.pendingFriends.get(fromId) && !this.Client.friends.get(fromId)) await this.Client.waitForEvent(`friend#${fromId}:added`);
       const friendPresence = new FriendPresence(this.Client, JSON.parse(p.status), fromId);
       this.Client.friends.get(fromId).presence = friendPresence;
       this.Client.emit('friend:presence', friendPresence);
+      this.Client.emit(`friend#${fromId}:presence`, friendPresence);
     });
 
     this.stream.on('chat', (c) => {
       const message = new FriendMessage(this.Client, c);
       this.Client.emit('friend:message', message);
+      this.Client.emit(`friend#${c.from.split('@')[0]}:message`, message);
     });
 
     this.stream.on('message', async (m) => {
@@ -153,23 +157,25 @@ class XMPP {
             break;
           }
           if (status === 'ACCEPTED') {
-            await this.Client.waitUntilReady();
             const friend = new Friend(this.Client, {
               ...user, favorite: payload.favorite, created: body.timestamp,
             });
             this.Client.friends.set(friend.id, friend);
-            if (this.Client.pendingFriends.some((f) => f.friend.id === id)) {
+            if (this.Client.pendingFriends.some((f) => f.id === id)) {
               this.Client.pendingFriends.delete(id);
             }
             this.Client.emit('friend:added', friend);
             this.Client.emit(`friend#${id}:added`, friend);
           } else if (status === 'PENDING') {
-            this.Client.debug('XMPP: Pending friend under construction!');
-            const friend = new Friend(this.Client, { ...user, _status: 'PENDING', favorite: payload.favorite });
-            const friendRequest = new PendingFriend(this.Client, { friend, direction: (payload.direction === 'INBOUND') ? 'INCOMING' : 'OUTGOING' });
-            this.Client.pendingFriends.set(friend.id, friendRequest);
-            this.Client.emit('friend:request', friendRequest);
-            this.Client.emit(`friend#${id}:request`, friendRequest);
+            const friendRequest = new PendingFriend(this.Client, { ...user, direction: (payload.direction === 'INBOUND') ? 'INCOMING' : 'OUTGOING' });
+            this.Client.pendingFriends.set(user.id, friendRequest);
+            if (payload.direction === 'INBOUND') {
+              this.Client.emit('friend:request', friendRequest);
+              this.Client.emit(`friend#${id}:request`, friendRequest);
+            } else {
+              this.Client.emit('friend:request:sent', friendRequest);
+              this.Client.emit(`friend#${id}:request:sent`, friendRequest);
+            }
           }
         } break;
 
@@ -180,15 +186,15 @@ class XMPP {
           if (reason === 'ABORTED') {
             const friendRequest = this.Client.pendingFriends.get(id);
             this.Client.pendingFriends.delete(id);
-            friendRequest.status = 'DECLINED';
-            this.Client.emit('friend:request:abort', friendRequest);
-            this.Client.emit(`friend#${id}:request:abort`, friendRequest);
+            friendRequest.status = 'ABORTED';
+            this.Client.emit('friend:request:aborted', friendRequest);
+            this.Client.emit(`friend#${id}:request:aborted`, friendRequest);
           } else if (reason === 'REJECTED') {
             const friendRequest = this.Client.pendingFriends.get(id);
             this.Client.pendingFriends.delete(id);
-            friendRequest.status = 'DECLINED';
-            this.Client.emit('friend:request:decline', friendRequest);
-            this.Client.emit(`friend#${id}:request:decline`, friendRequest);
+            friendRequest.status = 'REJECTED';
+            this.Client.emit('friend:request:rejected', friendRequest);
+            this.Client.emit(`friend#${id}:request:rejected`, friendRequest);
           } else {
             const friend = this.Client.friends.get(id);
             this.Client.friends.delete(id);
@@ -207,11 +213,15 @@ class XMPP {
             friend.status = 'BLOCKED';
             this.Client.blockedFriends.set(id, friend);
             this.Client.friends.delete(id);
+            this.Client.emit('friend:blocked', friend);
+            this.Client.emit(`friend#${id}:blocked`, friend);
           } else if (status === 'UNBLOCKED') {
             const friend = this.Client.blockedFriends.get(id);
             friend.status = 'FRIENDED';
             this.Client.friends.set(id, friend);
             this.Client.blockedFriends.delete(id);
+            this.Client.emit('friend:unblocked', friend);
+            this.Client.emit(`friend#${id}:unblocked`, friend);
           }
         } break;
 

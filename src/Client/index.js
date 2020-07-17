@@ -219,16 +219,16 @@ class Client extends EventEmitter {
 
     for (const blockedFriend of friendsSummary.response.blocklist) {
       const friend = this.blockedFriends.get(blockedFriend.accountId);
-      this.friends.set(blockedFriend.accountId, new Friend(this, { ...friend, ...blockedFriend, blocked: true }));
+      this.blockedFriends.set(blockedFriend.accountId, new Friend(this, { ...friend, ...blockedFriend, blocked: true }));
     }
 
     for (const incomingFriend of friendsSummary.response.incoming) {
       const friend = this.pendingFriends.get(incomingFriend.accountId);
-      this.friends.set(incomingFriend.accountId, new PendingFriend(this, { ...friend, ...incomingFriend, direction: 'INCOMING' }));
+      this.pendingFriends.set(incomingFriend.accountId, new PendingFriend(this, { ...friend, ...incomingFriend, direction: 'INCOMING' }));
     }
     for (const outgoingFriend of friendsSummary.response.outgoing) {
       const friend = this.pendingFriends.get(outgoingFriend.accountId);
-      this.friends.set(outgoingFriend.accountId, new PendingFriend(this, { ...friend, ...outgoingFriend, direction: 'OUTGOING' }));
+      this.pendingFriends.set(outgoingFriend.accountId, new PendingFriend(this, { ...friend, ...outgoingFriend, direction: 'OUTGOING' }));
     }
   }
 

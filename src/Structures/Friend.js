@@ -64,7 +64,7 @@ class Friend extends User {
   /**
    * Remove this user as a friend
    */
-  async removeFriend() {
+  async remove() {
     await this.Client.removeFriend(this.id);
   }
 

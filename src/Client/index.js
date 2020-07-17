@@ -118,6 +118,11 @@ class Client extends EventEmitter {
      */
     this.makeCamelCase = Client.makeCamelCase;
 
+    this.partyJoinLock = {
+      active: false,
+      await: () => new Promise((res) => setInterval(() => { if (!this.partyJoinLock.active) res(); }, 100)),
+    };
+
     onExit(async (callback) => {
       await this.logout();
       callback();

@@ -87,6 +87,8 @@ class Party {
    */
   async join() {
     if (this.Client.party) await this.Client.party.leave(false);
+    this.Client.partyJoinLock.active = true;
+    console.log('jl on');
     const party = await this.Client.Http.send(true, 'POST',
       `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.account.id}/join`, `bearer ${this.Client.Auth.auths.token}`, null, {
         connection: {
@@ -114,8 +116,13 @@ class Party {
           }),
         },
       });
-    if (!party.success) throw new Error(`Failed joining party: ${this.Client.parseError(party.response)}`);
+    if (!party.success) {
+      this.Client.partyJoinLock.active = false;
+      throw new Error(`Failed joining party: ${this.Client.parseError(party.response)}`);
+    }
     this.Client.party = this;
+    this.Client.partyJoinLock.active = false;
+    console.log('jl off');
   }
 
   /**
@@ -171,7 +178,6 @@ class Party {
    * @param {Boolean} createNew if a new party should be created
    */
   async leave(createNew = true) {
-    this.Client.party = undefined;
     this.patchQueue = [];
     if (this.me) this.me.patchQueue = [];
     const party = await this.Client.Http.send(true, 'DELETE',
@@ -182,6 +188,7 @@ class Party {
         if (this.Client.party) await this.Client.party.leave(createNew);
       } else throw new Error(`Failed leaving party: ${this.Client.parseError(party.response)}`);
     }
+    this.Client.party = undefined;
 
     if (createNew) await Party.Create(this.Client);
   }
@@ -273,7 +280,7 @@ class Party {
 
     const privacySettings = this.meta.get('Default:PrivacySettings_j');
     if (privacySettings) {
-      updated.PrivacySettings_j = this.meta.set('Default:PrivacySettings_j', {
+      updated['Default:PrivacySettings_j'] = this.meta.set('Default:PrivacySettings_j', {
         PrivacySettings: {
           ...privacySettings.PrivacySettings,
           partyType: privacy.partyType,

@@ -7,6 +7,7 @@ const FriendPresence = require('../Structures/FriendPresence');
 const Friend = require('../Structures/Friend');
 const PendingFriend = require('../Structures/PendingFriend');
 const PartyMember = require('../Structures/PartyMember');
+const ClientPartyMember = require('../Structures/ClientPartyMember');
 
 class XMPP {
   constructor(client) {
@@ -37,7 +38,7 @@ class XMPP {
     });
 
     this.stream.enableKeepAlive({
-      interval: 40,
+      interval: 30,
     });
 
     this.setupEvents();
@@ -228,27 +229,27 @@ class XMPP {
         case 'com.epicgames.social.party.notification.v0.PING': break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_JOINED': {
-          if (!this.Client.party) await this.Client.waitUntilReady();
-          if (!this.Client.party || body.party_id !== this.Client.party.id) {
-            await XMPP.sleep(2000);
-            if (!this.Client.party || body.party_id !== this.Client.party.id) break;
-          }
           const accountId = body.account_id;
+          await this.Client.waitUntilReady();
           if (accountId === this.Client.account.id) {
+            await this.Client.partyJoinLock.await();
+            await XMPP.sleep(1000);
+          }
+          if (!this.Client.party) break;
+          if (accountId === this.Client.account.id) {
+            if (!this.Client.party.members.has(this.Client.account.id)) this.Client.party.members.set(accountId, new ClientPartyMember(this.Client.party, body));
             this.Client.party.me.sendPatch();
           } else this.Client.party.members.set(accountId, new PartyMember(this.Client.party, body));
           const partyMember = this.Client.party.members.get(accountId);
           this.Client.party.patchPresence();
+          console.log(`patch by ${accountId}`);
           if (this.Client.party.me.isLeader) this.Client.party.refreshSquadAssignments();
           this.Client.emit('party:member:joined', partyMember);
           this.Client.emit(`party:member#${accountId}:joined`, partyMember);
         } break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_STATE_UPDATED': {
-          if (!this.Client.party || body.party_id !== this.Client.party.id) {
-            await XMPP.sleep(2000);
-            if (!this.Client.party || body.party_id !== this.Client.party.id) break;
-          }
+          if (!this.Client.party || !this.Client.party.id === body.party_id) break;
           const accountId = body.account_id;
           const partyMember = this.Client.party.members.get(accountId);
           partyMember.update(body);
@@ -257,11 +258,9 @@ class XMPP {
         } break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_LEFT': {
-          if (!this.Client.party || body.party_id !== this.Client.party.id) {
-            await XMPP.sleep(2000);
-            if (!this.Client.party || body.party_id !== this.Client.party.id) break;
-          }
+          if (!this.Client.party || !this.Client.party.id === body.party_id) break;
           const accountId = body.account_id;
+          if (accountId === this.Client.account.id) break;
           const partyMember = this.Client.party.members.delete(accountId);
           this.Client.party.patchPresence();
           if (this.Client.party.me.isLeader) this.Client.party.refreshSquadAssignments();
@@ -275,13 +274,19 @@ class XMPP {
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_DISCONNECTED': break;
 
-        case 'com.epicgames.social.party.notification.v0.MEMBER_NEW_CAPTAIN': break;
+        case 'com.epicgames.social.party.notification.v0.MEMBER_NEW_CAPTAIN': {
+          if (!this.Client.party || !this.Client.party.id === body.party_id) break;
+          const member = this.Client.party.members.get(body.account_id);
+          if (!member) break;
+          this.Client.party.members.forEach((mem) => mem.role === '');
+          this.Client.party.members.set(member.id, { ...member, role: 'CAPTAIN' });
+          this.Client.party.patchPresence();
+
+          this.Client.emit('party:member:promoted', member);
+          this.Client.emit(`party:member#${member.id}:promoted`, member);
+        } break;
 
         case 'com.epicgames.social.party.notification.v0.PARTY_UPDATED':
-          if (!this.Client.party || body.party_id !== this.Client.party.id) {
-            await XMPP.sleep(2000);
-            if (!this.Client.party || body.party_id !== this.Client.party.id) break;
-          }
           this.Client.party.update(body);
           this.Client.party.patchPresence();
           this.Client.emit('party:updated', this.Client.party);

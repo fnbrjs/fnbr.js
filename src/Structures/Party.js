@@ -294,6 +294,25 @@ class Party {
     await this.sendPatch(updated, deleted);
   }
 
+  /**
+   * Set the custom matchmaking key
+   * @param {String} key - The custom matchmaking key
+   */
+  async setCustomMatchmakingKey(key) {
+    return new Promise((res) => {
+      setTimeout(async () => {
+        await this.sendPatch({
+          'Default:CustomMatchKey_s': this.meta.set('Default:CustomMatchKey_s', key || ''),
+        });
+        res();
+      }, 1000);
+    });
+  }
+
+  async promote(accountId) {
+    await this.Client.Http.send(true, 'POST', `${Endpoints.BR_PARTY}/parties/${this.id}/members/${accountId}/promote`, `bearer ${this.Client.Auth.auths.token}`);
+  }
+
   async refreshSquadAssignments() {
     await this.sendPatch({ 'Default:RawSquadAssignments_j': this.meta.updateSquadAssignments() });
   }

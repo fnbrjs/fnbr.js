@@ -60,8 +60,8 @@ class PartyMember {
    * Promote this member to the party leader
    */
   async promote() {
-    if (this.id === this.Party.Client.account.id) throw new Error('Cannot promote party member: You cant promote yourself');
-    if (!this.Party.me.isLeader) throw new Error('Cannot promote party member: You arent party leader');
+    if (this.id === this.Party.Client.account.id) throw new Error('Cannot promote party member: You cannot promote yourself');
+    if (!this.Party.me.isLeader) throw new Error('Cannot promote party member: You aren\'t the party leader');
     return this.Party.promote(this.id);
   }
 

@@ -104,7 +104,7 @@ class Party {
               {
                 id: this.Client.account.id,
                 dn: this.Client.account.displayName,
-                plat: this.Client.config.short,
+                plat: this.Client.config.platform,
                 data: JSON.stringify({
                   CrossplayPreference: '1',
                   SubGame_u: '1',

@@ -145,7 +145,6 @@ class FriendPresence {
         buildId: party.buildId,
       };
     }
-    console.log(this.partyData);
   }
 }
 

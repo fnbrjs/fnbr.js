@@ -20,7 +20,7 @@ module.exports = Object.freeze({
   EPIC_PROD_ENV: 'prod.ol.epicgames.com',
 
   // BATTLE ROYALE
-  BR_STATS_V2: 'https://statsproxy-public-service-live.ol.epicgames.com/statsproxy/api/statsv2/account',
+  BR_STATS_V2: 'https://statsproxy-public-service-live.ol.epicgames.com/statsproxy/api/statsv2',
   BR_SERVER_STATUS: 'https://lightswitch-public-service-prod06.ol.epicgames.com/lightswitch/api/service/bulk/status?serviceId=Fortnite',
   BR_STORE: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/storefront/v2/catalog',
   BR_NEWS: 'https://fortnitecontent-website-prod07.ol.epicgames.com/content/api/pages/fortnite-game',

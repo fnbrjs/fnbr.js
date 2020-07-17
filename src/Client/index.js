@@ -105,6 +105,11 @@ class Client extends EventEmitter {
      */
     this.blockedFriends = new List();
 
+    this.partyLock = {
+      active: false,
+      wait: () => new Promise((res) => setInterval(() => { if (!this.partyLock.active) res(); }, 100)),
+    };
+
     /**
      * Parse an error that could be an object or a string
      * @private
@@ -117,11 +122,6 @@ class Client extends EventEmitter {
      * @param {Object} obj object to convert
      */
     this.makeCamelCase = Client.makeCamelCase;
-
-    this.partyJoinLock = {
-      active: false,
-      await: () => new Promise((res) => setInterval(() => { if (!this.partyJoinLock.active) res(); }, 100)),
-    };
 
     onExit(async (callback) => {
       await this.logout();
@@ -151,9 +151,7 @@ class Client extends EventEmitter {
     const xmpp = await this.Xmpp.connect();
     if (!xmpp.success) throw new Error(`XMPP-client connecting failed: ${this.parseError(xmpp.response)}`);
 
-    await this.refreshParty();
-    if (this.party) this.party.leave(false);
-    await Party.Create(this);
+    await this.initParty();
 
     this.emit('ready');
     this.isReady = true;
@@ -233,8 +231,10 @@ class Client extends EventEmitter {
     }
   }
 
-  async refreshParty() {
-    this.party = await Party.LookupSelf(this);
+  async initParty() {
+    const party = await Party.LookupSelf(this);
+    if (party) await party.leave(false);
+    await Party.Create(this);
   }
 
   /**
@@ -478,10 +478,10 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Fetch v2 stats for a player
+   * Fetch v2 stats for one/multiple player(s)
    * @param {Number?} startTime epoch to start fetching stats (empty for lifetime)
    * @param {Number?} endTime epoch to stop fetching stats (empty for lifetime)
-   * @returns {Promise<Object>} player stats
+   * @returns {Promise<Object|Array<Object>>} player stats
    */
   async getBrStats(user, startTime, endTime) {
     let userId;
@@ -496,7 +496,7 @@ class Client extends EventEmitter {
     if (startTime) params.push(`startTime=${startTime}`);
     if (endTime) params.push(`startTime=${endTime}`);
 
-    const stats = await this.Http.send(true, 'GET', `${Endpoints.BR_STATS_V2}/${userId}${params[0] ? `?${params.join('&')}` : ''}`);
+    const stats = await this.Http.send(true, 'GET', `${Endpoints.BR_STATS_V2}/account/${userId}${params[0] ? `?${params.join('&')}` : ''}`);
     if (!stats.success) throw new Error(`Fetching ${user}'s stats failed: ${this.parseError(stats.response)}`);
 
     return stats.response;

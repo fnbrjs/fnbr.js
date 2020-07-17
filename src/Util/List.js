@@ -108,11 +108,11 @@ class List extends Map {
    * @param {Function} fn function
    */
   map(fn) {
-    const mappedList = new List();
+    const returnArray = [];
     for (const [key, val] of this) {
-      mappedList.set(key, fn(val, key, this));
+      returnArray.push(fn(val, key, this));
     }
-    return mappedList;
+    return returnArray;
   }
 }
 

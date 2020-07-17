@@ -86,8 +86,8 @@ class Party {
    * Join this party
    */
   async join() {
+    this.Client.partyLock.active = true;
     if (this.Client.party) await this.Client.party.leave(false);
-    this.Client.partyJoinLock.active = true;
     const party = await this.Client.Http.send(true, 'POST',
       `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.account.id}/join`, `bearer ${this.Client.Auth.auths.token}`, null, {
         connection: {
@@ -116,11 +116,13 @@ class Party {
         },
       });
     if (!party.success) {
-      this.Client.partyJoinLock.active = false;
+      this.Client.partyLock.active = false;
+      this.Client.initParty();
       throw new Error(`Failed joining party: ${this.Client.parseError(party.response)}`);
     }
+
     this.Client.party = this;
-    this.Client.partyJoinLock.active = false;
+    this.Client.partyLock.active = false;
   }
 
   /**
@@ -176,17 +178,19 @@ class Party {
    * @param {Boolean} createNew if a new party should be created
    */
   async leave(createNew = true) {
+    this.Client.partyLock.active = true;
     this.patchQueue = [];
     if (this.me) this.me.patchQueue = [];
     const party = await this.Client.Http.send(true, 'DELETE',
       `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.account.id}`, `bearer ${this.Client.Auth.auths.token}`);
     if (!party.success) {
       if (party.response.errorCode === 'errors.com.epicgames.social.party.party_not_found') {
-        await this.Client.refreshParty();
-        if (this.Client.party) await this.Client.party.leave(createNew);
+        this.Client.partyLock.active = false;
+        this.Client.initParty();
       } else throw new Error(`Failed leaving party: ${this.Client.parseError(party.response)}`);
     }
     this.Client.party = undefined;
+    this.Client.partyLock.active = false;
 
     if (createNew) await Party.Create(this.Client);
   }
@@ -330,12 +334,12 @@ class Party {
    * @param {String} member member to kick
    */
   async kick(member) {
-    if (!this.me.isLeader) throw new Error(`Cannot promote ${member}: Client isn't party leader`);
+    if (!this.me.isLeader) throw new Error(`Cannot kick ${member}: Client isn't party leader`);
     const partyMember = this.members.find((m) => m.id === member || m.displayName === member);
-    if (!partyMember) throw new Error(`Cannot promote ${member}: Member not in party`);
+    if (!partyMember) throw new Error(`Cannot kick ${member}: Member not in party`);
     const kick = await this.Client.Http.send(true, 'DELETE',
       `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}`, `bearer ${this.Client.Auth.auths.token}`);
-    if (!kick.success) throw new Error(`Cannot promote ${member}: ${this.Client.parseError(kick.response)}`);
+    if (!kick.success) throw new Error(`Cannot kick ${member}: ${this.Client.parseError(kick.response)}`);
   }
 
   /**
@@ -374,6 +378,7 @@ class Party {
    * @param {Object} client the main client
    */
   static async Create(client, config) {
+    client.partyLock.active = true;
     const partyConfig = { ...client.config.partyConfig, ...config };
     const party = await client.Http.send(true, 'POST', `${Endpoints.BR_PARTY}/parties`, `bearer ${client.Auth.auths.token}`, null, {
       config: {
@@ -402,14 +407,18 @@ class Party {
       },
     });
 
-    if (!party.success) throw new Error(`Failed creating party: ${client.parseError(party.response)}`);
+    if (!party.success) {
+      client.partyLock.active = false;
+      throw new Error(`Failed creating party: ${client.parseError(party.response)}`);
+    }
 
     party.response.config = { ...partyConfig, ...party.response.config || {} };
     const clientParty = new Party(client, party.response);
-    await clientParty.setPrivacy(clientParty.config.privacy);
-
     client.party = clientParty;
-    return clientParty;
+    client.partyLock.active = false;
+    await client.party.setPrivacy(clientParty.config.privacy);
+
+    return client.party;
   }
 }
 

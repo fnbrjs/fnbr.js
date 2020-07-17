@@ -159,6 +159,7 @@ class ClientPartyMember extends PartyMember {
   async setEmote(eid) {
     const data = {
       emoteItemDef: `/Game/Athena/Items/Cosmetics/Dances/${eid}.${eid}`,
+      emoteSection: -2,
     };
     let loadout = this.meta.get('Default:FrontendEmote_j');
     loadout = this.meta.set('Default:FrontendEmote_j', {
@@ -179,6 +180,7 @@ class ClientPartyMember extends PartyMember {
   async clearEmote() {
     const data = {
       emoteItemDef: 'None',
+      emoteSection: -1,
     };
     let loadout = this.meta.get('Default:FrontendEmote_j');
     loadout = this.meta.set('Default:FrontendEmote_j', {

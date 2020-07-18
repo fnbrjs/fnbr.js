@@ -1,11 +1,22 @@
 const Meta = require('../Util/Meta');
 
+/**
+ * A party meta
+ * @extends {Meta}
+ */
 class PartyMeta extends Meta {
+  /**
+   * @param {Object} party the party
+   * @param {Object} meta the meta
+   */
   constructor(party, meta) {
     super();
 
     Object.defineProperty(this, 'Party', { value: party });
 
+    /**
+     * The schema
+     */
     this.schema = {
       'Default:PrimaryGameSessionId_s': '',
       'Default:PartyState_s': 'BattleRoyaleView',
@@ -51,6 +62,9 @@ class PartyMeta extends Meta {
     this.updateSquadAssignments();
   }
 
+  /**
+   * Update the party members positions
+   */
   updateSquadAssignments() {
     const assignments = [];
     let i = 0;

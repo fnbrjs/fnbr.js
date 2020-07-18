@@ -102,6 +102,9 @@ class Friend extends User {
     this.isBlocked = false;
   }
 
+  /**
+   * Join this friends party (please check if this friend isJoinable first)
+   */
   async joinParty() {
     if (!this.isJoinable) throw new Error('Cannot join friend party: Party not joinable');
     const party = await Party.Lookup(this.Client, this.presence.partyData.id);

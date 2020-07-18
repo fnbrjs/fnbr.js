@@ -47,6 +47,7 @@ class Http {
    * @param {Object} form request form
    */
   async send(checkToken, method, url, auth, headers, data, form) {
+    if (this.Client.reauthLock.active) await this.Client.reauthLock.wait();
     if (checkToken) {
       const tokenRefresh = await this.Client.Auth.refreshToken();
       if (!tokenRefresh.success) {

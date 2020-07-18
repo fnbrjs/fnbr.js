@@ -3,6 +3,13 @@ class Meta {
     this.schema = {};
   }
 
+  /**
+   * Set a value
+   * @param {String} prop property
+   * @param {*} val value
+   * @param {Boolean} isRaw if the value is raw
+   * @param {Boolean} isObject if the value is an object
+   */
   set(prop, val, isRaw, isObject) {
     if (isObject) {
       this.schema[prop] = val;
@@ -25,6 +32,11 @@ class Meta {
     return this.schema[prop];
   }
 
+  /**
+   * Get a value for a property
+   * @param {*} prop property
+   * @param {Boolean} isRaw if the value should be returned raw
+   */
   get(prop, isRaw) {
     if (isRaw) return this.schema[prop];
 
@@ -44,10 +56,19 @@ class Meta {
     return typeof this.schema[prop] !== 'undefined' ? this.schema[prop].toString() : '';
   }
 
+  /**
+   * Update this schema
+   * @param {Object} schema the new schema object
+   * @param {Boolean} isRaw passed to Meta.set
+   */
   update(schema, isRaw) {
     Object.keys(schema).forEach((prop) => this.set(prop, schema[prop], isRaw));
   }
 
+  /**
+   * Remove schema properties
+   * @param {Array} schema the properties to delete
+   */
   remove(schema) {
     schema.forEach((k) => delete this.schema[k]);
   }

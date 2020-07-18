@@ -9,17 +9,48 @@ const PendingFriend = require('../Structures/PendingFriend');
 const PartyMember = require('../Structures/PartyMember');
 const ClientPartyMember = require('../Structures/ClientPartyMember');
 
+/**
+ * The client uses this to communicate with epics xmpp services
+ */
 class XMPP {
+  /**
+   * @param {Object} client the main client
+   */
   constructor(client) {
+    /**
+     * The main client
+     */
     this.Client = client;
+
+    /**
+     * The xmpp stream
+     */
     this.stream = undefined;
+
+    /**
+     * If the xmpp client is connected
+     */
     this.connected = false;
+
+    /**
+     * If the xmpp client is reconnecting
+     */
     this.isReconnecting = false;
 
+    /**
+     * The xmpp clients uuid
+     */
     this.uuid = UUID().replace(/-/g, '').toUpperCase();
+
+    /**
+     * The xmpp clients resource
+     */
     this.resource = `V2:Fortnite:${this.Client.config.platform}::${this.uuid}`;
   }
 
+  /**
+   * Setup the xmpp stream and the xmpp events
+   */
   setup() {
     this.stream = createClient({
       wsURL: `wss://${Endpoints.XMPP_SERVER}`,
@@ -44,6 +75,10 @@ class XMPP {
     this.setupEvents();
   }
 
+  /**
+   * Connect the xmpp client
+   * @param {Boolean} isReconnect if this is a reconnection
+   */
   connect(isReconnect = false) {
     if (!isReconnect) this.Client.debug('XMPP-Client connecting...');
     else this.Client.debug('XMPP-Client reconnecting...');
@@ -55,7 +90,10 @@ class XMPP {
         this.connected = true;
         this.sendStatus(this.Client.config.status || 'Playing Battle Royale');
         if (!isReconnect) this.Client.debug(`XMPP-Client successfully connected (${((Date.now() - startConnect) / 1000).toFixed(2)}s)`);
-        else this.Client.debug(`XMPP-Client successfully reconnected (${((Date.now() - startConnect) / 1000).toFixed(2)}s)`);
+        else {
+          this.Client.debug(`XMPP-Client successfully reconnected (${((Date.now() - startConnect) / 1000).toFixed(2)}s)`);
+          if (this.Client.party) this.Client.party.patchPresence();
+        }
         res({ success: true });
       });
       this.stream.once('stream:error', (err) => res({ success: false, response: err }));
@@ -63,6 +101,9 @@ class XMPP {
     });
   }
 
+  /**
+   * Disconnect the xmpp client
+   */
   disconnect() {
     this.Client.debug('XMPP-Client disconnecting...');
     const startDisconnect = new Date().getTime();
@@ -76,6 +117,9 @@ class XMPP {
     });
   }
 
+  /**
+   * Reconnect the xmpp client
+   */
   async reconnect() {
     if (this.isReconnecting) return { success: true };
     this.isReconnecting = true;
@@ -101,6 +145,9 @@ class XMPP {
     return { success: true };
   }
 
+  /**
+   * Setup all xmpp events
+   */
   setupEvents() {
     this.stream.on('disconnected', () => {
       if (this.connected) {
@@ -309,6 +356,11 @@ class XMPP {
     });
   }
 
+  /**
+   * Send a presence to one friend or all friends
+   * @param {String} status the status
+   * @param {String?} to the friend
+   */
   sendStatus(status, to = null) {
     if (!status) this.stream.sendPresence(null);
     if (to) {
@@ -320,10 +372,6 @@ class XMPP {
     return this.stream.sendPresence({
       status: JSON.stringify(typeof status === 'object' ? status : { Status: status }),
     });
-  }
-
-  static sleep(timeout) {
-    return new Promise((res) => setTimeout(() => res(), timeout));
   }
 }
 

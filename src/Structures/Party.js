@@ -246,7 +246,6 @@ class Party {
     } else {
       this.currentlyPatching = false;
     }
-    if (this.Client.config.savePartyMemberMeta) this.Client.lastMemberMeta = this.meta.schema;
   }
 
   /**

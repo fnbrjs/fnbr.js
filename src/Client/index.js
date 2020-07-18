@@ -105,7 +105,18 @@ class Client extends EventEmitter {
      */
     this.blockedFriends = new List();
 
+    /**
+     * Delays all party-related xmpp events while the client makes changes to client.party
+     */
     this.partyLock = {
+      active: false,
+      wait: () => new Promise((res) => setInterval(() => { if (!this.partyLock.active) res(); }, 100)),
+    };
+
+    /**
+     * Delays all requests while Auth.reauthenticate is called
+     */
+    this.reauthLock = {
       active: false,
       wait: () => new Promise((res) => setInterval(() => { if (!this.partyLock.active) res(); }, 100)),
     };

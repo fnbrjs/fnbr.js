@@ -7,6 +7,7 @@ const PartyMember = require('./PartyMember');
 const ClientPartyMember = require('./ClientPartyMember');
 const { PartyPrivacy } = require('../../enums');
 const PartyChat = require('./PartyChat');
+const SentPartyInvitation = require('./SentPartyInvitation');
 
 /**
  * A party
@@ -186,6 +187,29 @@ class Party {
    */
   async sendMessage(message) {
     return this.chat.send(message);
+  }
+
+  /**
+   * Send party invitation to a friend
+   * @param {String} friend id or name of the friend
+   */
+  async invite(friend) {
+    const cachedFriend = this.Client.friends.find((f) => f.id === friend || f.displayName === friend);
+    if (!cachedFriend) throw new Error(`Failed sending party invitation to ${friend}: Friend not existing`);
+    if (this.members.get(cachedFriend.id)) throw new Error(`Failed sending party invitation to ${friend}: Friend is already in the party`);
+    if (this.members.size === this.config.maxSize) throw new Error(`Failed sending party invitation to ${friend}: Party is full`);
+    const data = await this.Client.Http.send(true, 'POST',
+      `${Endpoints.BR_PARTY}/parties/${this.id}/invites/${cachedFriend.id}?sendPing=true`, `bearer ${this.Client.Auth.auths.token}`, null, {
+        'urn:epic:cfg:build-id_s': '1:1:',
+        'urn:epic:conn:platform_s': this.Client.config.platform,
+        'urn:epic:conn:type_s': 'game',
+        'urn:epic:invite:platformdata_s': '',
+        'urn:epic:member:dn_s': this.Client.account.displayName,
+      });
+    if (!data.success) throw new Error(`Failed sending party invitation to ${friend}: ${this.Client.parseError(data.response)}`);
+    return new SentPartyInvitation(this.Client, this, cachedFriend, {
+      sent_at: Date.now(),
+    });
   }
 
   /**

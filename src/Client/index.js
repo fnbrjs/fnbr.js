@@ -19,6 +19,7 @@ const Enums = require('../../enums');
 const List = require('../Util/List');
 const FriendMessage = require('../Structures/FriendMessage.js');
 const Party = require('../Structures/Party.js');
+const SentPartyInvitation = require('../Structures/SentPartyInvitation.js');
 
 /**
  * The main client
@@ -38,7 +39,6 @@ class Client extends EventEmitter {
       xmppDebug: false,
       status: '',
       platform: Enums.Platform.WINDOWS,
-      netCL: '',
       memberMeta: undefined,
       ...args,
       auth: {
@@ -473,6 +473,29 @@ class Client extends EventEmitter {
     return new Promise((res, rej) => {
       this.Xmpp.stream.once(`message#${id}:sent`, () => res(new FriendMessage(this, { body: message, author: this.account })));
       setTimeout(() => rej(new Error(`Failed sending a friend message to ${friend.id}: Message timeout of 20000ms exceeded`)), 20000);
+    });
+  }
+
+  /**
+   * Send party invitation to a friend
+   * @param {String} friend id or name of the friend
+   */
+  async invite(friend) {
+    const cachedFriend = this.friends.find((f) => f.id === friend || f.displayName === friend);
+    if (!cachedFriend) throw new Error(`Failed sending party invitation to ${friend}: Friend not existing`);
+    if (this.party.members.get(cachedFriend.id)) throw new Error(`Failed sending party invitation to ${friend}: Friend is already in the party`);
+    if (this.party.members.size === this.party.config.maxSize) throw new Error(`Failed sending party invitation to ${friend}: Party is full`);
+    const data = await this.Http.send(true, 'POST',
+      `${Endpoints.BR_PARTY}/parties/${this.party.id}/invites/${cachedFriend.id}?sendPing=true`, `bearer ${this.Auth.auths.token}`, null, {
+        'urn:epic:cfg:build-id_s': '1:1:',
+        'urn:epic:conn:platform_s': this.config.platform,
+        'urn:epic:conn:type_s': 'game',
+        'urn:epic:invite:platformdata_s': '',
+        'urn:epic:member:dn_s': this.account.displayName,
+      });
+    if (!data.success) throw new Error(`Failed sending party invitation to ${friend}: ${this.parseError(data.response)}`);
+    return new SentPartyInvitation(this, this.party, cachedFriend, {
+      sent_at: Date.now(),
     });
   }
 

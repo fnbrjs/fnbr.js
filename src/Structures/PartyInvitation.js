@@ -30,22 +30,23 @@ class PartyInvitation {
    * Accepts the invitation
    */
   async accept() {
-    if (this.expired) throw new Error(`The ${this.party.id} party invitation was already accepted/rejected or it expired`);
-    if (this.Client.config.netCL && this.Client.netCL !== this.netCL) throw new Error(`Incompatible netCL (${this.Client.config.netCL}) for joining party ${this.party.id} (${this.netCL})`);
+    if (this.expired) throw new Error(`Failed accepting party ${this.party.id} invite from ${this.sender.id}: The party invitation was already accepted/rejected or it expired`);
+    if (this.netCL !== '') throw new Error(`Failed accepting party ${this.party.id} invite from ${this.sender.id}: Incompatible netCL  for joining party with ${this.netCL} netCL`);
     await this.party.join();
     this.expired = true;
     const data = await this.Client.Http.send(true, 'DELETE',
       `${Endpoints.BR_PARTY}/user/${this.Client.account.id}/pings/${this.sender.id}`, `bearer ${this.Client.Auth.auths.token}`);
-    if (!data.success) throw new Error(`Cannot delete ping from ${this.sender.id}: ${this.Client.parseError(data.response)}`);
+    if (!data.success) throw new Error(`Failed accepting party ${this.party.id} invite from ${this.sender.id}: ${this.Client.parseError(data.response)}`);
   }
 
   /**
    * Rejects the invitation
    */
   async reject() {
+    if (this.expired) throw new Error(`Failed rejecting party ${this.party.id} invite from ${this.sender.id}: The party invitation was already accepted/rejected or it expired`);
     const data = await this.Client.Http.send(true, 'DELETE',
       `${Endpoints.BR_PARTY}/user/${this.Client.account.id}/pings/${this.sender.id}`, `bearer ${this.Client.Auth.auths.token}`);
-    if (!data.success) throw new Error(`Cannot reject party ${this.party.id} invitation from ${this.sender.id}: ${this.Client.parseError(data.response)}`);
+    if (!data.success) throw new Error(`Failed rejecting party ${this.party.id} invite from ${this.sender.id}: ${this.Client.parseError(data.response)}`);
     this.expired = true;
   }
 
@@ -57,8 +58,8 @@ class PartyInvitation {
    */
   static createInvite(client, pingerId, data) {
     let member;
-    for (const m in data.members) {
-      if (m.id === pingerId) {
+    for (const m of data.members) {
+      if (m.account_id === pingerId) {
         member = m;
         break;
       }

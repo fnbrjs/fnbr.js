@@ -1,5 +1,7 @@
 const User = require('./User');
 const Party = require('./Party');
+const Endpoints = require('../../resources/Endpoints');
+const SentPartyInvitation = require('./SentPartyInvitation');
 
 /**
  * A friend of the client
@@ -84,6 +86,26 @@ class Friend extends User {
    */
   async sendMessage(message) {
     return this.Client.sendFriendMessage(this.id, message);
+  }
+
+  /**
+   * Send a party invitation to this friend
+   */
+  async invite() {
+    if (this.Client.party.members.get(this.id)) throw new Error(`Failed sending party invitation to ${this.id}: Friend is already in the party`);
+    if (this.Client.party.members.size === this.Client.party.config.maxSize) throw new Error(`Failed sending party invitation to ${this.id}: Party is full`);
+    const data = await this.Client.Http.send(true, 'POST',
+      `${Endpoints.BR_PARTY}/parties/${this.Client.party.id}/invites/${this.id}?sendPing=true`, `bearer ${this.Client.Auth.auths.token}`, null, {
+        'urn:epic:cfg:build-id_s': '1:1:',
+        'urn:epic:conn:platform_s': this.Client.config.platform,
+        'urn:epic:conn:type_s': 'game',
+        'urn:epic:invite:platformdata_s': '',
+        'urn:epic:member:dn_s': this.Client.account.displayName,
+      });
+    if (!data.success) throw new Error(`Failed sending party invitation ${this.id}: ${this.Client.parseError(data.response)}`);
+    return new SentPartyInvitation(this.Client, this.Client.party, this, {
+      sent_at: Date.now(),
+    });
   }
 
   /**

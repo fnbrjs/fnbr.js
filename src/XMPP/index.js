@@ -291,12 +291,13 @@ class XMPP {
         } break;
 
         case 'com.epicgames.social.party.notification.v0.PING': {
+          this.Client.debug(body);
           if (body.ns !== 'Fortnite') break;
           const pingerId = body.pinger_id;
           if (!pingerId) break;
           let data = await this.Client.Http.send(true, 'GET',
             `${Endpoints.BR_PARTY}/user/${this.Client.account.id}/pings/${pingerId}/parties`, `bearer ${this.Client.Auth.auths.token}`);
-          if (!data.success) throw new Error(`Cannot fetch ping from ${pingerId}: ${this.Client.parseError(data.response)}`);
+          if (!data.success) throw new Error(`Failed fetching ping from ${pingerId}: ${this.Client.parseError(data.response)}`);
           [data] = data.response;
           const party = new Party(this.Client, data);
           let invite;
@@ -313,15 +314,15 @@ class XMPP {
             if (!friend) break;
             const { presence } = friend;
             if (presence && presence.partyData.id && !presence.partyData.isPrivate) netCL = presence.partyData.buildId.slice(4);
-            else netCL = this.Client.config.netCL;
+            else netCL = '';
           } else {
             const buildId = invite.meta['urn:epic:cfg:build-id_s'];
             netCL = buildId.startsWith('1:1:') ? buildId.slice(4) : buildId;
           }
-          if (this.Client.config.netCL && netCL !== this.Client.config.netCL) throw new Error(`The client's netCL (${this.Client.config.netCL}) doesn't match with the party ${party.id}'s one (${netCL})`);
-          const invitation = new PartyInvitation(this.Client, party, netCL, invite);
+          if (netCL !== '') throw new Error(`Failed fetching ping from ${pingerId}: The client's netCL () doesn't match with the party ${party.id}'s one (${netCL})`);
+          const invitation = new PartyInvitation(this.Client, party, '', invite);
           this.Client.emit('party:invite', invitation);
-          this.Client.emit(`party#${party.id}`, invitation);
+          this.Client.emit(`party#${party.id}:invite`, invitation);
         } break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_JOINED': {

@@ -181,6 +181,14 @@ class Party {
   }
 
   /**
+   * Send a message to party chat
+   * @param {String} message message to send
+   */
+  async sendMessage(message) {
+    return this.chat.send(message);
+  }
+
+  /**
    * Leave this party
    * @param {Boolean} createNew if a new party should be created
    */

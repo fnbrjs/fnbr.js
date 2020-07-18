@@ -1,7 +1,7 @@
 /**
  * A party message revieved via XMPP
  */
-class FriendMessage {
+class PartyMessage {
   constructor(client, data) {
   /**
    * @param {Object} client main client
@@ -31,4 +31,4 @@ class FriendMessage {
   }
 }
 
-module.exports = FriendMessage;
+module.exports = PartyMessage;

@@ -1,15 +1,42 @@
 const PartyMemberMeta = require('./PartyMemberMeta');
 
+/**
+ * A party member
+ */
 class PartyMember {
+  /**
+   * @param party the party
+   * @param data member data
+   */
   constructor(party, data) {
     Object.defineProperty(this, 'Party', { value: party });
     Object.defineProperty(this, 'Client', { value: party.Client });
     Object.defineProperty(this, 'data', { value: data });
 
+    /**
+     * The members id
+     */
     this.id = data.accountId || data.account_id;
-    this.displayName = data.account_dn;
+
+    /**
+     * The members displayName
+     */
+    this.displayName = this.id === this.Client.account.id
+      ? this.Client.account.displayName : data.account_dn;
+
+    /**
+     * The members role
+     */
     this.role = data.role || '';
+
+    /**
+     * When the member joined
+     */
     this.joinedAt = new Date(data.joined_at);
+
+    /**
+     * The members meta
+     */
     this.meta = new PartyMemberMeta(this, data.meta);
   }
 

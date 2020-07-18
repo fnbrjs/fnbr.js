@@ -1,3 +1,6 @@
+/**
+ * A meta used for parties and party members
+ */
 class Meta {
   constructor() {
     this.schema = {};

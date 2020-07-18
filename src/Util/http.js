@@ -75,7 +75,6 @@ class Http {
       const response = await this.request(reqOptions);
       return { success: true, response };
     } catch (err) {
-      if (err.error.errorCode === 'errors.com.epicgames.common.authentication.authentication_failed') await this.Client.restart();
       return { success: false, response: err.error };
     }
   }

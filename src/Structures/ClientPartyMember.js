@@ -92,17 +92,40 @@ class ClientPartyMember extends PartyMember {
   /**
    * Set the clients outfit in party
    * @param cid id of the outfit
+   * @param variants skin variants
+   * @param enlightment skin enlightment
    */
-  async setOutfit(cid) {
+  async setOutfit(cid, variants = [], enlightment = []) {
     const data = {
       characterDef: `/Game/Athena/Items/Cosmetics/Characters/${cid}.${cid}`,
     };
+
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
+
+    const parsedVariants = [];
+    variants.forEach((v) => {
+      parsedVariants.push({ item: 'AthenaCharacter', ...v });
+    });
+
+    loadout.AthenaCosmeticLoadout.variants.forEach((v) => {
+      if (v.item !== 'AthenaCharacter') parsedVariants.push(v);
+    });
+
+    const scratchpad = [];
+    if (enlightment.length === 2) {
+      scratchpad.push({
+        t: enlightment[0],
+        v: enlightment[1],
+      });
+    }
+
     loadout = this.meta.set('Default:AthenaCosmeticLoadout_j', {
       ...loadout,
       AthenaCosmeticLoadout: {
         ...loadout.AthenaCosmeticLoadout,
         ...data,
+        variants: parsedVariants,
+        scratchpad,
       },
     });
     await this.sendPatch({
@@ -114,16 +137,27 @@ class ClientPartyMember extends PartyMember {
    * Set the clients backpack in party
    * @param bid id of the backpack
    */
-  async setBackpack(bid) {
+  async setBackpack(bid, variants = []) {
     const data = {
       backpackDef: `/Game/Athena/Items/Cosmetics/Backpacks/${bid}.${bid}`,
     };
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
+
+    const parsedVariants = [];
+    variants.forEach((v) => {
+      parsedVariants.push({ item: 'AthenaBackpack', ...v });
+    });
+
+    loadout.AthenaCosmeticLoadout.variants.forEach((v) => {
+      if (v.item !== 'AthenaBackpack') parsedVariants.push(v);
+    });
+
     loadout = this.meta.set('Default:AthenaCosmeticLoadout_j', {
       ...loadout,
       AthenaCosmeticLoadout: {
         ...loadout.AthenaCosmeticLoadout,
         ...data,
+        variants: parsedVariants,
       },
     });
     await this.sendPatch({
@@ -135,16 +169,27 @@ class ClientPartyMember extends PartyMember {
    * Set the clients pickaxe in party
    * @param pickaxe id of the pickaxe
    */
-  async setPickaxe(pickaxe) {
+  async setPickaxe(pickaxe, variants = []) {
     const data = {
       pickaxeDef: `/Game/Athena/Items/Cosmetics/Pickaxes/${pickaxe}.${pickaxe}`,
     };
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
+
+    const parsedVariants = [];
+    variants.forEach((v) => {
+      parsedVariants.push({ item: 'AthenaPickaxe', ...v });
+    });
+
+    loadout.AthenaCosmeticLoadout.variants.forEach((v) => {
+      if (v.item !== 'AthenaPickaxe') parsedVariants.push(v);
+    });
+
     loadout = this.meta.set('Default:AthenaCosmeticLoadout_j', {
       ...loadout,
       AthenaCosmeticLoadout: {
         ...loadout.AthenaCosmeticLoadout,
         ...data,
+        variants: parsedVariants,
       },
     });
     await this.sendPatch({

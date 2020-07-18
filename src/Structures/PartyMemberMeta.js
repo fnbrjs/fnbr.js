@@ -1,6 +1,14 @@
 const Meta = require('../Util/Meta');
 
+/**
+ * A party member meta
+ * @extends {Meta}
+ */
 class PartyMemberMeta extends Meta {
+  /**
+   * @param {Object} member the member
+   * @param {Object} meta the meta
+   */
   constructor(member, meta) {
     super();
 
@@ -18,6 +26,9 @@ class PartyMemberMeta extends Meta {
     ];
     const defCharacter = defaultCharacters[Math.floor(Math.random() * defaultCharacters.length)];
 
+    /**
+     * The metas schema
+     */
     this.schema = {
       'Default:Location_s': 'PreLobby',
       'Default:CampaignHero_j': JSON.stringify({

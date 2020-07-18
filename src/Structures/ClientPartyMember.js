@@ -221,7 +221,7 @@ class ClientPartyMember extends PartyMember {
           [, this.revision] = patch.response.messageVars;
           this.patchQueue.push([updated]);
           break;
-        default: return;
+        default: break;
       }
     }
 

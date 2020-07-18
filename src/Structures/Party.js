@@ -6,6 +6,7 @@ const PartyMeta = require('./PartyMeta');
 const PartyMember = require('./PartyMember');
 const ClientPartyMember = require('./ClientPartyMember');
 const { PartyPrivacy } = require('../../enums');
+const PartyChat = require('./PartyChat');
 
 /**
  * A party
@@ -57,6 +58,11 @@ class Party {
      * This parties meta
      */
     this.meta = new PartyMeta(this, data.meta);
+
+    /**
+     * Party chatroom
+     */
+    this.chat = new PartyChat(this);
 
     /**
      * This parties revision
@@ -121,6 +127,7 @@ class Party {
       throw new Error(`Failed joining party: ${this.Client.parseError(party.response)}`);
     }
 
+    await this.chat.join();
     this.Client.party = this;
     this.Client.partyLock.active = false;
   }
@@ -174,11 +181,20 @@ class Party {
   }
 
   /**
+   * Send a message to party chat
+   * @param {String} message message to send
+   */
+  async sendMessage(message) {
+    return this.chat.send(message);
+  }
+
+  /**
    * Leave this party
    * @param {Boolean} createNew if a new party should be created
    */
   async leave(createNew = true) {
     this.Client.partyLock.active = true;
+    this.chat.leave();
     this.patchQueue = [];
     if (this.me) this.me.patchQueue = [];
     const party = await this.Client.Http.send(true, 'DELETE',
@@ -246,7 +262,6 @@ class Party {
     } else {
       this.currentlyPatching = false;
     }
-    if (this.Client.config.savePartyMemberMeta) this.Client.lastMemberMeta = this.meta.schema;
   }
 
   /**
@@ -415,6 +430,7 @@ class Party {
     party.response.config = { ...partyConfig, ...party.response.config || {} };
     const clientParty = new Party(client, party.response);
     client.party = clientParty;
+    await client.party.chat.join();
     client.partyLock.active = false;
     await client.party.setPrivacy(clientParty.config.privacy);
 

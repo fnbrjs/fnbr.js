@@ -106,7 +106,18 @@ class Client extends EventEmitter {
      */
     this.blockedFriends = new List();
 
+    /**
+     * Delays all party-related xmpp events while the client makes changes to client.party
+     */
     this.partyLock = {
+      active: false,
+      wait: () => new Promise((res) => setInterval(() => { if (!this.partyLock.active) res(); }, 100)),
+    };
+
+    /**
+     * Delays all requests while Auth.reauthenticate is called
+     */
+    this.reauthLock = {
       active: false,
       wait: () => new Promise((res) => setInterval(() => { if (!this.partyLock.active) res(); }, 100)),
     };
@@ -183,7 +194,10 @@ class Client extends EventEmitter {
     if (this.tokenCheckInterval) clearInterval(this.tokenCheckInterval);
     if (this.Xmpp.connected) await this.Xmpp.disconnect();
     if (this.party) await this.party.leave(false);
-    await this.Http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${this.Auth.auths.token}`, `bearer ${this.Auth.auths.token}`);
+    if (this.Auth.auths.token) await this.Http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${this.Auth.auths.token}`, `bearer ${this.Auth.auths.token}`);
+    this.Auth.auths.token = undefined;
+    this.Auth.auths.expires_at = undefined;
+    this.isReady = false;
 
     return this.login();
   }
@@ -457,7 +471,7 @@ class Client extends EventEmitter {
     });
 
     return new Promise((res, rej) => {
-      this.Xmpp.stream.on(`message#${id}:sent`, () => res(new FriendMessage(this, { body: message, author: this.account })));
+      this.Xmpp.stream.once(`message#${id}:sent`, () => res(new FriendMessage(this, { body: message, author: this.account })));
       setTimeout(() => rej(new Error(`Failed sending a friend message to ${friend.id}: Message timeout of 20000ms exceeded`)), 20000);
     });
   }

@@ -6,31 +6,52 @@ const Client = require('.');
 const Endpoints = require('../../resources/Endpoints');
 const Tokens = require('../../resources/Tokens');
 
+/**
+ * The authenticator handles the (re)authentification process
+ */
 class Authenticator {
   /**
    * @param {Client} client Main client
    */
   constructor(client) {
+    /**
+     * The main client
+     */
     this.Client = client;
 
+    /**
+     * Authentification data
+     */
     this.auths = {
       token: undefined,
       expires_at: undefined,
     };
 
+    /**
+     * Reauthentification data
+     */
     this.reauths = {
       token: undefined,
       expires_at: undefined,
     };
 
+    /**
+     * The clients account (temporary stored)
+     */
     this.account = {
       id: undefined,
       displayName: undefined,
     };
 
+    /**
+     * If the client is currently reauthenticating
+     */
     this.isRefreshing = false;
   }
 
+  /**
+   * Start the authentification process
+   */
   async authenticate() {
     this.Client.debug('Authenticating...');
     const startAuth = new Date().getTime();
@@ -88,6 +109,10 @@ class Authenticator {
     return auth;
   }
 
+  /**
+   * Checks if a token refresh is needed and calls Auth.reauthenticate if needed
+   * @param {Boolean} forceVerify if the /verify endpoint should be requested
+   */
   async refreshToken(forceVerify = false) {
     let tokenIsValid = true;
 
@@ -109,7 +134,11 @@ class Authenticator {
     return { success: true };
   }
 
+  /**
+   * Refreshes the auth data
+   */
   async reauthenticate() {
+    this.Client.reauthLock.active = true;
     this.Client.debug('Reauthenticating...');
     const startAuth = new Date().getTime();
 
@@ -117,7 +146,10 @@ class Authenticator {
     if (this.Client.config.auth.deviceAuth) auth = await this.deviceAuthAuthenticate(this.Client.config.auth.deviceAuth);
     else auth = this.getOauthToken('refresh_token', { refresh_token: this.reauths.token });
 
-    if (!auth.success) return auth;
+    if (!auth.success) {
+      this.Client.reauthLock.active = false;
+      return auth;
+    }
 
     this.auths = {
       token: auth.response.access_token,
@@ -135,9 +167,14 @@ class Authenticator {
     };
 
     this.Client.debug(`Reauthentification successful (${((Date.now() - startAuth) / 1000).toFixed(2)}s)`);
+    this.Client.reauthLock.active = false;
     return { success: true };
   }
 
+  /**
+   * Authenticate with device auth
+   * @param {*} deviceAuth the device auth
+   */
   async deviceAuthAuthenticate(deviceAuth) {
     let parsedDeviceAuth;
 
@@ -161,6 +198,11 @@ class Authenticator {
     return this.getOauthToken('device_auth', authFormData, Tokens.FORTNITE_IOS);
   }
 
+  /**
+   * Authenticate with an exchange code
+   * @param {*} exchangeCode the exchange code
+   * @param {String} token which client secret to use (default to ios)
+   */
   async exchangeCodeAuthenticate(exchangeCode, token = Tokens.FORTNITE_IOS) {
     let parsedExchangeCode;
 
@@ -181,6 +223,10 @@ class Authenticator {
     return this.getOauthToken('exchange_code', { exchange_code: parsedExchangeCode }, token);
   }
 
+  /**
+   * Authenticate with an authorization code
+   * @param {*} authorizationCode the authorization code
+   */
   async authorizationCodeAuthenticate(authorizationCode) {
     let parsedAuthorizationCode;
 
@@ -201,6 +247,10 @@ class Authenticator {
     return this.getOauthToken('authorization_code', { code: parsedAuthorizationCode }, Tokens.FORTNITE_IOS);
   }
 
+  /**
+   * Authenticate with a refresh token
+   * @param {*} refreshToken the refresh token
+   */
   async refreshTokenAuthenticate(refreshToken) {
     let parsedRefreshToken;
 
@@ -221,6 +271,12 @@ class Authenticator {
     return this.getOauthToken('refresh_token', { refresh_token: parsedRefreshToken }, Tokens.FORTNITE_IOS);
   }
 
+  /**
+   * Obtain a token
+   * @param {String} grant_type the grant type
+   * @param {Object} valuePair the token value pair
+   * @param {String} token the secret
+   */
   async getOauthToken(grant_type, valuePair, token) {
     const formData = {
       grant_type,
@@ -231,11 +287,18 @@ class Authenticator {
     return this.Client.Http.send(false, 'POST', Endpoints.OAUTH_TOKEN_CREATE, `basic ${token}`, { 'Content-Type': 'application/x-www-form-urlencoded' }, null, formData);
   }
 
+  /**
+   * Generate a device auth
+   * @param {Object} tokenResponse response from the token request
+   */
   async generateDeviceAuth(tokenResponse) {
     return this.Client.Http.send(true, 'POST', `${Endpoints.OAUTH_DEVICE_AUTH}/${tokenResponse.account_id}/deviceAuth`,
       `bearer ${tokenResponse.access_token}`);
   }
 
+  /**
+   * Check if the EULA needs to be accepted and accepts it if needed
+   */
   async acceptEULA() {
     const EULAdata = await this.Client.Http.send(false, 'GET', `${Endpoints.INIT_EULA}/account/${this.account.id}`, `bearer ${this.auths.token}`);
     if (!EULAdata.success) return EULAdata;

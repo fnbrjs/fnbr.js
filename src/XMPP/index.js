@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax */
 /* eslint-disable max-len */
 const { createClient } = require('stanza');
 const UUID = require('uuid/v4');
@@ -8,6 +9,8 @@ const Friend = require('../Structures/Friend');
 const PendingFriend = require('../Structures/PendingFriend');
 const PartyMember = require('../Structures/PartyMember');
 const ClientPartyMember = require('../Structures/ClientPartyMember');
+const PartyInvitation = require('../Structures/PartyInvitation');
+const Party = require('../Structures/Party');
 
 class XMPP {
   constructor(client) {
@@ -226,7 +229,39 @@ class XMPP {
           }
         } break;
 
-        case 'com.epicgames.social.party.notification.v0.PING': break;
+        case 'com.epicgames.social.party.notification.v0.PING': {
+          if (body.ns !== 'Fortnite') break;
+          const pingerId = body.pinger_id;
+          if (!pingerId) break;
+          let data = await this.Client.Http.send(true, 'GET',
+            `${Endpoints.BR_PARTY}/user/${this.Client.account.id}/pings/${pingerId}/parties`, `bearer ${this.Client.Auth.auths.token}`);
+          if (!data.success) throw new Error(`Cannot fetch ping from ${pingerId}: ${this.Client.parseError(data.response)}`);
+          [data] = data.response;
+          const party = new Party(this.Client, data);
+          let invite;
+          for (const inv of data.invites) {
+            if (inv.sent_by === pingerId && inv.status === 'SENT') {
+              invite = inv;
+              break;
+            }
+          }
+          if (!invite) invite = PartyInvitation.createInvite(this.Client, pingerId, { ...body, ...data });
+          let netCL;
+          if (!invite.meta['urn:epic:cfg:build-id_s']) {
+            const friend = this.Client.friends.get(pingerId);
+            if (!friend) break;
+            const { presence } = friend;
+            if (presence && presence.partyData.id && !presence.partyData.isPrivate) netCL = presence.partyData.buildId.slice(4);
+            else netCL = this.Client.config.netCL;
+          } else {
+            const buildId = invite.meta['urn:epic:cfg:build-id_s'];
+            netCL = buildId.startsWith('1:1:') ? buildId.slice(4) : buildId;
+          }
+          if (this.Client.config.netCL && netCL !== this.Client.config.netCL) throw new Error(`The client's netCL (${this.Client.config.netCL}) doesn't match with the party ${party.id}'s one (${netCL})`);
+          const invitation = new PartyInvitation(this.Client, party, netCL, invite);
+          this.Client.emit('party:invite', invitation);
+          this.Client.emit(`party#${party.id}`, invitation);
+        } break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_JOINED': {
           const accountId = body.account_id;

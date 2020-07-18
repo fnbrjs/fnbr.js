@@ -38,6 +38,7 @@ class Client extends EventEmitter {
       xmppDebug: false,
       status: '',
       platform: Enums.Platform.WINDOWS,
+      netCL: '',
       memberMeta: undefined,
       ...args,
       auth: {

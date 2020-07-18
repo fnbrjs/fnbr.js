@@ -193,7 +193,10 @@ class Client extends EventEmitter {
     if (this.tokenCheckInterval) clearInterval(this.tokenCheckInterval);
     if (this.Xmpp.connected) await this.Xmpp.disconnect();
     if (this.party) await this.party.leave(false);
-    await this.Http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${this.Auth.auths.token}`, `bearer ${this.Auth.auths.token}`);
+    if (this.Auth.auths.token) await this.Http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${this.Auth.auths.token}`, `bearer ${this.Auth.auths.token}`);
+    this.Auth.auths.token = undefined;
+    this.Auth.auths.expires_at = undefined;
+    this.isReady = false;
 
     return this.login();
   }

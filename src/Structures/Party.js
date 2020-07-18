@@ -364,6 +364,7 @@ class Party {
     await this.sendPatch({
       'Default:CustomMatchKey_s': this.meta.set('Default:CustomMatchKey_s', key || ''),
     });
+    await new Promise((res) => setTimeout(() => res(), 500));
   }
 
   /**

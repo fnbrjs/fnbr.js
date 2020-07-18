@@ -1,6 +1,13 @@
 const PartyMemberMeta = require('./PartyMemberMeta');
 
+/**
+ * A party member
+ */
 class PartyMember {
+  /**
+   * @param party the party
+   * @param data member data
+   */
   constructor(party, data) {
     Object.defineProperty(this, 'Party', { value: party });
     Object.defineProperty(this, 'Client', { value: party.Client });

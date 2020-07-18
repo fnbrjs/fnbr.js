@@ -291,7 +291,6 @@ class XMPP {
         } break;
 
         case 'com.epicgames.social.party.notification.v0.PING': {
-          this.Client.debug(body);
           if (body.ns !== 'Fortnite') break;
           const pingerId = body.pinger_id;
           if (!pingerId) break;
@@ -308,19 +307,7 @@ class XMPP {
             }
           }
           if (!invite) invite = PartyInvitation.createInvite(this.Client, pingerId, { ...body, ...data });
-          let netCL;
-          if (!invite.meta['urn:epic:cfg:build-id_s']) {
-            const friend = this.Client.friends.get(pingerId);
-            if (!friend) break;
-            const { presence } = friend;
-            if (presence && presence.partyData.id && !presence.partyData.isPrivate) netCL = presence.partyData.buildId.slice(4);
-            else netCL = '';
-          } else {
-            const buildId = invite.meta['urn:epic:cfg:build-id_s'];
-            netCL = buildId.startsWith('1:1:') ? buildId.slice(4) : buildId;
-          }
-          if (netCL !== '') throw new Error(`Failed fetching ping from ${pingerId}: The client's netCL () doesn't match with the party ${party.id}'s one (${netCL})`);
-          const invitation = new PartyInvitation(this.Client, party, '', invite);
+          const invitation = new PartyInvitation(this.Client, party, invite);
           this.Client.emit('party:invite', invitation);
           this.Client.emit(`party#${party.id}:invite`, invitation);
         } break;

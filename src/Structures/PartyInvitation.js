@@ -1,5 +1,4 @@
 /* eslint-disable no-restricted-syntax */
-
 const Endpoints = require('../../resources/Endpoints');
 
 /**
@@ -9,13 +8,11 @@ class PartyInvitation {
   /**
    * @param {Object} client main client
    * @param {Object} party invitation party
-   * @param {String} netCL party netCL
    * @param {Object} data invitation data
    */
-  constructor(client, party, netCL, data) {
+  constructor(client, party, data) {
     this.Client = client;
     this.party = party;
-    this.netCL = netCL;
     this.sender = this.Client.friends.get(data.sent_by);
     this.createdAt = new Date(data.sent_at);
     this.expiresAt = new Date(data.expires_at);
@@ -31,7 +28,6 @@ class PartyInvitation {
    */
   async accept() {
     if (this.expired) throw new Error(`Failed accepting party ${this.party.id} invite from ${this.sender.id}: The party invitation was already accepted/rejected or it expired`);
-    if (this.netCL !== '') throw new Error(`Failed accepting party ${this.party.id} invite from ${this.sender.id}: Incompatible netCL  for joining party with ${this.netCL} netCL`);
     await this.party.join();
     this.expired = true;
     const data = await this.Client.Http.send(true, 'DELETE',

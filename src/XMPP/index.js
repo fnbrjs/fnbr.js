@@ -7,6 +7,7 @@ const FriendPresence = require('../Structures/FriendPresence');
 const Friend = require('../Structures/Friend');
 const PendingFriend = require('../Structures/PendingFriend');
 const PartyMember = require('../Structures/PartyMember');
+const PartyMessage = require('../Structures/PartyMessage');
 const ClientPartyMember = require('../Structures/ClientPartyMember');
 
 /**
@@ -168,8 +169,21 @@ class XMPP {
       this.stream.emit(`message#${m.id}:sent`);
     });
 
+    this.stream.on('groupchat', async (g) => {
+      if (!this.Client.party || this.Client.party.id !== g.from.split('@')[0].replace('Party-', '')) return;
+      if (g.body === 'Welcome! You created new Multi User Chat Room.') return;
+      const [, id] = g.from.split(':');
+      if (id === this.Client.account.id) return;
+      const member = this.Client.party.members.get(id);
+      if (!member) return;
+
+      const partyMessage = new PartyMessage(this.Client, { body: g.body, author: member, chat: this.Client.party.chat });
+      this.Client.emit('party:member:message', partyMessage);
+      this.Client.emit(`party:member#${id}:message`, partyMessage);
+    });
+
     this.stream.on('presence', async (p) => {
-      if (p.type === 'unavailable') return;
+      if (p.type === 'unavailable' || !p.status) return;
       const fromId = p.from.split('@')[0];
       if (fromId === this.Client.account.id) {
         this.stream.emit(`presence#${p.id}:sent`);

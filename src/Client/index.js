@@ -467,7 +467,7 @@ class Client extends EventEmitter {
     });
 
     return new Promise((res, rej) => {
-      this.Xmpp.stream.on(`message#${id}:sent`, () => res(new FriendMessage(this, { body: message, author: this.account })));
+      this.Xmpp.stream.once(`message#${id}:sent`, () => res(new FriendMessage(this, { body: message, author: this.account })));
       setTimeout(() => rej(new Error(`Failed sending a friend message to ${friend.id}: Message timeout of 20000ms exceeded`)), 20000);
     });
   }

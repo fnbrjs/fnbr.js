@@ -292,6 +292,8 @@ class XMPP {
 
         case 'com.epicgames.social.party.notification.v0.PING': {
           if (body.ns !== 'Fortnite') break;
+          await this.Client.waitUntilReady();
+          if (this.Client.partyLock.active) await this.Client.partyLock.wait();
           const pingerId = body.pinger_id;
           if (!pingerId) break;
           let data = await this.Client.Http.send(true, 'GET',

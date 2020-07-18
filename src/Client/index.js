@@ -57,6 +57,11 @@ class Client extends EventEmitter {
         chatEnabled: true,
         ...args.partyConfig,
       },
+      kairos: {
+        cid: Object.values(Enums.DefaultSkin)[Math.floor(Math.random() * Object.values(Enums.DefaultSkin).length)],
+        color: Object.values(Enums.KairosColor)[Math.floor(Math.random() * Object.values(Enums.KairosColor).length)],
+        ...args.kairos,
+      },
     };
 
     /**
@@ -517,6 +522,7 @@ class Client extends EventEmitter {
 
   /**
    * Fetch v2 stats for one/multiple player(s)
+   * @param {String|Array<String>} user the user
    * @param {Number?} startTime epoch to start fetching stats (empty for lifetime)
    * @param {Number?} endTime epoch to stop fetching stats (empty for lifetime)
    * @returns {Promise<Object|Array<Object>>} player stats

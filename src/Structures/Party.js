@@ -169,6 +169,11 @@ class Party {
         numKills: 0,
         bFellToDeath: false,
       },
+      KairosProfile_j: {
+        appInstalled: 'init',
+        avatar: this.Client.config.kairos.cid.toLowerCase(),
+        avatarBackground: this.Client.config.kairos.color.replace(/ /g, ''),
+      },
     };
     const presence = {
       Status: this.Client.config.status || `Battle Royale Lobby - ${this.members.size} / ${this.config.maxSize}`,
@@ -275,6 +280,12 @@ class Party {
           this.patchQueue.push([updated]);
           break;
         case 'errors.com.epicgames.social.party.party_change_forbidden':
+          if (this.patchQueue.length > 0) {
+            const args = this.patchQueue.shift();
+            this.sendPatch(...args, true);
+          } else {
+            this.currentlyPatching = false;
+          }
           throw new Error('Cannot patch party as client isnt party leader');
         default: break;
       }

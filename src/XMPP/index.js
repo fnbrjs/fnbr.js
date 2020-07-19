@@ -325,7 +325,7 @@ class XMPP {
           } else this.Client.party.members.set(accountId, new PartyMember(this.Client.party, body));
           const partyMember = this.Client.party.members.get(accountId);
           this.Client.party.patchPresence();
-          if (this.Client.party.me.isLeader) this.Client.party.refreshSquadAssignments();
+          if (this.Client.party.me && this.Client.party.me.isLeader) this.Client.party.refreshSquadAssignments();
           this.Client.emit('party:member:joined', partyMember);
           this.Client.emit(`party:member#${accountId}:joined`, partyMember);
         } break;

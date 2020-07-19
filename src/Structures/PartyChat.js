@@ -74,8 +74,11 @@ class PartyChat {
   waitForConnected() {
     if (this.connected) return true;
     return new Promise((res) => {
-      setInterval(() => {
-        if (this.connected) res(true);
+      const waitInterval = setInterval(() => {
+        if (this.connected) {
+          clearInterval(waitInterval);
+          res(true);
+        }
       }, 200);
       setTimeout(() => res(false), 10000);
     });

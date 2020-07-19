@@ -116,7 +116,9 @@ class Client extends EventEmitter {
      */
     this.partyLock = {
       active: false,
-      wait: () => new Promise((res) => setInterval(() => { if (!this.partyLock.active) res(); }, 100)),
+      wait: () => new Promise((res) => {
+        const waitInterval = setInterval(() => { if (!this.partyLock.active) { clearInterval(waitInterval); res(); } }, 100);
+      }),
     };
 
     /**
@@ -124,7 +126,9 @@ class Client extends EventEmitter {
      */
     this.reauthLock = {
       active: false,
-      wait: () => new Promise((res) => setInterval(() => { if (!this.partyLock.active) res(); }, 100)),
+      wait: () => new Promise((res) => {
+        const waitInterval = setInterval(() => { if (!this.reauthLock.active) { clearInterval(waitInterval); res(); } }, 100);
+      }),
     };
 
     /**
@@ -328,8 +332,11 @@ class Client extends EventEmitter {
   waitUntilReady(timeout = 20000) {
     return new Promise((res, rej) => {
       if (this.isReady) res();
-      setInterval(() => {
-        if (this.isReady) res();
+      const waitInterval = setInterval(() => {
+        if (this.isReady) {
+          clearInterval(waitInterval);
+          res();
+        }
       }, 250);
       setTimeout(() => rej(new Error('Waiting for ready timeout exceed')), timeout);
     });

@@ -336,6 +336,7 @@ class XMPP {
           if (!this.Client.party || this.Client.party.id !== body.party_id) break;
           const accountId = body.account_id;
           const partyMember = this.Client.party.members.get(accountId);
+          if (!partyMember) break;
           partyMember.update(body);
           this.Client.emit('party:member:updated', partyMember);
           this.Client.emit(`party:member#${accountId}:updated`, partyMember);
@@ -347,7 +348,9 @@ class XMPP {
           if (!this.Client.party || this.Client.party.id !== body.party_id) break;
           const accountId = body.account_id;
           if (accountId === this.Client.account.id) break;
-          const partyMember = this.Client.party.members.delete(accountId);
+          const partyMember = this.Client.party.members.get(accountId);
+          if (!partyMember) break;
+          this.Client.party.members.delete(accountId);
           this.Client.party.patchPresence();
           if (this.Client.party.me.isLeader) this.Client.party.refreshSquadAssignments();
           this.Client.emit('party:member:left', partyMember);
@@ -360,17 +363,19 @@ class XMPP {
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_DISCONNECTED': break;
 
-        case 'com.epicgames.social.party.notification.v0.MEMBER_NEW_CAPTAIN':
+        case 'com.epicgames.social.party.notification.v0.MEMBER_NEW_CAPTAIN': {
           await this.Client.waitUntilReady();
           if (this.Client.partyLock.active) await this.Client.partyLock.wait();
           if (!this.Client.party || this.Client.party.id !== body.party_id) break;
           this.Client.party.leader.role = '';
+          const partyMember = this.Client.party.members.get(body.account_id);
+          if (!partyMember) break;
           this.Client.party.members.get(body.account_id).role = 'CAPTAIN';
           this.Client.party.patchPresence();
 
-          this.Client.emit('party:member:promoted', this.Client.party.members.get(body.account_id));
-          this.Client.emit(`party:member#${body.account_id}:promoted`, this.Client.party.members.get(body.account_id));
-          break;
+          this.Client.emit('party:member:promoted', partyMember);
+          this.Client.emit(`party:member#${body.account_id}:promoted`, partyMember);
+        } break;
 
         case 'com.epicgames.social.party.notification.v0.PARTY_UPDATED':
           await this.Client.waitUntilReady();

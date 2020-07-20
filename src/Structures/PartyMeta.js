@@ -69,11 +69,11 @@ class PartyMeta extends Meta {
     const assignments = [];
     let i = 0;
     assignments.push({
-      memberId: this.Party.Client.account.id,
+      memberId: this.Party.Client.user.id,
       absoluteMemberIdx: 0,
     });
     this.Party.members.forEach((m) => {
-      if (m.id !== this.Party.Client.account.id) {
+      if (m.id !== this.Party.Client.user.id) {
         i += 1;
         assignments.push({
           memberId: m.id,

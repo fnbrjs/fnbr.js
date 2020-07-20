@@ -41,7 +41,7 @@ class Party {
      */
     this.members = new List();
     data.members.forEach((m) => {
-      if (m.account_id === this.Client.account.id) this.members.set(m.account_id, new ClientPartyMember(this, m));
+      if (m.account_id === this.Client.user.id) this.members.set(m.account_id, new ClientPartyMember(this, m));
       else this.members.set(m.account_id, new PartyMember(this, m));
     });
 
@@ -78,7 +78,7 @@ class Party {
    * @type {ClientPartyMember}
    */
   get me() {
-    return this.members.get(this.Client.account.id);
+    return this.members.get(this.Client.user.id);
   }
 
   /**
@@ -96,7 +96,7 @@ class Party {
     this.Client.partyLock.active = true;
     if (this.Client.party) await this.Client.party.leave(false);
     const party = await this.Client.Http.send(true, 'POST',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.account.id}/join`, `bearer ${this.Client.Auth.auths.token}`, null, {
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.user.id}/join`, `bearer ${this.Client.Auth.auths.token}`, null, {
         connection: {
           id: this.Client.Xmpp.stream.jid,
           meta: {
@@ -106,12 +106,12 @@ class Party {
           yield_leadership: false,
         },
         meta: {
-          'urn:epic:member:dn_s': this.Client.account.displayName,
+          'urn:epic:member:dn_s': this.Client.user.displayName,
           'urn:epic:member:joinrequestusers_j': JSON.stringify({
             users: [
               {
-                id: this.Client.account.id,
-                dn: this.Client.account.displayName,
+                id: this.Client.user.id,
+                dn: this.Client.user.displayName,
                 plat: this.Client.config.platform,
                 data: JSON.stringify({
                   CrossplayPreference: '1',
@@ -138,12 +138,12 @@ class Party {
    */
   patchPresence() {
     const partyJoinInfoData = this.config.privacy.presencePermission === 'None'
-      || (this.Client.party.config.privacy.presencePermission === 'Leader' && this.leader.id === this.Client.account.id)
+      || (this.Client.party.config.privacy.presencePermission === 'Leader' && this.leader.id === this.Client.user.id)
       ? {
         bIsPrivate: true,
       } : {
-        sourceId: this.Client.account.id,
-        sourceDisplayName: this.Client.account.displayName,
+        sourceId: this.Client.user.id,
+        sourceDisplayName: this.Client.user.displayName,
         sourcePlatform: this.Client.config.platform,
         partyId: this.id,
         partyTypeId: 286331153,
@@ -209,7 +209,7 @@ class Party {
         'urn:epic:conn:platform_s': this.Client.config.platform,
         'urn:epic:conn:type_s': 'game',
         'urn:epic:invite:platformdata_s': '',
-        'urn:epic:member:dn_s': this.Client.account.displayName,
+        'urn:epic:member:dn_s': this.Client.user.displayName,
       });
     if (!data.success) throw new Error(`Failed sending party invitation to ${friend}: ${this.Client.parseError(data.response)}`);
     return new SentPartyInvitation(this.Client, this, cachedFriend, {
@@ -227,7 +227,7 @@ class Party {
     this.patchQueue = [];
     if (this.me) this.me.patchQueue = [];
     const party = await this.Client.Http.send(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.account.id}`, `bearer ${this.Client.Auth.auths.token}`);
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.user.id}`, `bearer ${this.Client.Auth.auths.token}`);
     if (!party.success) {
       if (party.response.errorCode === 'errors.com.epicgames.social.party.party_not_found') {
         this.Client.partyLock.active = false;
@@ -406,7 +406,7 @@ class Party {
    * @param {Object} client the main client
    */
   static async LookupSelf(client) {
-    const party = await client.Http.send(true, 'GET', `${Endpoints.BR_PARTY}/user/${client.account.id}`, `bearer ${client.Auth.auths.token}`);
+    const party = await client.Http.send(true, 'GET', `${Endpoints.BR_PARTY}/user/${client.user.id}`, `bearer ${client.Auth.auths.token}`);
     if (!party.success) throw new Error(`Failed looking up clientparty: ${client.parseError(party.response)}`);
     if (!party.response.current[0]) return undefined;
     return new Party(client, party.response.current[0]);
@@ -447,7 +447,7 @@ class Party {
           yield_leadership: false,
         },
         meta: {
-          'urn:epic:member:dn_s': client.account.displayName,
+          'urn:epic:member:dn_s': client.user.displayName,
         },
       },
       meta: {
@@ -467,8 +467,8 @@ class Party {
     const clientParty = new Party(client, party.response);
     client.party = clientParty;
     await client.party.chat.join();
-    client.partyLock.active = false;
     await client.party.setPrivacy(clientParty.config.privacy);
+    client.partyLock.active = false;
 
     return client.party;
   }

@@ -35,7 +35,7 @@ class SentPartyInvitation {
   async resend() {
     if (this.expired) throw new Error(`Failed resending party ${this.party.id} invite for ${this.receiver.id}: The sent party invitation was already canceled or it expired`);
     const data = await this.Client.Http.send(true, 'POST',
-      `${Endpoints.BR_PARTY}/user/${this.receiver.id}/pings/${this.Client.account.id}`, `bearer ${this.Client.Auth.auths.token}`);
+      `${Endpoints.BR_PARTY}/user/${this.receiver.id}/pings/${this.Client.user.id}`, `bearer ${this.Client.Auth.auths.token}`);
     if (!data.success) throw new Error(`Failed resending party ${this.party.id} invite for ${this.receiver.id}: ${this.Client.parseError(data.response)}`);
     this.expired = true;
   }

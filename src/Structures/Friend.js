@@ -100,7 +100,7 @@ class Friend extends User {
         'urn:epic:conn:platform_s': this.Client.config.platform,
         'urn:epic:conn:type_s': 'game',
         'urn:epic:invite:platformdata_s': '',
-        'urn:epic:member:dn_s': this.Client.account.displayName,
+        'urn:epic:member:dn_s': this.Client.user.displayName,
       });
     if (!data.success) throw new Error(`Failed sending party invitation ${this.id}: ${this.Client.parseError(data.response)}`);
     return new SentPartyInvitation(this.Client, this.Client.party, this, {

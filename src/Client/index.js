@@ -40,6 +40,7 @@ class Client extends EventEmitter {
       status: '',
       platform: Enums.Platform.WINDOWS,
       memberMeta: undefined,
+      keepAliveInterval: 60,
       ...args,
       auth: {
         deviceAuth: undefined,
@@ -75,10 +76,10 @@ class Client extends EventEmitter {
     this.lastMemberMeta = this.config.memberMeta;
 
     /**
-     * Client user account
+     * Client user
      * @type {ClientUser}
      */
-    this.account = undefined;
+    this.user = undefined;
 
     /**
      * The party the client is in
@@ -163,7 +164,7 @@ class Client extends EventEmitter {
 
     const clientInfo = await this.Http.send(false, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${this.Auth.account.id}`, `bearer ${this.Auth.auths.token}`);
     if (!clientInfo.success) throw new Error(`Clientaccount lookup failed: ${this.parseError(clientInfo.response)}`);
-    this.account = new ClientUser(this, clientInfo.response[0]);
+    this.user = new ClientUser(this, clientInfo.response[0]);
 
     this.Xmpp.setup();
 
@@ -217,8 +218,8 @@ class Client extends EventEmitter {
    */
   async updateCache() {
     const [rawFriends, friendsSummary] = await Promise.all([
-      this.Http.send(true, 'GET', `${Endpoints.FRIENDS}/public/friends/${this.account.id}?includePending=true`, `bearer ${this.Auth.auths.token}`),
-      this.Http.send(true, 'GET', `${Endpoints.FRIENDS}/v1/${this.account.id}/summary?displayNames=true`, `bearer ${this.Auth.auths.token}`),
+      this.Http.send(true, 'GET', `${Endpoints.FRIENDS}/public/friends/${this.user.id}?includePending=true`, `bearer ${this.Auth.auths.token}`),
+      this.Http.send(true, 'GET', `${Endpoints.FRIENDS}/v1/${this.user.id}/summary?displayNames=true`, `bearer ${this.Auth.auths.token}`),
     ]);
 
     if (!rawFriends.success) throw new Error(`Cannot update friend cache: ${this.parseError(rawFriends.response)}`);
@@ -255,10 +256,11 @@ class Client extends EventEmitter {
     }
   }
 
-  async initParty() {
+  async initParty(create = true) {
     const party = await Party.LookupSelf(this);
-    if (party) await party.leave(false);
-    await Party.Create(this);
+    if (!create && party) this.party = party;
+    else if (party) await party.leave(false);
+    if (create || !party) await Party.Create(this);
   }
 
   /**
@@ -422,7 +424,7 @@ class Client extends EventEmitter {
       if (!lookedUpUser) throw new Error(`Adding ${user} as a friend failed: Account not found`);
       userId = lookedUpUser.id;
     }
-    const userRequest = await this.Http.send(true, 'POST', `${Endpoints.FRIEND_ADD}/${this.account.id}/${userId}`, `bearer ${this.Auth.auths.token}`);
+    const userRequest = await this.Http.send(true, 'POST', `${Endpoints.FRIEND_ADD}/${this.user.id}/${userId}`, `bearer ${this.Auth.auths.token}`);
     if (!userRequest.success) throw new Error(`Adding ${userId} as a friend failed: ${this.parseError(userRequest.response)}`);
   }
 
@@ -438,7 +440,7 @@ class Client extends EventEmitter {
       if (!lookedUpUser) throw new Error(`Removing ${user} as a friend failed: Account not found`);
       userId = lookedUpUser.id;
     }
-    const userRequest = await this.Http.send(true, 'DELETE', `${Endpoints.FRIEND_DELETE}/${this.account.id}/friends/${userId}`, `bearer ${this.Auth.auths.token}`);
+    const userRequest = await this.Http.send(true, 'DELETE', `${Endpoints.FRIEND_DELETE}/${this.user.id}/friends/${userId}`, `bearer ${this.Auth.auths.token}`);
     if (!userRequest.success) throw new Error(`Removing ${user} as a friend failed: ${this.parseError(userRequest.response)}`);
   }
 
@@ -450,7 +452,7 @@ class Client extends EventEmitter {
     const cachedFriend = this.friends.find((f) => f.id === friend || f.displayName === friend);
     if (!cachedFriend) throw new Error(`Blocking ${friend} failed: Friend not existing`);
 
-    const blockListUpdate = await this.Http.send(true, 'POST', `${Endpoints.FRIEND_BLOCK}/${this.account.id}/${cachedFriend.id}`, `bearer ${this.Auth.auths.token}`);
+    const blockListUpdate = await this.Http.send(true, 'POST', `${Endpoints.FRIEND_BLOCK}/${this.user.id}/${cachedFriend.id}`, `bearer ${this.Auth.auths.token}`);
     if (!blockListUpdate.success) throw new Error(`Blocking ${friend} failed: ${this.parseError(blockListUpdate.response)}`);
   }
 
@@ -462,7 +464,7 @@ class Client extends EventEmitter {
     const cachedBlockedFriend = this.blockedFriends.find((f) => f.id === friend || f.displayName === friend);
     if (!cachedBlockedFriend) throw new Error(`Unblocking ${friend} failed: User not in the blocklist`);
 
-    const blockListUpdate = await this.Http.send(true, 'DELETE', `${Endpoints.FRIEND_BLOCK}/${this.account.id}/${cachedBlockedFriend.id}`, `bearer ${this.Auth.auths.token}`);
+    const blockListUpdate = await this.Http.send(true, 'DELETE', `${Endpoints.FRIEND_BLOCK}/${this.user.id}/${cachedBlockedFriend.id}`, `bearer ${this.Auth.auths.token}`);
     if (!blockListUpdate.success) throw new Error(`Unblocking ${friend} failed: ${this.parseError(blockListUpdate.response)}`);
   }
 
@@ -483,7 +485,7 @@ class Client extends EventEmitter {
     });
 
     return new Promise((res, rej) => {
-      this.Xmpp.stream.once(`message#${id}:sent`, () => res(new FriendMessage(this, { body: message, author: this.account })));
+      this.Xmpp.stream.once(`message#${id}:sent`, () => res(new FriendMessage(this, { body: message, author: this.user })));
       setTimeout(() => rej(new Error(`Failed sending a friend message to ${friend.id}: Message timeout of 20000ms exceeded`)), 20000);
     });
   }
@@ -503,7 +505,7 @@ class Client extends EventEmitter {
         'urn:epic:conn:platform_s': this.config.platform,
         'urn:epic:conn:type_s': 'game',
         'urn:epic:invite:platformdata_s': '',
-        'urn:epic:member:dn_s': this.account.displayName,
+        'urn:epic:member:dn_s': this.user.displayName,
       });
     if (!data.success) throw new Error(`Failed sending party invitation to ${friend}: ${this.parseError(data.response)}`);
     return new SentPartyInvitation(this, this.party, cachedFriend, {

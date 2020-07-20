@@ -26,7 +26,7 @@ class FriendMessage {
    * @param {String} message message to reply
    */
   async reply(message) {
-    if (this.author.id === this.Client.account.id) throw new Error(`Failed sending a friend message to ${this.author.id}: You can't message yourself`);
+    if (this.author.id === this.Client.user.id) throw new Error(`Failed sending a friend message to ${this.author.id}: You can't message yourself`);
     return this.Client.sendFriendMessage(this.author.id, message);
   }
 }

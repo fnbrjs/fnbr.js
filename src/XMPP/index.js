@@ -64,16 +64,16 @@ class XMPP {
         bosh: false,
       },
       credentials: {
-        jid: `${this.Client.account.id}@${Endpoints.EPIC_PROD_ENV}`,
+        jid: `${this.Client.user.id}@${Endpoints.EPIC_PROD_ENV}`,
         host: Endpoints.EPIC_PROD_ENV,
-        username: this.Client.account.id,
+        username: this.Client.user.id,
         password: this.Client.Auth.auths.token,
       },
       resource: this.resource,
     });
 
     this.stream.enableKeepAlive({
-      interval: 30,
+      interval: this.Client.config.keepAliveInterval,
     });
 
     this.setupEvents();
@@ -96,7 +96,10 @@ class XMPP {
         if (!isReconnect) this.Client.debug(`XMPP-Client successfully connected (${((Date.now() - startConnect) / 1000).toFixed(2)}s)`);
         else {
           this.Client.debug(`XMPP-Client successfully reconnected (${((Date.now() - startConnect) / 1000).toFixed(2)}s)`);
-          if (this.Client.party) this.Client.party.patchPresence();
+          if (this.Client.party) {
+            await this.Client.initParty(false);
+            this.Client.party.patchPresence();
+          }
         }
         res({ success: true });
       });
@@ -136,9 +139,9 @@ class XMPP {
       ...this.stream.config,
       resource: this.resource,
       credentials: {
-        jid: `${this.Client.account.id}@${Endpoints.EPIC_PROD_ENV}`,
+        jid: `${this.Client.user.id}@${Endpoints.EPIC_PROD_ENV}`,
         host: Endpoints.EPIC_PROD_ENV,
-        username: this.Client.account.id,
+        username: this.Client.user.id,
         password: this.Client.Auth.auths.token,
       },
     };
@@ -176,7 +179,7 @@ class XMPP {
       if (!this.Client.party || this.Client.party.id !== g.from.split('@')[0].replace('Party-', '')) return;
       if (g.body === 'Welcome! You created new Multi User Chat Room.') return;
       const [, id] = g.from.split(':');
-      if (id === this.Client.account.id) return;
+      if (id === this.Client.user.id) return;
       const member = this.Client.party.members.get(id);
       if (!member) return;
 
@@ -188,7 +191,7 @@ class XMPP {
     this.stream.on('presence', async (p) => {
       if (p.type === 'unavailable' || !p.status) return;
       const fromId = p.from.split('@')[0];
-      if (fromId === this.Client.account.id) {
+      if (fromId === this.Client.user.id) {
         this.stream.emit(`presence#${p.id}:sent`);
         return;
       }
@@ -247,7 +250,7 @@ class XMPP {
         case 'FRIENDSHIP_REMOVE': {
           await this.Client.waitUntilReady();
           const { reason } = body;
-          const id = (body.from === this.Client.account.id) ? body.to : body.from;
+          const id = (body.from === this.Client.user.id) ? body.to : body.from;
           if (reason === 'ABORTED') {
             const friendRequest = this.Client.pendingFriends.get(id);
             this.Client.pendingFriends.delete(id);
@@ -297,7 +300,7 @@ class XMPP {
           const pingerId = body.pinger_id;
           if (!pingerId) break;
           let data = await this.Client.Http.send(true, 'GET',
-            `${Endpoints.BR_PARTY}/user/${this.Client.account.id}/pings/${pingerId}/parties`, `bearer ${this.Client.Auth.auths.token}`);
+            `${Endpoints.BR_PARTY}/user/${this.Client.user.id}/pings/${pingerId}/parties`, `bearer ${this.Client.Auth.auths.token}`);
           if (!data.success) throw new Error(`Failed fetching ping from ${pingerId}: ${this.Client.parseError(data.response)}`);
           [data] = data.response;
           const party = new Party(this.Client, data);
@@ -319,8 +322,8 @@ class XMPP {
           await this.Client.waitUntilReady();
           if (this.Client.partyLock.active) await this.Client.partyLock.wait();
           if (!this.Client.party || this.Client.party.id !== body.party_id) break;
-          if (accountId === this.Client.account.id) {
-            if (!this.Client.party.members.has(this.Client.account.id)) this.Client.party.members.set(accountId, new ClientPartyMember(this.Client.party, body));
+          if (accountId === this.Client.user.id) {
+            if (!this.Client.party.members.has(this.Client.user.id)) this.Client.party.members.set(accountId, new ClientPartyMember(this.Client.party, body));
             this.Client.party.me.sendPatch();
           } else this.Client.party.members.set(accountId, new PartyMember(this.Client.party, body));
           const partyMember = this.Client.party.members.get(accountId);
@@ -346,8 +349,9 @@ class XMPP {
           await this.Client.waitUntilReady();
           if (this.Client.partyLock.active) await this.Client.partyLock.wait();
           if (!this.Client.party || this.Client.party.id !== body.party_id) break;
+          if (!this.party.me) this.Client.initParty(false);
           const accountId = body.account_id;
-          if (accountId === this.Client.account.id) break;
+          if (accountId === this.Client.user.id) break;
           const partyMember = this.Client.party.members.get(accountId);
           if (!partyMember) break;
           this.Client.party.members.delete(accountId);

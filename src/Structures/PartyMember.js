@@ -21,8 +21,8 @@ class PartyMember {
     /**
      * The members displayName
      */
-    this.displayName = this.id === this.Client.account.id
-      ? this.Client.account.displayName : data.account_dn;
+    this.displayName = this.id === this.Client.user.id
+      ? this.Client.user.displayName : data.account_dn;
 
     /**
      * The members role

@@ -23,7 +23,7 @@ const fnbot = new Fnbrjs.Client({ auth: fortniteBotAuth, debug: false });
   await Promise.all([bot.login(discordBotToken), fnbot.login()]);
 
   console.log(`Discord bot ready as ${bot.user.tag}`);
-  console.log(`Fortnite bot ready as ${fnbot.account.displayName}`);
+  console.log(`Fortnite bot ready as ${fnbot.user.displayName}`);
 
   bot.on('message', (msg) => {
     if (msg.content === 'ping') {

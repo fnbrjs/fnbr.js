@@ -17,7 +17,7 @@ const fnbot = new Fnbrjs.Client({ auth: fortniteBotAuth });
 (async () => {
   fnbot.on('deviceauth:created', (d) => writeFile('./deviceauth.json', JSON.stringify(d)));
   await fnbot.login();
-  console.log(`Fortnite bot ready as ${fnbot.account.displayName}`);
+  console.log(`Fortnite bot ready as ${fnbot.user.displayName}`);
 
   fnbot.on('friend:message', (msg) => {
     if (msg.content === 'ping') {

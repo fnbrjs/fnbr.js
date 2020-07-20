@@ -31,7 +31,7 @@ class PartyInvitation {
     await this.party.join();
     this.expired = true;
     const data = await this.Client.Http.send(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/user/${this.Client.account.id}/pings/${this.sender.id}`, `bearer ${this.Client.Auth.auths.token}`);
+      `${Endpoints.BR_PARTY}/user/${this.Client.user.id}/pings/${this.sender.id}`, `bearer ${this.Client.Auth.auths.token}`);
     if (!data.success) throw new Error(`Failed accepting party ${this.party.id} invite from ${this.sender.id}: ${this.Client.parseError(data.response)}`);
   }
 
@@ -41,7 +41,7 @@ class PartyInvitation {
   async reject() {
     if (this.expired) throw new Error(`Failed rejecting party ${this.party.id} invite from ${this.sender.id}: The party invitation was already accepted/rejected or it expired`);
     const data = await this.Client.Http.send(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/user/${this.Client.account.id}/pings/${this.sender.id}`, `bearer ${this.Client.Auth.auths.token}`);
+      `${Endpoints.BR_PARTY}/user/${this.Client.user.id}/pings/${this.sender.id}`, `bearer ${this.Client.Auth.auths.token}`);
     if (!data.success) throw new Error(`Failed rejecting party ${this.party.id} invite from ${this.sender.id}: ${this.Client.parseError(data.response)}`);
     this.expired = true;
   }
@@ -74,7 +74,7 @@ class PartyInvitation {
     return {
       party_id: data.id,
       sent_by: pingerId,
-      sent_to: client.account.id,
+      sent_to: client.user.id,
       sent_at: data.sent,
       updated_at: data.sent,
       expires_at: data.expies_at,

@@ -25,7 +25,7 @@ class PartyChat {
     /**
      * The clients nick in the chatroom
      */
-    this.nick = `${this.Client.account.displayName}:${this.Client.account.id}:${this.Client.Xmpp.resource}`;
+    this.nick = `${this.Client.user.displayName}:${this.Client.user.id}:${this.Client.Xmpp.resource}`;
   }
 
   /**

@@ -349,7 +349,7 @@ class XMPP {
           await this.Client.waitUntilReady();
           if (this.Client.partyLock.active) await this.Client.partyLock.wait();
           if (!this.Client.party || this.Client.party.id !== body.party_id) break;
-          if (!this.party.me) this.Client.initParty(false);
+          if (!this.Client.party.me) this.Client.initParty(false);
           const accountId = body.account_id;
           if (accountId === this.Client.user.id) break;
           const partyMember = this.Client.party.members.get(accountId);

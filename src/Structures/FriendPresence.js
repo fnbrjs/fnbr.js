@@ -11,7 +11,6 @@ class FriendPresence {
    */
   constructor(client, data, fromId) {
     Object.defineProperty(this, 'Client', { value: client });
-    Object.defineProperty(this, 'data', { value: data });
 
     /**
      * Friend this presence belongs to

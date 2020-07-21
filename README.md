@@ -1,2 +1,2 @@
 # fnbr.js
-A library to interact with Fortnite's HTTP and XMPP services
+A library to interact with Epic Games' Fortnite HTTP and XMPP services

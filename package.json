@@ -1,7 +1,7 @@
 {
   "name": "fnbr.js",
   "version": "0.0.1",
-  "description": "A library to interact with fortnites http and xmpp services",
+  "description": "A library to interact with Epic Games' Fortnite HTTP and XMPP services",
   "main": "index.js",
   "scripts": {
     "test": "test.js"

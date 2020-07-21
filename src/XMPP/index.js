@@ -212,6 +212,7 @@ class XMPP {
       if (m.type === 'chat' || m.type === 'error' || m.type === 'headline' || m.type === 'groupchat') return;
       const body = JSON.parse(m.body);
       if (!body.type) return;
+      if (body.ns && body.ns !== 'Fortnite') return;
       switch (body.type) {
         case 'com.epicgames.friends.core.apiobjects.Friend': {
           await this.Client.waitUntilReady();
@@ -294,7 +295,6 @@ class XMPP {
         } break;
 
         case 'com.epicgames.social.party.notification.v0.PING': {
-          if (body.ns !== 'Fortnite') break;
           await this.Client.waitUntilReady();
           if (this.Client.partyLock.active) await this.Client.partyLock.wait();
           const pingerId = body.pinger_id;
@@ -361,11 +361,37 @@ class XMPP {
           this.Client.emit(`party:member#${accountId}:left`, partyMember);
         } break;
 
-        case 'com.epicgames.social.party.notification.v0.MEMBER_EXPIRED': break;
+        case 'com.epicgames.social.party.notification.v0.MEMBER_KICKED': {
+          await this.Client.waitUntilReady();
+          if (this.Client.partyLock.active) await this.Client.partyLock.wait();
+          if (!this.Client.party || this.Client.party.id !== body.party_id) break;
+          if (!this.Client.party.me) this.Client.initParty(false);
+          const accountId = body.account_id;
+          if (accountId === this.Client.user.id) break;
+          const partyMember = this.Client.party.members.get(accountId);
+          if (!partyMember) break;
+          this.Client.party.members.delete(accountId);
+          this.Client.party.patchPresence();
+          if (this.Client.party.me.isLeader) this.Client.party.refreshSquadAssignments();
+          this.Client.emit('party:member:kicked', partyMember);
+          this.Client.emit(`party:member#${accountId}:kicked`, partyMember);
+        } break;
 
-        case 'com.epicgames.social.party.notification.v0.MEMBER_KICKED': break;
-
-        case 'com.epicgames.social.party.notification.v0.MEMBER_DISCONNECTED': break;
+        case 'com.epicgames.social.party.notification.v0.MEMBER_DISCONNECTED': {
+          await this.Client.waitUntilReady();
+          if (this.Client.partyLock.active) await this.Client.partyLock.wait();
+          if (!this.Client.party || this.Client.party.id !== body.party_id) break;
+          if (!this.Client.party.me) this.Client.initParty(false);
+          const accountId = body.account_id;
+          if (accountId === this.Client.user.id) break;
+          const partyMember = this.Client.party.members.get(accountId);
+          if (!partyMember) break;
+          this.Client.party.members.delete(accountId);
+          this.Client.party.patchPresence();
+          if (this.Client.party.me.isLeader) this.Client.party.refreshSquadAssignments();
+          this.Client.emit('party:member:disconnected', partyMember);
+          this.Client.emit(`party:member#${accountId}:disconnected`, partyMember);
+        } break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_NEW_CAPTAIN': {
           await this.Client.waitUntilReady();
@@ -397,7 +423,12 @@ class XMPP {
           }
           break;
 
-        case 'com.epicgames.social.party.notification.v0.INVITE_DECLINED': break;
+        case 'com.epicgames.social.party.notification.v0.INVITE_DECLINED': {
+          const friend = this.Client.friends.get(body.invitee_id);
+          if (!friend) return;
+          this.Client.emit('party:invite:declined', friend);
+          this.Client.emit(`party#${body.party_id}:invite:declined`, friend);
+        } break;
 
         default: if (this.Client.config.xmppDebug) this.Client.debug(`New Unknown XMPP message: ${JSON.stringify(m)}`); break;
       }

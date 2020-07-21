@@ -47,18 +47,15 @@ class ClientPartyMember extends PartyMember {
 
   /**
    * Set the level of the client in party
-   * @param level level
+   * @param {Number} level level
    */
   async setLevel(level) {
-    const data = {
-      seasonLevel: level,
-    };
     let loadout = this.meta.get('Default:AthenaBannerInfo_j');
     loadout = this.meta.set('Default:AthenaBannerInfo_j', {
       ...loadout,
       AthenaBannerInfo: {
         ...loadout.AthenaBannerInfo,
-        ...data,
+        seasonLevel: level,
       },
     });
     await this.sendPatch({
@@ -67,21 +64,42 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
+   * Set the battlepass info of the client in party
+   * @param {Boolean} isPurchased if the pass was purchased
+   * @param {Number} level the pass level
+   * @param {Number} selfBoost the self boost %
+   * @param {Number} friendBoost the friend boost %
+   */
+  async setBattlepass(isPurchased, level, selfBoost, friendBoost) {
+    let loadout = this.meta.get('Default:BattlePassInfo_j');
+    loadout = this.meta.set('Default:BattlePassInfo_j', {
+      ...loadout,
+      BattlePassInfo: {
+        ...loadout.BattlePassInfo,
+        bHasPurchasedPass: typeof isPurchased === 'boolean' ? isPurchased : loadout.BattlePassInfo.bHasPurchasedPass,
+        passLevel: typeof level === 'number' ? level : loadout.BattlePassInfo.passLevel,
+        selfBoostXp: typeof selfBoost === 'number' ? selfBoost : loadout.BattlePassInfo.selfBoostXp,
+        friendBoostXp: typeof friendBoost === 'number' ? friendBoost : loadout.BattlePassInfo.friendBoostXp,
+      },
+    });
+    await this.sendPatch({
+      'Default:BattlePassInfo_j': loadout,
+    });
+  }
+
+  /**
    * Set the clients banner in party
-   * @param banner bannerid
-   * @param color color (number)
+   * @param {String} banner bannerid
+   * @param {String} color color (number)
    */
   async setBanner(banner, color) {
-    const data = {
-      bannerIconId: banner,
-      bannerColorId: color,
-    };
     let loadout = this.meta.get('Default:AthenaBannerInfo_j');
     loadout = this.meta.set('Default:AthenaBannerInfo_j', {
       ...loadout,
       AthenaBannerInfo: {
         ...loadout.AthenaBannerInfo,
-        ...data,
+        bannerIconId: banner,
+        bannerColorId: color,
       },
     });
     await this.sendPatch({
@@ -91,15 +109,11 @@ class ClientPartyMember extends PartyMember {
 
   /**
    * Set the clients outfit in party
-   * @param cid id of the outfit
-   * @param variants skin variants
-   * @param enlightment skin enlightment
+   * @param {String} cid id of the outfit
+   * @param {Array} variants skin variants
+   * @param {Array} enlightment skin enlightment
    */
   async setOutfit(cid, variants = [], enlightment = []) {
-    const data = {
-      characterDef: `/Game/Athena/Items/Cosmetics/Characters/${cid}.${cid}`,
-    };
-
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
 
     const parsedVariants = [];
@@ -123,7 +137,7 @@ class ClientPartyMember extends PartyMember {
       ...loadout,
       AthenaCosmeticLoadout: {
         ...loadout.AthenaCosmeticLoadout,
-        ...data,
+        characterDef: `/Game/Athena/Items/Cosmetics/Characters/${cid}.${cid}`,
         variants: parsedVariants,
         scratchpad,
       },
@@ -135,12 +149,9 @@ class ClientPartyMember extends PartyMember {
 
   /**
    * Set the clients backpack in party
-   * @param bid id of the backpack
+   * @param {String} bid id of the backpack
    */
   async setBackpack(bid, variants = []) {
-    const data = {
-      backpackDef: `/Game/Athena/Items/Cosmetics/Backpacks/${bid}.${bid}`,
-    };
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
 
     const parsedVariants = [];
@@ -156,7 +167,7 @@ class ClientPartyMember extends PartyMember {
       ...loadout,
       AthenaCosmeticLoadout: {
         ...loadout.AthenaCosmeticLoadout,
-        ...data,
+        backpackDef: `/Game/Athena/Items/Cosmetics/Backpacks/${bid}.${bid}`,
         variants: parsedVariants,
       },
     });
@@ -167,12 +178,9 @@ class ClientPartyMember extends PartyMember {
 
   /**
    * Set the clients pickaxe in party
-   * @param pickaxe id of the pickaxe
+   * @param {String} pickaxe id of the pickaxe
    */
   async setPickaxe(pickaxe, variants = []) {
-    const data = {
-      pickaxeDef: `/Game/Athena/Items/Cosmetics/Pickaxes/${pickaxe}.${pickaxe}`,
-    };
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
 
     const parsedVariants = [];
@@ -188,7 +196,7 @@ class ClientPartyMember extends PartyMember {
       ...loadout,
       AthenaCosmeticLoadout: {
         ...loadout.AthenaCosmeticLoadout,
-        ...data,
+        pickaxeDef: `/Game/Athena/Items/Cosmetics/Pickaxes/${pickaxe}.${pickaxe}`,
         variants: parsedVariants,
       },
     });
@@ -199,19 +207,16 @@ class ClientPartyMember extends PartyMember {
 
   /**
    * Set the clients emote in party
-   * @param eid id of the emote
+   * @param {String} eid id of the emote
    */
   async setEmote(eid) {
-    const data = {
-      emoteItemDef: `/Game/Athena/Items/Cosmetics/Dances/${eid}.${eid}`,
-      emoteSection: -2,
-    };
     let loadout = this.meta.get('Default:FrontendEmote_j');
     loadout = this.meta.set('Default:FrontendEmote_j', {
       ...loadout,
       FrontendEmote: {
         ...loadout.FrontendEmote,
-        ...data,
+        emoteItemDef: `/Game/Athena/Items/Cosmetics/Dances/${eid}.${eid}`,
+        emoteSection: -2,
       },
     });
     await this.sendPatch({
@@ -223,16 +228,13 @@ class ClientPartyMember extends PartyMember {
    * Clears the clients emote in party
    */
   async clearEmote() {
-    const data = {
-      emoteItemDef: 'None',
-      emoteSection: -1,
-    };
     let loadout = this.meta.get('Default:FrontendEmote_j');
     loadout = this.meta.set('Default:FrontendEmote_j', {
       ...loadout,
       FrontendEmote: {
         ...loadout.FrontendEmote,
-        ...data,
+        emoteItemDef: 'None',
+        emoteSection: -1,
       },
     });
     await this.sendPatch({

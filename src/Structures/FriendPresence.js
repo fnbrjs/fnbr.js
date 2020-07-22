@@ -98,11 +98,6 @@ class FriendPresence {
     const serverPlayerCount = data.Properties && data.Properties.ServerPlayerCount_i ? parseInt(data.Properties.ServerPlayerCount_i, 10) : undefined;
 
     /**
-     * If the friend is in an unjoinable match
-     */
-    this.isInUnjoinableMatch = data.Properties ? data.Properties.InUnjoinableMatch_b : undefined;
-
-    /**
      * Stats of the game the client is currently in
      */
     this.gameplayStats = {

@@ -1,12 +1,12 @@
 {
-  "name": "fnbr.js",
+  "name": "fnbr",
   "version": "0.0.1",
   "description": "A library to interact with Epic Games' Fortnite HTTP and XMPP services",
   "main": "index.js",
-  "scripts": {
-    "test": "test.js"
-  },
   "author": "This Nils",
+  "contributors": [
+    "alexander <alex@fortnite.ro>"
+  ],
   "license": "MIT",
   "devDependencies": {
     "eslint": "^7.4.0",

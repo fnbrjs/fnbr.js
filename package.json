@@ -15,7 +15,7 @@
   "bugs": {
       "url": "https://github.com/fnbrjs/fnbr.js/issues"
   },
-  "homepage": "https://fnbr.js.org,
+  "homepage": "https://fnbr.js.org",
   "devDependencies": {
     "eslint": "^7.4.0",
     "eslint-config-airbnb-base": "^14.2.0",

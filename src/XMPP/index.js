@@ -362,6 +362,22 @@ class XMPP {
           this.Client.emit(`party:member#${accountId}:left`, partyMember);
         } break;
 
+        case 'com.epicgames.social.party.notification.v0.MEMBER_EXPIRED': {
+          await this.Client.waitUntilReady();
+          if (this.Client.partyLock.active) await this.Client.partyLock.wait();
+          if (!this.Client.party || this.Client.party.id !== body.party_id) break;
+          if (!this.Client.party.me) this.Client.initParty(false);
+          const accountId = body.account_id;
+          if (accountId === this.Client.user.id) break;
+          const partyMember = this.Client.party.members.get(accountId);
+          if (!partyMember) break;
+          this.Client.party.members.delete(accountId);
+          this.Client.party.patchPresence();
+          if (this.Client.party.me.isLeader) this.Client.party.refreshSquadAssignments();
+          this.Client.emit('party:member:expired', partyMember);
+          this.Client.emit(`party:member#${accountId}:expired`, partyMember);
+        } break;
+
         case 'com.epicgames.social.party.notification.v0.MEMBER_KICKED': {
           await this.Client.waitUntilReady();
           if (this.Client.partyLock.active) await this.Client.partyLock.wait();

@@ -1,13 +1,21 @@
 {
-  "name": "fnbr.js",
+  "name": "fnbr",
   "version": "0.0.1",
   "description": "A library to interact with Epic Games' Fortnite HTTP and XMPP services",
   "main": "index.js",
-  "scripts": {
-    "test": "test.js"
+  "repository": {
+      "type": "git",
+      "url": "git+https://github.com/fnbrjs/fnbr.js.git"
   },
   "author": "This Nils",
+  "contributors": [
+    "alexander <alex@fortnite.ro>"
+  ],
   "license": "MIT",
+  "bugs": {
+      "url": "https://github.com/fnbrjs/fnbr.js/issues"
+  },
+  "homepage": "https://fnbr.js.org",
   "devDependencies": {
     "eslint": "^7.4.0",
     "eslint-config-airbnb-base": "^14.2.0",

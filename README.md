@@ -3,13 +3,13 @@ A library to interact with fortnites http and xmpp services.
 
 # Installation
 ```
-npm i fnbrjs
+npm i fnbr
 ```
 
 # Example
 Example: 
 ```javascript
-const { Client } = require('fnbrjs');
+const { Client } = require('fnbr');
 
 const fnbot = new Fnbrjs.Client({
   auth: {

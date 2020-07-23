@@ -162,9 +162,9 @@ class Client extends EventEmitter {
 
     this.tokenCheckInterval = setInterval(() => this.Auth.refreshToken(true), 20 * 60000);
 
-    const clientInfo = await this.Http.send(false, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${this.Auth.account.id}`, `bearer ${this.Auth.auths.token}`);
+    const clientInfo = await this.Http.send(false, 'GET', `${Endpoints.ACCOUNT_ID}/${this.Auth.account.id}`, `bearer ${this.Auth.auths.token}`);
     if (!clientInfo.success) throw new Error(`Clientaccount lookup failed: ${this.parseError(clientInfo.response)}`);
-    this.user = new ClientUser(this, clientInfo.response[0]);
+    this.user = new ClientUser(this, clientInfo.response);
 
     this.Xmpp.setup();
 
@@ -558,7 +558,7 @@ class Client extends EventEmitter {
   /**
    * Lookup a creator code
    * @param {String} code the code
-   * @param {Boolean} showSimilar if an array with similar codes should be returned
+   * @param {?Boolean} showSimilar if an array with similar codes should be returned
    * @returns {Promise<CreatorCode>|Promise<Array<CreatorCode>>|Promise<undefined>} the code or an array of similar ones
    */
   async getCreatorCode(code, showSimilar = false) {

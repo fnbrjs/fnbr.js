@@ -577,7 +577,7 @@ class Client extends EventEmitter {
 
     return new Promise((res, rej) => {
       this.Xmpp.stream.once(`message#${id}:sent`, () => res(new FriendMessage(this, { body: message, author: this.user })));
-      setTimeout(() => rej(new Error(`Failed sending a friend message to ${friend.id}: Message timeout of 20000ms exceeded`)), 20000);
+      setTimeout(() => rej(new Error(`Failed sending a friend message to ${friend}: Message timeout of 20000ms exceeded`)), 20000);
     });
   }
 
@@ -623,10 +623,10 @@ class Client extends EventEmitter {
 
   /**
    * Fetches v2 stats for one or multiple players
-   * @param {string|Array<string>} user The id, name or email of the user(s)
+   * @param {string} user The id, name or email of the user(s)
    * @param {number} [startTime] The timestamp to start fetching stats from; can be null/undefined for lifetime
    * @param {number} [endTime] The timestamp to stop fetching stats from; can be undefined for lifetime
-   * @returns {Promise<Object|Array<Object>>}
+   * @returns {Promise<Object>}
    */
   async getBRStats(user, startTime, endTime) {
     let userId;
@@ -641,7 +641,7 @@ class Client extends EventEmitter {
     if (startTime) params.push(`startTime=${startTime}`);
     if (endTime) params.push(`startTime=${endTime}`);
 
-    const stats = await this.Http.send(true, 'GET', `${Endpoints.BR_STATS_V2}/account/${userId}${params[0] ? `?${params.join('&')}` : ''}`);
+    const stats = await this.Http.send(true, 'GET', `${Endpoints.BR_STATS_V2}/account/${userId}${params[0] ? `?${params.join('&')}` : ''}`, `bearer ${this.Auth.auths.token}`);
     if (!stats.success) throw new Error(`Fetching ${user}'s stats failed: ${this.parseError(stats.response)}`);
 
     return stats.response;

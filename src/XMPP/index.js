@@ -184,7 +184,7 @@ class XMPP {
     });
 
     this.stream.on('message:sent', (m) => {
-      this.stream.emit(`message#${m.id}:sent`);
+      setTimeout(() => this.stream.emit(`message#${m.id}:sent`), 200);
     });
 
     this.stream.on('groupchat', async (g) => {

@@ -1,20 +1,40 @@
 const Endpoints = require('../../resources/Endpoints');
 
 /**
- * A party invitation sent by the client's account
+ * Represents a party invitation sent by the client's user
  */
 class SentPartyInvitation {
   /**
-   * @param {Object} client main client
-   * @param {Object} party client's account party
-   * @param {Object} receiver the receiver of the invitation
-   * @param {Object} data the data of the invitation
+   * @param {Client} client The main client
+   * @param {Party} party The invitation's party
+   * @param {Friend} receiver The invitation's receiver
+   * @param {Object} data The invitation's data
    */
   constructor(client, party, receiver, data) {
     this.Client = client;
+
+    /**
+     * The party of this invitation
+     * @type {Party}
+     */
     this.party = party;
+
+    /**
+     * The friend who received this party invitation
+     * @type {Friend}
+     */
     this.receiver = receiver;
+
+    /**
+     * The Date when this party invitation was created
+     * @type {Date}
+     */
     this.createdAt = new Date(data.sent_at);
+
+    /**
+     * Whether this party invitation is expired or not
+     * @type {boolean}
+     */
     this.expired = false;
 
     this.Client.once(`party#${this.party.id}:invite:declined`, () => {
@@ -23,7 +43,8 @@ class SentPartyInvitation {
   }
 
   /**
-   * Cancels the sent party invitation
+   * Cancels the party invitation
+   * @returns {Promise<void>}
    */
   async cancel() {
     if (this.expired) throw new Error(`Failed canceling party ${this.party.id} invite for ${this.receiver.id}: The sent party invitation was already canceled, it expired or it was declined`);
@@ -35,6 +56,7 @@ class SentPartyInvitation {
 
   /**
    * Resends the party invitation
+   * @returns {Promise<void>}
    */
   async resend() {
     if (this.expired) throw new Error(`Failed resending party ${this.party.id} invite for ${this.receiver.id}: The sent party invitation was already canceled, it expired or it was declined`);

@@ -1,13 +1,14 @@
 const Meta = require('../Util/Meta');
 
 /**
- * A party member meta
+ * Represents a party member's meta
  * @extends {Meta}
+ * @private
  */
 class PartyMemberMeta extends Meta {
   /**
-   * @param {Object} member the member
-   * @param {Object} meta the meta
+   * @param {Object} member The party member
+   * @param {Object} meta The meta
    */
   constructor(member, meta) {
     super();
@@ -27,7 +28,8 @@ class PartyMemberMeta extends Meta {
     const defCharacter = defaultCharacters[Math.floor(Math.random() * defaultCharacters.length)];
 
     /**
-     * The metas schema
+     * The meta's schema
+     * @type {Object}
      */
     this.schema = {
       'Default:Location_s': 'PreLobby',

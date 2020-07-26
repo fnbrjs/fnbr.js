@@ -1,4 +1,14 @@
-module.exports.PartyPrivacy = {
+/* eslint-disable max-len */
+/**
+ * Represents the privacy of a party:
+ * * `PUBLIC` - anyone can join the party
+ * * `FRIENDS_ALLOW_FRIENDS_OF_FRIENDS` - the client's friends and their friends can join the party
+ * * `FRIENDS` - the client's friends can join the party
+ * * `PRIVATE_ALLOW_FRIENDS_OF_FRIENDS` - the client's friends and their friends can join the party only with an invite
+ * * `PRIVATE` - party is not joinable without an invite from the leader
+ * @typedef {string} PartyPrivacy
+ */
+module.exports.PartyPrivacy = Object.freeze({
   PUBLIC: {
     partyType: 'Public',
     inviteRestriction: 'AnyMember',
@@ -39,9 +49,20 @@ module.exports.PartyPrivacy = {
     invitePermission: 'Leader',
     acceptingMembers: false,
   },
-};
+});
 
-module.exports.Platform = {
+/**
+ * Represents the platform of an online Fortnite player:
+ * * `WINDOWS`
+ * * `MAC`
+ * * `PLAYSTATION`
+ * * `XBOX`
+ * * `SWITCH`
+ * * `IOS`
+ * * `ANDROID`
+ * @typedef {string} Platform
+ */
+module.exports.Platform = Object.freeze({
   WINDOWS: 'WIN',
   MAC: 'MAC',
   PLAYSTATION: 'PSN',
@@ -49,9 +70,18 @@ module.exports.Platform = {
   SWITCH: 'SWT',
   IOS: 'IOS',
   ANDROID: 'AND',
-};
+});
 
-module.exports.Playlist = {
+/**
+ * Represents a playlist:
+ * * `SOLO`
+ * * `DUO`
+ * * `SQUAD`
+ * * `CREATIVE` - creative don't fill
+ * * `CREATIVE_PLAY` - creative fill
+ * @typedef {string} Playlist
+ */
+module.exports.Playlist = Object.freeze({
   SOLO: {
     playlistName: 'Playlist_DefaultSolo',
     tournamentId: '',
@@ -77,9 +107,23 @@ module.exports.Playlist = {
     tournamentId: '',
     eventWindowId: '',
   },
-};
+});
 
-module.exports.Language = {
+/**
+ * Represents a language (only the ones that are supported by Fortnite):
+ * * `ARABIC`
+ * * `GERMAN`
+ * * `ENGLISH`
+ * * `SPANISH`
+ * * `FRENCH`
+ * * `ITALIAN`
+ * * `JAPANESE`
+ * * `POLISH`
+ * * `RUSSIAN`
+ * * `TURKISH`
+ * @typedef {string} Language
+ */
+module.exports.Language = Object.freeze({
   ARABIC: 'ar',
   GERMAN: 'de',
   ENGLISH: 'en',
@@ -90,15 +134,39 @@ module.exports.Language = {
   POLISH: 'pl',
   RUSSIAN: 'ru',
   TURKISH: 'tr',
-};
+});
 
-module.exports.Gamemode = {
+/**
+ * Represents a Fortnite gamemode:
+ * * `BATTLE_ROYALE`
+ * * `CREATIVE`
+ * * `SAVE_THE_WORLD`
+ * @typedef {string} Gamemode
+ */
+module.exports.Gamemode = Object.freeze({
   BATTLE_ROYALE: 'battleroyale',
   CREATIVE: 'creative',
   SAVE_THE_WORLD: 'savetheworld',
-};
+});
 
-module.exports.KairosColor = {
+/**
+ * Represents a Kairos (Party Hub) profile color:
+ * * `TEAL`
+ * * `SWEET_RED`
+ * * `LIGHT_ORANGE`
+ * * `GREEN`
+ * * `LIGHT_BLUE`
+ * * `DARK_BLUE`
+ * * `PINK`
+ * * `RED`
+ * * `GRAY`
+ * * `ORANGE`
+ * * `DARK_PURPLE`
+ * * `LIME`
+ * * `INDIGO`
+ * @typedef {string} KairosColor
+ */
+module.exports.KairosColor = Object.freeze({
   TEAL: '["#8EFDE5", "#1CBA9E", "#034D3F"]',
   SWEET_RED: '["#FF81AE", "#D8033C", "#790625"]',
   LIGHT_ORANGE: '["#FFDF00", "#FBA000", "#975B04"]',
@@ -112,9 +180,21 @@ module.exports.KairosColor = {
   DARK_PURPLE: '["#E93FEB", "#7B009C", "#500066"]',
   LIME: '["#DFFF73", "#86CF13", "#404B07"]',
   INDIGO: '["#B35EEF", "#4D1397", "#2E0A5D"]',
-};
+});
 
-module.exports.DefaultSkin = {
+/**
+ * Represents a default skin:
+ * * `FEMALE_1`
+ * * `FEMALE_2`
+ * * `FEMALE_3`
+ * * `FEMALE_4`
+ * * `MALE_1`
+ * * `MALE_2`
+ * * `MALE_3`
+ * * `MALE_4`
+ * @typedef {string} DefaultSkin
+ */
+module.exports.DefaultSkin = Object.freeze({
   FEMALE_1: 'CID_556_Athena_Commando_F_RebirthDefaultA',
   FEMALE_2: 'CID_557_Athena_Commando_F_RebirthDefaultB',
   FEMALE_3: 'CID_558_Athena_Commando_F_RebirthDefaultC',
@@ -123,9 +203,25 @@ module.exports.DefaultSkin = {
   MALE_2: 'CID_561_Athena_Commando_M_RebirthDefaultB',
   MALE_3: 'CID_562_Athena_Commando_M_RebirthDefaultC',
   MALE_4: 'CID_563_Athena_Commando_M_RebirthDefaultD',
-};
+});
 
-module.exports.SeasonStart = {
+/**
+ * Represents a season's start time:
+ * * `CH1_S1`
+ * * `CH1_S2`
+ * * `CH1_S3`
+ * * `CH1_S4`
+ * * `CH1_S5`
+ * * `CH1_S6`
+ * * `CH1_S7`
+ * * `CH1_S8`
+ * * `CH1_S9`
+ * * `CH1_S10`
+ * * `CH2_S1`
+ * * `CH2_S2`
+ * @typedef {string} SeasonStart
+ */
+module.exports.SeasonStart = Object.freeze({
   CH1_S1: 1508889600,
   CH1_S2: 1513209600,
   CH1_S3: 1519257600,
@@ -138,9 +234,25 @@ module.exports.SeasonStart = {
   CH1_S10: 1564617600,
   CH2_S1: 1571097600,
   CH2_S2: 1582156800,
-};
+});
 
-module.exports.SeasonEnd = {
+/**
+ * Represents a season's end time:
+ * * `CH1_S1`
+ * * `CH1_S2`
+ * * `CH1_S3`
+ * * `CH1_S4`
+ * * `CH1_S5`
+ * * `CH1_S6`
+ * * `CH1_S7`
+ * * `CH1_S8`
+ * * `CH1_S9`
+ * * `CH1_S10`
+ * * `CH2_S1`
+ * * `CH2_S2`
+ * @typedef {string} SeasonEnd
+ */
+module.exports.SeasonEnd = Object.freeze({
   CH1_S1: 1513123200,
   CH1_S2: 1519171200,
   CH1_S3: 1525046400,
@@ -152,4 +264,20 @@ module.exports.SeasonEnd = {
   CH1_S9: 1564617600,
   CH1_S10: 1570924800,
   CH2_S1: 1582156800,
-};
+});
+
+/**
+ * Represents a creator code status:
+ * * `ACTIVE`
+ * * `INACTIVE`
+ * @typedef {string} CreatorCodeStatus
+ */
+module.exports.CreatorCodeStatus = Object.freeze(['ACTIVE', 'INACTIVE']);
+
+/**
+ * Represents a pending friend's direction:
+ * * `INCOMING`
+ * * `OUTGOING`
+ * @typedef {string} PendingFriendDirection
+ */
+module.exports.PendingFriendDirection = Object.freeze(['INCOMING', 'OUTGOING']);

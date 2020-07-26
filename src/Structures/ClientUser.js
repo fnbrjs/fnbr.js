@@ -1,12 +1,12 @@
 const User = require('./User');
 
 /**
- * The clients user
+ * Represents the user of a client
  */
 class ClientUser extends User {
   /**
-   * @param {Object} client main client
-   * @param {Object} data user data
+   * @param {Client} client The main client
+   * @param {Object} data The user's data
    */
   constructor(client, data) {
     super(client, data);
@@ -14,82 +14,98 @@ class ClientUser extends User {
     Object.defineProperty(this, 'data', { value: data });
 
     /**
-     * First name of the client user
+     * The first name of the client's Epic Games account
+     * @type {string}
      */
     this.name = data.name;
 
     /**
-     * Last name of the client user
+     * The last name of the client's Epic Games account
+     * @type {string}
      */
     this.lastName = data.lastName;
 
     /**
-     * Email of the client user
+     * The email of the client's Epic Games account
+     * @type {string}
      */
     this.email = data.email;
 
     /**
-     * Number of failed login attempts of the client user
+     * The number of failed login attempts of the client's Epic Games account
+     * @type {number}
      */
     this.failedLoginAttempts = data.failedLoginAttempts;
 
     /**
-     * The last time somebody logged into the clients account
+     * The last time somebody logged in on the client's Epic Games account
+     * @type {Date}
      */
     this.lastLogin = new Date(data.lastLogin);
 
     /**
-     * Number of the client users display name changes
+     * The number of display name changes of the client's Epic Games account
+     * @type {number}
      */
     this.numberOfDisplayNameChanges = data.numberOfDisplayNameChanges;
 
     /**
-     * Age group of the client user
+     * The age group of the client's Epic Games account
+     * @type {string}
      */
     this.ageGroup = data.ageGroup;
 
     /**
-     * If the account has no displayName due to `no epicgames account being linked`
+     * Whether the account has no display name due to no epicgames account being linked
+     * @type {boolean}
      */
     this.headless = data.headless;
 
     /**
-     * The client users country
+     * The country of the client's Epic Games account
+     * @type {boolean}
      */
     this.country = data.country;
 
     /**
-     * Preferred language of the client user
+     * The preferred language of the client's Epic Games account
+     * @type {string}
      */
     this.preferredLanguage = data.preferredLanguage;
 
     /**
-     * If the client user can update its display name
+     * Whether the client's Epic Games account can update its display name
+     * @type {boolean}
      */
     this.canUpdateDisplayName = data.canUpdateDisplayName;
 
     /**
-     * If a Two-Factor-Authentification method is enabled for the client users account
+     * Whether a Two-Factor-Authentification method is enabled
+     * @type {boolean}
      */
     this.tfaEnabled = data.tfaEnabled;
 
     /**
-     * If the client users email is verified (now required when creating accounts)
+     * Whether the email is verified (now required when creating accounts)
+     * @type {boolean}
      */
     this.emailVerified = data.emailVerified;
 
     /**
-     * If the account has been verified to be run by a minor
+     * Whether the account has been verified to be run by a minor
+     * @type {boolean}
      */
     this.minorVerified = data.minorVerified;
 
     /**
-     * If the account is expected to be run by a minor
+     * Whether the account is expected to be run by a minor
+     * @type {boolean}
      */
     this.minorExpected = data.minorExpected;
 
     /**
-     * The minor status of this account.
+     * The minor status of the client's Epic Games account
+     * @type {string}
      */
     this.minorStatus = data.minorStatus;
   }

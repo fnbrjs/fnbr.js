@@ -1,59 +1,70 @@
 /* eslint-disable max-len */
 
 /**
- * A presence of a friend recieved via XMPP
+ * Represents the presence of a friend
  */
 class FriendPresence {
   /**
-   * @param {Object} client main client
-   * @param {Object} data presence data
-   * @param {String} fromId id of friend that sent this presence
+   * @param {Object} client The main client
+   * @param {Object} data The presence's data
+   * @param {string} fromId The id of friend this presence belongs to
    */
   constructor(client, data, fromId) {
     Object.defineProperty(this, 'Client', { value: client });
 
     /**
-     * Friend this presence belongs to
+     * The friend this presence belongs to
+     * @type {string}
      */
     this.friend = this.Client.friends.get(fromId);
 
     /**
-     * The friends status eg "Battle Royale Lobby - 1 / 16"
+     * The status of this friend presence
+     * @type {string}
+     * @example
+     * console.log(friendPresence.status); // Battle Royale Lobby - 1 / 16
      */
     this.status = data.Status;
 
     /**
-     * When this presence was recieved
+     * The date when this presence was recieved
+     * @type {Date}
      */
     this.recievedAt = new Date();
 
     /**
-     * If the friend is in kairos (fortnite mobile)
+     * Whether the friend is in Kairos (Party Hub) or not
+     * @type {boolean}
      */
     this.isInKairos = data.bIsEmbedded || false;
 
     /**
-     * If the friend is playing
+     * Whether the friend is playing or not
+     * @type {boolean}
      */
     this.isPlaying = data.bIsPlaying;
 
     /**
-     * If the friend is joinable
+     * Whether the friend's party is joinable or not
+     * @type {boolean}
      */
     this.isJoinable = data.bIsJoinable;
 
     /**
-     * If the friend has voice support
+     * Whether the friend has voice support or not
+     * @type {boolean}
      */
     this.hasVoiceSupport = data.bHasVoiceSupport;
 
     /**
      * The id of the game session the friend is currently in
+     * @type {?string}
      */
     this.sessionId = data.SessionId || undefined;
 
     /**
-     * The friends avatar
+     * The Kairos avatar of this friend presence
+     * @type {FPKairosAvatar}
      */
     this.avatar = {
       asset: data.Properties && data.Properties.KairosProfile_j ? data.Properties.KairosProfile_j.avatar : undefined,
@@ -61,44 +72,52 @@ class FriendPresence {
     };
 
     /**
-     * The rating of the friends SaveTheWorld homebase
+     * The rating of the friend's SaveTheWorld homebase
+     * @type {?string}
      */
     this.homebaseRating = data.Properties && data.Properties.FortBasicInfo_j ? data.Properties.FortBasicInfo_j.homeBaseRating : undefined;
 
     /**
      * The subgame the friend is in
+     * @type {?string}
      */
     this.subGame = data.Properties ? data.Properties.FortSubGame_i : undefined;
 
     /**
-     * If the friend is in an unjoinable match
+     * Whether the friend is in an unjoinable match or not
+     * @type {?boolean}
      */
     this.isInUnjoinableMatch = data.Properties ? data.Properties.InUnjoinableMatch_b : undefined;
 
     /**
-     * The current playlist the friend has selected
+     * The friend's current selected playlist
+     * @type {?string}
      */
     this.playlist = data.Properties ? data.Properties.GamePlaylistName_s : undefined;
 
     /**
-     * How many members the friends party has
+     * The member count of the friend's party
+     * @type {?number}
      */
     this.partySize = data.Properties && data.Properties.Event_PartySize_s ? parseInt(data.Properties.Event_PartySize_s, 10) : undefined;
 
     /**
-     * How many max members the friends party has
+     * The max members of the friend's party
+     * @type {?number}
      */
     this.partyMaxSize = data.Properties && data.Properties.Event_PartyMaxSize_s ? parseInt(data.Properties.Event_PartyMaxSize_s, 10) : undefined;
 
     /**
-     * How many max members the friends party has
+     * The join key of the game session the friend is currently in (if the game session is joinable)
+     * @type {?string}
      */
     this.gameSessionJoinKey = data.Properties ? data.Properties.GameSessionJoinKey_s : undefined;
 
     const serverPlayerCount = data.Properties && data.Properties.ServerPlayerCount_i ? parseInt(data.Properties.ServerPlayerCount_i, 10) : undefined;
 
     /**
-     * Stats of the game the client is currently in
+     * The stats of the game the friend is currently in
+     * @type {FPGameplayStats}
      */
     this.gameplayStats = {
       kills: undefined,
@@ -117,7 +136,8 @@ class FriendPresence {
     }
 
     /**
-     * Data of the party this friend is currently in
+     * The data of the party this friend is currently in
+     * @type {FPPartyData}
      */
     this.partyData = {
       id: undefined,

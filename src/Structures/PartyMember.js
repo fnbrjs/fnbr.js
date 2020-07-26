@@ -1,12 +1,12 @@
 const PartyMemberMeta = require('./PartyMemberMeta');
 
 /**
- * A party member
+ * Represents a party member
  */
 class PartyMember {
   /**
-   * @param party the party
-   * @param data member data
+   * @param party The member's party
+   * @param data The member's data
    */
   constructor(party, data) {
     Object.defineProperty(this, 'Party', { value: party });
@@ -14,69 +14,85 @@ class PartyMember {
     Object.defineProperty(this, 'data', { value: data });
 
     /**
-     * The members id
+     * The id of the party member
+     * @type {string}
      */
     this.id = data.accountId || data.account_id;
 
     /**
-     * The members displayName
+     * The display name of the party member
+     * @type {string}
      */
     this.displayName = this.id === this.Client.user.id
       ? this.Client.user.displayName : data.account_dn;
 
     /**
-     * The members role
+     * The role of the party member
+     * @type {string}
      */
     this.role = data.role || '';
 
     /**
-     * When the member joined
+     * The Date when this member joined the party
+     * @type {Date}
      */
     this.joinedAt = new Date(data.joined_at);
 
     /**
-     * The members meta
+     * The meta of this party member
+     * @type {PartyMemberMeta}
      */
     this.meta = new PartyMemberMeta(this, data.meta);
   }
 
   /**
-   * The asset and id of this members pickaxe
+   * The asset and id of this party member's pickaxe
+   * @type {string}
+   * @readonly
    */
   get pickaxe() {
     return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.pickaxeDef;
   }
 
   /**
-   * The asset and id of this members outfit
+   * The asset and id of this party member's outfit
+   * @type {string}
+   * @readonly
    */
   get outfit() {
     return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.characterDef;
   }
 
   /**
-   * The asset and id of this members emote
+   * The asset and id of this party member's emote
+   * @type {string}
+   * @readonly
    */
   get emote() {
     return this.meta.get('Default:FrontendEmote_j').FrontendEmote.emoteItemDef;
   }
 
   /**
-   * If this member is ready
+   * Whether this party member is ready or not
+   * @type {boolean}
+   * @readonly
    */
   get isReady() {
     return this.meta.get('Default:GameReadiness_s') === 'Ready';
   }
 
   /**
-   * If this member is leader of the party
+   * Whether this member is the leader of the party
+   * @type {boolean}
+   * @readonly
    */
   get isLeader() {
     return this.role === 'CAPTAIN';
   }
 
   /**
-   * Kick this member from the party
+   * Kicks this member from the party
+   * @returns {Promise<void>}
    */
   async kick() {
     if (this.id === this.Party.Client.account.id) throw new Error('Cannot kick party member: You cant kick yourself');
@@ -84,7 +100,8 @@ class PartyMember {
   }
 
   /**
-   * Promote this member to the party leader
+   * Promotes this member to the party leader
+   * @returns {Promise<void>}
    */
   async promote() {
     if (this.id === this.Party.Client.account.id) throw new Error('Cannot promote party member: You cannot promote yourself');
@@ -93,8 +110,10 @@ class PartyMember {
   }
 
   /**
-   * This method is used to refresh this member via xmpp
-   * @param {Object} data xmpp data
+   * Updates the party member's meta
+   * @param {Object} data The updated meta
+   * @returns {void}
+   * @private
    */
   update(data) {
     if (data.revision > this.revision) this.revision = data.revision;

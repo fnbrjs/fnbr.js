@@ -14,46 +14,54 @@ const PartyInvitation = require('../Structures/PartyInvitation');
 const Party = require('../Structures/Party');
 
 /**
- * The client uses this to communicate with epics xmpp services
+ * Represents the XMPP manager of a client
+ * @private
  */
 class XMPP {
   /**
-   * @param {Object} client the main client
+   * @param {Object} client The main client
    */
   constructor(client) {
     /**
      * The main client
+     * @type {Client}
      */
     this.Client = client;
 
     /**
-     * The xmpp stream
+     * The XMPP connection stream
+     * @type {?Agent}
      */
     this.stream = undefined;
 
     /**
-     * If the xmpp client is connected
+     * Whether the XMPP client is connected or not
+     * @type {boolean}
      */
     this.connected = false;
 
     /**
-     * If the xmpp client is reconnecting
+     * Whether the XMPP client is reconnecting or not
+     * @type {boolean}
      */
     this.isReconnecting = false;
 
     /**
-     * The xmpp clients uuid
+     * The XMPP client's UUID
+     * @type {string}
      */
     this.uuid = UUID().replace(/-/g, '').toUpperCase();
 
     /**
-     * The xmpp clients resource
+     * The XMPP client's resource
+     * @type {string}
      */
     this.resource = `V2:Fortnite:${this.Client.config.platform}::${this.uuid}`;
   }
 
   /**
-   * Setup the xmpp stream and the xmpp events
+   * Setups the XMPP stream and events
+   * @returns {void}
    */
   setup() {
     this.stream = createClient({
@@ -80,8 +88,9 @@ class XMPP {
   }
 
   /**
-   * Connect the xmpp client
-   * @param {Boolean} isReconnect if this is a reconnection
+   * Connects the XMPP client to Epic Games' services
+   * @param {boolean} isReconnect Whether is a reconnection or not
+   * @returns {Promise<Object>}
    */
   connect(isReconnect = false) {
     if (!isReconnect) this.Client.debug('XMPP-Client connecting...');
@@ -109,7 +118,8 @@ class XMPP {
   }
 
   /**
-   * Disconnect the xmpp client
+   * Disconnects the XMPP client
+   * @returns {Promise<Object>}
    */
   disconnect() {
     this.Client.debug('XMPP-Client disconnecting...');
@@ -125,7 +135,8 @@ class XMPP {
   }
 
   /**
-   * Reconnect the xmpp client
+   * Reconnects the XMPP client
+   * @returns {Promise<Object>}
    */
   async reconnect() {
     if (this.isReconnecting) return { success: true };
@@ -153,7 +164,8 @@ class XMPP {
   }
 
   /**
-   * Setup all xmpp events
+   * Setups the XMPP events
+   * @returns {void}
    */
   setupEvents() {
     this.stream.on('disconnected', () => {
@@ -452,11 +464,12 @@ class XMPP {
   }
 
   /**
-   * Send a presence to one friend or all friends
-   * @param {String} status the status
-   * @param {String?} to the friend
+   * Sends a presence status
+   * @param {string} [status] The status message; can be null/undefined if you want to reset it
+   * @param {string} [to] The XMPP address of the friend; can be undefined if you want to update the presence status for all friends
+   * @returns {void}
    */
-  sendStatus(status, to = null) {
+  sendStatus(status, to) {
     if (!status) this.stream.sendPresence(null);
     if (to) {
       return this.stream.sendPresence({

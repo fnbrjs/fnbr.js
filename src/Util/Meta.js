@@ -1,17 +1,21 @@
 /**
- * A meta used for parties and party members
+ * Represents a meta structure used for parties
+ * @private
  */
 class Meta {
+  /**
+   */
   constructor() {
     this.schema = {};
   }
 
   /**
-   * Set a value
-   * @param {String} prop property
-   * @param {*} val value
-   * @param {Boolean} isRaw if the value is raw
-   * @param {Boolean} isObject if the value is an object
+   * Sets a value
+   * @param {string} prop The property
+   * @param {*} val The value
+   * @param {boolean} isRaw Whether the value is raw or not
+   * @param {boolean} isObject Whether the value is an object or not
+   * @returns {*} The setted value
    */
   set(prop, val, isRaw, isObject) {
     if (isObject) {
@@ -36,9 +40,10 @@ class Meta {
   }
 
   /**
-   * Get a value for a property
-   * @param {*} prop property
-   * @param {Boolean} isRaw if the value should be returned raw
+   * Gets a value by its property
+   * @param {string} prop The property
+   * @param {boolean} isRaw Whether the value should be returned raw
+   * @returns {*} The value of the provided property
    */
   get(prop, isRaw) {
     if (isRaw) return this.schema[prop];
@@ -60,17 +65,19 @@ class Meta {
   }
 
   /**
-   * Update this schema
-   * @param {Object} schema the new schema object
-   * @param {Boolean} isRaw passed to Meta.set
+   * Updates the schema
+   * @param {Object} schema The new schema
+   * @param {boolean} isRaw Whether the values are raw or not
+   * @returns {void}
    */
   update(schema, isRaw) {
     Object.keys(schema).forEach((prop) => this.set(prop, schema[prop], isRaw));
   }
 
   /**
-   * Remove schema properties
-   * @param {Array} schema the properties to delete
+   * Removes provided schema properties
+   * @param {Array} schema The properties to delete
+   * @returns {void}
    */
   remove(schema) {
     schema.forEach((k) => delete this.schema[k]);

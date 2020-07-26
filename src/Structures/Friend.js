@@ -4,60 +4,70 @@ const Endpoints = require('../../resources/Endpoints');
 const SentPartyInvitation = require('./SentPartyInvitation');
 
 /**
- * A friend of the client
+ * Represents an Epic Games friend of a client
  */
 class Friend extends User {
   /**
-   * @param {Object} client main client
-   * @param {Object} data friend data
+   * @param {Client} client The main client
+   * @param {Object} data The friend data
    */
   constructor(client, data) {
     super(client, data);
 
     /**
-     * This friends connections (psn, xbl, etc)
+     * The connections of the friend
+     * @type {Array}
      */
     this.connections = data.connections || [];
 
     /**
-     * How many mutual friends the client has with this friend
+     * The count of mutual friends
+     * @type {number}
      */
     this.mutualFriends = data.mutual || 0;
 
     /**
-     * If the client favorited this friend
+     * Whether this friend is a favourite one or not
+     * @type {boolean}
      */
     this.favorite = data.favorite || false;
 
     /**
-     * When the friendship with this friend was created
+     * The date when the friendship was created
+     * @type {Date}
      */
     this.createdAt = data.created ? new Date(data.created) : undefined;
 
     /**
-     * The note the client set for this friend
+     * The note for this friend
+     * @type {string}
      */
     this.note = data.note || '';
 
     /**
-     * The alias the client set for this friend
+     * The alias of this friend
+     * @type {string}
      */
     this.alias = data.alias || '';
 
     /**
-     * This friends last recieved presence
+     * The last recieved presence of this friend
+     * @type {FriendPresence}
      */
     this.presence = data.presence;
 
     /**
-     * If this friend is blocked
+     * Whether this friend is blocked or not
+     * @type {boolean}
      */
     this.isBlocked = data.blocked || false;
   }
 
   /**
-   * Fetches if a user is online.
-   * This **can be inaccurate** as it uses the recievedAt of the last presence
+   * Whether a user is online or not
+   * Can be inaccurate as it uses the receive date of the last presence
+   * @type {boolean}
+   * @readonly
    */
   get isOnline() {
     if (!this.presence) return false;
@@ -65,8 +75,10 @@ class Friend extends User {
   }
 
   /**
-   * If the client can join this friends party.
-   * This may be slighly inaccurate as it uses presence
+   * Whether the client can join this friend's party or not
+   * May be slighly inaccurate as it uses the last received presence
+   * @type {boolean}
+   * @readonly
    */
   get isJoinable() {
     if (!this.isOnline || !this.presence.partyData.id) return false;
@@ -74,22 +86,25 @@ class Friend extends User {
   }
 
   /**
-   * Remove this user as a friend
+   * Removes this friend
+   * @returns {Promise<void>}
    */
   async remove() {
     await this.Client.removeFriend(this.id);
   }
 
   /**
-   * Send a message to this friend
-   * @param {String} message message to send
+   * Sends a message to this friend
+   * @param {String} message The message that will be sent
+   * @returns {Promise<FriendMessage>}
    */
   async sendMessage(message) {
     return this.Client.sendFriendMessage(this.id, message);
   }
 
   /**
-   * Send a party invitation to this friend
+   * Sends a party invitation to this friend
+   * @returns {Promise<SentPartyInvitation>}
    */
   async invite() {
     if (this.Client.party.members.get(this.id)) throw new Error(`Failed sending party invitation to ${this.id}: Friend is already in the party`);
@@ -109,7 +124,8 @@ class Friend extends User {
   }
 
   /**
-   * Block this friend
+   * Blocks this friend
+   * @returns {Promise<void>}
    */
   async block() {
     await this.Client.blockFriend(this.id);
@@ -117,7 +133,8 @@ class Friend extends User {
   }
 
   /**
-   * Unblock this friend
+   * Unblocks this friend
+   * @returns {Promise<void>}
    */
   async unblock() {
     await this.Client.unblockFriend(this.id);
@@ -125,7 +142,8 @@ class Friend extends User {
   }
 
   /**
-   * Join this friends party (please check if this friend isJoinable first)
+   * Joins this friend's party
+   * @returns {Promise<void>}
    */
   async joinParty() {
     if (!this.isJoinable) throw new Error('Cannot join friend party: Party not joinable');

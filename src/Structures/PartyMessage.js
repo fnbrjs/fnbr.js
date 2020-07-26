@@ -1,33 +1,37 @@
+/* eslint-disable no-return-await */
 /**
- * A party message revieved via XMPP
+ * Represents a party message
  */
 class PartyMessage {
   constructor(client, data) {
-  /**
-   * @param {Object} client main client
-   * @param {Object} data message data
-   */
+    /**
+      * @param {Client} client The main client
+      * @param {Object} data The data of the message
+      */
     Object.defineProperty(this, 'Client', { value: client });
     Object.defineProperty(this, 'data', { value: data });
     Object.defineProperty(this, 'chat', { value: this.data.chat });
 
     /**
-     * The content of the message
+     * The content of the party message
+     * @type {string}
      */
     this.content = data.body;
 
     /**
-     * The party member (or clientuser) who wrote the message
+     * The author of the party message
+     * @type {PartyMember}
      */
     this.author = data.author;
   }
 
   /**
-   * Reply to a party message
-   * @param {String} message message to reply
+   * Replies to this party message
+   * @param {string} message The message
+   * @returns {Promise<PartyMessage>}
    */
   async reply(message) {
-    return this.chat.send(message);
+    return await this.chat.send(message);
   }
 }
 

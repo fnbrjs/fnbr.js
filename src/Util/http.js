@@ -1,50 +1,59 @@
 /* eslint-disable no-underscore-dangle */
 const Request = require('request-promise');
+const Constants = require('../../resources/Constants');
 
 /**
- * The client uses this to communicate with epics http services
+ * Represents the HTTP manager of a client
+ * @private
  */
 class Http {
   /**
-   * @param {Object} client the main client
+   * @param {Client} client The main client
    */
   constructor(client) {
     /**
      * The main client
+     * @type {Client}
      */
     this.Client = client;
 
     /**
-     * Cookie jar
+     * The cookie jar
+     * @type {CookieJar}
      */
     this.jar = Request.jar();
 
-    /**
-     * Default requests options
-     */
-    this.options = {
+    /* this.options = {
       timeout: 10000,
       headers: { },
       json: true,
       jar: this.jar,
       ...this.Client.config.http,
-    };
+    }; */
+    /**
+     * The default requests options
+     * @type {HttpOptions}
+     */
+    this.options = this.Client.mergeDefault(Constants.DefaultConfig.http, this.Client.config.http);
+    if (!this.Client.config.http.jar) this.options.jar = this.jar;
 
     /**
-     * Request method
+     * The request method
+     * @type {RequestAPI}
      */
     this.request = Request.defaults(this.options);
   }
 
   /**
-   * Send a request
-   * @param {Boolean} checkToken if the bearer token expiration time should be checked
-   * @param {String} method http method
-   * @param {String} url request url
-   * @param {String} auth Authorization header
-   * @param {Object} headers request headers
-   * @param {Object} data request body
-   * @param {Object} form request form
+   * Sends a HTTP request
+   * @param {boolean} checkToken Whether the access token should be checked if it's valid
+   * @param {string} method The HTTP method
+   * @param {string} url The uri
+   * @param {string} auth The authorization header
+   * @param {Object} headers The headers
+   * @param {Object} data The body
+   * @param {Object} form The form
+   * @returns {Promise<Object>}
    */
   async send(checkToken, method, url, auth, headers, data, form) {
     if (this.Client.reauthLock.active) await this.Client.reauthLock.wait();

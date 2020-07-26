@@ -1,3 +1,4 @@
+/* eslint-disable no-return-await */
 /* eslint-disable max-len */
 /* eslint-disable no-param-reassign */
 const Endpoints = require('../../resources/Endpoints');
@@ -10,12 +11,12 @@ const PartyChat = require('./PartyChat');
 const SentPartyInvitation = require('./SentPartyInvitation');
 
 /**
- * A party
+ * Represents a party
  */
 class Party {
   /**
-   * @param {Object} client main client
-   * @param {Object} data party data
+   * @param {Client} client The main client
+   * @param {Object} data The party's data
    */
   constructor(client, data) {
     Object.defineProperty(this, 'Client', { value: client });
@@ -23,21 +24,25 @@ class Party {
 
     /**
      * The id of this party
+     * @type {string}
      */
     this.id = data.id;
 
     /**
-     * Date when this party was created
+     * The date when this party was created
+     * @type {Date}
      */
     this.createdAt = new Date(data.created_at);
 
     /**
-     * This parties config
+     * The config of this party
+     * @type {Object}
      */
     this.config = { ...this.Client.config.partyConfig, ...this.Client.makeCamelCase(data.config) };
 
     /**
-     * The parties members
+     * The members of this party
+     * @type {List}
      */
     this.members = new List();
     data.members.forEach((m) => {
@@ -46,27 +51,32 @@ class Party {
     });
 
     /**
-     * If the party is currently sending a patch
+     * Whether the party is currently sending a patch
+     * @type {boolean}
      */
     this.currentlyPatching = false;
 
     /**
-     * The queue for patches
+     * The patches queue
+     * @type {Array}
      */
     this.patchQueue = [];
 
     /**
-     * This parties meta
+     * The meta of this party
+     * @type {PartyMeta}
      */
     this.meta = new PartyMeta(this, data.meta);
 
     /**
-     * Party chatroom
+     * The chat room of this party
+     * @type {PartyChat}
      */
     this.chat = new PartyChat(this);
 
     /**
-     * This parties revision
+     * The revision of this party
+     * @type {number}
      */
     this.revision = data.revision || 0;
 
@@ -74,23 +84,26 @@ class Party {
   }
 
   /**
-   * The client party member
+   * The client's party member
    * @type {ClientPartyMember}
+   * @readonly
    */
   get me() {
     return this.members.get(this.Client.user.id);
   }
 
   /**
-   * The party leader
+   * The leader of this party
    * @type {PartyMember}
+   * @readonly
    */
   get leader() {
     return this.members.find((m) => m.isLeader);
   }
 
   /**
-   * Join this party
+   * Joins this party
+   * @returns {Promise<void>}
    */
   async join() {
     this.Client.partyLock.active = true;
@@ -134,7 +147,9 @@ class Party {
   }
 
   /**
-   * Send an updated presence via xmpp
+   * Sends an updated presence
+   * @returns {Promise<void>}
+   * @private
    */
   patchPresence() {
     const partyJoinInfoData = this.config.privacy.presencePermission === 'None'
@@ -187,16 +202,18 @@ class Party {
   }
 
   /**
-   * Send a message to party chat
-   * @param {String} message message to send
+   * Sends a message to the chat of this party
+   * @param {string} message The message that will be sent
+   * @returns {Promise<PartyMessage>}
    */
   async sendMessage(message) {
-    return this.chat.send(message);
+    return await this.chat.send(message);
   }
 
   /**
-   * Send party invitation to a friend
-   * @param {String} friend id or name of the friend
+   * Sends a party invitation to a friend
+   * @param {string} friend The friend's id or display name
+   * @returns {Promise<SentPartyInvitation>}
    */
   async invite(friend) {
     const cachedFriend = this.Client.friends.find((f) => f.id === friend || f.displayName === friend);
@@ -218,8 +235,9 @@ class Party {
   }
 
   /**
-   * Leave this party
-   * @param {Boolean} createNew if a new party should be created
+   * Leaves this party
+   * @param {boolean} createNew Whether a new party should be created or not
+   * @returns {Promise<void>}
    */
   async leave(createNew = true) {
     this.Client.partyLock.active = true;
@@ -241,9 +259,12 @@ class Party {
   }
 
   /**
-   * Send a patch with the latest meta
-   * @param {Object} updated updated data
-   * @param {Boolean} isForced if the patch should ignore current patches
+   * Sends a patch with the latest meta
+   * @param {Object} updated The updated data
+   * @param {Array} deleted The deleted data
+   * @param {boolean} isForced Whether the patch should ignore current patches
+   * @returns {Promise<void>}
+   * @private
    */
   async sendPatch(updated, deleted, isForced) {
     if (!isForced && this.currentlyPatching) {
@@ -300,8 +321,10 @@ class Party {
   }
 
   /**
-   * Update this parties meta with xmpp data
-   * @param {Object} data xmpp data
+   * Updates the party's meta
+   * @param {Object} data The updated data
+   * @returns {void}
+   * @private
    */
   update(data) {
     if (data.revision > this.revision) this.revision = data.revision;
@@ -323,8 +346,9 @@ class Party {
   }
 
   /**
-   * Set this parties privacy
-   * @param privacy updated privacy
+   * Sets this party's privacy
+   * @param {PartyPrivacy} privacy The new privacy
+   * @returns {Promise<void>}
    */
   async setPrivacy(privacy) {
     const updated = {};
@@ -356,8 +380,9 @@ class Party {
   }
 
   /**
-   * Set the custom matchmaking key
-   * @param {String} key - The custom matchmaking key
+   * Sets this party's custom matchmaking key
+   * @param {string} key The custom matchmaking key
+   * @returns {Promise<void>}
    */
   async setCustomMatchmakingKey(key) {
     await new Promise((res) => setTimeout(() => res(), 1000));
@@ -368,8 +393,9 @@ class Party {
   }
 
   /**
-   * Promote a party member
-   * @param {String} member member to promote
+   * Promotes a party member
+   * @param {string} member The id or display name of the member that will be promoted
+   * @returns {Promise<void>}
    */
   async promote(member) {
     if (!this.me.isLeader) throw new Error(`Cannot promote ${member}: Client isn't party leader`);
@@ -381,8 +407,9 @@ class Party {
   }
 
   /**
-   * Kick a party member
-   * @param {String} member member to kick
+   * Kicks a party member
+   * @param {string} member The member that will be kicked
+   * @returns {Promise<void>}
    */
   async kick(member) {
     if (!this.me.isLeader) throw new Error(`Cannot kick ${member}: Client isn't party leader`);
@@ -394,16 +421,18 @@ class Party {
   }
 
   /**
-   * Refreshes the parties member positions.
-   * This should not be called manually
+   * Refreshes the party members' positions
+   * @returns {Promise<void>}
+   * @private
    */
   async refreshSquadAssignments() {
     await this.sendPatch({ 'Default:RawSquadAssignments_j': this.meta.updateSquadAssignments() });
   }
 
   /**
-   * Lookup which party the client user is in
-   * @param {Object} client the main client
+   * Lookups for the client user's party
+   * @param {Client} client The main client
+   * @returns {Promise<Party>}
    */
   static async LookupSelf(client) {
     const party = await client.Http.send(true, 'GET', `${Endpoints.BR_PARTY}/user/${client.user.id}`, `bearer ${client.Auth.auths.token}`);
@@ -413,9 +442,10 @@ class Party {
   }
 
   /**
-   * Lookup a public party by id
-   * @param {Object} client the main client
-   * @param {String} id id of the party to lookup
+   * Lookups for a public party
+   * @param {Client} client The main client
+   * @param {string} id The id of the party
+   * @returns {Promise<Party>}
    */
   static async Lookup(client, id) {
     const party = await client.Http.send(true, 'GET', `${Endpoints.BR_PARTY}/parties/${id}`, `bearer ${client.Auth.auths.token}`);
@@ -425,8 +455,9 @@ class Party {
   }
 
   /**
-   * Create a party
-   * @param {Object} client the main client
+   * Creates a party
+   * @param {Client} client The main client
+   * @returns {Promise<Party>}
    */
   static async Create(client, config) {
     client.partyLock.active = true;

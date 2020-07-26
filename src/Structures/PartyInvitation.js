@@ -2,20 +2,45 @@
 const Endpoints = require('../../resources/Endpoints');
 
 /**
- * A party invitation
+ * Represents party invitation
  */
 class PartyInvitation {
   /**
-   * @param {Object} client main client
-   * @param {Object} party invitation party
-   * @param {Object} data invitation data
+   * @param {Client} client The main client
+   * @param {Party} party The invitation's party
+   * @param {Object} data The invitation's data
    */
   constructor(client, party, data) {
     this.Client = client;
+
+    /**
+     * The party of this invitation
+     * @type {Party}
+     */
     this.party = party;
+
+    /**
+     * The friend that sent this invitation
+     * @type {Friend}
+     */
     this.sender = this.Client.friends.get(data.sent_by);
+
+    /**
+     * The Date when the party invitation was created
+     * @type {Date}
+     */
     this.createdAt = new Date(data.sent_at);
+
+    /**
+     * The Date when the party invitation will expire
+     * @type {Date}
+     */
     this.expiresAt = new Date(data.expires_at);
+
+    /**
+     * Whether this party invitation is expired or not
+     * @type {boolean}
+     */
     this.expired = false;
 
     setTimeout(() => {
@@ -24,7 +49,8 @@ class PartyInvitation {
   }
 
   /**
-   * Accepts the invitation
+   * Accepts this party invitation
+   * @returns {Promise<void>}
    */
   async accept() {
     if (this.expired) throw new Error(`Failed accepting party ${this.party.id} invite from ${this.sender.id}: The party invitation was already accepted/declined or it expired`);
@@ -36,7 +62,8 @@ class PartyInvitation {
   }
 
   /**
-   * Declines the invitation
+   * Declines this party invitation
+   * @returns {Promise<void>}
    */
   async decline() {
     if (this.expired) throw new Error(`Failed declining party ${this.party.id} invite from ${this.sender.id}: The party invitation was already accepted/declined or it expired`);
@@ -47,10 +74,12 @@ class PartyInvitation {
   }
 
   /**
-   * Creates invite data object
-   * @param {Object} client main client
-   * @param {String} pingerId pinger account id
-   * @param {Object} data invite data
+   * Creates an invite data object
+   * @param {Client} client The main client
+   * @param {string} pingerId The pinger's account id
+   * @param {Object} data The invite data
+   * @returns {Object}
+   * @private
    */
   static createInvite(client, pingerId, data) {
     let member;

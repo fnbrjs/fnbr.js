@@ -1,3 +1,5 @@
+/* eslint-disable class-methods-use-this */
+/* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-confusing-arrow */
 /* eslint-disable no-restricted-syntax */
@@ -20,6 +22,7 @@ const List = require('../Util/List');
 const FriendMessage = require('../Structures/FriendMessage.js');
 const Party = require('../Structures/Party.js');
 const SentPartyInvitation = require('../Structures/SentPartyInvitation.js');
+const Constants = require('../../resources/Constants');
 
 /**
  * The main client
@@ -27,11 +30,11 @@ const SentPartyInvitation = require('../Structures/SentPartyInvitation.js');
  */
 class Client extends EventEmitter {
   /**
-   * @param {Object} args client options like `auth`options or `debug`options. Can be modified in client.config
+   * @param {ClientOptions} args Client options
    */
   constructor(args = {}) {
     super();
-    this.config = {
+    /* this.config = {
       savePartyMemberMeta: true,
       http: {},
       debug: console.log,
@@ -63,85 +66,123 @@ class Client extends EventEmitter {
         color: Object.values(Enums.KairosColor)[Math.floor(Math.random() * Object.values(Enums.KairosColor).length)],
         ...args.kairos,
       },
-    };
+    }; */
+    /**
+     * The config of the client
+     * @type {Client}
+     */
+    this.config = Object.freeze(Client.mergeDefault(Constants.DefaultConfig, args));
 
     /**
-     * If client is ready
+     * Whether the client is ready or not
+     * @type {boolean}
      */
     this.isReady = false;
 
     /**
-     * Used to store outfit, etc of the client even if he switches parties
+     * The default party member meta of the client
+     * @type {?Object}
+     * @private
      */
     this.lastMemberMeta = this.config.memberMeta;
 
     /**
-     * Client user
-     * @type {ClientUser}
+     * The user of the client
+     * @type {?ClientUser}
      */
     this.user = undefined;
 
     /**
-     * The party the client is in
-     * @type {Party}
+     * The party that the client is currently in
+     * @type {?Party}
      */
     this.party = undefined;
 
     /**
-     * Client authenticator
+     * The authentication manager of the client
+     * @type {Authenticatior}
+     * @private
      */
     this.Auth = new Authenticator(this);
     /**
-     * Client http util
+     * The HTTP manager of the client
+     * @type {Http}
+     * @private
      */
     this.Http = new Http(this);
     /**
-     * Client xmpp communicator
+     * The XMPP manager of the client
+     * @type {Xmpp}
+     * @private
      */
     this.Xmpp = new Xmpp(this);
     /**
-     * Clients cached friends (updated with xmpp events)
+     * The friends cache of the client's user
+     * @type {List}
      */
     this.friends = new List();
     /**
-     * Clients cached pending friends (updated with xmpp events)
+     * The pending friends cache of the client's user
+     * @type {List}
      */
     this.pendingFriends = new List();
     /**
-     * Clients cached blocked friends (updated with xmpp events)
+     * The blocked friends cache of the client's user
+     * @type {List}
      */
     this.blockedFriends = new List();
 
     /**
-     * Delays all party-related xmpp events while the client makes changes to client.party
+     * The client's party lock
+     * Used for delaying all party-related xmpp events while changes to client's party are made
+     * @typedef {Object} PartyLock
+     * @property {boolean} active Indicates if the party lock is active
+     * @property {function} wait Sleep until party lock is no longer active
+     * @private
      */
     this.partyLock = {
       active: false,
       wait: () => new Promise((res) => {
-        const waitInterval = setInterval(() => { if (!this.partyLock.active) { clearInterval(waitInterval); res(); } }, 100);
+        const waitInterval = setInterval(() => {
+          if (!this.partyLock.active) {
+            clearInterval(waitInterval);
+            res();
+          }
+        }, 100);
       }),
     };
 
     /**
-     * Delays all requests while Auth.reauthenticate is called
+     * The client's reauthentication lock
+     * Used for delaying all Http requests while the client is reauthenticating
+     * @typedef {Object} ReauthLock
+     * @property {boolean} active Indicates if the reauthentication lock is active
+     * @property {function} wait Sleep until reauthentication lock is no longer active
+     * @private
      */
     this.reauthLock = {
       active: false,
       wait: () => new Promise((res) => {
-        const waitInterval = setInterval(() => { if (!this.reauthLock.active) { clearInterval(waitInterval); res(); } }, 100);
+        const waitInterval = setInterval(() => {
+          if (!this.reauthLock.active) {
+            clearInterval(waitInterval);
+            res();
+          }
+        }, 100);
       }),
     };
 
     /**
-     * Parse an error that could be an object or a string
+     * Parses an error
+     * @param {Object|string} error The error to be parsed
      * @private
-     * @param {Object|String} err error to parse
      */
-    this.parseError = (err) => typeof err === 'object' ? JSON.stringify(err) : err;
+    this.parseError = (error) => typeof error === 'object' ? JSON.stringify(error) : error;
 
     /**
-     * Convert an objects keys to camel case
-     * @param {Object} obj object to convert
+     * Converts an object's keys to camel case
+     * @param {Object} obj The object to be converted
+     * @private
      */
     this.makeCamelCase = Client.makeCamelCase;
 
@@ -154,7 +195,8 @@ class Client extends EventEmitter {
   // -------------------------------------GENERAL-------------------------------------
 
   /**
-   * Connect the client to epicgames servers. Make sure to provide a valid login method first!
+   * Initiates client's authentication process
+   * @returns {Promise<void>}
    */
   async login() {
     const auth = await this.Auth.authenticate();
@@ -162,9 +204,9 @@ class Client extends EventEmitter {
 
     this.tokenCheckInterval = setInterval(() => this.Auth.refreshToken(true), 20 * 60000);
 
-    const clientInfo = await this.Http.send(false, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${this.Auth.account.id}`, `bearer ${this.Auth.auths.token}`);
-    if (!clientInfo.success) throw new Error(`Clientaccount lookup failed: ${this.parseError(clientInfo.response)}`);
-    this.user = new ClientUser(this, clientInfo.response[0]);
+    const clientInfo = await this.Http.send(false, 'GET', `${Endpoints.ACCOUNT_ID}/${this.Auth.account.id}`, `bearer ${this.Auth.auths.token}`);
+    if (!clientInfo.success) throw new Error(`Client account lookup failed: ${this.parseError(clientInfo.response)}`);
+    this.user = new ClientUser(this, clientInfo.response);
 
     this.Xmpp.setup();
 
@@ -180,7 +222,8 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Disconnect the client. Kills all tokens, disconnects the xmpp client and leaves the clients party
+   * Disconnects the client
+   * @returns {Promise<void>}
    */
   async logout() {
     if (this.tokenCheckInterval) clearInterval(this.tokenCheckInterval);
@@ -198,7 +241,8 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Restarts the entire client
+   * Restarts the client
+   * @returns {Promise<void>}
    */
   async restart() {
     if (this.tokenCheckInterval) clearInterval(this.tokenCheckInterval);
@@ -209,12 +253,13 @@ class Client extends EventEmitter {
     this.Auth.auths.expires_at = undefined;
     this.isReady = false;
 
-    return this.login();
+    await this.login();
   }
 
   /**
-   * Refreshes client.friends, client.blockedFriends and client.pendingFriends
-   * Normally theres `no need to use this function` as the client refreshes the cache with xmpp events
+   * Refreshes the client's friends (including pending and blocked)
+   * @returns {Promise<void>}
+   * @private
    */
   async updateCache() {
     const [rawFriends, friendsSummary] = await Promise.all([
@@ -256,6 +301,12 @@ class Client extends EventEmitter {
     }
   }
 
+  /**
+   * Initiates a party
+   * @param {boolean} create Whether to create a new one after leaving the current one
+   * @returns {Promise<void>}
+   * @private
+   */
   async initParty(create = true) {
     const party = await Party.LookupSelf(this);
     if (!create && party) this.party = party;
@@ -263,29 +314,23 @@ class Client extends EventEmitter {
     if (create || !party) await Party.Create(this);
   }
 
-  /**
-   * Auth data if you want to do requests to epic yourself. In most cases you wont need this
-   */
-  get authData() {
-    return {
-      accessToken: this.Auth.auths.token,
-      refreshToken: this.Auth.reauths.token,
-    };
-  }
-
   // -------------------------------------UTIL-------------------------------------
 
   /**
-   * Debug a message via client.config.debug if available
-   * @param {String} message message to debug
+   * Debug a message via the debug function provided in the client's config (if provided)
+   * @param {string} message The message that will be debugged
+   * @returns {void}
+   * @private
    */
   debug(message) {
     if (this.config.debug) this.config.debug(message);
   }
 
   /**
-   * Convert an objects keys to camel case
-   * @param {Object} obj object to convert
+   * Convert an object's keys to camel case
+   * @param {Object} obj The object that will be converted
+   * @returns {Object} The converted object
+   * @private
    */
   static makeCamelCase(obj) {
     const returnObj = {};
@@ -299,12 +344,14 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Wait for a client event
-   * @param {String|Symbol} event event to wait for
-   * @param {Number|5000} timeout timeout in ms to throw an error
-   * @param {Function?} filter function to apply on the returned event
+   * Sleep until an event is emitted
+   * @param {string|symbol} event The event will be waited for
+   * @param {number} [timeout=5000] The timeout (in milliseconds)
+   * @param {function} [filter] The filter for the event
+   * @returns {Promise<Object>}
+   * @private
    */
-  waitForEvent(event, timeout = 5000, filter = undefined) {
+  waitForEvent(event, timeout = 5000, filter) {
     return new Promise((res, rej) => {
       this.once(event, (eventData) => {
         if (!filter || filter(eventData)) res(eventData);
@@ -313,23 +360,32 @@ class Client extends EventEmitter {
     });
   }
 
+  /**
+   * Sleep for the provided milliseconds
+   * @param {number} timeout The timeout (in milliseconds)
+   * @returns {Promise<void>}
+   * @private
+   */
   static sleep(timeout) {
     return new Promise((res) => setTimeout(() => res(), timeout));
   }
 
   /**
-   * Display a console prompt that resolves in a promise awaiting for an answer
-   * @param {String} question text to prompt
-   * @returns {Promise<String>} answer
+   * Display a console prompt
+   * @param {string} question The text that will be prompted
+   * @returns {Promise<string>} The received answer
+   * @private
    */
   static consoleQuestion(question) {
     const itf = createInterface(process.stdin, process.stdout);
-    return new Promise((res) => itf.question(question, (answer) => { itf.close(); res(answer); }));
+    return new Promise((res) => itf.question(question, (answer) => {
+      itf.close(); res(answer);
+    }));
   }
 
   /**
-   * Wait for the client to get ready
-   * @param {Number} timeout time in ms to wait before rejecting the promise
+   * Sleep until the client is ready
+   * @param {number} [timeout=20000] The timeout (in milliseconds)
    */
   waitUntilReady(timeout = 20000) {
     return new Promise((res, rej) => {
@@ -344,12 +400,44 @@ class Client extends EventEmitter {
     });
   }
 
+  /**
+   * Merges a default object with a given one
+   * @param {Object} def The default object
+   * @param {Object} given The given object
+   * @returns {Object} The merged objects
+   * @private
+   */
+  static mergeDefault(def, given) {
+    if (!given) return def;
+    for (const key in def) {
+      if (!Object.prototype.hasOwnProperty.call(given, key) || given[key] === undefined) {
+        given[key] = def[key];
+      } else if (given[key] === Object(given[key])) {
+        given[key] = Client.mergeDefault(def[key], given[key]);
+      }
+    }
+    return given;
+  }
+
+  /**
+   * Merges a default object with a given one
+   * @param {Object} def The default object
+   * @param {Object} given The given object
+   * @returns {Object} The merged objects
+   * @private
+   */
+  mergeDefault(def, given) {
+    return Client.mergeDefault(def, given);
+  }
+
   // -------------------------------------ACCOUNT-------------------------------------
 
   /**
-   * Fetch an epicgames profile
-   * @param {String|Array<String>} query id, name or email of the profile to lookup (can be a string or array)
-   * @returns {Promise<User>|Promise<Array<User>>|undefined} the looked up users (undefined if a lookup fails)
+   * Fetches an Epic Games account
+   * @param {string|Array<string>} query The id, name or email of the account(s) you want to fetch
+   * @returns {Promise<User>|Promise<Array<User>>} The fetched account(s)
+   * @example
+   * client.getProfile('aabbccddeeff00112233445566778899');
    */
   async getProfile(query) {
     let user;
@@ -388,10 +476,10 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Change the friendlist status of the client
-   * @param {String} status Status to display, empty to reset it
-   * @param {String?} to user to send the status to | empty for entire friendlist
-   * @returns {Promise<void>} nothing
+   * Changes the presence status
+   * @param {string} [status] The status message; can be null/undefined if you want to reset it
+   * @param {string} [to] The display name or the id of the friend; can be undefined if you want to update the presence status for all friends
+   * @returns {Promise<void>}
    */
   setStatus(status, to) {
     let id;
@@ -413,8 +501,9 @@ class Client extends EventEmitter {
   // -------------------------------------FRIENDS-------------------------------------
 
   /**
-   * Add a user as a friend or accept a friend request
-   * @param {String} user id, name or email of the user to friend / accept
+   * Sends / accepts a friend request to an Epic Games user
+   * @param {string} user The id, name or email of the user
+   * @returns {Promise<void>}
    */
   async addFriend(user) {
     let userId;
@@ -429,8 +518,9 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Remove a friend or decline a friend request
-   * @param {String} user id, name or email of the user to unfriend / decline
+   * Removes a friend or reject an user's friend request
+   * @param {string} user The id, name or email of the user
+   * @returns {Promise<void>}
    */
   async removeFriend(user) {
     let userId;
@@ -445,8 +535,9 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Block a friend
-   * @param {String} friend id, name or email of the friend to block
+   * Blocks a friend
+   * @param {string} friend The id, name or email of the friend
+   * @returns {Promise<void>}
    */
   async blockFriend(friend) {
     const cachedFriend = this.friends.find((f) => f.id === friend || f.displayName === friend);
@@ -457,8 +548,9 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Unblock a friend
-   * @param {String} friend id, name or email of the friend to block
+   * Unblocks a friend
+   * @param {string} friend The id, name or email of the friend
+   * @returns {Promise<void>}
    */
   async unblockFriend(friend) {
     const cachedBlockedFriend = this.blockedFriends.find((f) => f.id === friend || f.displayName === friend);
@@ -469,12 +561,12 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Send a message to a friend
-   * @param {String} friend id or name of the friend to message
-   * @param {String} message message to send
-   * @returns {Promise<FriendMessage>} the message
+   * Sends a message to a friend
+   * @param {string} friend The id or name of the friend
+   * @param {string} message The message
+   * @returns {Promise<FriendMessage>} The sent friend message
    */
-  sendFriendMessage(friend, message) {
+  async sendFriendMessage(friend, message) {
     if (!message) throw new Error(`Failed sending a friend message to ${friend}: Cannot send an empty message`);
     const cachedFriend = this.friends.find((f) => f.id === friend || f.displayName === friend);
     if (!cachedFriend) throw new Error(`Failed sending a friend message to ${friend}: Friend not existing`);
@@ -491,8 +583,9 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Send party invitation to a friend
-   * @param {String} friend id or name of the friend
+   * Sends a party invitation to a friend
+   * @param {string} friend The id or name of the friend
+   * @returns {Promise<SentPartyInvitation>}
    */
   async invite(friend) {
     const cachedFriend = this.friends.find((f) => f.id === friend || f.displayName === friend);
@@ -516,10 +609,10 @@ class Client extends EventEmitter {
   // -------------------------------------BATTLE ROYALE-------------------------------------
 
   /**
-   * Fetch news for a gamemode
-   * @param {Enums.Gamemode} mode gamemode to fetch the news for
-   * @param {Enums.Language} language language to fetch the news in
-   * @returns {Promise<Array>} news motds
+   * Fetches news for a gamemode
+   * @param {Gamemode} mode The gamemode
+   * @param {Language} language The language
+   * @returns {Promise<Array>}
    */
   async getNews(mode = Enums.Gamemode.BATTLE_ROYALE, language = Enums.Language.ENGLISH) {
     const news = await this.Http.send(false, 'GET', `${Endpoints.BR_NEWS}?lang=${language}`);
@@ -530,15 +623,15 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Fetch v2 stats for one/multiple player(s)
-   * @param {String|Array<String>} user the user
-   * @param {Number?} startTime epoch to start fetching stats (empty for lifetime)
-   * @param {Number?} endTime epoch to stop fetching stats (empty for lifetime)
-   * @returns {Promise<Object|Array<Object>>} player stats
+   * Fetches v2 stats for one or multiple players
+   * @param {string|Array<string>} user The id, name or email of the user(s)
+   * @param {number} [startTime] The timestamp to start fetching stats from; can be null/undefined for lifetime
+   * @param {number} [endTime] The timestamp to stop fetching stats from; can be undefined for lifetime
+   * @returns {Promise<Object|Array<Object>>}
    */
-  async getBrStats(user, startTime, endTime) {
+  async getBRStats(user, startTime, endTime) {
     let userId;
-    if (user.length === 32) userId = user;
+    if (user.length === 32 && !user.includes('@')) userId = user;
     else {
       const lookedUpUser = await this.getProfile(user);
       if (!lookedUpUser) throw new Error(`Fetching ${user}'s stats failed: Account not found`);
@@ -556,14 +649,14 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Lookup a creator code
-   * @param {String} code the code
-   * @param {Boolean} showSimilar if an array with similar codes should be returned
-   * @returns {Promise<CreatorCode>|Promise<Array<CreatorCode>>|Promise<undefined>} the code or an array of similar ones
+   * Lookups for a creator code
+   * @param {string} code The creator code
+   * @param {boolean} showSimilar Whether an array with similar creator codes should be returned
+   * @returns {Promise<CreatorCode>|Promise<Array<CreatorCode>>}
    */
   async getCreatorCode(code, showSimilar = false) {
     const codeRes = await this.Http.send(false, 'GET', `${Endpoints.BR_SAC_SEARCH}?slug=${code}`);
-    if (!codeRes.success) throw new Error(`Fetching  the creator code ${code} failed: ${this.parseError(codeRes.response)}`);
+    if (!codeRes.success) throw new Error(`Fetching the creator code ${code} failed: ${this.parseError(codeRes.response)}`);
 
     const codes = codeRes.response.filter((c) => showSimilar ? c : c.slug === code);
     const parsedCodes = [];
@@ -577,11 +670,11 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Fetch the current battle royale store
-   * @param {Enums.Language} language language to fetch the news in
-   * @returns {Promise<Array>} news motds
+   * Fetches the current Battle Royale store
+   * @param {Language} language The language
+   * @returns {Promise<Object>} The parsed Battle Royale store response
    */
-  async getBrStore(language = Enums.Language.ENGLISH) {
+  async getBRStore(language = Enums.Language.ENGLISH) {
     const shop = await this.Http.send(true, 'GET', `${Endpoints.BR_STORE}?lang=${language}`, `bearer ${this.Auth.auths.token}`);
     if (!shop.success) throw new Error(`Fetching shop failed: ${this.parseError(shop.response)}`);
 

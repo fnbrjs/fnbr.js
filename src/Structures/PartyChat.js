@@ -1,11 +1,11 @@
 const PartyMessage = require('./PartyMessage');
 
 /**
- * The party multi user chatroom
+ * Represents the chat room of a party
  */
 class PartyChat {
   /**
-   * @param {Object} party the party
+   * @param {Object} party The chatroom's party
    */
   constructor(party) {
     Object.defineProperty(this, 'Party', { value: party });
@@ -13,25 +13,28 @@ class PartyChat {
     Object.defineProperty(this, 'Stream', { value: this.Client.Xmpp.stream });
 
     /**
-     * If the client is connected to the chatroom
+     * Whether the client is connected to the chat room or not
+     * @type {boolean}
      */
     this.connected = false;
 
     /**
-     * This chatrooms jid
+     * The jid of this chat room
+     * @type {string}
      */
     this.jid = `Party-${this.Party.id}@muc.prod.ol.epicgames.com`;
 
     /**
-     * The clients nick in the chatroom
+     * The nick of the client's user in this chat room
+     * @type {string}
      */
     this.nick = `${this.Client.user.displayName}:${this.Client.user.id}:${this.Client.Xmpp.resource}`;
   }
 
   /**
-   * Send a message to this chatroom
-   * @param {String} message message to send
-   * @returns {PartyMessage} party message
+   * Sends a message to this chat room
+   * @param {string} message The message to be sent
+   * @returns {Promise<PartyMessage>}
    */
   async send(message) {
     if (!await this.waitForConnected()) return undefined;
@@ -47,7 +50,8 @@ class PartyChat {
   }
 
   /**
-   * Join this chatroom
+   * Joins this chat room
+   * @returns {Promise<void>}
    */
   join() {
     this.Stream.joinRoom(this.jid, this.nick);
@@ -58,7 +62,8 @@ class PartyChat {
   }
 
   /**
-   * Leave this chatroom
+   * Leaves this chat room
+   * @returns {Promise<void>}
    */
   leave() {
     this.Stream.leaveRoom(this.jid, this.nick);
@@ -69,7 +74,8 @@ class PartyChat {
   }
 
   /**
-   * Wait for the client to connect to the chatroom
+   * Waits until the client is connected to this chatroom
+   * @returns {Promise<boolean>}
    */
   waitForConnected() {
     if (this.connected) return true;

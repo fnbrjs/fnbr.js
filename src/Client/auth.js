@@ -7,20 +7,23 @@ const Endpoints = require('../../resources/Endpoints');
 const Tokens = require('../../resources/Tokens');
 
 /**
- * The authenticator handles the (re)authentification process
+ * Represents the authentication manager of a client
+ * @private
  */
 class Authenticator {
   /**
-   * @param {Client} client Main client
+   * @param {Client} client The main client
    */
   constructor(client) {
     /**
      * The main client
+     * @type {Client}
      */
     this.Client = client;
 
     /**
-     * Authentification data
+     * The authentification data
+     * @type {AuthData}
      */
     this.auths = {
       token: undefined,
@@ -28,7 +31,8 @@ class Authenticator {
     };
 
     /**
-     * Reauthentification data
+     * The reauthentification data
+     * @type {AuthData}
      */
     this.reauths = {
       token: undefined,
@@ -36,7 +40,8 @@ class Authenticator {
     };
 
     /**
-     * The clients account (temporary stored)
+     * The client's account
+     * @type {AuthAccount}
      */
     this.account = {
       id: undefined,
@@ -44,13 +49,15 @@ class Authenticator {
     };
 
     /**
-     * If the client is currently reauthenticating
+     * Whether the client is currently reauthenticating
+     * @type {boolean}
      */
     this.isRefreshing = false;
   }
 
   /**
-   * Start the authentification process
+   * Starts the authentication process
+   * @returns {Promise<Object>}
    */
   async authenticate() {
     this.Client.debug('Authenticating...');
@@ -110,8 +117,8 @@ class Authenticator {
   }
 
   /**
-   * Checks if a token refresh is needed and calls Auth.reauthenticate if needed
-   * @param {Boolean} forceVerify if the /verify endpoint should be requested
+   * Checks if a token refresh is needed and reauthenticates if needed
+   * @param {boolean} [forceVerify=false] Whether the access token should be verified
    */
   async refreshToken(forceVerify = false) {
     let tokenIsValid = true;
@@ -135,7 +142,8 @@ class Authenticator {
   }
 
   /**
-   * Refreshes the auth data
+   * Reauthenticates / Refreshes the access token
+   * @returns {Promise<Object>}
    */
   async reauthenticate() {
     this.Client.reauthLock.active = true;
@@ -172,8 +180,9 @@ class Authenticator {
   }
 
   /**
-   * Authenticate with device auth
-   * @param {*} deviceAuth the device auth
+   * Authenticates using device auth
+   * @param {Object|string|function} deviceAuth The device auth credentials
+   * @returns {Promise<Object>}
    */
   async deviceAuthAuthenticate(deviceAuth) {
     let parsedDeviceAuth;
@@ -199,9 +208,10 @@ class Authenticator {
   }
 
   /**
-   * Authenticate with an exchange code
-   * @param {*} exchangeCode the exchange code
-   * @param {String} token which client secret to use (default to ios)
+   * Authenticates using an exchange code
+   * @param {string|function} exchangeCode The exchange code
+   * @param {BasicToken} [token=FORTNITE_IOS] The basic token that will be used
+   * @returns {Promise<Object>}
    */
   async exchangeCodeAuthenticate(exchangeCode, token = Tokens.FORTNITE_IOS) {
     let parsedExchangeCode;
@@ -224,8 +234,9 @@ class Authenticator {
   }
 
   /**
-   * Authenticate with an authorization code
-   * @param {*} authorizationCode the authorization code
+   * Authenticates using an authorization code
+   * @param {string|function} authorizationCode The authorization code
+   * @returns {Promise<Object>}
    */
   async authorizationCodeAuthenticate(authorizationCode) {
     let parsedAuthorizationCode;
@@ -248,8 +259,9 @@ class Authenticator {
   }
 
   /**
-   * Authenticate with a refresh token
-   * @param {*} refreshToken the refresh token
+   * Authenticates using a refresh token
+   * @param {string|function} refreshToken The refresh token
+   * @returns {Promise<Object>}
    */
   async refreshTokenAuthenticate(refreshToken) {
     let parsedRefreshToken;
@@ -272,15 +284,16 @@ class Authenticator {
   }
 
   /**
-   * Obtain a token
-   * @param {String} grant_type the grant type
-   * @param {Object} valuePair the token value pair
-   * @param {String} token the secret
+   * Obtains an access token
+   * @param {string} grant_type The grant type
+   * @param {Object} valuePair The token value pair
+   * @param {BasicToken} token The basic token
+   * @returns {Promise<Object>}
    */
   async getOauthToken(grant_type, valuePair, token) {
     const formData = {
       grant_type,
-      // token_type: 'eg1',
+      token_type: 'eg1',
       ...valuePair,
     };
 
@@ -288,8 +301,9 @@ class Authenticator {
   }
 
   /**
-   * Generate a device auth
-   * @param {Object} tokenResponse response from the token request
+   * Generates a device auth
+   * @param {Object} tokenResponse The response from the oauth token request
+   * @returns {Promise<Object>}
    */
   async generateDeviceAuth(tokenResponse) {
     return this.Client.Http.send(true, 'POST', `${Endpoints.OAUTH_DEVICE_AUTH}/${tokenResponse.account_id}/deviceAuth`,
@@ -297,7 +311,8 @@ class Authenticator {
   }
 
   /**
-   * Check if the EULA needs to be accepted and accepts it if needed
+   * Accepts EULA if needed
+   * @returns {Promise<Object>}
    */
   async acceptEULA() {
     const EULAdata = await this.Client.Http.send(false, 'GET', `${Endpoints.INIT_EULA}/account/${this.account.id}`, `bearer ${this.auths.token}`);

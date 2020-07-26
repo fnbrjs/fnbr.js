@@ -6,6 +6,9 @@
  * @extends {Map}
  */
 class List extends Map {
+  /**
+   * @param {Iterable} iterable The iterable that will be used to fill the List
+   */
   constructor(iterable) {
     super(iterable);
   }

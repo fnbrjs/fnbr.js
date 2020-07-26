@@ -2,31 +2,32 @@ const PartyMember = require('./PartyMember');
 const Endpoints = require('../../resources/Endpoints');
 
 /**
- * The client in a party
+ * Represents the party member of a client
  * @extends {PartyMember}
  */
 class ClientPartyMember extends PartyMember {
   /**
-   * @param {Object} party the party of this member
-   * @param {Object} data this members data
+   * @param {Object} party The member's party
+   * @param {Object} data The party member's data
    */
   constructor(party, data) {
     super(party, data);
 
     /**
-     * If the client member is currently sending a patch.
-     * Needed for revision
+     * Whether the client's party member is currently sending a patch
+     * @type {boolean}
      */
     this.currentlyPatching = false;
 
     /**
      * Queue to push patches into while currentlyPatching is true
-     * Needed for revision
+     * @type {Array}
      */
     this.patchQueue = [];
 
     /**
-     * The revision of this member
+     * The revision of the client's party member
+     * @type {number}
      */
     this.revision = 0;
 
@@ -34,9 +35,9 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
-   * Set client readiness in party. NOTE: This is visually.
-   * Matchmaking is a completely different thing
-   * @param {Boolean} ready readiness
+   * Sets the readiness of the client's party member
+   * @param {boolean} ready Whether the party member should be ready or not
+   * @returns {Promise<void>}
    */
   async setReadiness(ready) {
     await this.sendPatch({
@@ -46,8 +47,9 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
-   * Set the level of the client in party
-   * @param {Number} level level
+   * Sets the level of the client's party member
+   * @param {number} level The level that will be set
+   * @returns {Promise<void>}
    */
   async setLevel(level) {
     let loadout = this.meta.get('Default:AthenaBannerInfo_j');
@@ -64,11 +66,12 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
-   * Set the battlepass info of the client in party
-   * @param {Boolean} isPurchased if the pass was purchased
-   * @param {Number} level the pass level
-   * @param {Number} selfBoost the self boost %
-   * @param {Number} friendBoost the friend boost %
+   * Sets the Battle Pass info of the party member
+   * @param {boolean} isPurchased Whether the Battle Pass was purchased or not
+   * @param {number} level The Battle Pass level
+   * @param {number} selfBoost The self boost percent
+   * @param {number} friendBoost The friend boost percent
+   * @returns {Promise<void>}
    */
   async setBattlepass(isPurchased, level, selfBoost, friendBoost) {
     let loadout = this.meta.get('Default:BattlePassInfo_j');
@@ -88,9 +91,10 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
-   * Set the clients banner in party
-   * @param {String} banner bannerid
-   * @param {String} color color (number)
+   * Sets party member's banner
+   * @param {string} banner The banner's id
+   * @param {string} color The banner color
+   * @type {Promise<void>}
    */
   async setBanner(banner, color) {
     let loadout = this.meta.get('Default:AthenaBannerInfo_j');
@@ -108,10 +112,11 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
-   * Set the clients outfit in party
-   * @param {String} cid id of the outfit
-   * @param {Array} variants skin variants
-   * @param {Array} enlightment skin enlightment
+   * Sets the party member's outfit
+   * @param {string} cid The skin's id
+   * @param {Array} [variants=[]] The skin's variants
+   * @param {Array} [enlightment=[]] The skin's enlightment
+   * @returns {Promise<void>}
    */
   async setOutfit(cid, variants = [], enlightment = []) {
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
@@ -148,8 +153,10 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
-   * Set the clients backpack in party
-   * @param {String} bid id of the backpack
+   * Sets the party member's backpack
+   * @param {string} bid The backpack's id
+   * @param {Array} [variants=[]] The backpack's variants
+   * @returns {Promise<void>}
    */
   async setBackpack(bid, variants = []) {
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
@@ -177,8 +184,10 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
-   * Set the clients pickaxe in party
-   * @param {String} pickaxe id of the pickaxe
+   * Sets the party member's pickaxe
+   * @param {string} pickaxe The pickaxe's id
+   * @param {Array} [variants=[]] The pickaxe's variants
+   * @returns {Promise<void>}
    */
   async setPickaxe(pickaxe, variants = []) {
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
@@ -206,8 +215,9 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
-   * Set the clients emote in party
-   * @param {String} eid id of the emote
+   * Sets the party member's emote
+   * @param {string} eid The emote's id
+   * @returns {Promise<void>}
    */
   async setEmote(eid) {
     let loadout = this.meta.get('Default:FrontendEmote_j');
@@ -225,7 +235,8 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
-   * Clears the clients emote in party
+   * Clears the party member's emote
+   * @returns {Promise<void>}
    */
   async clearEmote() {
     let loadout = this.meta.get('Default:FrontendEmote_j');
@@ -243,9 +254,10 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
-   * Send a patch with the latest meta
-   * @param {Object} updated updated data
-   * @param {Boolean} isForced if the patch should ignore current patches
+   * Sends a patch with the latest meta
+   * @param {Object} updated The updated data
+   * @param {Boolean} isForced Whether the patch should ignore current patches
+   * @returns {Promise<void>}
    */
   async sendPatch(updated, isForced) {
     if (!isForced && this.currentlyPatching) {

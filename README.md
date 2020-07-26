@@ -11,20 +11,22 @@ Example:
 ```javascript
 const { Client } = require('fnbr');
 
-const fnbot = new Fnbrjs.Client({
+const client = new Client({
   auth: {
-    /*
-    Get an authorization code at
-    https://www.epicgames.com/id/logout?redirectUrl=https%3A//www.epicgames.com/id/login%3FredirectUrl%3Dhttps%253A%252F%252Fwww.epicgames.com%252Fid%252Fapi%252Fredirect%253FclientId%253D3446cd72694c4a4485d81b77adbb2141%2526responseType%253Dcode
-    */
     authorizationCode: '',
   },
 });
 
+client.on('friend:message', (friendMessage) => {
+  console.log(`Message from ${friendMessage.author.displayName}: ${friendMessage.content}`);
+  if(friendMessage.content.toLowerCase().startsWith('ping')) {
+    friendMessage.author.sendMessage('Pong!');
+  }
+});
+
 (async () => {
-  await fnbot.login();
-  console.log(`Fortnite bot ready as ${fnbot.user.displayName}`);
-  console.log(await fnbot.getProfile('Ninja'));
+  await client.login();
+  console.log(`Logged on ${client.user.displayName}`);
 })();
 ```
 

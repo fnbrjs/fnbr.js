@@ -334,7 +334,7 @@ class XMPP {
           await this.Client.waitUntilReady();
           if (this.Client.partyLock.active) await this.Client.partyLock.wait();
           if (!this.Client.party || this.Client.party.id !== body.party_id) break;
-          if (!this.Client.party.me) this.Client.initParty(false);
+          if (!this.Client.party.me) await this.Client.initParty(false);
           if (accountId === this.Client.user.id) {
             if (!this.Client.party.members.has(this.Client.user.id)) this.Client.party.members.set(accountId, new ClientPartyMember(this.Client.party, body));
             this.Client.party.me.sendPatch();
@@ -378,7 +378,7 @@ class XMPP {
           await this.Client.waitUntilReady();
           if (this.Client.partyLock.active) await this.Client.partyLock.wait();
           if (!this.Client.party || this.Client.party.id !== body.party_id) break;
-          if (!this.Client.party.me) this.Client.initParty(false);
+          if (!this.Client.party.me) await this.Client.initParty(false);
           const accountId = body.account_id;
           if (accountId === this.Client.user.id) break;
           const partyMember = this.Client.party.members.get(accountId);

@@ -30,7 +30,7 @@ const Constants = require('../../resources/Constants');
  */
 class Client extends EventEmitter {
   /**
-   * @param {ClientOptions} args Client options
+   * @param {Constants.ClientOptions} args Client options
    */
   constructor(args = {}) {
     super();
@@ -349,7 +349,6 @@ class Client extends EventEmitter {
    * @param {number} [timeout=5000] The timeout (in milliseconds)
    * @param {function} [filter] The filter for the event
    * @returns {Promise<Object>}
-   * @private
    */
   waitForEvent(event, timeout = 5000, filter) {
     return new Promise((res, rej) => {

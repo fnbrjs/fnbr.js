@@ -18,7 +18,7 @@ const Enums = require('../enums');
  * @property {PartyConfig} partyConfig The default party config
  * @property {KairosConfig} kairos The default kairos config
  */
-module.exports.DefaultConfig = Object.freeze({
+module.exports.ClientOptions = Object.freeze({
   savePartyMemberMeta: true,
   /**
    * The options to be used for the client's HTTP manager

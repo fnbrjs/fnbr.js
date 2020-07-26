@@ -22,7 +22,6 @@ const List = require('../Util/List');
 const FriendMessage = require('../Structures/FriendMessage.js');
 const Party = require('../Structures/Party.js');
 const SentPartyInvitation = require('../Structures/SentPartyInvitation.js');
-// eslint-disable-next-line no-unused-vars
 const { ClientOptions } = require('../../resources/Constants');
 
 /**
@@ -72,7 +71,7 @@ class Client extends EventEmitter {
      * The config of the client
      * @type {Client}
      */
-    this.config = Object.freeze(Client.mergeDefault(Constants.DefaultConfig, args));
+    this.config = Object.freeze(Client.mergeDefault(ClientOptions, args));
 
     /**
      * Whether the client is ready or not

@@ -1,0 +1,20 @@
+[
+    {
+        "name": "general",
+        "files": [
+            {
+                "name": "Welcome",
+                "path": "welcome.md"
+            }
+        ]
+    },
+    {
+        "name": "examples",
+        "files": [
+            {
+                "name": "Simple Client",
+                "path": "simple.js"
+            }
+        ]
+    }
+]

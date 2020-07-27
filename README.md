@@ -30,6 +30,9 @@ client.on('friend:message', (friendMessage) => {
 })();
 ```
 
+# Help
+Feel free to join [this Discord server](https://discord.gg/HsUFr5f).
+
 # License
 MIT License
 

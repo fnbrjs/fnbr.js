@@ -1,12 +1,15 @@
 # fnbr.js
-A library to interact with fortnites http and xmpp services.
+A library to interact with fortnites http and xmpp services
 
-# Installation
+## Installation
 ```
 npm i fnbr
 ```
 
-# Example
+## Documentation
+The docs can be found [here](https://fnbr.js.org/)
+
+## Example
 Example: 
 ```javascript
 const { Client } = require('fnbr');
@@ -30,7 +33,10 @@ client.on('friend:message', (friendMessage) => {
 })();
 ```
 
-# License
+## Help
+Feel free to join [this Discord server](https://discord.gg/HsUFr5f)
+
+## License
 MIT License
 
 Copyright (c) 2020 Nils S.

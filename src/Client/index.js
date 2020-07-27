@@ -22,7 +22,7 @@ const List = require('../Util/List');
 const FriendMessage = require('../Structures/FriendMessage.js');
 const Party = require('../Structures/Party.js');
 const SentPartyInvitation = require('../Structures/SentPartyInvitation.js');
-const Constants = require('../../resources/Constants');
+const { ClientOptions } = require('../../resources/Constants');
 
 /**
  * The main client
@@ -30,7 +30,7 @@ const Constants = require('../../resources/Constants');
  */
 class Client extends EventEmitter {
   /**
-   * @param {Constants.ClientOptions} args Client options
+   * @param {ClientOptions} args Client options
    */
   constructor(args = {}) {
     super();
@@ -71,7 +71,7 @@ class Client extends EventEmitter {
      * The config of the client
      * @type {Client}
      */
-    this.config = Object.freeze(Client.mergeDefault(Constants.DefaultConfig, args));
+    this.config = Object.freeze(Client.mergeDefault(ClientOptions, args));
 
     /**
      * Whether the client is ready or not

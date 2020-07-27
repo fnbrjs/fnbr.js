@@ -1,6 +1,7 @@
 /* eslint-disable no-underscore-dangle */
 const Request = require('request-promise');
-const Constants = require('../../resources/Constants');
+// eslint-disable-next-line no-unused-vars
+const { ClientOptions, HttpOptions } = require('../../resources/Constants');
 
 /**
  * Represents the HTTP manager of a client
@@ -34,7 +35,7 @@ class Http {
      * The default requests options
      * @type {HttpOptions}
      */
-    this.options = this.Client.mergeDefault(Constants.DefaultConfig.http, this.Client.config.http);
+    this.options = this.Client.mergeDefault(ClientOptions.http, this.Client.config.http);
     if (!this.Client.config.http.jar) this.options.jar = this.jar;
 
     /**

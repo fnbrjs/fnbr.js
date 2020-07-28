@@ -428,7 +428,7 @@ class XMPP {
         case 'com.epicgames.social.party.notification.v0.MEMBER_NEW_CAPTAIN': {
           await this.Client.waitUntilReady();
           if (this.Client.partyLock.active) await this.Client.partyLock.wait();
-          if (!this.Client.party || this.Client.party.id !== body.party_id) break;
+          if (!this.Client.party || !this.Client.party.leader || this.Client.party.id !== body.party_id) break;
           this.Client.party.leader.role = '';
           const partyMember = this.Client.party.members.get(body.account_id);
           if (!partyMember) break;

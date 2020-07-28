@@ -27,7 +27,7 @@ class PendingFriend extends User {
 
   /**
    * Accepts the friend request
-   * @returns {Promise<void>}
+   * @returns {Promise<Friend>}
    */
   async accept() {
     await this.Client.addFriend(this.id);

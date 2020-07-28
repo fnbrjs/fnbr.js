@@ -66,7 +66,7 @@ class PartyMeta extends Meta {
 
   /**
    * Updates the party members' positions
-   * @returns {*}
+   * @returns {Object}
    */
   updateSquadAssignments() {
     const assignments = [];

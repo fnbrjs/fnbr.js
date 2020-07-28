@@ -5,7 +5,7 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable max-len */
 /* eslint-disable no-console */
-const EventEmitter = require('events');
+const { EventEmitter } = require('events');
 const { createInterface } = require('readline');
 const onExit = require('async-exit-hook');
 const Authenticator = require('./auth.js');
@@ -43,39 +43,6 @@ class Client extends EventEmitter {
    */
   constructor(args = {}) {
     super();
-    /* this.config = {
-      savePartyMemberMeta: true,
-      http: {},
-      debug: console.log,
-      httpDebug: false,
-      xmppDebug: false,
-      status: '',
-      platform: Enums.Platform.WINDOWS,
-      memberMeta: undefined,
-      keepAliveInterval: 60,
-      ...args,
-      auth: {
-        deviceAuth: undefined,
-        exchangeCode: undefined,
-        authorizationCode: undefined,
-        refreshToken: undefined,
-        checkEULA: true,
-        ...args.auth,
-      },
-      partyConfig: {
-        privacy: Enums.PartyPrivacy.PUBLIC,
-        joinConfirmation: false,
-        joinability: 'OPEN',
-        maxSize: 16,
-        chatEnabled: true,
-        ...args.partyConfig,
-      },
-      kairos: {
-        cid: Object.values(Enums.DefaultSkin)[Math.floor(Math.random() * Object.values(Enums.DefaultSkin).length)],
-        color: Object.values(Enums.KairosColor)[Math.floor(Math.random() * Object.values(Enums.KairosColor).length)],
-        ...args.kairos,
-      },
-    }; */
     /**
      * The config of the client
      * @type {Client}
@@ -623,11 +590,12 @@ class Client extends EventEmitter {
    * @returns {Promise<Array>}
    */
   async getNews(mode = Enums.Gamemode.BATTLE_ROYALE, language = Enums.Language.ENGLISH) {
+    if (!Object.values(Enums.Gamemode).includes(mode)) throw new Error(`Fetching news failed: ${mode} is not a valid gamemode! Use the enum`);
     const news = await this.Http.send(false, 'GET', `${Endpoints.BR_NEWS}?lang=${language}`);
     if (!news.success) throw new Error(`Fetching news failed: ${this.parseError(news.response)}`);
 
     if (mode === Enums.Gamemode.BATTLE_ROYALE) return news.response[`${mode}news`].news.motds;
-    return news.response[`${mode}news`].news;
+    return news.response[`${mode}news`].news.messages;
   }
 
   /**

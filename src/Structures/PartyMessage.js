@@ -1,4 +1,3 @@
-/* eslint-disable no-return-await */
 /**
  * Represents a party message
  */
@@ -31,7 +30,7 @@ class PartyMessage {
    * @returns {Promise<PartyMessage>}
    */
   async reply(message) {
-    return await this.chat.send(message);
+    return this.chat.send(message);
   }
 }
 

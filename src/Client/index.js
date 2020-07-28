@@ -22,7 +22,16 @@ const List = require('../Util/List');
 const FriendMessage = require('../Structures/FriendMessage.js');
 const Party = require('../Structures/Party.js');
 const SentPartyInvitation = require('../Structures/SentPartyInvitation.js');
-const { ClientOptions } = require('../../resources/Constants');
+// eslint-disable-next-line no-unused-vars
+const { ClientOptions, DeviceAuthCredentials } = require('../../resources/Constants');
+// eslint-disable-next-line no-unused-vars
+const PartyMessage = require('../Structures/PartyMessage.js');
+// eslint-disable-next-line no-unused-vars
+const FriendPresence = require('../Structures/FriendPresence.js');
+// eslint-disable-next-line no-unused-vars
+const PartyInvitation = require('../Structures/PartyInvitation.js');
+// eslint-disable-next-line no-unused-vars
+const PartyMember = require('../Structures/PartyMember.js');
 
 /**
  * The main client
@@ -71,7 +80,7 @@ class Client extends EventEmitter {
      * The config of the client
      * @type {Client}
      */
-    this.config = Object.freeze(Client.mergeDefault(ClientOptions, args));
+    this.config = Client.mergeDefault(ClientOptions, args);
 
     /**
      * Whether the client is ready or not
@@ -682,3 +691,140 @@ class Client extends EventEmitter {
 }
 
 module.exports = Client;
+
+/**
+ * Emitted when the Client is ready
+ * @event Client#ready
+ */
+
+/**
+ * Emitted when a device auth is created for the client's user
+ * @event Client#deviceauth:created
+ * @param {DeviceAuthCredentials} credentials The device auth's credentials
+ */
+
+/**
+ * Emitted when a member sends a message in the party's chat room
+ * @event Client#party:member:message
+ * @param {PartyMessage} partyMessage The party message
+ */
+
+/**
+ * Emitted when a friend updates his presence
+ * @event Client#friend:presence
+ * @param {FriendPresence} friendPresence The friend's presence
+ */
+
+/**
+ * Emitted when the client receives a message from a friend
+ * @event Client#friend:message
+ * @param {FriendMessage} friendMessage The friend message
+ */
+
+/**
+ * Emitted when a friend request is accepted
+ * @event Client#friend:added
+ * @param {Friend} friend The added friend
+ */
+
+/**
+ * Emitted when the client receives a friend request
+ * @event Client#friend:request
+ * @param {PendingFriend} pendingFriend The received friend request
+ */
+
+/**
+ * Emitted when the client sends a friend request
+ * @event Client#friend:request:sent
+ * @param {PendingFriend} pendingFriend The sent friend request
+ */
+
+/**
+ * Emitted when a friend request is aborted
+ * @event Client#friend:request:aborted
+ * @param {PendingFriend} pendingFriend The aborted friend request
+ */
+
+/**
+ * Emitted when a friend request is rejected
+ * @event Client#friend:request:rejected
+ * @param {PendingFriend} pendingFriend The rejected friend request
+ */
+
+/**
+ * Emitted when a friend is removed
+ * @event Client#friend:removed
+ * @param {Friend} friend The removed friend
+ */
+
+/**
+ * Emitted when a friend is blocked
+ * @event Client#friend:blocked
+ * @param {Friend} friend The blocked friend
+ */
+
+/**
+ * Emitted when a friend is unblocked
+ * @event Client#friend:unblocked
+ * @param {Friend} friend The unblocked friend
+ */
+
+/**
+ * Emitted when the client receives a party invite
+ * @event Client#party:invite
+ * @param {PartyInvitation} partyInvitation The party invite
+ */
+
+/**
+ * Emitted when a member joins the party
+ * @event Client#party:member:joined
+ * @param {PartyMember} partyMember The member that joined the party
+ */
+
+/**
+ * Emitted when a party member gets updated
+ * @event Client#party:member:updated
+ * @param {PartyMember} partyMember The updated party member
+ */
+
+/**
+ * Emitted when a member leaves the party
+ * @event Client#party:member:left
+ * @param {PartyMember} partyMember The party member
+ */
+
+/**
+ * Emitted when a party member expires
+ * @event Client#party:member:expired
+ * @param {PartyMember} partyMember The party member
+ */
+
+/**
+ * Emitted when a party member gets kicked
+ * @event Client#party:member:kicked
+ * @param {PartyMember} partyMember The kicked party member
+ */
+
+/**
+ * Emitted when a party member gets disconnected
+ * @event Client#party:member:disconnected
+ * @param {PartyMember} partyMember The disconnected party member
+ */
+
+/**
+ *  Emitted when a party member gets promoted
+ * @event Client#party:member:promoted
+ * @param {PartyMember} partyMember The promoted party member
+ */
+
+/**
+ * Emitted when a party member gets updated
+ * @event Client#party:updated
+ * @param {PartyMember} partyMember The updated party member
+ */
+
+/**
+ * Emitted when a party invite gets declined
+ * @event Client#party:invite:declined
+ * @param {Friend} friend The friend that declined the party invite
+ */

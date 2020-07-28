@@ -2,6 +2,7 @@ const User = require('./User');
 
 /**
  * Represents the user of a client
+ * @extends {User}
  */
 class ClientUser extends User {
   /**

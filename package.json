@@ -1,11 +1,11 @@
 {
   "name": "fnbr",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A library to interact with Epic Games' Fortnite HTTP and XMPP services",
-  "main": "index.js",
+  "main": "./index.js",
   "repository": {
-      "type": "git",
-      "url": "git+https://github.com/fnbrjs/fnbr.js.git"
+    "type": "git",
+    "url": "git+https://github.com/fnbrjs/fnbr.js.git"
   },
   "author": "This Nils",
   "contributors": [
@@ -13,7 +13,7 @@
   ],
   "license": "MIT",
   "bugs": {
-      "url": "https://github.com/fnbrjs/fnbr.js/issues"
+    "url": "https://github.com/fnbrjs/fnbr.js/issues"
   },
   "homepage": "https://fnbr.js.org",
   "devDependencies": {

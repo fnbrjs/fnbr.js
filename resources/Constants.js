@@ -113,10 +113,10 @@ module.exports.AuthAccount = Object.freeze({
  * @property {?string} asset The avatar's asset
  * @property {?string} background The avatar's background
  */
-module.exports.FPKairosAvatar = {
+module.exports.FPKairosAvatar = Object.freeze({
   asset: undefined,
   background: undefined,
-};
+});
 
 /**
  * Contains data about a friend's gameplay stats
@@ -125,11 +125,11 @@ module.exports.FPKairosAvatar = {
  * @property {?boolean} fellToDeath Whether the friend died
  * @property {?number} serverPlayerCount The player count on the gameplay's server
  */
-module.exports.FPGameplayStats = {
+module.exports.FPGameplayStats = Object.freeze({
   kills: undefined,
   fellToDeath: false,
   serverPlayerCount: undefined,
-};
+});
 
 /**
  * Contains data about a friend's party
@@ -140,10 +140,23 @@ module.exports.FPGameplayStats = {
  * @property {?string} platform The party's platform
  * @property {?string} buildId The party's build id
  */
-module.exports.FPPartyData = {
+module.exports.FPPartyData = Object.freeze({
   id: undefined,
   isPrivate: undefined,
   memberCount: undefined,
   platform: undefined,
   buildId: undefined,
-};
+});
+
+/**
+ * Contains a device auth's credentials
+ * @typedef {Object} DeviceAuthCredentials
+ * @property {string} accountId The account id of the device auth
+ * @property {string} deviceId The id of the device auth
+ * @property {string} secret The secret of the device auth
+ */
+module.exports.DeviceAuthCredentials = Object.freeze({
+  accountId: undefined,
+  deviceId: undefined,
+  secret: undefined,
+});

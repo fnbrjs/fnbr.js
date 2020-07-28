@@ -5,6 +5,7 @@ const SentPartyInvitation = require('./SentPartyInvitation');
 
 /**
  * Represents an Epic Games friend of a client
+ * @extends {User}
  */
 class Friend extends User {
   /**

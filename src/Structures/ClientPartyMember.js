@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 const PartyMember = require('./PartyMember');
 const Endpoints = require('../../resources/Endpoints');
 
@@ -117,6 +118,12 @@ class ClientPartyMember extends PartyMember {
    * @param {Array} [variants=[]] The skin's variants
    * @param {Array} [enlightment=[]] The skin's enlightment
    * @returns {Promise<void>}
+   * @example
+   * setOutfit('CID_028_Athena_Commando_F');
+   * // with variants:
+   * setOutfit('CID_029_Athena_Commando_F_Halloween', [{ channel: 'Material', variant: 'Mat3' }]);
+   * // with enlightment:
+   * setOutfit('CID_701_Athena_Commando_M_BananaAgent', [{ channel: 'Progressive', variant: 'Stage4' }], [2, 350]);
    */
   async setOutfit(cid, variants = [], enlightment = []) {
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
@@ -157,6 +164,10 @@ class ClientPartyMember extends PartyMember {
    * @param {string} bid The backpack's id
    * @param {Array} [variants=[]] The backpack's variants
    * @returns {Promise<void>}
+   * @example
+   * setBackpack('BID_001_BlueSquire');
+   * // with variants
+   * setBackpack('BID_105_GhostPortal', [{ channel: 'Particle', variant: 'Particle1' }]);
    */
   async setBackpack(bid, variants = []) {
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
@@ -188,6 +199,10 @@ class ClientPartyMember extends PartyMember {
    * @param {string} pickaxe The pickaxe's id
    * @param {Array} [variants=[]] The pickaxe's variants
    * @returns {Promise<void>}
+   * @example
+   * setPickaxe('Pickaxe_ID_011_Medieval');
+   * // with variants
+   * setPickaxe('Pickaxe_ID_109_SkullTrooper', [{ channel: 'Material', variant: 'Mat2' }]);
    */
   async setPickaxe(pickaxe, variants = []) {
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
@@ -220,6 +235,7 @@ class ClientPartyMember extends PartyMember {
    * @returns {Promise<void>}
    */
   async setEmote(eid) {
+    if (this.meta.get('Default:FrontendEmote_j').FrontendEmote.emoteItemDef !== 'None') await this.clearEmote();
     let loadout = this.meta.get('Default:FrontendEmote_j');
     loadout = this.meta.set('Default:FrontendEmote_j', {
       ...loadout,
@@ -258,6 +274,7 @@ class ClientPartyMember extends PartyMember {
    * @param {Object} updated The updated data
    * @param {Boolean} isForced Whether the patch should ignore current patches
    * @returns {Promise<void>}
+   * @private
    */
   async sendPatch(updated, isForced) {
     if (!isForced && this.currentlyPatching) {

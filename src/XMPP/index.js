@@ -106,8 +106,8 @@ class XMPP {
         else {
           this.Client.debug(`XMPP-Client successfully reconnected (${((Date.now() - startConnect) / 1000).toFixed(2)}s)`);
           if (this.Client.party) {
-            await this.Client.initParty(false);
-            this.Client.party.patchPresence();
+            await this.Client.initParty();
+            await this.Client.party.patchPresence();
           }
         }
         res({ success: true });
@@ -157,7 +157,9 @@ class XMPP {
       },
     };
 
+    this.Client.isReady = false;
     const reconnect = await this.connect(true);
+    this.Client.isReady = true;
     if (!reconnect.success) return reconnect;
     this.isReconnecting = false;
     return { success: true };
@@ -168,10 +170,12 @@ class XMPP {
    * @returns {void}
    */
   setupEvents() {
-    this.stream.on('disconnected', () => {
+    this.stream.on('disconnected', async () => {
       if (this.connected) {
         this.connected = false;
-        this.connect(true);
+        this.Client.isReady = false;
+        await this.connect(true);
+        this.Client.isReady = true;
       }
     });
 
@@ -334,14 +338,14 @@ class XMPP {
           await this.Client.waitUntilReady();
           if (this.Client.partyLock.active) await this.Client.partyLock.wait();
           if (!this.Client.party || this.Client.party.id !== body.party_id) break;
-          if (!this.Client.party.me) await this.Client.initParty(false);
+          if (!this.Client.party.me) break;
           if (accountId === this.Client.user.id) {
             if (!this.Client.party.members.has(this.Client.user.id)) this.Client.party.members.set(accountId, new ClientPartyMember(this.Client.party, body));
-            this.Client.party.me.sendPatch();
+            await this.Client.party.me.sendPatch();
           } else this.Client.party.members.set(accountId, new PartyMember(this.Client.party, body));
           const partyMember = this.Client.party.members.get(accountId);
-          this.Client.party.patchPresence();
-          if (this.Client.party.me.isLeader) this.Client.party.refreshSquadAssignments();
+          await this.Client.party.patchPresence();
+          if (this.Client.party.me.isLeader) await this.Client.party.refreshSquadAssignments();
           this.Client.emit('party:member:joined', partyMember);
           this.Client.emit(`party:member#${accountId}:joined`, partyMember);
         } break;

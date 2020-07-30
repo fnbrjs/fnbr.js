@@ -45,7 +45,7 @@ class Client extends EventEmitter {
     super();
     /**
      * The config of the client
-     * @type {Client}
+     * @type {ClientOptions}
      */
     this.config = Client.mergeDefault(ClientOptions, args);
 
@@ -171,7 +171,7 @@ class Client extends EventEmitter {
   // -------------------------------------GENERAL-------------------------------------
 
   /**
-   * Initiates client's authentication process
+   * Initiates client's login process
    * @returns {Promise<void>}
    */
   async login() {
@@ -192,9 +192,10 @@ class Client extends EventEmitter {
     if (!xmpp.success) throw new Error(`XMPP-client connecting failed: ${this.parseError(xmpp.response)}`);
 
     await this.initParty();
-
-    this.emit('ready');
     this.isReady = true;
+
+    await this.waitForEvent(`party:member#${this.user.id}:joined`, 30000);
+    this.emit('ready');
   }
 
   /**

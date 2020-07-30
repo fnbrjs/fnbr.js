@@ -46,7 +46,7 @@ class PartyMemberMeta extends Meta {
       'Default:FrontendEmote_j': JSON.stringify({
         FrontendEmote: {
           emoteItemDef: 'None',
-          emoteItemDefEncryptionKey: '',
+          emoteEKey: '',
           emoteSection: -1,
         },
       }),

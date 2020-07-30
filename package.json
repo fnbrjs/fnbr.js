@@ -1,6 +1,6 @@
 {
   "name": "fnbr",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A library to interact with Epic Games' Fortnite HTTP and XMPP services",
   "main": "./index.js",
   "repository": {

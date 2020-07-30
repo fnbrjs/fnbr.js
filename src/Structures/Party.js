@@ -36,7 +36,7 @@ class Party {
 
     /**
      * The config of this party
-     * @type {Object}
+     * @type {ClientOptions.partyConfig}
      */
     this.config = { ...this.Client.config.partyConfig, ...this.Client.makeCamelCase(data.config) };
 
@@ -351,6 +351,12 @@ class Party {
    * @returns {Promise<void>}
    */
   async setPrivacy(privacy) {
+    if (!Object.values(PartyPrivacy).includes(privacy)) {
+      throw new Error(`Cannot change party privacy: ${privacy} is not a valid party privacy. Use the enum`);
+    }
+
+    if (this.Client.isReady && this.config.privacy === privacy) throw new Error('Cannot change party privacy: You tried setting the privacy to the current one');
+
     const updated = {};
     const deleted = [];
 
@@ -377,6 +383,7 @@ class Party {
     } else deleted.push('urn:epic:cfg:not-accepting-members-reason_i');
 
     await this.sendPatch(updated, deleted);
+    this.config.privacy = privacy;
   }
 
   /**

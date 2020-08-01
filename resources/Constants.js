@@ -14,6 +14,7 @@ const Enums = require('../enums');
  * @property {Platform} [platform=WINDOWS] The platform that will be used for the client's user
  * @property {Object} [memberMeta={}] The client's default member meta for joined parties
  * @property {number} [keepAliveInterval=60] The client's XMPP connection's keep alive interval
+ * @property {boolean} [cachePresences=true] Whether friend presences should be cached. NOTE: This will break friend.isOnline, friend.isJoinable and friend.joinParty()
  * @property {ClientAuth} auth The credentials that will be used for client's authentication
  * @property {PartyConfig} partyConfig The default party config
  * @property {KairosConfig} kairos The default kairos config
@@ -39,6 +40,7 @@ module.exports.ClientOptions = Object.freeze({
   platform: Enums.Platform.WINDOWS,
   memberMeta: {},
   keepAliveInterval: 60,
+  cachePresences: true,
   /**
    * The credentials that will be used for client's authentication
    * @typedef {Object} ClientAuth

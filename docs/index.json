@@ -5,6 +5,10 @@
             {
                 "name": "Welcome",
                 "path": "welcome.md"
+            },
+            {
+                "name": "Authentication",
+                "path": "auth.md"
             }
         ]
     },
@@ -14,6 +18,10 @@
             {
                 "name": "Simple Client",
                 "path": "simple.js"
+            },
+            {
+                "name": "DeviceAuth Client",
+                "path": "deviceauth.js"
             }
         ]
     }

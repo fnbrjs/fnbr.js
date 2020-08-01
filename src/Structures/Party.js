@@ -80,6 +80,12 @@ class Party {
      */
     this.revision = data.revision || 0;
 
+    /**
+     * If squad assignments should be auto patched
+     * @type {boolean}
+     */
+    this.patchAssignmentsLocked = false;
+
     if (!this.id) throw new Error('Cannot initialize party without an id');
   }
 
@@ -273,6 +279,8 @@ class Party {
     }
     this.currentlyPatching = true;
 
+    if (this.Client.isReady) console.log(updated);
+
     const patch = await this.Client.Http.send(true, 'PATCH',
       `${Endpoints.BR_PARTY}/parties/${this.id}`, `bearer ${this.Client.Auth.auths.token}`, null, {
         config: {
@@ -355,7 +363,7 @@ class Party {
       throw new Error(`Cannot change party privacy: ${privacy} is not a valid party privacy. Use the enum`);
     }
 
-    if (this.Client.isReady && this.config.privacy === privacy) throw new Error('Cannot change party privacy: You tried setting the privacy to the current one');
+    if (!this.Client.partyLock.active && this.config.privacy === privacy) throw new Error('Cannot change party privacy: You tried setting the privacy to the current one');
 
     const updated = {};
     const deleted = [];
@@ -433,7 +441,22 @@ class Party {
    * @private
    */
   async refreshSquadAssignments() {
-    await this.sendPatch({ 'Default:RawSquadAssignments_j': this.meta.updateSquadAssignments() });
+    if (!this.patchAssignmentsLocked) await this.sendPatch({ 'Default:RawSquadAssignments_j': this.meta.updateSquadAssignments() });
+  }
+
+  async hideMembers(hide = true) {
+    if (!this.me.isLeader) throw new Error(`Cannot ${hide ? '' : 'un'}hide party members: Client isn't party leader`);
+    if (hide) {
+      this.patchAssignmentsLocked = true;
+      await this.sendPatch({
+        'Default:RawSquadAssignments_j': this.meta.set('Default:RawSquadAssignments_j', {
+          RawSquadAssignments: [{ memberId: this.Client.user.id, absoluteMemberIdx: 0 }],
+        }),
+      });
+    } else {
+      this.patchAssignmentsLocked = false;
+      await this.refreshSquadAssignments();
+    }
   }
 
   /**

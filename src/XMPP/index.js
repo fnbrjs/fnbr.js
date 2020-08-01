@@ -205,6 +205,7 @@ class XMPP {
     });
 
     this.stream.on('presence', async (p) => {
+      await this.Client.waitUntilReady();
       if (p.type === 'unavailable' || !p.status) return;
       const fromId = p.from.split('@')[0];
       if (fromId === this.Client.user.id) {
@@ -212,10 +213,11 @@ class XMPP {
         return;
       }
       if (this.Client.pendingFriends.get(fromId) && !this.Client.friends.get(fromId)) await this.Client.waitForEvent(`friend#${fromId}:added`);
-      const friendPresence = new FriendPresence(this.Client, JSON.parse(p.status), fromId);
-      this.Client.friends.get(fromId).presence = friendPresence;
-      this.Client.emit('friend:presence', friendPresence);
-      this.Client.emit(`friend#${fromId}:presence`, friendPresence);
+      const before = this.Client.friends.get(fromId).presence;
+      const after = new FriendPresence(this.Client, JSON.parse(p.status), fromId);
+      if (this.Client.config.cachePresences) this.Client.friends.get(fromId).presence = after;
+      this.Client.emit('friend:presence', before, after);
+      this.Client.emit(`friend#${fromId}:presence`, before, after);
     });
 
     this.stream.on('chat', (c) => {
@@ -338,14 +340,13 @@ class XMPP {
           await this.Client.waitUntilReady();
           if (this.Client.partyLock.active) await this.Client.partyLock.wait();
           if (!this.Client.party || this.Client.party.id !== body.party_id) break;
-          if (!this.Client.party.me) break;
           if (accountId === this.Client.user.id) {
             if (!this.Client.party.members.has(this.Client.user.id)) this.Client.party.members.set(accountId, new ClientPartyMember(this.Client.party, body));
             await this.Client.party.me.sendPatch();
           } else this.Client.party.members.set(accountId, new PartyMember(this.Client.party, body));
           const partyMember = this.Client.party.members.get(accountId);
           await this.Client.party.patchPresence();
-          if (this.Client.party.me.isLeader) await this.Client.party.refreshSquadAssignments();
+          if (this.Client.party.me && this.Client.party.me.isLeader) await this.Client.party.refreshSquadAssignments();
           this.Client.emit('party:member:joined', partyMember);
           this.Client.emit(`party:member#${accountId}:joined`, partyMember);
         } break;
@@ -434,6 +435,7 @@ class XMPP {
           if (this.Client.partyLock.active) await this.Client.partyLock.wait();
           if (!this.Client.party || !this.Client.party.leader || this.Client.party.id !== body.party_id) break;
           this.Client.party.leader.role = '';
+          this.Client.party.patchAssignmentsLocked = false;
           const partyMember = this.Client.party.members.get(body.account_id);
           if (!partyMember) break;
           this.Client.party.members.get(body.account_id).role = 'CAPTAIN';

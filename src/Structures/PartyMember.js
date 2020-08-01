@@ -51,7 +51,7 @@ class PartyMember {
    * @readonly
    */
   get pickaxe() {
-    return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.pickaxeDef;
+    return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.pickaxeDef.match(/.*\.([^'"]*)/)[0];
   }
 
   /**
@@ -60,7 +60,7 @@ class PartyMember {
    * @readonly
    */
   get outfit() {
-    return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.characterDef;
+    return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.characterDef.match(/.*\.([^'"]*)/)[0];
   }
 
   /**
@@ -69,7 +69,9 @@ class PartyMember {
    * @readonly
    */
   get emote() {
-    return this.meta.get('Default:FrontendEmote_j').FrontendEmote.emoteItemDef;
+    const emote = this.meta.get('Default:FrontendEmote_j').FrontendEmote.emoteItemDef;
+    if (emote === 'None') return undefined;
+    return emote.match(/.*\.([^'"]*)/)[0];
   }
 
   /**

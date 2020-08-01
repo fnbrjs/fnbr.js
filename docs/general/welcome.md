@@ -28,15 +28,15 @@ const client = new Client({
 });
 
 client.on('friend:message', (friendMessage) => {
-  console.log(`Message from ${friendMessage.author.displayName}: ${friendMessage.content}`);
-  if(friendMessage.content.toLowerCase().startsWith('ping')) {
+  console.log(`Message from ${friendMessage.friend.displayName}: ${friendMessage.content}`);
+  if (friendMessage.content.toLowerCase().startsWith('ping')) {
     friendMessage.author.sendMessage('Pong!');
   }
 });
 
 (async () => {
   await client.login();
-  console.log(`Logged on ${client.user.displayName}`);
+  console.log(`Logged in as ${client.user.displayName}`);
 })();
 ```
 

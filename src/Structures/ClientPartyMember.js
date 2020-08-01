@@ -251,6 +251,27 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
+   * Sets the party member's emoji
+   * @param {string} emoji The emoji's id
+   * @returns {Promise<void>}
+   */
+  async setEmoji(emoji) {
+    if (this.meta.get('Default:FrontendEmote_j').FrontendEmote.emoteItemDef !== 'None') await this.clearEmote();
+    let loadout = this.meta.get('Default:FrontendEmote_j');
+    loadout = this.meta.set('Default:FrontendEmote_j', {
+      ...loadout,
+      FrontendEmote: {
+        ...loadout.FrontendEmote,
+        emoteItemDef: `/Game/Athena/Items/Cosmetics/Dances/Emoji/${emoji}.${emoji}`,
+        emoteSection: -2,
+      },
+    });
+    await this.sendPatch({
+      'Default:FrontendEmote_j': loadout,
+    });
+  }
+
+  /**
    * Clears the party member's emote
    * @returns {Promise<void>}
    */

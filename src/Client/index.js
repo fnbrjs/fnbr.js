@@ -76,7 +76,7 @@ class Client extends EventEmitter {
 
     /**
      * The authentication manager of the client
-     * @type {Authenticatior}
+     * @type {Authenticator}
      * @private
      */
     this.Auth = new Authenticator(this);
@@ -192,8 +192,8 @@ class Client extends EventEmitter {
     if (!xmpp.success) throw new Error(`XMPP-client connecting failed: ${this.parseError(xmpp.response)}`);
 
     await this.initParty();
-    this.isReady = true;
 
+    this.isReady = true;
     await this.waitForEvent(`party:member#${this.user.id}:joined`, 30000);
     this.emit('ready');
   }
@@ -649,13 +649,25 @@ class Client extends EventEmitter {
   /**
    * Fetches the current Battle Royale store
    * @param {Language} language The language
-   * @returns {Promise<Object>} The parsed Battle Royale store response
+   * @returns {Promise<Object>} The Battle Royale store
    */
   async getBRStore(language = Enums.Language.ENGLISH) {
     const shop = await this.Http.send(true, 'GET', `${Endpoints.BR_STORE}?lang=${language}`, `bearer ${this.Auth.auths.token}`);
     if (!shop.success) throw new Error(`Fetching shop failed: ${this.parseError(shop.response)}`);
 
     return shop.response;
+  }
+
+  /**
+   * Fetch the current Battle Royale event flags
+   * @param {Language} language The language
+   * @returns {Promise<Object>} The Battle Royale event flags
+   */
+  async getBREventFlags(language = Enums.Language.ENGLISH) {
+    const eventFlags = await this.Http.send(true, 'GET', `${Endpoints.BR_EVENT_FLAGS}?lang=${language}`, `bearer ${this.Auth.auths.token}`);
+    if (!eventFlags.success) throw new Error(`Fetching challenges failed: ${this.parseError(eventFlags.response)}`);
+
+    return eventFlags.response;
   }
 }
 

@@ -119,11 +119,11 @@ class ClientPartyMember extends PartyMember {
    * @param {Array} [enlightment=[]] The skin's enlightment
    * @returns {Promise<void>}
    * @example
-   * setOutfit('CID_028_Athena_Commando_F');
+   * client.party.me.setOutfit('CID_028_Athena_Commando_F');
    * // with variants:
-   * setOutfit('CID_029_Athena_Commando_F_Halloween', [{ channel: 'Material', variant: 'Mat3' }]);
+   * client.party.me.setOutfit('CID_029_Athena_Commando_F_Halloween', [{ channel: 'Material', variant: 'Mat3' }]);
    * // with enlightment:
-   * setOutfit('CID_701_Athena_Commando_M_BananaAgent', [{ channel: 'Progressive', variant: 'Stage4' }], [2, 350]);
+   * client.party.me.setOutfit('CID_701_Athena_Commando_M_BananaAgent', [{ channel: 'Progressive', variant: 'Stage4' }], [2, 350]);
    */
   async setOutfit(cid, variants = [], enlightment = []) {
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
@@ -165,9 +165,9 @@ class ClientPartyMember extends PartyMember {
    * @param {Array} [variants=[]] The backpack's variants
    * @returns {Promise<void>}
    * @example
-   * setBackpack('BID_001_BlueSquire');
+   * client.party.me.setBackpack('BID_001_BlueSquire');
    * // with variants
-   * setBackpack('BID_105_GhostPortal', [{ channel: 'Particle', variant: 'Particle1' }]);
+   * client.party.me.setBackpack('BID_105_GhostPortal', [{ channel: 'Particle', variant: 'Particle1' }]);
    */
   async setBackpack(bid, variants = []) {
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
@@ -200,9 +200,9 @@ class ClientPartyMember extends PartyMember {
    * @param {Array} [variants=[]] The pickaxe's variants
    * @returns {Promise<void>}
    * @example
-   * setPickaxe('Pickaxe_ID_011_Medieval');
+   * client.party.me.setPickaxe('Pickaxe_ID_011_Medieval');
    * // with variants
-   * setPickaxe('Pickaxe_ID_109_SkullTrooper', [{ channel: 'Material', variant: 'Mat2' }]);
+   * client.party.me.setPickaxe('Pickaxe_ID_109_SkullTrooper', [{ channel: 'Material', variant: 'Mat2' }]);
    */
   async setPickaxe(pickaxe, variants = []) {
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');

@@ -279,8 +279,6 @@ class Party {
     }
     this.currentlyPatching = true;
 
-    if (this.Client.isReady) console.log(updated);
-
     const patch = await this.Client.Http.send(true, 'PATCH',
       `${Endpoints.BR_PARTY}/parties/${this.id}`, `bearer ${this.Client.Auth.auths.token}`, null, {
         config: {

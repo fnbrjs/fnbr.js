@@ -21,6 +21,7 @@ const Enums = require('../../enums');
 const List = require('../Util/List');
 const FriendMessage = require('../Structures/FriendMessage.js');
 const Party = require('../Structures/Party.js');
+// eslint-disable-next-line no-unused-vars
 const SentPartyInvitation = require('../Structures/SentPartyInvitation.js');
 // eslint-disable-next-line no-unused-vars
 const { ClientOptions, DeviceAuthCredentials } = require('../../resources/Constants');
@@ -564,22 +565,7 @@ class Client extends EventEmitter {
    * @returns {Promise<SentPartyInvitation>}
    */
   async invite(friend) {
-    const cachedFriend = this.friends.find((f) => f.id === friend || f.displayName === friend);
-    if (!cachedFriend) throw new Error(`Failed sending party invitation to ${friend}: Friend not existing`);
-    if (this.party.members.get(cachedFriend.id)) throw new Error(`Failed sending party invitation to ${friend}: Friend is already in the party`);
-    if (this.party.members.size === this.party.config.maxSize) throw new Error(`Failed sending party invitation to ${friend}: Party is full`);
-    const data = await this.Http.send(true, 'POST',
-      `${Endpoints.BR_PARTY}/parties/${this.party.id}/invites/${cachedFriend.id}?sendPing=true`, `bearer ${this.Auth.auths.token}`, null, {
-        'urn:epic:cfg:build-id_s': '1:1:',
-        'urn:epic:conn:platform_s': this.config.platform,
-        'urn:epic:conn:type_s': 'game',
-        'urn:epic:invite:platformdata_s': '',
-        'urn:epic:member:dn_s': this.user.displayName,
-      });
-    if (!data.success) throw new Error(`Failed sending party invitation to ${friend}: ${this.parseError(data.response)}`);
-    return new SentPartyInvitation(this, this.party, cachedFriend, {
-      sent_at: Date.now(),
-    });
+    return this.party.invite(friend);
   }
 
   // -------------------------------------BATTLE ROYALE-------------------------------------
@@ -668,6 +654,17 @@ class Client extends EventEmitter {
     if (!eventFlags.success) throw new Error(`Fetching challenges failed: ${this.parseError(eventFlags.response)}`);
 
     return eventFlags.response;
+  }
+
+  /**
+   * Fetch the current Fortnite server status
+   * @returns {Promise<Object>} The server status
+   */
+  async getFortniteServerStatus() {
+    const serverStatus = await this.Http.send(true, 'GET', Endpoints.BR_SERVER_STATUS, `bearer ${this.Auth.auths.token}`);
+    if (!serverStatus.success) throw new Error(`Fetching server status failed: ${this.parseError(serverStatus.response)}`);
+
+    return serverStatus.response;
   }
 }
 

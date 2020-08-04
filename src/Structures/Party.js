@@ -143,8 +143,13 @@ class Party {
       });
     if (!party.success) {
       this.Client.partyLock.active = false;
-      this.Client.initParty();
-      throw new Error(`Failed joining party: ${this.Client.parseError(party.response)}`);
+      if (party.response.errorCode === 'errors.com.epicgames.social.party.user_has_party') {
+        await this.Client.initParty(false);
+        await this.join();
+      } else {
+        await this.Client.initParty();
+        throw new Error(`Failed joining party: ${this.Client.parseError(party.response)}`);
+      }
     }
 
     await this.chat.join();
@@ -224,7 +229,7 @@ class Party {
   async invite(friend) {
     const cachedFriend = this.Client.friends.find((f) => f.id === friend || f.displayName === friend);
     if (!cachedFriend) throw new Error(`Failed sending party invitation to ${friend}: Friend not existing`);
-    if (this.members.get(cachedFriend.id)) throw new Error(`Failed sending party invitation to ${friend}: Friend is already in the party`);
+    if (this.members.has(cachedFriend.id)) throw new Error(`Failed sending party invitation to ${friend}: Friend is already in the party`);
     if (this.members.size === this.config.maxSize) throw new Error(`Failed sending party invitation to ${friend}: Party is full`);
     const data = await this.Client.Http.send(true, 'POST',
       `${Endpoints.BR_PARTY}/parties/${this.id}/invites/${cachedFriend.id}?sendPing=true`, `bearer ${this.Client.Auth.auths.token}`, null, {

@@ -57,6 +57,13 @@ class XMPP {
      * @type {string}
      */
     this.resource = `V2:Fortnite:${this.Client.config.platform}::${this.uuid}`;
+
+    /**
+     * This stores the parties which the client got kicked from
+     * You can't accept an invite of a party you got kicked from
+     * @type {Array}
+     */
+    this.kickedPartyIds = [];
   }
 
   /**
@@ -314,14 +321,25 @@ class XMPP {
 
         case 'com.epicgames.social.party.notification.v0.PING': {
           await this.Client.waitUntilReady();
-          if (this.Client.partyLock.active) await this.Client.partyLock.wait();
           const pingerId = body.pinger_id;
-          if (!pingerId) break;
           let data = await this.Client.Http.send(true, 'GET',
             `${Endpoints.BR_PARTY}/user/${this.Client.user.id}/pings/${pingerId}/parties`, `bearer ${this.Client.Auth.auths.token}`);
-          if (!data.success) throw new Error(`Failed fetching ping from ${pingerId}: ${this.Client.parseError(data.response)}`);
+          if (!data.success) {
+            this.Client.debug(`Failed fetching invite from ${pingerId}: ${this.Client.parseError(data.response)}`);
+            break;
+          }
+          if (!data.response[0]) {
+            this.Client.debug(`Failed fetching invite from ${pingerId}: No invite found`);
+            break;
+          }
+          if (this.kickedPartyIds.some((i) => i === data.response[0].id)) {
+            this.Client.debug(`Failed fetching invite from ${pingerId}: The client previously got kicked from this party`);
+            break;
+          }
           [data] = data.response;
-          const party = new Party(this.Client, data);
+          let party;
+          if (data.config.discoverability === 'ALL') party = await Party.Lookup(this.Client, data.id);
+          else party = new Party(this.Client, data);
           let invite;
           for (const inv of data.invites) {
             if (inv.sent_by === pingerId && inv.status === 'SENT') {
@@ -403,7 +421,8 @@ class XMPP {
           const accountId = body.account_id;
           const partyMember = this.Client.party.members.get(accountId);
           if (accountId === this.Client.user.id) {
-            await Party.Create(this.Client);
+            this.kickedPartyIds.push(body.party_id);
+            await this.Client.initParty();
           } else {
             if (!partyMember) break;
             this.Client.party.members.delete(accountId);

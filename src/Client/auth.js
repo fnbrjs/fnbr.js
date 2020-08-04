@@ -47,12 +47,6 @@ class Authenticator {
       id: undefined,
       displayName: undefined,
     };
-
-    /**
-     * Whether the client is currently reauthenticating
-     * @type {boolean}
-     */
-    this.isRefreshing = false;
   }
 
   /**
@@ -146,6 +140,7 @@ class Authenticator {
    * @returns {Promise<Object>}
    */
   async reauthenticate() {
+    if (this.Client.reauthLock.active) return { success: true };
     this.Client.reauthLock.active = true;
     this.Client.debug('Reauthenticating...');
     const startAuth = new Date().getTime();

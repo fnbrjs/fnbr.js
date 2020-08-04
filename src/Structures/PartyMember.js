@@ -46,32 +46,43 @@ class PartyMember {
   }
 
   /**
-   * The asset and id of this party member's pickaxe
+   * The id of this party member's pickaxe
    * @type {string}
    * @readonly
    */
   get pickaxe() {
-    return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.pickaxeDef.match(/.*\.([^'"]*)/)[0];
+    return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.pickaxeDef.match(/(?<=.*\.).*/)[0];
   }
 
   /**
-   * The asset and id of this party member's outfit
+   * The id of this party member's outfit
    * @type {string}
    * @readonly
    */
   get outfit() {
-    return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.characterDef.match(/.*\.([^'"]*)/)[0];
+    return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.characterDef.match(/(?<=.*\.).*/)[0];
   }
 
   /**
-   * The asset and id of this party member's emote
+   * The id of this party member's emote
    * @type {string}
    * @readonly
    */
   get emote() {
-    const emote = this.meta.get('Default:FrontendEmote_j').FrontendEmote.emoteItemDef;
-    if (emote === 'None') return undefined;
-    return emote.match(/.*\.([^'"]*)/)[0];
+    const emoteAsset = this.meta.get('Default:FrontendEmote_j').FrontendEmote.emoteItemDef;
+    if (emoteAsset === 'None') return undefined;
+    return emoteAsset.match(/(?<=.*\.).*/)[0];
+  }
+
+  /**
+   * The id of this party member's backpack
+   * @type {string}
+   * @readonly
+   */
+  get backpack() {
+    const backpackAsset = this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.backpackDef;
+    if (backpackAsset === 'None') return undefined;
+    return backpackAsset.match(/(?<=.*\.).*/)[0];
   }
 
   /**

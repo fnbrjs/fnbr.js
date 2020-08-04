@@ -57,7 +57,9 @@ class Http {
    * @returns {Promise<Object>}
    */
   async send(checkToken, method, url, auth, headers, data, form) {
-    if (this.Client.reauthLock.active) await this.Client.reauthLock.wait();
+    if (this.Client.reauthLock.active && url !== 'https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/token') {
+      await this.Client.reauthLock.wait();
+    }
     if (checkToken) {
       const tokenRefresh = await this.Client.Auth.refreshToken();
       if (!tokenRefresh.success) {
@@ -81,10 +83,18 @@ class Http {
     if (headers) reqOptions.headers = { ...reqOptions.headers, ...headers };
 
     try {
-      if (this.Client.config.httpDebug) this.Client.debug(`${method} ${url}`);
+      const reqStartTime = Date.now();
       const response = await this.request(reqOptions);
+      if (this.Client.config.httpDebug) this.Client.debug(`${method} ${url} (${((Date.now() - reqStartTime) / 1000).toFixed(2)}s)`);
       return { success: true, response };
     } catch (err) {
+      if (checkToken && err.error.errorCode === 'errors.com.epicgames.common.oauth.invalid_token') {
+        const reauth = await this.Client.Auth.reauthenticate();
+        if (reauth.success) {
+          this.Client.debug(`Restarting client as reauthentification failed: ${this.Client.parseError(reauth.response)}`);
+          await this.Client.restart();
+        }
+      }
       return { success: false, response: err.error };
     }
   }

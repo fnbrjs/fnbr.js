@@ -68,7 +68,7 @@ module.exports.ClientOptions = Object.freeze({
    */
   partyConfig: {
     privacy: Enums.PartyPrivacy.PUBLIC,
-    joinConfirmation: false,
+    joinConfirmation: true,
     joinability: 'OPEN',
     maxSize: 16,
     chatEnabled: true,

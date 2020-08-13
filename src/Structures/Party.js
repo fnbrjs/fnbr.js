@@ -1,4 +1,3 @@
-/* eslint-disable no-return-await */
 /* eslint-disable max-len */
 /* eslint-disable no-param-reassign */
 const Endpoints = require('../../resources/Endpoints');
@@ -112,8 +111,8 @@ class Party {
    * @returns {Promise<void>}
    */
   async join() {
-    this.Client.partyLock.active = true;
     if (this.Client.party) await this.Client.party.leave(false);
+    this.Client.partyLock.active = true;
     const party = await this.Client.Http.send(true, 'POST',
       `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.user.id}/join`, `bearer ${this.Client.Auth.auths.token}`, null, {
         connection: {
@@ -164,7 +163,7 @@ class Party {
    */
   patchPresence() {
     const partyJoinInfoData = this.config.privacy.presencePermission === 'None'
-      || (this.Client.party.config.privacy.presencePermission === 'Leader' && this.leader.id === this.Client.user.id)
+      || (this.config.privacy.presencePermission === 'Leader' && this.leader.id !== this.me.id)
       ? {
         bIsPrivate: true,
       } : {
@@ -218,7 +217,7 @@ class Party {
    * @returns {Promise<PartyMessage>}
    */
   async sendMessage(message) {
-    return await this.chat.send(message);
+    return this.chat.send(message);
   }
 
   /**
@@ -258,9 +257,9 @@ class Party {
     const party = await this.Client.Http.send(true, 'DELETE',
       `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.user.id}`, `bearer ${this.Client.Auth.auths.token}`);
     if (!party.success) {
+      this.Client.partyLock.active = false;
       if (party.response.errorCode === 'errors.com.epicgames.social.party.party_not_found') {
-        this.Client.partyLock.active = false;
-        this.Client.initParty();
+        await this.Client.initParty();
       } else throw new Error(`Failed leaving party: ${this.Client.parseError(party.response)}`);
     }
     this.Client.party = undefined;
@@ -312,12 +311,6 @@ class Party {
           this.patchQueue.push([updated]);
           break;
         case 'errors.com.epicgames.social.party.party_change_forbidden':
-          if (this.patchQueue.length > 0) {
-            const args = this.patchQueue.shift();
-            this.sendPatch(...args, true);
-          } else {
-            this.currentlyPatching = false;
-          }
           throw new Error('Cannot patch party as client isnt party leader');
         default: break;
       }

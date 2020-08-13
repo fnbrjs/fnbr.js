@@ -108,7 +108,6 @@ class PartyMember {
    * @returns {Promise<void>}
    */
   async kick() {
-    if (this.id === this.Party.Client.account.id) throw new Error('Cannot kick party member: You cant kick yourself');
     return this.Party.kick(this.id);
   }
 
@@ -117,8 +116,6 @@ class PartyMember {
    * @returns {Promise<void>}
    */
   async promote() {
-    if (this.id === this.Party.Client.account.id) throw new Error('Cannot promote party member: You cannot promote yourself');
-    if (!this.Party.me.isLeader) throw new Error('Cannot promote party member: You aren\'t the party leader');
     return this.Party.promote(this.id);
   }
 

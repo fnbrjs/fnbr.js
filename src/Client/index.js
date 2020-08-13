@@ -120,6 +120,7 @@ class Client extends EventEmitter {
     this.partyLock = {
       active: false,
       wait: () => new Promise((res) => {
+        if (!this.partyLock.active) res();
         const waitInterval = setInterval(() => {
           if (!this.partyLock.active) {
             clearInterval(waitInterval);
@@ -140,6 +141,7 @@ class Client extends EventEmitter {
     this.reauthLock = {
       active: false,
       wait: () => new Promise((res) => {
+        if (!this.reauthLock.active) res();
         const waitInterval = setInterval(() => {
           if (!this.reauthLock.active) {
             clearInterval(waitInterval);
@@ -179,15 +181,15 @@ class Client extends EventEmitter {
     const auth = await this.Auth.authenticate();
     if (!auth.success) throw new Error(`Authentification failed: ${this.parseError(auth.response)}`);
 
-    this.tokenCheckInterval = setInterval(() => this.Auth.refreshToken(true), 20 * 60000);
+    this.tokenCheckInterval = setInterval(() => this.Auth.refreshToken(true), 10 * 60000);
 
     const clientInfo = await this.Http.send(false, 'GET', `${Endpoints.ACCOUNT_ID}/${this.Auth.account.id}`, `bearer ${this.Auth.auths.token}`);
     if (!clientInfo.success) throw new Error(`Client account lookup failed: ${this.parseError(clientInfo.response)}`);
     this.user = new ClientUser(this, clientInfo.response);
 
-    this.Xmpp.setup();
-
     await this.updateCache();
+
+    this.Xmpp.setup();
 
     const xmpp = await this.Xmpp.connect();
     if (!xmpp.success) throw new Error(`XMPP-client connecting failed: ${this.parseError(xmpp.response)}`);
@@ -195,7 +197,6 @@ class Client extends EventEmitter {
     await this.initParty();
 
     this.isReady = true;
-    await this.waitForEvent(`party:member#${this.user.id}:joined`, 30000);
     this.emit('ready');
   }
 
@@ -205,15 +206,12 @@ class Client extends EventEmitter {
    */
   async logout() {
     if (this.tokenCheckInterval) clearInterval(this.tokenCheckInterval);
-    this.removeAllListeners();
     if (this.Xmpp.connected) await this.Xmpp.disconnect();
     if (this.party) await this.party.leave(false);
     if (this.Auth.auths.token) await this.Http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${this.Auth.auths.token}`, `bearer ${this.Auth.auths.token}`);
 
     this.Auth.auths.token = undefined;
     this.Auth.auths.expires_at = undefined;
-    this.Auth.reauths.token = undefined;
-    this.Auth.reauths.expires_at = undefined;
 
     this.isReady = false;
   }
@@ -223,14 +221,7 @@ class Client extends EventEmitter {
    * @returns {Promise<void>}
    */
   async restart() {
-    if (this.tokenCheckInterval) clearInterval(this.tokenCheckInterval);
-    if (this.Xmpp.connected) await this.Xmpp.disconnect();
-    if (this.party) await this.party.leave(false);
-    if (this.Auth.auths.token) await this.Http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${this.Auth.auths.token}`, `bearer ${this.Auth.auths.token}`);
-    this.Auth.auths.token = undefined;
-    this.Auth.auths.expires_at = undefined;
-    this.isReady = false;
-
+    await this.logout();
     await this.login();
   }
 
@@ -256,7 +247,6 @@ class Client extends EventEmitter {
       if (rawFriend.status === 'ACCEPTED') this.friends.set(rawFriend.accountId, rawFriend);
       else if (rawFriend.status === 'PENDING') this.pendingFriends.set(rawFriend.accountId, rawFriend);
       else if (rawFriend.status === 'BLOCKED') this.blockedFriends.set(rawFriend.accountId, rawFriend);
-      else this.debug(rawFriend.status);
     }
 
     for (const friendedFriend of friendsSummary.response.friends) {
@@ -287,9 +277,9 @@ class Client extends EventEmitter {
    */
   async initParty(create = true) {
     const party = await Party.LookupSelf(this);
-    if (!create && party) this.party = party;
+    if (!create) this.party = party;
     else if (party) await party.leave(false);
-    if (create || !party) await Party.Create(this);
+    if (create) await Party.Create(this);
   }
 
   // -------------------------------------UTIL-------------------------------------
@@ -665,6 +655,37 @@ class Client extends EventEmitter {
     if (!serverStatus.success) throw new Error(`Fetching server status failed: ${this.parseError(serverStatus.response)}`);
 
     return serverStatus.response;
+  }
+
+  /**
+   * Fetch the current Fortnite tournaments
+   * @param {string} region The region eg. EU, ASIA, NAE
+   * @param {boolean} showPastEvents Whether to return past events
+   * @returns {Promise<Object>} The tournaments
+   */
+  async getTournaments(region = 'EU', showPastEvents = false) {
+    const events = await this.Http.send(true, 'GET',
+      `${Endpoints.BR_TOURNAMENTS}api/v1/events/Fortnite/data/${this.user.id}?region=${region}&showPastEvents=${showPastEvents}`, `bearer ${this.Auth.auths.token}`);
+    if (!events.success) throw new Error(`Fetching events failed: ${this.parseError(events.response)}`);
+
+    return events.response.events;
+  }
+
+  /**
+   * Fetch a Fortnite tournament window by id
+   * @param {string} eventId The event id (eg epicgames_OnlineOpen_Week2_ASIA)
+   * @param {string} windowId The window id (eg OnlineOpen_Week2_ASIA_Event2)
+   * @param {boolean} showLiveSessions Whether to show live sessions
+   * @param {number} page The starting page
+   * @returns {Promise<Object>} The tournament window
+   */
+  async getTournamentWindow(eventId, windowId, showLiveSessions = false, page = 0) {
+    const window = await this.Http.send(true, 'GET',
+      `${Endpoints.BR_TOURNAMENTS}api/v1/leaderboards/Fortnite/${eventId}/${windowId}/${this.user.id}?page=${page}&showLiveSessions=${showLiveSessions}`,
+      `bearer ${this.Auth.auths.token}`);
+    if (!window.success) throw new Error(`Fetching events failed: ${this.parseError(window.response)}`);
+
+    return window.response;
   }
 }
 

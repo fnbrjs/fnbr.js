@@ -82,12 +82,13 @@ class Http {
 
     if (headers) reqOptions.headers = { ...reqOptions.headers, ...headers };
 
+    const reqStartTime = Date.now();
     try {
-      const reqStartTime = Date.now();
       const response = await this.request(reqOptions);
       if (this.Client.config.httpDebug) this.Client.debug(`${method} ${url} (${((Date.now() - reqStartTime) / 1000).toFixed(2)}s)`);
       return { success: true, response };
     } catch (err) {
+      if (this.Client.config.httpDebug) this.Client.debug(`${method} ${url} (${((Date.now() - reqStartTime) / 1000).toFixed(2)}s)`);
       if (checkToken && err.error.errorCode === 'errors.com.epicgames.common.oauth.invalid_token') {
         const reauth = await this.Client.Auth.reauthenticate();
         if (reauth.success) {

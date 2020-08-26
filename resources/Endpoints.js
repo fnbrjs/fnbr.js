@@ -42,4 +42,7 @@ module.exports = Object.freeze({
   FRIEND_DELETE: 'https://friends-public-service-prod06.ol.epicgames.com/friends/api/v1',
   FRIEND_BLOCK: 'https://friends-public-service-prod06.ol.epicgames.com/friends/api/public/blocklist',
 
+  // SERVER STATUS
+  SERVER_STATUS_SUMMARY: 'https://ft308v428dv3.statuspage.io/api/v2/summary.json',
+
 });

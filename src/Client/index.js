@@ -207,7 +207,13 @@ class Client extends EventEmitter {
   async logout() {
     if (this.tokenCheckInterval) clearInterval(this.tokenCheckInterval);
     if (this.Xmpp.connected) await this.Xmpp.disconnect();
-    if (this.party) await this.party.leave(false);
+    if (this.party) {
+      try {
+        await this.party.leave(false);
+      } catch (err) {
+        // ignore party leave errors on logout
+      }
+    }
     if (this.Auth.auths.token) await this.Http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${this.Auth.auths.token}`, `bearer ${this.Auth.auths.token}`);
 
     this.Auth.auths.token = undefined;
@@ -409,11 +415,11 @@ class Client extends EventEmitter {
   async getProfile(query) {
     let user;
     if (typeof query === 'string') {
-      if (query.length === 32) user = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_ID}/${query}`, `bearer ${this.Auth.auths.token}`);
+      if (query.length === 32) user = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${query}`, `bearer ${this.Auth.auths.token}`);
       else if (/.*@.*\..*/.test(query)) user = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_EMAIL}/${encodeURI(query)}`, `bearer ${this.Auth.auths.token}`);
       else user = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURI(query)}`, `bearer ${this.Auth.auths.token}`);
 
-      return user.success ? new User(this, user.response) : undefined;
+      return user.success ? new User(this, Array.isArray(user.response) ? user.response[0] : user.response) : undefined;
     } if (query instanceof Array) {
       const ids = [];
       const names = [];
@@ -454,11 +460,10 @@ class Client extends EventEmitter {
       const cachedFriend = this.friends.find((f) => f.id === to || f.displayName === to);
       if (!cachedFriend) throw new Error(`Failed sending a status to ${to}: Friend not existing`);
       id = this.Xmpp.sendStatus(status, `${cachedFriend.id}@${Endpoints.EPIC_PROD_ENV}`);
-    } else {
-      this.config.status = status;
-      id = this.Xmpp.sendStatus(status);
+      return undefined;
     }
-
+    this.config.status = status;
+    id = this.Xmpp.sendStatus(status);
     return new Promise((res, rej) => {
       this.Xmpp.stream.on(`presence#${id}:sent`, () => res());
       setTimeout(() => rej(new Error('Failed sending a status: Status timeout of 20000ms exceeded')), 20000);
@@ -651,7 +656,18 @@ class Client extends EventEmitter {
    * @returns {Promise<Object>} The server status
    */
   async getFortniteServerStatus() {
-    const serverStatus = await this.Http.send(true, 'GET', Endpoints.BR_SERVER_STATUS, `bearer ${this.Auth.auths.token}`);
+    const fortniteServerStatus = await this.Http.send(true, 'GET', Endpoints.BR_SERVER_STATUS, `bearer ${this.Auth.auths.token}`);
+    if (!fortniteServerStatus.success) throw new Error(`Fetching Fortnite server status failed: ${this.parseError(fortniteServerStatus.response)}`);
+
+    return fortniteServerStatus.response;
+  }
+
+  /**
+   * Fetch the current epicgames server status
+   * @returns {Promise<Object>} The server status
+   */
+  async getServerStatus() {
+    const serverStatus = await this.Http.send(false, 'GET', Endpoints.SERVER_STATUS_SUMMARY);
     if (!serverStatus.success) throw new Error(`Fetching server status failed: ${this.parseError(serverStatus.response)}`);
 
     return serverStatus.response;

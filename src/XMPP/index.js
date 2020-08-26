@@ -54,9 +54,9 @@ class XMPP {
 
     /**
      * The XMPP client's resource
-     * @type {string}
+     * @type {?string}
      */
-    this.resource = `V2:Fortnite:${this.Client.config.platform}::${this.uuid}`;
+    this.resource = undefined;
 
     /**
      * This stores the parties which the client got kicked from
@@ -71,6 +71,7 @@ class XMPP {
    * @returns {void}
    */
   setup() {
+    this.resource = `V2:Fortnite:${this.Client.config.platform}::${this.uuid}`;
     this.stream = createClient({
       wsURL: `wss://${Endpoints.XMPP_SERVER}`,
       server: Endpoints.EPIC_PROD_ENV,
@@ -106,7 +107,12 @@ class XMPP {
     this.stream.connect();
 
     return new Promise((res) => {
+      const failTimeout = setTimeout(() => {
+        this.Client.debug('XMPP-Client reconnection failed: Timeout of 15000ms exceed');
+        res({ success: false, response: 'connection timeout of 15000ms exceed' });
+      }, 15000);
       this.stream.once('session:started', async () => {
+        clearTimeout(failTimeout);
         this.connected = true;
         this.sendStatus(this.Client.config.status || 'Playing Battle Royale');
         if (!isReconnect) this.Client.debug(`XMPP-Client successfully connected (${((Date.now() - startConnect) / 1000).toFixed(2)}s)`);
@@ -119,8 +125,11 @@ class XMPP {
         }
         res({ success: true });
       });
-      this.stream.once('stream:error', (err) => res({ success: false, response: err }));
-      setTimeout(() => res({ success: false, response: 'connection timeout of 10000ms exceed' }), 15000);
+      this.stream.once('stream:error', (err) => {
+        clearTimeout(failTimeout);
+        this.Client.debug(`XMPP-Client reconnection failed: ${this.Client.parseError(err)}`);
+        res({ success: false, response: err });
+      });
     });
   }
 
@@ -138,6 +147,10 @@ class XMPP {
         this.Client.debug(`XMPP-Client successfully disconnected (${((Date.now() - startDisconnect) / 1000).toFixed(2)}s)`);
         res({ success: true });
       });
+      setTimeout(() => {
+        this.Client.debug(`XMPP-Client successfully disconnected (${((Date.now() - startDisconnect) / 1000).toFixed(2)}s)`);
+        res({ success: true });
+      }, 4000);
     });
   }
 
@@ -148,7 +161,7 @@ class XMPP {
   async reconnect() {
     if (this.isReconnecting) return { success: true };
     this.isReconnecting = true;
-    await this.disconnect();
+    if (this.connected) await this.disconnect();
 
     this.uuid = UUID().replace(/-/g, '').toUpperCase();
     this.resource = `V2:Fortnite:${this.Client.config.platform}::${this.uuid}`;
@@ -181,8 +194,8 @@ class XMPP {
       if (this.connected) {
         this.connected = false;
         this.Client.isReady = false;
-        await this.connect(true);
-        this.Client.isReady = true;
+        const { success } = await this.reconnect();
+        if (success) this.Client.isReady = true;
       }
     });
 

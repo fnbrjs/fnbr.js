@@ -291,6 +291,24 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
+   * Clears the party member's backpack
+   * @returns {Promise<void>}
+   */
+  async clearBackpack() {
+    let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
+    loadout = this.meta.set('Default:AthenaCosmeticLoadout_j', {
+      ...loadout,
+      AthenaCosmeticLoadout: {
+        ...loadout.AthenaCosmeticLoadout,
+        backpackDef: '',
+      },
+    });
+    await this.sendPatch({
+      'Default:AthenaCosmeticLoadout_j': loadout,
+    });
+  }
+
+  /**
    * Sends a patch with the latest meta
    * @param {Object} updated The updated data
    * @param {Boolean} isForced Whether the patch should ignore current patches

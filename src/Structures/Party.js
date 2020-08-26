@@ -5,7 +5,7 @@ const List = require('../Util/List');
 const PartyMeta = require('./PartyMeta');
 const PartyMember = require('./PartyMember');
 const ClientPartyMember = require('./ClientPartyMember');
-const { PartyPrivacy } = require('../../enums');
+const { PartyPrivacy, Playlist } = require('../../enums');
 const PartyChat = require('./PartyChat');
 const SentPartyInvitation = require('./SentPartyInvitation');
 
@@ -440,6 +440,10 @@ class Party {
     if (!this.patchAssignmentsLocked) await this.sendPatch({ 'Default:RawSquadAssignments_j': this.meta.updateSquadAssignments() });
   }
 
+  /**
+   * Hides all party members except for the client
+   * @param {boolean} hide whether to hide or unhide
+   */
   async hideMembers(hide = true) {
     if (!this.me.isLeader) throw new Error(`Cannot ${hide ? '' : 'un'}hide party members: Client isn't party leader`);
     if (hide) {
@@ -453,6 +457,25 @@ class Party {
       this.patchAssignmentsLocked = false;
       await this.refreshSquadAssignments();
     }
+  }
+
+  /**
+   * Set the parties playlist
+   * @param {Playlist} playlist the playlist
+   */
+  async setPlaylist(playlist = Playlist.CREATIVE) {
+    if (!this.me.isLeader) throw new Error('Cannot change playlist: Client isn\'t party leader');
+    let data = this.meta.get('Default:PlaylistData_j');
+    data = this.meta.set('Default:PlaylistData_j', {
+      ...data,
+      PlaylistData: {
+        ...data.PlaylistData,
+        ...playlist,
+      },
+    });
+    await this.sendPatch({
+      'Default:PlaylistData_j': data,
+    });
   }
 
   /**

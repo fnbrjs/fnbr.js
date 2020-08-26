@@ -36,6 +36,10 @@ class User {
     this.links = data.links || {};
 
     if (!this.id) throw new Error('Cannot initialize user without an id');
+
+    if (!this.displayName && Object.values(this.externalAuths)[0]) {
+      this.displayName = Object.values(this.externalAuths)[0].externalDisplayName;
+    }
   }
 
   /**

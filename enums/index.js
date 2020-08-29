@@ -219,6 +219,8 @@ module.exports.DefaultSkin = Object.freeze({
  * * `CH1_S10`
  * * `CH2_S1`
  * * `CH2_S2`
+ * * `CH2_S3`
+ * * `CH2_S4`
  * @typedef {string} SeasonStart
  */
 module.exports.SeasonStart = Object.freeze({
@@ -234,6 +236,8 @@ module.exports.SeasonStart = Object.freeze({
   CH1_S10: 1564617600,
   CH2_S1: 1571097600,
   CH2_S2: 1582156800,
+  CH2_S3: 1592352000,
+  CH2_S4: 1598486401,
 });
 
 /**
@@ -250,6 +254,8 @@ module.exports.SeasonStart = Object.freeze({
  * * `CH1_S10`
  * * `CH2_S1`
  * * `CH2_S2`
+ * * `CH2_S3`
+ * * `CH2_S4`
  * @typedef {string} SeasonEnd
  */
 module.exports.SeasonEnd = Object.freeze({
@@ -264,6 +270,8 @@ module.exports.SeasonEnd = Object.freeze({
   CH1_S9: 1564617600,
   CH1_S10: 1570924800,
   CH2_S1: 1582156800,
+  CH2_S2: 1592352000,
+  CH2_S3: 1598486400,
 });
 
 /**

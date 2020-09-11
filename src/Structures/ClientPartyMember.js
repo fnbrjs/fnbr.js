@@ -47,6 +47,11 @@ class ClientPartyMember extends PartyMember {
     });
   }
 
+  /**
+   * Sets the sitting out state of the client's party member
+   * @param {boolean} sittingOut Whether the party member should be sitting out or not
+   * @returns {Promise<void>}
+   */
   async setSittingOut(sittingOut) {
     await this.sendPatch({
       'Default:GameReadiness_s': this.meta.set('Default:GameReadiness_s', sittingOut === true ? 'SittingOut' : 'NotReady'),

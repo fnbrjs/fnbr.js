@@ -47,6 +47,12 @@ class ClientPartyMember extends PartyMember {
     });
   }
 
+  async setSittingOut(sittingOut) {
+    await this.sendPatch({
+      'Default:GameReadiness_s': this.meta.set('Default:GameReadiness_s', sittingOut === true ? 'SittingOut' : 'NotReady'),
+    });
+  }
+
   /**
    * Sets the level of the client's party member
    * @param {number} level The level that will be set
@@ -127,14 +133,13 @@ class ClientPartyMember extends PartyMember {
    */
   async setOutfit(cid, variants = [], enlightment = []) {
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
+    let variantLoadout = this.meta.get('Default:AthenaCosmeticLoadoutVariants_j');
 
-    const parsedVariants = [];
+    const patches = {};
+
+    const parsedVariants = { AthenaCharacter: { i: [] } };
     variants.forEach((v) => {
-      parsedVariants.push({ item: 'AthenaCharacter', ...v });
-    });
-
-    loadout.AthenaCosmeticLoadout.variants.forEach((v) => {
-      if (v.item !== 'AthenaCharacter') parsedVariants.push(v);
+      parsedVariants.AthenaCharacter.i.push({ c: v.c || v.channel, v: v.v || v.variant, dE: v.dE || 0 });
     });
 
     const scratchpad = [];
@@ -150,13 +155,27 @@ class ClientPartyMember extends PartyMember {
       AthenaCosmeticLoadout: {
         ...loadout.AthenaCosmeticLoadout,
         characterDef: `/Game/Athena/Items/Cosmetics/Characters/${cid}.${cid}`,
-        variants: parsedVariants,
         scratchpad,
       },
     });
-    await this.sendPatch({
-      'Default:AthenaCosmeticLoadout_j': loadout,
-    });
+    patches['Default:AthenaCosmeticLoadout_j'] = loadout;
+
+    delete variantLoadout.AthenaCosmeticLoadoutVariants.vL.AthenaCharacter;
+    if (parsedVariants.AthenaCharacter.i[0]) {
+      variantLoadout = this.meta.set('Default:AthenaCosmeticLoadoutVariants_j', {
+        ...variantLoadout,
+        AthenaCosmeticLoadoutVariants: {
+          ...variantLoadout.AthenaCosmeticLoadoutVariants,
+          vL: {
+            ...variantLoadout.AthenaCosmeticLoadoutVariants.vL,
+            ...parsedVariants,
+          },
+        },
+      });
+      patches['Default:AthenaCosmeticLoadoutVariants_j'] = variantLoadout;
+    }
+
+    await this.sendPatch(patches);
   }
 
   /**
@@ -171,14 +190,13 @@ class ClientPartyMember extends PartyMember {
    */
   async setBackpack(bid, variants = []) {
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
+    let variantLoadout = this.meta.get('Default:AthenaCosmeticLoadoutVariants_j');
 
-    const parsedVariants = [];
+    const patches = {};
+
+    const parsedVariants = { AthenaBackpack: { i: [] } };
     variants.forEach((v) => {
-      parsedVariants.push({ item: 'AthenaBackpack', ...v });
-    });
-
-    loadout.AthenaCosmeticLoadout.variants.forEach((v) => {
-      if (v.item !== 'AthenaBackpack') parsedVariants.push(v);
+      parsedVariants.AthenaBackpack.i.push({ c: v.c || v.channel, v: v.v || v.variant, dE: v.dE || 0 });
     });
 
     loadout = this.meta.set('Default:AthenaCosmeticLoadout_j', {
@@ -186,12 +204,26 @@ class ClientPartyMember extends PartyMember {
       AthenaCosmeticLoadout: {
         ...loadout.AthenaCosmeticLoadout,
         backpackDef: `/Game/Athena/Items/Cosmetics/Backpacks/${bid}.${bid}`,
-        variants: parsedVariants,
       },
     });
-    await this.sendPatch({
-      'Default:AthenaCosmeticLoadout_j': loadout,
-    });
+    patches['Default:AthenaCosmeticLoadout_j'] = loadout;
+
+    delete variantLoadout.AthenaCosmeticLoadoutVariants.vL.AthenaBackpack;
+    if (parsedVariants.AthenaBackpack.i[0]) {
+      variantLoadout = this.meta.set('Default:AthenaCosmeticLoadoutVariants_j', {
+        ...variantLoadout,
+        AthenaCosmeticLoadoutVariants: {
+          ...variantLoadout.AthenaCosmeticLoadoutVariants,
+          vL: {
+            ...variantLoadout.AthenaCosmeticLoadoutVariants.vL,
+            ...parsedVariants,
+          },
+        },
+      });
+      patches['Default:AthenaCosmeticLoadoutVariants_j'] = variantLoadout;
+    }
+
+    await this.sendPatch(patches);
   }
 
   /**
@@ -206,14 +238,13 @@ class ClientPartyMember extends PartyMember {
    */
   async setPickaxe(pickaxe, variants = []) {
     let loadout = this.meta.get('Default:AthenaCosmeticLoadout_j');
+    let variantLoadout = this.meta.get('Default:AthenaCosmeticLoadoutVariants_j');
 
-    const parsedVariants = [];
+    const patches = {};
+
+    const parsedVariants = { AthenaPickaxe: { i: [] } };
     variants.forEach((v) => {
-      parsedVariants.push({ item: 'AthenaPickaxe', ...v });
-    });
-
-    loadout.AthenaCosmeticLoadout.variants.forEach((v) => {
-      if (v.item !== 'AthenaPickaxe') parsedVariants.push(v);
+      parsedVariants.AthenaPickaxe.i.push({ c: v.c || v.channel, v: v.v || v.variant, dE: v.dE || 0 });
     });
 
     loadout = this.meta.set('Default:AthenaCosmeticLoadout_j', {
@@ -221,12 +252,26 @@ class ClientPartyMember extends PartyMember {
       AthenaCosmeticLoadout: {
         ...loadout.AthenaCosmeticLoadout,
         pickaxeDef: `/Game/Athena/Items/Cosmetics/Pickaxes/${pickaxe}.${pickaxe}`,
-        variants: parsedVariants,
       },
     });
-    await this.sendPatch({
-      'Default:AthenaCosmeticLoadout_j': loadout,
-    });
+    patches['Default:AthenaCosmeticLoadout_j'] = loadout;
+
+    delete variantLoadout.AthenaCosmeticLoadoutVariants.vL.AthenaPickaxe;
+    if (parsedVariants.AthenaPickaxe.i[0]) {
+      variantLoadout = this.meta.set('Default:AthenaCosmeticLoadoutVariants_j', {
+        ...variantLoadout,
+        AthenaCosmeticLoadoutVariants: {
+          ...variantLoadout.AthenaCosmeticLoadoutVariants,
+          vL: {
+            ...variantLoadout.AthenaCosmeticLoadoutVariants.vL,
+            ...parsedVariants,
+          },
+        },
+      });
+      patches['Default:AthenaCosmeticLoadoutVariants_j'] = variantLoadout;
+    }
+
+    await this.sendPatch(patches);
   }
 
   /**

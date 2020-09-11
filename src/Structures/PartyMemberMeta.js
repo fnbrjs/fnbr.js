@@ -81,7 +81,11 @@ class PartyMemberMeta extends Meta {
           contrailDef: 'None',
           contrailEKey: '',
           scratchpad: [],
-          variants: [],
+        },
+      }),
+      'Default:AthenaCosmeticLoadoutVariants_j': JSON.stringify({
+        AthenaCosmeticLoadoutVariants: {
+          vL: {},
         },
       }),
       'Default:AthenaBannerInfo_j': JSON.stringify({

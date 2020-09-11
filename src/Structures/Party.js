@@ -174,7 +174,7 @@ class Party {
         partyTypeId: 286331153,
         key: 'k',
         appId: 'Fortnite',
-        buildId: '1:1:',
+        buildId: '1:2:',
         partyFlags: -2024557306,
         notAcceptingReason: 0,
         pc: this.members.size,
@@ -232,7 +232,7 @@ class Party {
     if (this.members.size === this.config.maxSize) throw new Error(`Failed sending party invitation to ${friend}: Party is full`);
     const data = await this.Client.Http.send(true, 'POST',
       `${Endpoints.BR_PARTY}/parties/${this.id}/invites/${cachedFriend.id}?sendPing=true`, `bearer ${this.Client.Auth.auths.token}`, null, {
-        'urn:epic:cfg:build-id_s': '1:1:',
+        'urn:epic:cfg:build-id_s': '1:2:',
         'urn:epic:conn:platform_s': this.Client.config.platform,
         'urn:epic:conn:type_s': 'game',
         'urn:epic:invite:platformdata_s': '',
@@ -532,7 +532,7 @@ class Party {
       },
       meta: {
         'urn:epic:cfg:party-type-id_s': 'default',
-        'urn:epic:cfg:build-id_s': '1:1:',
+        'urn:epic:cfg:build-id_s': '1:2:',
         'urn:epic:cfg:join-request-action_s': 'Manual',
         'urn:epic:cfg:chat-enabled_b': partyConfig.chatEnabled.toString(),
       },

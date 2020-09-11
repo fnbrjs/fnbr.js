@@ -576,8 +576,11 @@ class Client extends EventEmitter {
     const news = await this.Http.send(false, 'GET', `${Endpoints.BR_NEWS}?lang=${language}`);
     if (!news.success) throw new Error(`Fetching news failed: ${this.parseError(news.response)}`);
 
-    if (mode === Enums.Gamemode.BATTLE_ROYALE) return news.response[`${mode}news`].news.motds;
-    return news.response[`${mode}news`].news.messages;
+    if (mode === Enums.Gamemode.SAVE_THE_WORLD) {
+      return news.response[`${mode}news`].news.messages;
+    }
+    return [...news.response[`${mode}newsv2`].news.motds,
+      ...(news.response[`${mode}newsv2`].news.platform_motds || []).filter((m) => m.platform === 'windows').map((m) => m.message)];
   }
 
   /**

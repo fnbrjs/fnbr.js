@@ -601,7 +601,7 @@ class Client extends EventEmitter {
 
     const params = [];
     if (startTime) params.push(`startTime=${startTime}`);
-    if (endTime) params.push(`startTime=${endTime}`);
+    if (endTime) params.push(`endTime=${endTime}`);
 
     const stats = await this.Http.send(true, 'GET', `${Endpoints.BR_STATS_V2}/account/${userId}${params[0] ? `?${params.join('&')}` : ''}`, `bearer ${this.Auth.auths.token}`);
     if (!stats.success) throw new Error(`Fetching ${user}'s stats failed: ${this.parseError(stats.response)}`);

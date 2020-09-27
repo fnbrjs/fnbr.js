@@ -396,11 +396,11 @@ class Party {
    * @returns {Promise<void>}
    */
   async setCustomMatchmakingKey(key) {
-    await new Promise((res) => setTimeout(() => res(), 1000));
+    await new Promise((res) => setTimeout(res, 1000));
     await this.sendPatch({
       'Default:CustomMatchKey_s': this.meta.set('Default:CustomMatchKey_s', key || ''),
     });
-    await new Promise((res) => setTimeout(() => res(), 500));
+    await new Promise((res) => setTimeout(res, 500));
   }
 
   /**

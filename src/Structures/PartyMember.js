@@ -120,6 +120,14 @@ class PartyMember {
   }
 
   /**
+   * Fetch or update this members display name
+   */
+  async fetch() {
+    const userData = await this.Client.getProfile(this.id);
+    this.displayName = userData.displayName;
+  }
+
+  /**
    * Updates the party member's meta
    * @param {Object} data The updated meta
    * @returns {void}

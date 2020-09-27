@@ -340,7 +340,7 @@ class Client extends EventEmitter {
    * @private
    */
   static sleep(timeout) {
-    return new Promise((res) => setTimeout(() => res(), timeout));
+    return new Promise((res) => setTimeout(res, timeout));
   }
 
   /**
@@ -730,7 +730,8 @@ module.exports = Client;
 /**
  * Emitted when a friend updates his presence
  * @event Client#friend:presence
- * @param {FriendPresence} friendPresence The friend's presence
+ * @param {FriendPresence} beforeFriendPresence The previous friend's presence
+ * @param {FriendPresence} beforeFriendPresence The current friend's presence
  */
 
 /**

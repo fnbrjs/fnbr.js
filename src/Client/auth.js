@@ -199,7 +199,7 @@ class Authenticator {
       secret: parsedDeviceAuth.secret,
     };
 
-    return this.getOauthToken('device_auth', authFormData, Tokens.FORTNITE_IOS);
+    return this.getOauthToken('device_auth', authFormData, parsedDeviceAuth.basicToken || Tokens.FORTNITE_IOS);
   }
 
   /**

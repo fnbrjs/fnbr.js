@@ -42,7 +42,7 @@ class ClientPartyMember extends PartyMember {
    */
   async setReadiness(ready) {
     await this.sendPatch({
-      'Default:GameReadiness_s': this.meta.set('Default:GameReadiness_s', ready === true ? 'Ready' : 'NotReady'),
+      'Default:GameReadiness_s': this.meta.set('Default:GameReadiness_s', ready ? 'Ready' : 'NotReady'),
       'Default:ReadyInputType_s': this.meta.get('Default:CurrentInputType_s'),
     });
   }
@@ -54,7 +54,7 @@ class ClientPartyMember extends PartyMember {
    */
   async setSittingOut(sittingOut) {
     await this.sendPatch({
-      'Default:GameReadiness_s': this.meta.set('Default:GameReadiness_s', sittingOut === true ? 'SittingOut' : 'NotReady'),
+      'Default:GameReadiness_s': this.meta.set('Default:GameReadiness_s', sittingOut ? 'SittingOut' : 'NotReady'),
     });
   }
 
@@ -359,6 +359,27 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
+   * Show the client as "in a match" in party
+   * Visually, doesn't actually join a match
+   * @param {?boolean} isPlaying Whether the client is playing or not
+   * @param {?number} playerCount Match player count (must be between 0 and 255)
+   * @param {string} startedAt When the match started (ISO date string)
+   */
+  async setPlaying(isPlaying = true, playerCount = 100, startedAt = new Date().toISOString()) {
+    if (!Number.isInteger(playerCount)) throw new TypeError('playerCount must be an integer');
+    if (playerCount < 0 || playerCount > 255) throw new RangeError('playerCount must be between 0 and 255');
+    if (typeof startedAt !== 'string') throw new TypeError('startedAt must be a string');
+
+    await this.sendPatch({
+      'Default:Location_s': this.meta.set('Default:Location_s', isPlaying ? 'InGame' : 'PreLobby'),
+      'Default:HasPreloadedAthena_b': this.meta.set('Default:HasPreloadedAthena_b', isPlaying),
+      'Default:SpectateAPartyMemberAvailable_b': this.meta.set('Default:SpectateAPartyMemberAvailable_b', isPlaying),
+      'Default:NumAthenaPlayersLeft_U': this.meta.set('Default:NumAthenaPlayersLeft_U', playerCount),
+      'Default:UtcTimeStartedMatchAthena_s': this.meta.set('Default:UtcTimeStartedMatchAthena_s', startedAt),
+    });
+  }
+
+  /**
    * Sends a patch with the latest meta
    * @param {Object} updated The updated data
    * @param {Boolean} isForced Whether the patch should ignore current patches
@@ -370,32 +391,27 @@ class ClientPartyMember extends PartyMember {
       this.patchQueue.push([updated]);
       return;
     }
+
     this.currentlyPatching = true;
 
     const patch = await this.Client.Http.send(true, 'PATCH',
       `${Endpoints.BR_PARTY}/parties/${this.Party.id}/members/${this.id}/meta`, `bearer ${this.Client.Auth.auths.token}`, null, {
         delete: [],
-        revision: parseInt(this.revision, 10),
+        revision: this.revision,
         update: updated || this.meta.schema,
       });
-    if (patch.success) {
-      this.revision += 1;
-    } else {
-      switch (patch.response.errorCode) {
-        case 'errors.com.epicgames.social.party.stale_revision':
-          [, this.revision] = patch.response.messageVars;
-          this.patchQueue.push([updated]);
-          break;
-        default: break;
-      }
+
+    if (patch.success) this.revision += 1;
+    else if (patch.response.errorCode === 'errors.com.epicgames.social.party.stale_revision') {
+      this.revision = parseInt(patch.response.messageVars[1], 10);
+      this.patchQueue.unshift([updated]);
     }
 
     if (this.patchQueue.length > 0) {
-      const args = this.patchQueue.shift();
-      this.sendPatch(...args, true);
-    } else {
-      this.currentlyPatching = false;
-    }
+      const [nextUpdated] = this.patchQueue.shift();
+      this.sendPatch(nextUpdated, true);
+    } else this.currentlyPatching = false;
+
     if (this.Client.config.savePartyMemberMeta) this.Client.lastMemberMeta = this.meta.schema;
   }
 }

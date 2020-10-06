@@ -28,6 +28,7 @@ module.exports = Object.freeze({
   BR_SAC_SEARCH: 'https://payment-website-pci.ol.epicgames.com/affiliate/search-by-slug',
   BR_PARTY: 'https://party-service-prod.ol.epicgames.com/party/api/v1/Fortnite',
   BR_TOURNAMENTS: 'https://events-public-service-prod.ol.epicgames.com/',
+  BR_RADIO: 'https://d1q1zk2lhs9t9i.cloudfront.net',
 
   // ACCOUNT
   ACCOUNT_MULTIPLE: 'https://account-public-service-prod.ol.epicgames.com/account/api/public/account',
@@ -44,5 +45,4 @@ module.exports = Object.freeze({
 
   // SERVER STATUS
   SERVER_STATUS_SUMMARY: 'https://ft308v428dv3.statuspage.io/api/v2/summary.json',
-
 });

@@ -107,6 +107,15 @@ class Party {
   }
 
   /**
+   * Whether this party is private or not
+   * @type {boolean}
+   * @readonly
+   */
+  get isPrivate() {
+    return this.config.privacy.partyType === 'Private';
+  }
+
+  /**
    * Joins this party
    * @returns {Promise<void>}
    */
@@ -230,14 +239,21 @@ class Party {
     if (!cachedFriend) throw new Error(`Failed sending party invitation to ${friend}: Friend not existing`);
     if (this.members.has(cachedFriend.id)) throw new Error(`Failed sending party invitation to ${friend}: Friend is already in the party`);
     if (this.members.size === this.config.maxSize) throw new Error(`Failed sending party invitation to ${friend}: Party is full`);
-    const data = await this.Client.Http.send(true, 'POST',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/invites/${cachedFriend.id}?sendPing=true`, `bearer ${this.Client.Auth.auths.token}`, null, {
-        'urn:epic:cfg:build-id_s': '1:2:',
-        'urn:epic:conn:platform_s': this.Client.config.platform,
-        'urn:epic:conn:type_s': 'game',
-        'urn:epic:invite:platformdata_s': '',
-        'urn:epic:member:dn_s': this.Client.user.displayName,
-      });
+
+    let data;
+    if (this.isPrivate) {
+      data = await this.Client.Http.send(true, 'POST',
+        `${Endpoints.BR_PARTY}/parties/${this.id}/invites/${cachedFriend.id}?sendPing=true`, `bearer ${this.Client.Auth.auths.token}`, null, {
+          'urn:epic:cfg:build-id_s': '1:2:',
+          'urn:epic:conn:platform_s': this.Client.config.platform,
+          'urn:epic:conn:type_s': 'game',
+          'urn:epic:invite:platformdata_s': '',
+          'urn:epic:member:dn_s': this.Client.user.displayName,
+        });
+    } else {
+      data = await this.Client.Http.send(true, 'POST',
+        `${Endpoints.BR_PARTY}/user/${cachedFriend.id}/pings/${this.Client.user.id}`, `bearer ${this.Client.Auth.auths.token}`);
+    }
     if (!data.success) throw new Error(`Failed sending party invitation to ${friend}: ${this.Client.parseError(data.response)}`);
     return new SentPartyInvitation(this.Client, this, cachedFriend, {
       sent_at: Date.now(),
@@ -272,13 +288,13 @@ class Party {
    * Sends a patch with the latest meta
    * @param {Object} updated The updated data
    * @param {Array} deleted The deleted data
-   * @param {boolean} isForced Whether the patch should ignore current patches
+   * @param {boolean} isForced Whether this patch should ignore this.currentlyPatching
    * @returns {Promise<void>}
    * @private
    */
-  async sendPatch(updated, deleted, isForced) {
+  async sendPatch(updated, deleted, isForced = false) {
     if (!isForced && this.currentlyPatching) {
-      this.patchQueue.push([updated]);
+      this.patchQueue.push([updated, deleted]);
       return;
     }
     this.currentlyPatching = true;
@@ -302,25 +318,25 @@ class Party {
         invite_ttl_seconds: this.config.inviteTTL,
         revision: this.revision,
       });
-    if (patch.success) {
-      this.revision += 1;
-    } else {
-      switch (patch.response.errorCode) {
-        case 'errors.com.epicgames.social.party.stale_revision':
-          [, this.revision] = patch.response.messageVars;
-          this.patchQueue.push([updated]);
-          break;
-        case 'errors.com.epicgames.social.party.party_change_forbidden':
-          throw new Error('Cannot patch party as client isnt party leader');
-        default: break;
-      }
+
+    if (patch.success) this.revision += 1;
+    else if (patch.response.errorCode === 'errors.com.epicgames.social.party.stale_revision') {
+      this.revision = parseInt(patch.response.messageVars[1], 10);
+      this.patchQueue.unshift([updated, deleted]);
     }
 
     if (this.patchQueue.length > 0) {
-      const args = this.patchQueue.shift();
-      this.sendPatch(...args, true);
-    } else {
-      this.currentlyPatching = false;
+      const [nextUpdated, nextDeleted] = this.patchQueue.shift();
+      this.sendPatch(nextUpdated, nextDeleted, true);
+    } else this.currentlyPatching = false;
+
+    if (!patch.success) {
+      switch (patch.response.errorCode) {
+        case 'errors.com.epicgames.social.party.party_change_forbidden':
+          this.patchQueue = [];
+          throw new Error('Cannot patch party as client isnt party leader');
+        default: break;
+      }
     }
   }
 
@@ -380,11 +396,16 @@ class Party {
     updated['urn:epic:cfg:accepting-members_b'] = this.meta.set('urn:epic:cfg:accepting-members_b', privacy.acceptingMembers);
     updated['urn:epic:cfg:invite-perm_s'] = this.meta.set('urn:epic:cfg:invite-perm_s', privacy.invitePermission);
 
-    if (['Public', 'FriendsOnly'].indexOf(privacy.partyType) > -1) deleted.push('urn:epic:cfg:not-accepting-members');
-
     if (privacy.partyType === 'Private') {
+      deleted.push('urn:epic:cfg:not-accepting-members');
       updated['urn:epic:cfg:not-accepting-members-reason_i'] = 7;
-    } else deleted.push('urn:epic:cfg:not-accepting-members-reason_i');
+      this.config.discoverability = 'INVITED_ONLY';
+      this.config.joinability = 'INVITE_AND_FORMER';
+    } else {
+      deleted.push('urn:epic:cfg:not-accepting-members-reason_i');
+      this.config.discoverability = 'ALL';
+      this.config.joinability = 'OPEN';
+    }
 
     await this.sendPatch(updated, deleted);
     this.config.privacy = privacy;

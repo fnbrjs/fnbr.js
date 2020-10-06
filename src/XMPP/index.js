@@ -196,6 +196,7 @@ class XMPP {
         this.Client.isReady = false;
         const { success } = await this.reconnect();
         if (success) this.Client.isReady = true;
+        await this.Client.updateCache();
       }
     });
 

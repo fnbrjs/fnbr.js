@@ -219,6 +219,10 @@ class Client extends EventEmitter {
     this.Auth.auths.token = undefined;
     this.Auth.auths.expires_at = undefined;
 
+    this.friends.clear();
+    this.pendingFriends.clear();
+    this.blockedFriends.clear();
+
     this.isReady = false;
   }
 
@@ -705,6 +709,35 @@ class Client extends EventEmitter {
     if (!window.success) throw new Error(`Fetching events failed: ${this.parseError(window.response)}`);
 
     return window.response;
+  }
+
+  /**
+   * Download a radio stream
+   * @param {string} id The stream id
+   * @param {Language} language The stream language
+   * @returns {Promise<Buffer>}
+   * @example
+   * fs.writeFile('./stream.m3u8', await client.getRadioStream('BXrDueZkosvNvxtx', Enums.Language.ENGLISH));
+   * in cmd: ffmpeg -protocol_whitelist https,file,tcp,tls -i stream.m3u8 -ab 211200 radio.mp3
+   * Known stream ids: BXrDueZkosvNvxtx (BeatBox, en), GEviYjIhzVVzJufW (Yonder, en)
+   * Thanks to cup#9125, mix#9999 and amr#3379
+   */
+  async getRadioStream(id, language = Enums.Language.ENGLISH) {
+    const streamURIFile = await this.Http.send(true, 'GET',
+      `${Endpoints.BR_RADIO}/${id}/master_${language}_v6.m3u8`);
+
+    if (!streamURIFile.success) throw new Error(`Downloading radio stream failed: ${this.parseError(streamURIFile.response)}`);
+
+    const streamURI = streamURIFile.response.trim().split(/\n/gm).pop();
+
+    const streamBaseURI = `${Endpoints.BR_RADIO}/${id}/${streamURI.split('/')[0]}`;
+
+    const stream = await this.Http.send(true, 'GET',
+      `${Endpoints.BR_RADIO}/${id}/${streamURI}`);
+    if (!stream.success) throw new Error(`Downloading radio stream failed: ${this.parseError(stream.response)}`);
+
+    return stream.response.split(/\n/gm).map((s) => s.startsWith('#') ? s : `${streamBaseURI}/${s}`)
+      .join('\n').replace('init_', `${streamBaseURI}/init_`);
   }
 }
 

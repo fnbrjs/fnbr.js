@@ -301,7 +301,7 @@ class Client extends EventEmitter {
    * @private
    */
   debug(message) {
-    if (this.config.debug && !this.config.noDebug) this.config.debug(message);
+    if (this.config.debug) this.config.debug(message);
   }
 
   /**

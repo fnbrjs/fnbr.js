@@ -24,5 +24,18 @@
                 "path": "deviceauth.js"
             }
         ]
+    },
+    {
+        "name": "api examples",
+        "files": [
+            {
+                "name": "Fortnite-API.com",
+                "path": "fortniteapicom.js"
+            },
+            {
+                "name": "FortniteAPI.io",
+                "path": "fortniteapiio.js"
+            }
+        ]
     }
 ]

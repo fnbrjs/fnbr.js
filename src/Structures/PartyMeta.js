@@ -58,6 +58,7 @@ class PartyMeta extends Meta {
       'Default:PlatformSessions_j': JSON.stringify({
         PlatformSessions: [],
       }),
+      'VoiceChat:implementation_s': 'VivoxVoiceChat',
     };
 
     if (meta) this.update(meta, true);

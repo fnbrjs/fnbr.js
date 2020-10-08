@@ -171,7 +171,7 @@ class Party {
    * @private
    */
   patchPresence() {
-    const partyJoinInfoData = this.config.privacy.presencePermission === 'None'
+    const partyJoinInfoData = this.config.privacy.presencePermission === 'Noone'
       || (this.config.privacy.presencePermission === 'Leader' && this.leader.id !== this.me.id)
       ? {
         bIsPrivate: true,
@@ -251,8 +251,8 @@ class Party {
           'urn:epic:member:dn_s': this.Client.user.displayName,
         });
     } else {
-      data = await this.Client.Http.send(true, 'POST',
-        `${Endpoints.BR_PARTY}/user/${cachedFriend.id}/pings/${this.Client.user.id}`, `bearer ${this.Client.Auth.auths.token}`);
+      data = await this.Client.Http.send(true, 'POST', `${Endpoints.BR_PARTY}/user/${cachedFriend.id}/pings/${this.Client.user.id}`,
+        `bearer ${this.Client.Auth.auths.token}`, null, { 'urn:epic:invite:platformdata_s': '' });
     }
     if (!data.success) throw new Error(`Failed sending party invitation to ${friend}: ${this.Client.parseError(data.response)}`);
     return new SentPartyInvitation(this.Client, this, cachedFriend, {
@@ -305,6 +305,7 @@ class Party {
           join_confirmation: this.config.joinConfirmation,
           joinability: this.config.joinability,
           max_size: this.config.maxSize,
+          discoverability: this.config.discoverability,
         },
         meta: {
           delete: deleted || [],
@@ -315,7 +316,7 @@ class Party {
         party_type: this.config.type,
         party_sub_type: this.config.subType,
         max_number_of_members: this.config.maxSize,
-        invite_ttl_seconds: this.config.inviteTTL,
+        invite_ttl_seconds: this.config.inviteTll,
         revision: this.revision,
       });
 
@@ -355,7 +356,8 @@ class Party {
     this.config.maxSize = data.max_number_of_members;
     this.config.subType = data.party_sub_type;
     this.config.type = data.party_type;
-    this.config.inviteTTL = data.invite_ttl_seconds;
+    this.config.inviteTll = data.invite_ttl_seconds;
+    this.config.discoverability = data.discoverability;
 
     let privacy = this.meta.get('Default:PrivacySettings_j');
     privacy = Object.values(PartyPrivacy)
@@ -368,9 +370,10 @@ class Party {
   /**
    * Sets this party's privacy
    * @param {PartyPrivacy} privacy The new privacy
-   * @returns {Promise<void>}
+   * @param {?boolean} patch Whether to also patch the party or not (Should always be true)
+   * @returns {Promise<Object>} The updated and deleted meta keys and values
    */
-  async setPrivacy(privacy) {
+  async setPrivacy(privacy, patch = true) {
     if (!Object.values(PartyPrivacy).includes(privacy)) {
       throw new Error(`Cannot change party privacy: ${privacy} is not a valid party privacy. Use the enum`);
     }
@@ -398,7 +401,7 @@ class Party {
 
     if (privacy.partyType === 'Private') {
       deleted.push('urn:epic:cfg:not-accepting-members');
-      updated['urn:epic:cfg:not-accepting-members-reason_i'] = 7;
+      updated['urn:epic:cfg:not-accepting-members-reason_i'] = this.meta.set('urn:epic:cfg:not-accepting-members-reason_i', 7);
       this.config.discoverability = 'INVITED_ONLY';
       this.config.joinability = 'INVITE_AND_FORMER';
     } else {
@@ -407,8 +410,10 @@ class Party {
       this.config.joinability = 'OPEN';
     }
 
-    await this.sendPatch(updated, deleted);
+    if (patch) await this.sendPatch(updated, deleted);
     this.config.privacy = privacy;
+    this.meta.remove(deleted);
+    return { updated, deleted };
   }
 
   /**
@@ -556,6 +561,7 @@ class Party {
         'urn:epic:cfg:build-id_s': '1:2:',
         'urn:epic:cfg:join-request-action_s': 'Manual',
         'urn:epic:cfg:chat-enabled_b': partyConfig.chatEnabled.toString(),
+        'urn:epic:cfg:can-join_b': 'true',
       },
     });
 
@@ -568,7 +574,12 @@ class Party {
     const clientParty = new Party(client, party.response);
     client.party = clientParty;
     await client.party.chat.join();
-    await client.party.setPrivacy(clientParty.config.privacy);
+    const newPrivacy = await client.party.setPrivacy(clientParty.config.privacy, false);
+    await client.party.sendPatch({
+      ...newPrivacy.updated,
+      ...Object.keys(client.party.meta.schema).filter((k) => !k.startsWith('urn:'))
+        .reduce((obj, key) => { obj[key] = client.party.meta.schema[key]; return obj; }, {}),
+    }, newPrivacy.deleted);
     client.partyLock.active = false;
 
     return client.party;

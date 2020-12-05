@@ -363,7 +363,7 @@ class ClientPartyMember extends PartyMember {
    * Visually, doesn't actually join a match
    * @param {?boolean} isPlaying Whether the client is playing or not
    * @param {?number} playerCount Match player count (must be between 0 and 255)
-   * @param {string} startedAt When the match started (ISO date string)
+   * @param {?string} startedAt When the match started (ISO date string)
    */
   async setPlaying(isPlaying = true, playerCount = 100, startedAt = new Date().toISOString()) {
     if (!Number.isInteger(playerCount)) throw new TypeError('playerCount must be an integer');

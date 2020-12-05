@@ -316,7 +316,7 @@ class Party {
         party_type: this.config.type,
         party_sub_type: this.config.subType,
         max_number_of_members: this.config.maxSize,
-        invite_ttl_seconds: this.config.inviteTll,
+        invite_ttl_seconds: this.config.inviteTtl,
         revision: this.revision,
       });
 
@@ -356,7 +356,7 @@ class Party {
     this.config.maxSize = data.max_number_of_members;
     this.config.subType = data.party_sub_type;
     this.config.type = data.party_type;
-    this.config.inviteTll = data.invite_ttl_seconds;
+    this.config.inviteTtl = data.invite_ttl_seconds;
     this.config.discoverability = data.discoverability;
 
     let privacy = this.meta.get('Default:PrivacySettings_j');

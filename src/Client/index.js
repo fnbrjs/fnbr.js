@@ -8,6 +8,7 @@
 const { EventEmitter } = require('events');
 const { createInterface } = require('readline');
 const onExit = require('async-exit-hook');
+const zlib = require('zlib');
 const Authenticator = require('./auth.js');
 const Xmpp = require('../XMPP');
 const Http = require('../Util/http');
@@ -577,14 +578,13 @@ class Client extends EventEmitter {
    */
   async getNews(mode = Enums.Gamemode.BATTLE_ROYALE, language = Enums.Language.ENGLISH) {
     if (!Object.values(Enums.Gamemode).includes(mode)) throw new Error(`Fetching news failed: ${mode} is not a valid gamemode! Use the enum`);
-    const news = await this.Http.send(false, 'GET', `${Endpoints.BR_NEWS}?lang=${language}`);
-    if (!news.success) throw new Error(`Fetching news failed: ${this.parseError(news.response)}`);
+    const gamemodeNews = await this.Http.send(false, 'GET', `${Endpoints.BR_NEWS}/${mode}news${mode === 'savetheworld' ? '' : 'v2'}?lang=${language}`);
+    if (!gamemodeNews.success) throw new Error(`Fetching news failed: ${this.parseError(gamemodeNews.response)}`);
 
-    if (mode === Enums.Gamemode.SAVE_THE_WORLD) {
-      return news.response[`${mode}news`].news.messages;
-    }
-    return [...news.response[`${mode}newsv2`].news.motds,
-      ...(news.response[`${mode}newsv2`].news.platform_motds || []).filter((m) => m.platform === 'windows').map((m) => m.message)];
+    const { messages, motds, platform_motds: platformMotds } = gamemodeNews.response.news;
+
+    if (mode === 'savetheworld') return messages;
+    return [...motds, ...(platformMotds || []).filter((m) => m.platform === 'windows').map((m) => m.message)];
   }
 
   /**
@@ -623,7 +623,7 @@ class Client extends EventEmitter {
     const codeRes = await this.Http.send(false, 'GET', `${Endpoints.BR_SAC_SEARCH}?slug=${code}`);
     if (!codeRes.success) throw new Error(`Fetching the creator code ${code} failed: ${this.parseError(codeRes.response)}`);
 
-    const codes = codeRes.response.filter((c) => showSimilar ? c : c.slug === code);
+    const codes = codeRes.response.filter((c) => showSimilar ? true : c.slug === code.toLowerCase());
     const parsedCodes = [];
 
     for (const ccode of codes) {
@@ -666,7 +666,7 @@ class Client extends EventEmitter {
     const fortniteServerStatus = await this.Http.send(true, 'GET', Endpoints.BR_SERVER_STATUS, `bearer ${this.Auth.auths.token}`);
     if (!fortniteServerStatus.success) throw new Error(`Fetching Fortnite server status failed: ${this.parseError(fortniteServerStatus.response)}`);
 
-    return fortniteServerStatus.response;
+    return fortniteServerStatus.response[0];
   }
 
   /**
@@ -688,7 +688,7 @@ class Client extends EventEmitter {
    */
   async getTournaments(region = 'EU', showPastEvents = false) {
     const events = await this.Http.send(true, 'GET',
-      `${Endpoints.BR_TOURNAMENTS}api/v1/events/Fortnite/data/${this.user.id}?region=${region}&showPastEvents=${showPastEvents}`, `bearer ${this.Auth.auths.token}`);
+      `${Endpoints.BR_TOURNAMENTS}/${this.user.id}?region=${region}&showPastEvents=${showPastEvents}`, `bearer ${this.Auth.auths.token}`);
     if (!events.success) throw new Error(`Fetching events failed: ${this.parseError(events.response)}`);
 
     return events.response.events;
@@ -696,48 +696,58 @@ class Client extends EventEmitter {
 
   /**
    * Fetch a Fortnite tournament window by id
-   * @param {string} eventId The event id (eg epicgames_OnlineOpen_Week2_ASIA)
-   * @param {string} windowId The window id (eg OnlineOpen_Week2_ASIA_Event2)
+   * @param {string} eventId The event id (eg epicgames_S13_FNCS_EU_Qualifier4_PC)
+   * @param {string} windowId The window id (eg S13_FNCS_EU_Qualifier4_PC_Round1)
    * @param {boolean} showLiveSessions Whether to show live sessions
    * @param {number} page The starting page
    * @returns {Promise<Object>} The tournament window
    */
   async getTournamentWindow(eventId, windowId, showLiveSessions = false, page = 0) {
-    const window = await this.Http.send(true, 'GET',
-      `${Endpoints.BR_TOURNAMENTS}api/v1/leaderboards/Fortnite/${eventId}/${windowId}/${this.user.id}?page=${page}&showLiveSessions=${showLiveSessions}`,
-      `bearer ${this.Auth.auths.token}`);
+    const window = await this.Http.send(true, 'GET', `${Endpoints.BR_TOURNAMENT_WINDOW}/${eventId}/${windowId}/`
+      + `${this.user.id}?page=${page}&rank=0&teamAccountIds=&appId=Fortnite&showLiveSessions=${showLiveSessions}`,
+    `bearer ${this.Auth.auths.token}`);
     if (!window.success) throw new Error(`Fetching events failed: ${this.parseError(window.response)}`);
 
     return window.response;
   }
 
   /**
+   * Fetch all available radio stations
+   * @returns {Promise<Object>} Radio stations
+   */
+  async getRadioStations() {
+    const fortniteContent = await this.Http.send(false, 'GET', Endpoints.BR_NEWS);
+    if (!fortniteContent.success) throw new Error(`Fetching radio stations failed: ${this.parseError(fortniteContent.response)}`);
+
+    const { stations } = fortniteContent.response.radioStations.radioStationList;
+
+    return stations;
+  }
+
+  /**
    * Download a radio stream
-   * @param {string} id The stream id
+   * @param {string} id The stream id (use getRadioStations)
    * @param {Language} language The stream language
-   * @returns {Promise<Buffer>}
+   * @returns {Promise<Buffer>} m3u8 file
    * @example
    * fs.writeFile('./stream.m3u8', await client.getRadioStream('BXrDueZkosvNvxtx', Enums.Language.ENGLISH));
    * in cmd: ffmpeg -protocol_whitelist https,file,tcp,tls -i stream.m3u8 -ab 211200 radio.mp3
-   * Known stream ids: BXrDueZkosvNvxtx (BeatBox, en), GEviYjIhzVVzJufW (Yonder, en)
-   * Thanks to cup#9125, mix#9999 and amr#3379
    */
   async getRadioStream(id, language = Enums.Language.ENGLISH) {
-    const streamURIFile = await this.Http.send(true, 'GET',
-      `${Endpoints.BR_RADIO}/${id}/master_${language}_v6.m3u8`);
+    const streamBlurlFile = await this.Http.send(true, 'GET', `${Endpoints.BR_STREAM}/${id}/master.blurl`);
+    if (!streamBlurlFile.success) throw new Error(`Downloading radio stream failed: ${this.parseError(streamBlurlFile.response.toString())}`);
 
-    if (!streamURIFile.success) throw new Error(`Downloading radio stream failed: ${this.parseError(streamURIFile.response)}`);
+    const jsonData = await new Promise((res) => zlib.inflate(streamBlurlFile.response.slice(8), (err, decomBuf) => res(JSON.parse(decomBuf))));
 
-    const streamURI = streamURIFile.response.trim().split(/\n/gm).pop();
+    const stream = jsonData.playlists.find((p) => p.type === 'master' && p.language === language);
+    if (!stream) throw new Error(`Downloading radio stream failed: Language ${language} is not available for this stream`);
 
-    const streamBaseURI = `${Endpoints.BR_RADIO}/${id}/${streamURI.split('/')[0]}`;
+    const variantUrl = stream.data.match(/(?<=URI=")([a-z]|[0-9]|-)+\/variant_.._.._0.m3u8/)[0];
+    const baseUrl = `${Endpoints.BR_STREAM}/${id}/${variantUrl.replace(/variant_.._.._0.m3u8/, '')}`;
+    const variantStream = jsonData.playlists.find((p) => p.type === 'variant' && p.rel_url === variantUrl);
 
-    const stream = await this.Http.send(true, 'GET',
-      `${Endpoints.BR_RADIO}/${id}/${streamURI}`);
-    if (!stream.success) throw new Error(`Downloading radio stream failed: ${this.parseError(stream.response)}`);
-
-    return stream.response.split(/\n/gm).map((s) => s.startsWith('#') ? s : `${streamBaseURI}/${s}`)
-      .join('\n').replace('init_', `${streamBaseURI}/init_`);
+    return Buffer.from(variantStream.data.split(/\n/).map((l) => (l.startsWith('#') || !l ? l : `${baseUrl}${l}`))
+      .join('\n').replace('init_', `${baseUrl}init_`), 'utf-8');
   }
 }
 

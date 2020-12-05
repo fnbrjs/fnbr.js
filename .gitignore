@@ -107,3 +107,4 @@ dist
 test.js
 .vscode
 docs.json
+mocha.test.js

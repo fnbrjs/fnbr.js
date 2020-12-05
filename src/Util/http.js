@@ -82,6 +82,8 @@ class Http {
 
     if (headers) reqOptions.headers = { ...reqOptions.headers, ...headers };
 
+    if (url.endsWith('.blurl') || url.endsWith('.m3u8')) reqOptions.encoding = null;
+
     const reqStartTime = Date.now();
     try {
       const response = await this.request(reqOptions);

@@ -4,7 +4,6 @@
 /* eslint-disable no-confusing-arrow */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable max-len */
-/* eslint-disable no-console */
 const { EventEmitter } = require('events');
 const { createInterface } = require('readline');
 const onExit = require('async-exit-hook');
@@ -728,13 +727,13 @@ class Client extends EventEmitter {
    * Download a radio stream
    * @param {string} id The stream id (use getRadioStations)
    * @param {Language} language The stream language
-   * @returns {Promise<Buffer>} m3u8 file
+   * @returns {Promise<Buffer>} The m3u8 audio file as a Buffer
    * @example
    * fs.writeFile('./stream.m3u8', await client.getRadioStream('BXrDueZkosvNvxtx', Enums.Language.ENGLISH));
    * in cmd: ffmpeg -protocol_whitelist https,file,tcp,tls -i stream.m3u8 -ab 211200 radio.mp3
    */
   async getRadioStream(id, language = Enums.Language.ENGLISH) {
-    const streamBlurlFile = await this.Http.send(true, 'GET', `${Endpoints.BR_STREAM}/${id}/master.blurl`);
+    const streamBlurlFile = await this.Http.send(false, 'GET', `${Endpoints.BR_STREAM}/${id}/master.blurl`);
     if (!streamBlurlFile.success) throw new Error(`Downloading radio stream failed: ${this.parseError(streamBlurlFile.response.toString())}`);
 
     const jsonData = await new Promise((res) => zlib.inflate(streamBlurlFile.response.slice(8), (err, decomBuf) => res(JSON.parse(decomBuf))));
@@ -748,6 +747,43 @@ class Client extends EventEmitter {
 
     return Buffer.from(variantStream.data.split(/\n/).map((l) => (l.startsWith('#') || !l ? l : `${baseUrl}${l}`))
       .join('\n').replace('init_', `${baseUrl}init_`), 'utf-8');
+  }
+
+  /**
+   * Download a blurl video by its id (eg news videos)
+   * @param {string} id The blurl video id (ie videoUID in getNews)
+   * @param {Language} language The video language
+   * @param {string} resolution The video resolution (1920x1080, 1152x656, 1280x720, 864x480, 640x368, 512x288)
+   * @returns {Promise<Buffer>} The m3u8 video file as a buffer
+   * @example
+   * fs.writeFile('./video.m3u8', await client.getBlurlVideo('kDrsgRdgDiQrNOSu', Enums.Language.ENGLISH, '1920x1080'));
+   * in cmd: ffmpeg -protocol_whitelist https,file,tcp,tls -i ./video.m3u8 ./newsVid.mp4
+   */
+  async getBlurlVideo(id, language = Enums.Language.ENGLISH, resolution = '1920x1080') {
+    const blurlFile = await this.Http.send(false, 'GET', `${Endpoints.BR_STREAM}/${id}/master.blurl`);
+    if (!blurlFile.success) throw new Error(`Downloading blurl video failed: ${this.parseError(blurlFile.response.toString())}`);
+
+    const videoJsonData = await new Promise((res) => zlib.inflate(blurlFile.response.slice(8), (err, decomBuf) => res(JSON.parse(decomBuf))));
+
+    const mainStream = videoJsonData.playlists.find((p) => p.type === 'master' && p.language === language);
+    if (!mainStream) throw new Error(`Downloading blurl video failed: Language ${language} not available`);
+
+    const audioStreamUrl = mainStream.data.match(/.{16}\/.{16}_.{16}_.{4,10}.m3u8/sg).pop();
+
+    const baseUrl = mainStream.url.replace(/master_.{2,10}\.m3u8/, '');
+    const streamBaseUrl = `${baseUrl}${audioStreamUrl.replace(/.{16}_.{16}_.{2,10}_.{1,3}.m3u8/, '')}`;
+
+    const resolutionStreamUrlMatch = mainStream.data.match(new RegExp(`RESOLUTION=${resolution},.{1,80}(.{16}/.{16}_.{16}_.{4,10}.m3u8)`, 's'));
+    if (!resolutionStreamUrlMatch || !resolutionStreamUrlMatch[1]) throw new Error(`Downloading blurl video failed: Resolution ${resolution} not available!`);
+    const resolutionStreamUrl = resolutionStreamUrlMatch[1];
+    const resolutionStream = videoJsonData.playlists.find((p) => p.type === 'variant' && p.rel_url === resolutionStreamUrl);
+    if (!resolutionStream) throw new Error(`Downloading blurl video failed: Resolution ${resolution} not available!`);
+
+    return Buffer.from(resolutionStream.data.split(/\n/).map((l) => (l.startsWith('#') || !l ? l : `${streamBaseUrl}${l}`))
+      .join('\n').replace('init_', `${streamBaseUrl}init_`)
+      .replace('#EXTINF:2.000000', `#EXT-X-STREAM-INF:BANDWIDTH=6261200,RESOLUTION=${resolution},CODECS="avc1.640020,mp4a.40.2",AUDIO="group_audio",`
+        + 'FRAME-RATE=60.000\n#EXTINF:2.000000')
+      .replace('#EXT-X-DISCONTINUITY', `#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="group_audio",NAME="audio",DEFAULT=YES,URI="${baseUrl}${audioStreamUrl}"\n#EXT-X-DISCONTINUITY`), 'utf-8');
   }
 }
 

@@ -82,7 +82,7 @@ class Http {
 
     if (headers) reqOptions.headers = { ...reqOptions.headers, ...headers };
 
-    if (url.endsWith('.blurl') || url.endsWith('.m3u8')) reqOptions.encoding = null;
+    if (url.endsWith('.blurl') || url.endsWith('.bin')) reqOptions.encoding = null;
 
     const reqStartTime = Date.now();
     try {

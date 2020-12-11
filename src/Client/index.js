@@ -785,6 +785,40 @@ class Client extends EventEmitter {
         + 'FRAME-RATE=60.000\n#EXTINF:2.000000')
       .replace('#EXT-X-DISCONTINUITY', `#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="group_audio",NAME="audio",DEFAULT=YES,URI="${baseUrl}${audioStreamUrl}"\n#EXT-X-DISCONTINUITY`), 'utf-8');
   }
+
+  /**
+   * Download a tournament match by its session id
+   * @param {string} sessionId The game session id (eg in getTournamentWindow's sessions)
+   * @param {?array} downloads Which replay data to fetch
+   * @param {?BufferEncoding} outputEncoding The encoding for binary data
+   */
+  async getTournamentReplay(sessionId, downloads = ['Checkpoints', 'Events', 'DataChunks'], outputEncoding = 'hex') {
+    const tournamentDataLocation = await this.Http.send(true, 'GET', `${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, `bearer ${this.Auth.auths.token}`);
+
+    const { response: tournamentReplayData } = await this.Http.send(true, 'GET', Object.values(tournamentDataLocation.response.files)[0].readLink);
+
+    const headerLocation = await this.Http.send(false, 'GET', `${Endpoints.BR_REPLAY}%2F${sessionId}%2Fheader.bin`, `bearer ${this.Auth.auths.token}`);
+    const header = await this.Http.send(false, 'GET', Object.values(headerLocation.response.files)[0].readLink, `bearer ${this.Auth.auths.token}`);
+    tournamentReplayData.Header = { data: Buffer.from(header.response).toString(outputEncoding) };
+
+    const promises = [];
+    for (const downloadKey of downloads) {
+      const chunks = tournamentReplayData[downloadKey];
+      for (const chunk of chunks) {
+        const download = async () => {
+          const location = await this.Http.send(false, 'GET', `${Endpoints.BR_REPLAY}%2F${sessionId}%2F${chunk.Id}.bin`, `bearer ${this.Auth.auths.token}`);
+          const binaryFile = await this.Http.send(true, 'GET', Object.values(location.response.files)[0].readLink);
+          if (chunk.Group === 'Highlight') tournamentReplayData.Highlight = binaryFile.response;
+          else tournamentReplayData[downloadKey].find((c) => c.Id === chunk.Id).data = Buffer.from(binaryFile.response).toString(outputEncoding);
+        };
+        promises.push(download());
+      }
+    }
+
+    await Promise.all(promises);
+
+    return tournamentReplayData;
+  }
 }
 
 module.exports = Client;
@@ -925,4 +959,10 @@ module.exports = Client;
  * Emitted when a party invite gets declined
  * @event Client#party:invite:declined
  * @param {Friend} friend The friend that declined the party invite
+ */
+
+/**
+ * Emitted when a device code should be prompted to the user
+ * @event Client#devicecode:prompt
+ * @param {string} code The device code url
  */

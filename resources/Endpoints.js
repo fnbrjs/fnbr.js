@@ -10,6 +10,7 @@ module.exports = Object.freeze({
   OAUTH_TOKEN_KILL_MULTIPLE: 'https://account-public-service-prod.ol.epicgames.com/account/api/oauth/sessions/kill',
   OAUTH_EXCHANGE: 'https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/exchange',
   OAUTH_DEVICE_AUTH: 'https://account-public-service-prod.ol.epicgames.com/account/api/public/account',
+  OAUTH_DEVICE_CODE: 'https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/deviceAuthorization',
 
   // INITIAL SETUP
   INIT_EULA: 'https://eulatracking-public-service-prod-m.ol.epicgames.com/eulatracking/api/public/agreements/fn',
@@ -30,7 +31,8 @@ module.exports = Object.freeze({
   BR_TOURNAMENTS: 'https://events-public-service-prod.ol.epicgames.com/api/v1/events/Fortnite/data',
   BR_TOURNAMENT_WINDOW: 'https://events-public-service-live.ol.epicgames.com/api/v1/leaderboards/Fortnite',
   BR_STREAM: 'https://fortnite-vod.akamaized.net',
-  BR_REPLAY: 'https://datastorage-public-service-live.ol.epicgames.com/api/v1/access/fnreplaysmetadata/public',
+  BR_REPLAY: 'https://datastorage-public-service-live.ol.epicgames.com/api/v1/access/fnreplays/public',
+  BR_REPLAY_METADATA: 'https://datastorage-public-service-live.ol.epicgames.com/api/v1/access/fnreplaysmetadata/public',
 
   // ACCOUNT
   ACCOUNT_MULTIPLE: 'https://account-public-service-prod.ol.epicgames.com/account/api/public/account',

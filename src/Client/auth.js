@@ -68,6 +68,8 @@ class Authenticator {
       auth = await this.authorizationCodeAuthenticate(authCreds.authorizationCode);
     } else if (authCreds.refreshToken) {
       auth = await this.refreshTokenAuthenticate(authCreds.refreshToken);
+    } else if (authCreds.deviceCode) {
+      auth = await this.deviceCodeAuthenticate();
     } else {
       return { success: false, response: 'No valid auth method found! Please provide one in the client config' };
     }
@@ -279,6 +281,23 @@ class Authenticator {
   }
 
   /**
+   * Authenticates using a device code
+   * @returns {Promise<Object>}
+   */
+  async deviceCodeAuthenticate() {
+    const deviceCode = await this.generateDeviceCode();
+    if (!deviceCode.success) return deviceCode;
+
+    if (this.Client.listenerCount('devicecode:prompt') > 0) this.Client.emit('devicecode:prompt', deviceCode.response.verification_uri_complete);
+    else {
+      this.Client.debug(`Device code url: ${deviceCode.response.verification_uri_complete}`);
+      this.Client.debug('Please listen to the devicecode:prompt event instead of using the link above in production!');
+    }
+
+    return this.useDeviceCode(deviceCode.response.device_code, deviceCode.response.interval);
+  }
+
+  /**
    * Obtains an access token
    * @param {string} grant_type The grant type
    * @param {Object} valuePair The token value pair
@@ -293,6 +312,43 @@ class Authenticator {
     };
 
     return this.Client.Http.send(false, 'POST', Endpoints.OAUTH_TOKEN_CREATE, `basic ${token}`, { 'Content-Type': 'application/x-www-form-urlencoded' }, null, formData);
+  }
+
+  /**
+   * Creates a device code
+   * @returns {Promise<Object>}
+   */
+  async generateDeviceCode() {
+    const switchTokenRequest = await this.getOauthToken('client_credentials', {}, Tokens.FORTNITE_SWITCH);
+    if (!switchTokenRequest.success) return switchTokenRequest;
+    const switchToken = switchTokenRequest.response.access_token;
+
+    const deviceCodeRequest = await this.Client.Http.send(false, 'POST', Endpoints.OAUTH_DEVICE_CODE, `bearer ${switchToken}`,
+      { 'Content-Type': 'application/x-www-form-urlencoded' }, 'prompt=login');
+
+    return deviceCodeRequest;
+  }
+
+  /**
+   * Creates a device code
+   * @param {string} deviceCode The device code
+   * @param {number} interval The request interval in seconds
+   * @returns {Promise<Object>}
+   */
+  useDeviceCode(deviceCode, interval) {
+    return new Promise((res) => {
+      const reqInterval = setInterval(async () => {
+        const accessTokenRequest = await this.getOauthToken('device_code', { device_code: deviceCode }, Tokens.FORTNITE_SWITCH);
+        if (accessTokenRequest.success) {
+          clearInterval(reqInterval);
+          res(accessTokenRequest);
+        }
+      }, interval * 1000);
+      setTimeout(() => {
+        clearInterval(reqInterval);
+        res({ success: false, response: 'Device code timeout of 300000ms exceeded' });
+      }, 300000);
+    });
   }
 
   /**

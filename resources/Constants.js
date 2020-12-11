@@ -48,6 +48,7 @@ module.exports.ClientOptions = Object.freeze({
    * @property {string} [exchangeCode] The exchange code
    * @property {string} [authorizationCode] The authorization code
    * @property {string} [refreshToken] The refresh token
+   * @property {boolean} [deviceCode] Whether to use a device code
    * @property {boolean} [checkEULA=true] Whether EULA should be checked and agreed or not
    */
   auth: {
@@ -55,6 +56,7 @@ module.exports.ClientOptions = Object.freeze({
     exchangeCode: undefined,
     authorizationCode: undefined,
     refreshToken: undefined,
+    deviceCode: undefined,
     checkEULA: true,
   },
   /**

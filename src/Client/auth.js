@@ -294,7 +294,11 @@ class Authenticator {
       this.Client.debug('Please listen to the devicecode:prompt event instead of using the link above in production!');
     }
 
-    return this.useDeviceCode(deviceCode.response.device_code, deviceCode.response.interval);
+    const { response: { access_token: switchAuthToken } } = await this.useDeviceCode(deviceCode.response.device_code, deviceCode.response.interval);
+
+    const exchangeCodeResponse = await this.Client.Http.send(false, 'GET', Endpoints.OAUTH_EXCHANGE, `bearer ${switchAuthToken}`);
+
+    return this.exchangeCodeAuthenticate(exchangeCodeResponse.response.code);
   }
 
   /**

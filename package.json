@@ -3,6 +3,9 @@
   "version": "1.4.1",
   "description": "A library to interact with Epic Games' Fortnite HTTP and XMPP services",
   "main": "./index.js",
+  "scripts": {
+    "test": "mocha mocha.test.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fnbrjs/fnbr.js.git"
@@ -29,7 +32,8 @@
   "devDependencies": {
     "eslint": "^7.4.0",
     "eslint-config-airbnb-base": "^14.2.0",
-    "eslint-plugin-import": "^2.22.0"
+    "eslint-plugin-import": "^2.22.0",
+    "mocha": "^8.2.1"
   },
   "dependencies": {
     "async-exit-hook": "^2.0.1",

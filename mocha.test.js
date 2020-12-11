@@ -117,5 +117,6 @@ describe('Client shutdown', () => {
   it('should logout', async function logout() {
     this.timeout(15000);
     await client.logout();
+    setTimeout(() => process.exit(), 5000);
   });
 });

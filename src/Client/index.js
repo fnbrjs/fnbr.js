@@ -21,6 +21,8 @@ const Enums = require('../../enums');
 const List = require('../Util/List');
 const FriendMessage = require('../Structures/FriendMessage.js');
 const Party = require('../Structures/Party.js');
+const News = require('../Structures/News.js');
+const BRShop = require('../Structures/BRShop.js');
 // eslint-disable-next-line no-unused-vars
 const SentPartyInvitation = require('../Structures/SentPartyInvitation.js');
 // eslint-disable-next-line no-unused-vars
@@ -573,7 +575,7 @@ class Client extends EventEmitter {
    * Fetches news for a gamemode
    * @param {Gamemode} mode The gamemode
    * @param {Language} language The language
-   * @returns {Promise<Array>}
+   * @returns {Promise<Array<News>>}
    */
   async getNews(mode = Enums.Gamemode.BATTLE_ROYALE, language = Enums.Language.ENGLISH) {
     if (!Object.values(Enums.Gamemode).includes(mode)) throw new Error(`Fetching news failed: ${mode} is not a valid gamemode! Use the enum`);
@@ -582,8 +584,8 @@ class Client extends EventEmitter {
 
     const { messages, motds, platform_motds: platformMotds } = gamemodeNews.response.news;
 
-    if (mode === 'savetheworld') return messages;
-    return [...motds, ...(platformMotds || []).filter((m) => m.platform === 'windows').map((m) => m.message)];
+    if (mode === 'savetheworld') return messages.map((m) => new News(this, m));
+    return [...motds, ...(platformMotds || []).filter((m) => m.platform === 'windows').map((m) => m.message)].map((m) => new News(this, m));
   }
 
   /**
@@ -636,13 +638,13 @@ class Client extends EventEmitter {
   /**
    * Fetches the current Battle Royale store
    * @param {Language} language The language
-   * @returns {Promise<Object>} The Battle Royale store
+   * @returns {Promise<BRShop>} The Battle Royale store
    */
   async getBRStore(language = Enums.Language.ENGLISH) {
     const shop = await this.Http.send(true, 'GET', `${Endpoints.BR_STORE}?lang=${language}`, `bearer ${this.Auth.auths.token}`);
     if (!shop.success) throw new Error(`Fetching shop failed: ${this.parseError(shop.response)}`);
 
-    return shop.response;
+    return new BRShop(this, shop.response.storefronts);
   }
 
   /**
@@ -768,21 +770,27 @@ class Client extends EventEmitter {
     const mainStream = videoJsonData.playlists.find((p) => p.type === 'master' && p.language === language);
     if (!mainStream) throw new Error(`Downloading blurl video failed: Language ${language} not available`);
 
-    const audioStreamUrl = mainStream.data.match(/.{16}\/.{16}_.{16}_.{4,10}.m3u8/sg).pop();
+    const audioStreamUrl = mainStream.data
+      .split(/\n/g)
+      .find((l) => l.startsWith('#EXT-X-MEDIA:TYPE=AUDIO'))
+      .split('URI=').pop()
+      .replace(/"/g, '');
 
     const baseUrl = mainStream.url.replace(/master_.{2,10}\.m3u8/, '');
-    const streamBaseUrl = `${baseUrl}${audioStreamUrl.replace(/.{16}_.{16}_.{2,10}_.{1,3}.m3u8/, '')}`;
+    const audioStreamParts = audioStreamUrl.split('/');
+    audioStreamParts.pop();
+    const streamBaseUrl = `${baseUrl}${audioStreamParts.join(' ')}`;
 
-    const resolutionStreamUrlMatch = mainStream.data.match(new RegExp(`RESOLUTION=${resolution},.{1,80}(.{16}/.{16}_.{16}_.{4,10}.m3u8)`, 's'));
-    if (!resolutionStreamUrlMatch || !resolutionStreamUrlMatch[1]) throw new Error(`Downloading blurl video failed: Resolution ${resolution} not available!`);
-    const resolutionStreamUrl = resolutionStreamUrlMatch[1];
+    const resolutionStreamMatch = mainStream.data.split(/\n/g).find((l) => l.includes(`RESOLUTION=${resolution}`));
+    if (!resolutionStreamMatch) throw new Error(`Downloading blurl video failed: Resolution ${resolution} not available!`);
+    const resolutionStreamUrl = mainStream.data.split(/\n/g)[mainStream.data.split(/\n/g).findIndex((l) => l === resolutionStreamMatch) + 1];
     const resolutionStream = videoJsonData.playlists.find((p) => p.type === 'variant' && p.rel_url === resolutionStreamUrl);
     if (!resolutionStream) throw new Error(`Downloading blurl video failed: Resolution ${resolution} not available!`);
 
     return Buffer.from(resolutionStream.data.split(/\n/).map((l) => (l.startsWith('#') || !l ? l : `${streamBaseUrl}${l}`))
       .join('\n').replace('init_', `${streamBaseUrl}init_`)
-      .replace('#EXTINF:2.000000', `#EXT-X-STREAM-INF:BANDWIDTH=6261200,RESOLUTION=${resolution},CODECS="avc1.640020,mp4a.40.2",AUDIO="group_audio",`
-        + 'FRAME-RATE=60.000\n#EXTINF:2.000000')
+      .replace('#EXTINF:', `#EXT-X-STREAM-INF:BANDWIDTH=6261200,RESOLUTION=${resolution},CODECS="avc1.640020,mp4a.40.2",AUDIO="group_audio",`
+        + 'FRAME-RATE=60.000\n#EXTINF:')
       .replace('#EXT-X-DISCONTINUITY', `#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="group_audio",NAME="audio",DEFAULT=YES,URI="${baseUrl}${audioStreamUrl}"\n#EXT-X-DISCONTINUITY`), 'utf-8');
   }
 

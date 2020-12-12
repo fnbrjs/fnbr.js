@@ -797,8 +797,9 @@ class Client extends EventEmitter {
   /**
    * Download a tournament match by its session id
    * @param {string} sessionId The game session id (eg in getTournamentWindow's sessions)
-   * @param {?array} downloads Which replay data to fetch
+   * @param {?Array} downloads Which replay data to fetch
    * @param {?BufferEncoding} outputEncoding The encoding for binary data
+   * @returns {Object} The replay json data
    */
   async getTournamentReplay(sessionId, downloads = ['Checkpoints', 'Events', 'DataChunks'], outputEncoding = 'hex') {
     const tournamentDataLocation = await this.Http.send(true, 'GET', `${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, `bearer ${this.Auth.auths.token}`);

@@ -283,15 +283,14 @@ class Client extends EventEmitter {
 
   /**
    * Initiates a party
-   * @param {boolean} create Whether to create a new one after leaving the current one
+   * @param {boolean} create Whether to create a new party if the bot is already member of a party
    * @returns {Promise<void>}
    * @private
    */
   async initParty(create = true) {
-    const party = await Party.LookupSelf(this);
-    if (!create) this.party = party;
-    else if (party) await party.leave(false);
-    if (create) await Party.Create(this);
+    this.party = await Party.LookupSelf(this);
+    if (create && this.party) await this.party.leave(false);
+    if (!this.party) await Party.Create(this);
   }
 
   // -------------------------------------UTIL-------------------------------------
@@ -779,7 +778,8 @@ class Client extends EventEmitter {
     const baseUrl = mainStream.url.replace(/master_.{2,10}\.m3u8/, '');
     const audioStreamParts = audioStreamUrl.split('/');
     audioStreamParts.pop();
-    const streamBaseUrl = `${baseUrl}${audioStreamParts.join(' ')}`;
+    let streamBaseUrl = `${baseUrl}${audioStreamParts.join(' ')}`;
+    if (!streamBaseUrl.endsWith('/')) streamBaseUrl += '/';
 
     const resolutionStreamMatch = mainStream.data.split(/\n/g).find((l) => l.includes(`RESOLUTION=${resolution}`));
     if (!resolutionStreamMatch) throw new Error(`Downloading blurl video failed: Resolution ${resolution} not available!`);

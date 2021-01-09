@@ -51,7 +51,7 @@ class PartyMember {
    * @readonly
    */
   get pickaxe() {
-    return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.pickaxeDef.match(/(?<=.*\.).*/)[0];
+    return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.pickaxeDef.match(/(?<=\w*\.)\w*/)[0];
   }
 
   /**
@@ -60,7 +60,7 @@ class PartyMember {
    * @readonly
    */
   get outfit() {
-    return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.characterDef.match(/(?<=.*\.).*/)[0];
+    return this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.characterDef.match(/(?<=\w*\.)\w*/)[0];
   }
 
   /**
@@ -71,7 +71,7 @@ class PartyMember {
   get emote() {
     const emoteAsset = this.meta.get('Default:FrontendEmote_j').FrontendEmote.emoteItemDef;
     if (emoteAsset === 'None') return undefined;
-    return emoteAsset.match(/(?<=.*\.).*/)[0];
+    return emoteAsset.match(/(?<=\w*\.)\w*/)[0];
   }
 
   /**
@@ -82,7 +82,7 @@ class PartyMember {
   get backpack() {
     const backpackAsset = this.meta.get('Default:AthenaCosmeticLoadout_j').AthenaCosmeticLoadout.backpackDef;
     if (backpackAsset === 'None') return undefined;
-    return backpackAsset.match(/(?<=.*\.).*/)[0];
+    return backpackAsset.match(/(?<=\w*\.)\w*/)[0];
   }
 
   /**

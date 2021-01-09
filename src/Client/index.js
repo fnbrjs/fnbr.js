@@ -420,8 +420,8 @@ class Client extends EventEmitter {
   async getProfile(query) {
     let user;
     if (typeof query === 'string') {
-      if (query.length === 32) user = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${query}`, `bearer ${this.Auth.auths.token}`);
-      else if (/.*@.*\..*/.test(query)) user = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_EMAIL}/${encodeURI(query)}`, `bearer ${this.Auth.auths.token}`);
+      if (/.*@.*\..*/.test(query)) user = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_EMAIL}/${encodeURI(query)}`, `bearer ${this.Auth.auths.token}`);
+      else if (query.length === 32) user = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${query}`, `bearer ${this.Auth.auths.token}`);
       else user = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURI(query)}`, `bearer ${this.Auth.auths.token}`);
 
       return user.success ? new User(this, Array.isArray(user.response) ? user.response[0] : user.response) : undefined;
@@ -431,8 +431,8 @@ class Client extends EventEmitter {
       const emails = [];
 
       for (const userQuery of query) {
-        if (userQuery.length === 32) ids.push(userQuery);
-        else if (/.*@.*\..*/.test(userQuery)) emails.push(userQuery);
+        if (/.*@.*\..*/.test(userQuery)) emails.push(userQuery);
+        else if (userQuery.length === 32) ids.push(userQuery);
         else names.push(userQuery);
       }
 
@@ -589,7 +589,7 @@ class Client extends EventEmitter {
 
   /**
    * Fetches v2 stats for one or multiple players
-   * @param {string} user The id, name or email of the user(s)
+   * @param {string} user The id, name or email of the user
    * @param {number} [startTime] The timestamp to start fetching stats from; can be null/undefined for lifetime
    * @param {number} [endTime] The timestamp to stop fetching stats from; can be undefined for lifetime
    * @returns {Promise<Object>}
@@ -681,17 +681,28 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Fetch the current Fortnite tournaments
+   * Fetch all past and upcoming Fortnite tournaments
    * @param {string} region The region eg. EU, ASIA, NAE
-   * @param {boolean} showPastEvents Whether to return past events
+   * @param {string} platform The full platform name (Windows, Android, etc)
    * @returns {Promise<Object>} The tournaments
    */
-  async getTournaments(region = 'EU', showPastEvents = false) {
-    const events = await this.Http.send(true, 'GET',
-      `${Endpoints.BR_TOURNAMENTS}/${this.user.id}?region=${region}&showPastEvents=${showPastEvents}`, `bearer ${this.Auth.auths.token}`);
-    if (!events.success) throw new Error(`Fetching events failed: ${this.parseError(events.response)}`);
+  async getTournaments(region = 'EU', platform = 'Windows') {
+    const tournamentsData = await this.Http.send(true, 'GET',
+      `${Endpoints.BR_TOURNAMENTS}/${this.user.id}?region=${region}&showPastEvents=true`, `bearer ${this.Auth.auths.token}`);
+    if (!tournamentsData.success) throw new Error(`Fetching tournaments failed: ${this.parseError(tournamentsData.response)}`);
 
-    return events.response.events;
+    const tournamentsDownload = await this.Http.send(true, 'GET',
+      `${Endpoints.BR_TOURNAMENTS_DOWNLOAD}/${this.user.id}?region=${region}&platform=${platform}&teamAccountIds=${this.user.id}`, `bearer ${this.Auth.auths.token}`);
+    if (!tournamentsDownload.success) throw new Error(`Fetching tournaments failed: ${this.parseError(tournamentsDownload.response)}`);
+
+    tournamentsDownload.response.events.forEach((e) => {
+      if (!tournamentsData.response.events.some((de) => de.eventId === e.eventId)) tournamentsData.response.events.push(e);
+    });
+    tournamentsDownload.response.templates.forEach((e) => {
+      if (!tournamentsData.response.templates.some((de) => de.eventTemplateId === e.eventTemplateId)) tournamentsData.response.templates.push(e);
+    });
+
+    return tournamentsData.response;
   }
 
   /**

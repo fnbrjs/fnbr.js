@@ -264,7 +264,7 @@ class XMPP {
           if (!user) break;
           if (status === 'ACCEPTED') {
             const friend = new Friend(this.Client, {
-              ...user, favorite: payload.favorite, created: body.timestamp,
+              ...user, favorite: payload.favorite, created: body.timestamp || Date.now(),
             });
             this.Client.friends.set(friend.id, friend);
             if (this.Client.pendingFriends.some((f) => f.id === accountId)) {
@@ -289,23 +289,27 @@ class XMPP {
           await this.Client.waitUntilReady();
           const { reason, from, to } = body;
           const accountId = from === this.Client.user.id ? to : from;
-          if (reason === 'ABORTED') {
-            const friendRequest = this.Client.pendingFriends.get(accountId);
-            this.Client.pendingFriends.delete(accountId);
-            friendRequest.status = 'ABORTED';
-            this.Client.emit('friend:request:aborted', friendRequest);
-            this.Client.emit(`friend#${accountId}:request:aborted`, friendRequest);
+          if (reason === 'ABORTED' || reason === 'REJECTED') {
+            let friendRequest = this.Client.pendingFriends.get(accountId);
+            if (!friendRequest) {
+              const user = await this.Client.getProfile(accountId);
+              if (!user) break;
+              friendRequest = new PendingFriend(this.Client, { ...user, direction: reason === 'ABORTED' ? 'OUTGOING' : 'INCOMING' });
+            } else this.Client.pendingFriends.delete(accountId);
+            this.Client.emit(`friend:request:${reason.toLowerCase()}`, friendRequest);
+            this.Client.emit(`friend#${accountId}:request:${reason.toLowerCase()}`, friendRequest);
           } else if (reason === 'REJECTED') {
             const friendRequest = this.Client.pendingFriends.get(accountId);
             this.Client.pendingFriends.delete(accountId);
-            friendRequest.status = 'REJECTED';
             this.Client.emit('friend:request:rejected', friendRequest);
             this.Client.emit(`friend#${accountId}:request:rejected`, friendRequest);
           } else {
-            const friend = this.Client.friends.get(accountId);
-            if (!friend) break;
-            this.Client.friends.delete(accountId);
-            friend.status = 'REMOVED';
+            let friend = this.Client.friends.get(accountId);
+            if (!friend) {
+              const user = await this.Client.getProfile(accountId);
+              if (!user) break;
+              friend = new Friend(this.Client, user);
+            } else this.Client.friends.delete(accountId);
             this.Client.emit('friend:removed', friend);
             this.Client.emit(`friend#${accountId}:removed`, friend);
           }

@@ -62,13 +62,16 @@ class FriendPresence {
      */
     this.sessionId = data.SessionId || undefined;
 
+    const kairosProfile = data.Properties && (data.Properties.KairosProfile_s
+      ? JSON.parse(data.Properties.KairosProfile_s) : data.Properties.KairosProfile_j);
+
     /**
      * The Kairos avatar of this friend presence
      * @type {FPKairosAvatar}
      */
     this.avatar = {
-      asset: data.Properties && data.Properties.KairosProfile_j ? data.Properties.KairosProfile_j.avatar : undefined,
-      background: data.Properties && data.Properties.KairosProfile_j ? data.Properties.KairosProfile_j.avatarBackground : undefined,
+      asset: kairosProfile && kairosProfile.avatar,
+      background: kairosProfile && kairosProfile.avatarBackground,
     };
 
     /**
@@ -159,6 +162,8 @@ class FriendPresence {
         buildId: party.buildId,
       };
     }
+
+    console.log('----------------------------------------\n', data, this, '----------------------------------------');
   }
 }
 

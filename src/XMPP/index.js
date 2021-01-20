@@ -267,9 +267,7 @@ class XMPP {
               ...user, favorite: payload.favorite, created: body.timestamp || Date.now(),
             });
             this.Client.friends.set(friend.id, friend);
-            if (this.Client.pendingFriends.some((f) => f.id === accountId)) {
-              this.Client.pendingFriends.delete(accountId);
-            }
+            this.Client.pendingFriends.delete(accountId);
             this.Client.emit('friend:added', friend);
             this.Client.emit(`friend#${accountId}:added`, friend);
           } else if (status === 'PENDING') {

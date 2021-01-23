@@ -38,9 +38,7 @@
   "dependencies": {
     "async-exit-hook": "^2.0.1",
     "axios": "^0.21.1",
-    "axios-cookiejar-support": "^1.0.1",
     "stanza": "12.5.0",
-    "tough-cookie": "^4.0.0",
     "uuid": "3.4.0"
   }
 }

@@ -1,10 +1,6 @@
 const axios = require('axios').default;
-const axiosCookieJarSupport = require('axios-cookiejar-support').default;
-const tough = require('tough-cookie');
 // eslint-disable-next-line no-unused-vars
 const { ClientOptions, HttpOptions } = require('../../resources/Constants');
-
-axiosCookieJarSupport(axios);
 
 /**
  * Represents the HTTP manager of a client
@@ -21,17 +17,10 @@ class Http {
      */
     this.Client = client;
 
-    /**
-     * The cookie jar
-     * @type {CookieJar}
-     */
-    this.jar = new tough.CookieJar();
-
     /* this.options = {
       timeout: 10000,
       headers: { },
       json: true,
-      jar: this.jar,
       ...this.Client.config.http,
     }; */
     /**
@@ -39,7 +28,6 @@ class Http {
      * @type {HttpOptions}
      */
     this.options = this.Client.mergeDefault(ClientOptions.http, this.Client.config.http);
-    if (!this.Client.config.http.jar) this.options.jar = this.jar;
 
     /**
      * The axios instance

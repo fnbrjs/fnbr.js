@@ -1,7 +1,10 @@
-/* eslint-disable no-underscore-dangle */
-const Request = require('request-promise');
+const axios = require('axios').default;
+const axiosCookieJarSupport = require('axios-cookiejar-support').default;
+const tough = require('tough-cookie');
 // eslint-disable-next-line no-unused-vars
 const { ClientOptions, HttpOptions } = require('../../resources/Constants');
+
+axiosCookieJarSupport(axios);
 
 /**
  * Represents the HTTP manager of a client
@@ -22,7 +25,7 @@ class Http {
      * The cookie jar
      * @type {CookieJar}
      */
-    this.jar = Request.jar();
+    this.jar = new tough.CookieJar();
 
     /* this.options = {
       timeout: 10000,
@@ -39,10 +42,10 @@ class Http {
     if (!this.Client.config.http.jar) this.options.jar = this.jar;
 
     /**
-     * The request method
-     * @type {RequestAPI}
+     * The axios instance
+     * @type {AxiosInstance}
      */
-    this.request = Request.defaults(this.options);
+    this.axios = axios.create(this.options);
   }
 
   /**
@@ -77,18 +80,26 @@ class Http {
 
     if (auth) reqOptions.headers.Authorization = auth;
 
-    if (data) reqOptions.body = data;
-    else if (form) reqOptions.form = form;
+    if (data) reqOptions.data = data;
+    else if (form) {
+      const urlSearchParams = new URLSearchParams();
+      for (let i = 0; i < Object.keys(form).length; i += 1) {
+        const key = Object.keys(form)[i];
+        urlSearchParams.append(key, form[key]);
+      }
+
+      reqOptions.data = urlSearchParams;
+    }
 
     if (headers) reqOptions.headers = { ...reqOptions.headers, ...headers };
 
-    if (url.endsWith('.blurl') || url.endsWith('.bin')) reqOptions.encoding = null;
+    if (url.endsWith('.blurl')) reqOptions.responseType = 'arraybuffer';
 
     const reqStartTime = Date.now();
     try {
-      const response = await this.request(reqOptions);
+      const response = await this.axios.request(reqOptions);
       if (this.Client.config.httpDebug) this.Client.debug(`${method} ${url} (${((Date.now() - reqStartTime) / 1000).toFixed(2)}s)`);
-      return { success: true, response };
+      return { success: true, response: response.data };
     } catch (err) {
       if (this.Client.config.httpDebug) this.Client.debug(`${method} ${url} (${((Date.now() - reqStartTime) / 1000).toFixed(2)}s)`);
       if (checkToken && err.error.errorCode === 'errors.com.epicgames.common.oauth.invalid_token') {

@@ -62,7 +62,8 @@ describe('Client gamemode functions', () => {
     const status = await client.getServerStatus();
     assert.strictEqual(typeof status, 'object', 'Must be typeof object');
   });
-  it('should fetch battle royale tournaments', async () => {
+  it('should fetch battle royale tournaments', async function brTournaments() {
+    this.timeout(5000);
     const tournaments = await client.getTournaments();
     assert.strictEqual(typeof tournaments, 'object', 'Must be typeof object');
   });

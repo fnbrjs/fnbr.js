@@ -1,2 +1,6 @@
 .github/
+.vscode/
 docs/
+docs.json
+mocha.test.js
+test.js

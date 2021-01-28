@@ -8,6 +8,7 @@ const { EventEmitter } = require('events');
 const { createInterface } = require('readline');
 const onExit = require('async-exit-hook');
 const zlib = require('zlib');
+const Collection = require('@discordjs/collection');
 const Authenticator = require('./auth.js');
 const Xmpp = require('../XMPP');
 const Http = require('../Util/http');
@@ -18,7 +19,6 @@ const PendingFriend = require('../Structures/PendingFriend.js');
 const User = require('../Structures/User');
 const CreatorCode = require('../Structures/CreatorCode');
 const Enums = require('../../enums');
-const List = require('../Util/List');
 const FriendMessage = require('../Structures/FriendMessage.js');
 const Party = require('../Structures/Party.js');
 const News = require('../Structures/News.js');
@@ -97,19 +97,19 @@ class Client extends EventEmitter {
     this.Xmpp = new Xmpp(this);
     /**
      * The friends cache of the client's user
-     * @type {List}
+     * @type {Collection}
      */
-    this.friends = new List();
+    this.friends = new Collection();
     /**
      * The pending friends cache of the client's user
-     * @type {List}
+     * @type {Collection}
      */
-    this.pendingFriends = new List();
+    this.pendingFriends = new Collection();
     /**
      * The blocked friends cache of the client's user
-     * @type {List}
+     * @type {Collection}
      */
-    this.blockedFriends = new List();
+    this.blockedFriends = new Collection();
 
     /**
      * The client's party lock

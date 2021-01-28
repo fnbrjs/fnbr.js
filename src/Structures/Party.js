@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 /* eslint-disable no-param-reassign */
+const Collection = require('@discordjs/collection');
 const Endpoints = require('../../resources/Endpoints');
-const List = require('../Util/List');
 const PartyMeta = require('./PartyMeta');
 const PartyMember = require('./PartyMember');
 const ClientPartyMember = require('./ClientPartyMember');
@@ -41,9 +41,9 @@ class Party {
 
     /**
      * The members of this party
-     * @type {List}
+     * @type {Collection}
      */
-    this.members = new List();
+    this.members = new Collection();
     data.members.forEach((m) => {
       if (m.account_id === this.Client.user.id) this.members.set(m.account_id, new ClientPartyMember(this, m));
       else this.members.set(m.account_id, new PartyMember(this, m));

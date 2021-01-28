@@ -36,6 +36,7 @@
     "mocha": "^8.2.1"
   },
   "dependencies": {
+    "@discordjs/collection": "^0.1.6",
     "async-exit-hook": "^2.0.1",
     "axios": "^0.21.1",
     "stanza": "12.5.0",

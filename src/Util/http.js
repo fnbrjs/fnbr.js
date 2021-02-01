@@ -90,14 +90,14 @@ class Http {
       return { success: true, response: response.data };
     } catch (err) {
       if (this.Client.config.httpDebug) this.Client.debug(`${method} ${url} (${((Date.now() - reqStartTime) / 1000).toFixed(2)}s)`);
-      if (checkToken && err.error.errorCode === 'errors.com.epicgames.common.oauth.invalid_token') {
+      if (checkToken && err.response.data.errorCode === 'errors.com.epicgames.common.oauth.invalid_token') {
         const reauth = await this.Client.Auth.reauthenticate();
         if (reauth.success) {
           this.Client.debug(`Restarting client as reauthentification failed: ${this.Client.parseError(reauth.response)}`);
           await this.Client.restart();
         }
       }
-      return { success: false, response: err.error };
+      return { success: false, response: err.response.data };
     }
   }
 }

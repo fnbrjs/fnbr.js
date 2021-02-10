@@ -83,10 +83,6 @@ describe('Client gamemode functions', () => {
     const stream = await client.getBlurlVideo('LqUHUJChvPyJJfrU', Enums.Language.ENGLISH, '1920x1080');
     assert.strictEqual(Buffer.isBuffer(stream), true, 'Must be instance of buffer');
   });
-  it('should download a fortnite replay', async () => {
-    const replay = await client.getTournamentReplay('23a9c72d2d564e4d9a696b56797a802f', []);
-    assert.strictEqual(typeof replay, 'object', 'Must be typeof object');
-  });
 });
 
 describe('Client party functions', () => {

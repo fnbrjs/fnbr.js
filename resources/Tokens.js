@@ -3,6 +3,7 @@
  * * `LAUNCHER_WINDOWS`
  * * `FORTNITE_WINDOWS`
  * * `FORTNITE_IOS`
+ * * `FORTNITE_SWITCH`
  * @typedef {Object} BasicToken
  */
 module.exports = Object.freeze({

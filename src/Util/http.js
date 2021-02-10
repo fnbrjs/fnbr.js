@@ -34,6 +34,7 @@ class Http {
      * @type {AxiosInstance}
      */
     this.axios = axios.create(this.options);
+    Object.keys(this.axios.defaults.headers).forEach((h) => delete this.axios.defaults.headers[h]['Content-Type']);
   }
 
   /**

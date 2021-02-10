@@ -82,7 +82,7 @@ class Authenticator {
         const deviceAuth = { accountId: deviceauth.response.accountId, deviceId: deviceauth.response.deviceId, secret: deviceauth.response.secret };
         this.Client.emit('deviceauth:created', deviceAuth);
         this.Client.config.auth.deviceAuth = deviceAuth;
-      } else this.Client.debug(`Couldn't create device auth: ${deviceauth.response}`);
+      } else this.Client.debug(`Couldn't create device auth: ${this.Client.parseError(deviceauth.response)}`);
     }
 
     this.auths = {

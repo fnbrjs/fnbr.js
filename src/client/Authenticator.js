@@ -75,9 +75,9 @@ class Authenticator extends Base {
       const deviceauth = await this.generateDeviceAuth(auth.response);
       if (deviceauth.success) {
         const deviceAuth = { accountId: deviceauth.response.accountId, deviceId: deviceauth.response.deviceId, secret: deviceauth.response.secret };
-        this.client.emit('deviceauth:created', deviceAuth);
-        this.client.config.auth.deviceAuth = deviceAuth;
-      } else this.client.debug(`Couldn't create device auth: ${deviceauth.response}`);
+        this.Client.emit('deviceauth:created', deviceAuth);
+        this.Client.config.auth.deviceAuth = deviceAuth;
+      } else this.Client.debug(`Couldn't create device auth: ${this.Client.parseError(deviceauth.response)}`);
     }
 
     this.auths = {
@@ -289,9 +289,9 @@ class Authenticator extends Base {
       this.client.debug('Please listen to the devicecode:prompt event instead of using the link above in production!');
     }
 
-    const { success, response } = await this.useDeviceCode(deviceCode.response.device_code, deviceCode.response.interval);
-    if (!success) return response;
-    const { access_token: switchAuthToken } = response;
+    const deviceCodeResponse = await this.useDeviceCode(deviceCode.response.device_code, deviceCode.response.interval);
+    if (!deviceCodeResponse.success) return deviceCodeResponse;
+    const { access_token: switchAuthToken } = deviceCodeResponse.response;
 
     const exchangeCodeResponse = await this.client.http.send(false, 'GET', Endpoints.OAUTH_EXCHANGE, `bearer ${switchAuthToken}`);
 

@@ -30,6 +30,7 @@ class HTTP extends Base {
      * @type {AxiosInstance}
      */
     this.axios = axios.create(this.options);
+    Object.keys(this.axios.defaults.headers).forEach((h) => delete this.axios.defaults.headers[h]['Content-Type']);
   }
 
   /**
@@ -85,9 +86,9 @@ class HTTP extends Base {
       if (this.client.config.httpDebug) this.client.debug(`${method} ${url} (${((Date.now() - reqStartTime) / 1000).toFixed(2)}s)`);
       return { success: true, response: response.data };
     } catch (err) {
-      if (this.client.config.httpDebug) this.client.debug(`${method} ${url} (${((Date.now() - reqStartTime) / 1000).toFixed(2)}s)`);
+      if (this.Client.config.httpDebug) this.Client.debug(`${method} ${url} (${((Date.now() - reqStartTime) / 1000).toFixed(2)}s)`);
       if (checkToken && err.response.data.errorCode === 'errors.com.epicgames.common.oauth.invalid_token') {
-        const reauth = await this.client.auth.reauthenticate();
+        const reauth = await this.Client.Auth.reauthenticate();
         if (reauth.success) {
           this.client.debug(`Restarting client as reauthentification failed: ${this.client.parseError(reauth.response)}`);
           await this.client.restart();

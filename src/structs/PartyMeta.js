@@ -1,4 +1,4 @@
-const Meta = require('../Util/Meta');
+const Meta = require('../util/Meta');
 
 /**
  * Represents the meta of a party
@@ -13,7 +13,7 @@ class PartyMeta extends Meta {
   constructor(party, meta) {
     super();
 
-    Object.defineProperty(this, 'Party', { value: party });
+    Object.defineProperty(this, 'party', { value: party });
 
     /**
      * The schema
@@ -50,9 +50,9 @@ class PartyMeta extends Meta {
       'Default:RawSquadAssignments_j': '',
       'Default:PrivacySettings_j': JSON.stringify({
         PrivacySettings: {
-          partyType: this.Party.config.privacy.partyType,
-          partyInviteRestriction: this.Party.config.privacy.inviteRestriction,
-          bOnlyLeaderFriendsCanJoin: this.Party.config.privacy.onlyLeaderFriendsCanJoin,
+          partyType: this.party.config.privacy.partyType,
+          partyInviteRestriction: this.party.config.privacy.inviteRestriction,
+          bOnlyLeaderFriendsCanJoin: this.party.config.privacy.onlyLeaderFriendsCanJoin,
         },
       }),
       'Default:PlatformSessions_j': JSON.stringify({
@@ -73,11 +73,11 @@ class PartyMeta extends Meta {
     const assignments = [];
     let i = 0;
     assignments.push({
-      memberId: this.Party.Client.user.id,
+      memberId: this.party.client.user.id,
       absoluteMemberIdx: 0,
     });
-    this.Party.members.forEach((m) => {
-      if (m.id !== this.Party.Client.user.id) {
+    this.party.members.forEach((m) => {
+      if (m.id !== this.party.client.user.id) {
         i += 1;
         assignments.push({
           memberId: m.id,

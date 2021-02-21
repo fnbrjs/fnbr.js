@@ -10,7 +10,7 @@ class News {
    * @param {Object} data The news data
    */
   constructor(client, data) {
-    Object.defineProperty(this, 'Client', { value: client });
+    Object.defineProperty(this, 'client', { value: client });
 
     /**
      * The news message id
@@ -110,7 +110,7 @@ class News {
    */
   async downloadVideo(language = Language.ENGLISH, resolution = '1920x1080') {
     if (!this.video.id) throw new Error('Cannot download news video: News message doesn\'t contain a video');
-    return this.Client.getBlurlVideo(this.video.id, language, resolution);
+    return this.client.getBlurlVideo(this.video.id, language, resolution);
   }
 }
 

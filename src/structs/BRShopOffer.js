@@ -8,7 +8,7 @@ class BRShopOffer {
    * @param {Object} data The offer's data
    */
   constructor(shop, data) {
-    Object.defineProperty(this, 'Shop', { value: shop });
+    Object.defineProperty(this, 'shop', { value: shop });
 
     /**
      * The offer's id

@@ -3,8 +3,6 @@
  * @private
  */
 class Meta {
-  /**
-   */
   constructor() {
     this.schema = {};
   }

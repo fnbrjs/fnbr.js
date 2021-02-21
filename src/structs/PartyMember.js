@@ -9,8 +9,8 @@ class PartyMember {
    * @param data The member's data
    */
   constructor(party, data) {
-    Object.defineProperty(this, 'Party', { value: party });
-    Object.defineProperty(this, 'Client', { value: party.Client });
+    Object.defineProperty(this, 'party', { value: party });
+    Object.defineProperty(this, 'client', { value: party.client });
     Object.defineProperty(this, 'data', { value: data });
 
     /**
@@ -23,8 +23,8 @@ class PartyMember {
      * The display name of the party member
      * @type {string}
      */
-    this.displayName = this.id === this.Client.user.id
-      ? this.Client.user.displayName : data.account_dn;
+    this.displayName = this.id === this.client.user.id
+      ? this.client.user.displayName : data.account_dn;
 
     /**
      * The role of the party member
@@ -108,7 +108,7 @@ class PartyMember {
    * @returns {Promise<void>}
    */
   async kick() {
-    return this.Party.kick(this.id);
+    return this.party.kick(this.id);
   }
 
   /**
@@ -116,14 +116,14 @@ class PartyMember {
    * @returns {Promise<void>}
    */
   async promote() {
-    return this.Party.promote(this.id);
+    return this.party.promote(this.id);
   }
 
   /**
    * Fetch or update this members display name
    */
   async fetch() {
-    const userData = await this.Client.getProfile(this.id);
+    const userData = await this.client.getProfile(this.id);
     this.displayName = userData.displayName;
   }
 

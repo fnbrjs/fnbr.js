@@ -32,7 +32,7 @@ class ClientPartyMember extends PartyMember {
      */
     this.revision = 0;
 
-    if (this.Client.lastMemberMeta) this.meta.update(this.Client.lastMemberMeta, true);
+    if (this.client.lastMemberMeta) this.meta.update(this.client.lastMemberMeta, true);
   }
 
   /**
@@ -394,8 +394,8 @@ class ClientPartyMember extends PartyMember {
 
     this.currentlyPatching = true;
 
-    const patch = await this.Client.Http.send(true, 'PATCH',
-      `${Endpoints.BR_PARTY}/parties/${this.Party.id}/members/${this.id}/meta`, `bearer ${this.Client.Auth.auths.token}`, null, {
+    const patch = await this.client.http.send(true, 'PATCH',
+      `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.id}/meta`, `bearer ${this.client.auth.auths.token}`, null, {
         delete: [],
         revision: this.revision,
         update: updated || this.meta.schema,
@@ -412,7 +412,7 @@ class ClientPartyMember extends PartyMember {
       this.sendPatch(nextUpdated, true);
     } else this.currentlyPatching = false;
 
-    if (this.Client.config.savePartyMemberMeta) this.Client.lastMemberMeta = this.meta.schema;
+    if (this.client.config.savePartyMemberMeta) this.client.lastMemberMeta = this.meta.schema;
   }
 }
 

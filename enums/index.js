@@ -238,6 +238,7 @@ module.exports.SeasonStart = Object.freeze({
   CH2_S2: 1582156800,
   CH2_S3: 1592352000,
   CH2_S4: 1598486401,
+  CH2_S5: 1606867201,
 });
 
 /**

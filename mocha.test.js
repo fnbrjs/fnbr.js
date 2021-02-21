@@ -2,7 +2,7 @@
 /* eslint-disable no-undef */
 const assert = require('assert');
 const { Client, Enums } = require('.');
-const Party = require('./src/Structures/Party');
+const Party = require('./src/structs/Party');
 
 describe('Client startup', () => {
   it('should be constructed', () => {
@@ -18,13 +18,13 @@ describe('Client startup', () => {
     await client.login();
   });
   it('should be connected to xmpp', () => {
-    assert.strictEqual(client.Xmpp.stream.sessionStarted, true, 'Client must be connected to xmpp');
+    assert.strictEqual(client.xmpp.stream.sessionStarted, true, 'Client must be connected to xmpp');
   });
 });
 
 describe('Client cache', () => {
   it('should exist', () => {
-    assert.strictEqual(client.friends.size > 0, true, 'Client friends cache must be greater than 0');
+    assert.strictEqual(client.friends.cache.size > 0, true, 'Client friends cache must be greater than 0');
   });
 });
 
@@ -82,10 +82,6 @@ describe('Client gamemode functions', () => {
   it('should fetch a battle royale video blurl stream', async () => {
     const stream = await client.getBlurlVideo('LqUHUJChvPyJJfrU', Enums.Language.ENGLISH, '1920x1080');
     assert.strictEqual(Buffer.isBuffer(stream), true, 'Must be instance of buffer');
-  });
-  it('should download a fortnite replay', async () => {
-    const replay = await client.getTournamentReplay('23a9c72d2d564e4d9a696b56797a802f', []);
-    assert.strictEqual(typeof replay, 'object', 'Must be typeof object');
   });
 });
 

@@ -1,33 +1,29 @@
 const axios = require('axios').default;
-// eslint-disable-next-line no-unused-vars
-const { ClientOptions, HttpOptions } = require('../../resources/Constants');
+const Base = require('./Base');
+const { ClientOptions } = require('../../resources/Constants');
 
 /**
  * Represents the HTTP manager of a client
  * @private
  */
-class Http {
+class HTTP extends Base {
   /**
    * @param {Client} client The main client
    */
   constructor(client) {
-    /**
-     * The main client
-     * @type {Client}
-     */
-    this.Client = client;
+    super(client);
 
     /* this.options = {
       timeout: 10000,
       headers: { },
       json: true,
-      ...this.Client.config.http,
+      ...this.client.config.http,
     }; */
     /**
      * The default requests options
-     * @type {HttpOptions}
+     * @type {HTTPOptions}
      */
-    this.options = this.Client.mergeDefault(ClientOptions.http, this.Client.config.http);
+    this.options = this.client.mergeDefault(ClientOptions.http, this.client.config.http);
 
     /**
      * The axios instance
@@ -48,15 +44,15 @@ class Http {
    * @returns {Promise<Object>}
    */
   async send(checkToken, method, url, auth, headers, data, form) {
-    if (this.Client.reauthLock.active && url !== 'https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/token') {
-      await this.Client.reauthLock.wait();
+    if (this.client.reauthLock.active && url !== 'https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/token') {
+      await this.client.reauthLock.wait();
     }
     if (checkToken) {
-      const tokenRefresh = await this.Client.Auth.refreshToken();
+      const tokenRefresh = await this.client.auth.refreshToken();
       if (!tokenRefresh.success) {
-        this.Client.debug('Restarting client as reauthentification failed: '
+        this.client.debug('Restarting client as reauthentification failed: '
           + `${typeof tokenRefresh.response === 'object' ? JSON.stringify(tokenRefresh.response) : tokenRefresh.response}`);
-        await this.Client.restart();
+        await this.client.restart();
       }
     }
 
@@ -86,20 +82,20 @@ class Http {
     const reqStartTime = Date.now();
     try {
       const response = await this.axios.request(reqOptions);
-      if (this.Client.config.httpDebug) this.Client.debug(`${method} ${url} (${((Date.now() - reqStartTime) / 1000).toFixed(2)}s)`);
+      if (this.client.config.httpDebug) this.client.debug(`${method} ${url} (${((Date.now() - reqStartTime) / 1000).toFixed(2)}s)`);
       return { success: true, response: response.data };
     } catch (err) {
-      if (this.Client.config.httpDebug) this.Client.debug(`${method} ${url} (${((Date.now() - reqStartTime) / 1000).toFixed(2)}s)`);
-      if (checkToken && err.error.errorCode === 'errors.com.epicgames.common.oauth.invalid_token') {
-        const reauth = await this.Client.Auth.reauthenticate();
+      if (this.client.config.httpDebug) this.client.debug(`${method} ${url} (${((Date.now() - reqStartTime) / 1000).toFixed(2)}s)`);
+      if (checkToken && err.response.data.errorCode === 'errors.com.epicgames.common.oauth.invalid_token') {
+        const reauth = await this.client.auth.reauthenticate();
         if (reauth.success) {
-          this.Client.debug(`Restarting client as reauthentification failed: ${this.Client.parseError(reauth.response)}`);
-          await this.Client.restart();
+          this.client.debug(`Restarting client as reauthentification failed: ${this.client.parseError(reauth.response)}`);
+          await this.client.restart();
         }
       }
-      return { success: false, response: err.error };
+      return { success: false, response: err.response.data };
     }
   }
 }
 
-module.exports = Http;
+module.exports = HTTP;

@@ -2,31 +2,28 @@
 /* eslint-disable max-len */
 const { createClient } = require('stanza');
 const UUID = require('uuid/v4');
+const Base = require('./Base');
 const Endpoints = require('../../resources/Endpoints');
-const FriendMessage = require('../Structures/FriendMessage');
-const FriendPresence = require('../Structures/FriendPresence');
-const Friend = require('../Structures/Friend');
-const PendingFriend = require('../Structures/PendingFriend');
-const PartyMember = require('../Structures/PartyMember');
-const PartyMessage = require('../Structures/PartyMessage');
-const ClientPartyMember = require('../Structures/ClientPartyMember');
-const PartyInvitation = require('../Structures/PartyInvitation');
-const Party = require('../Structures/Party');
+const FriendMessage = require('../structs/FriendMessage');
+const FriendPresence = require('../structs/FriendPresence');
+const Friend = require('../structs/Friend');
+const PendingFriend = require('../structs/PendingFriend');
+const PartyMember = require('../structs/PartyMember');
+const PartyMessage = require('../structs/PartyMessage');
+const ClientPartyMember = require('../structs/ClientPartyMember');
+const PartyInvitation = require('../structs/PartyInvitation');
+const Party = require('../structs/Party');
 
 /**
  * Represents the XMPP manager of a client
  * @private
  */
-class XMPP {
+class XMPP extends Base {
   /**
    * @param {Object} client The main client
    */
   constructor(client) {
-    /**
-     * The main client
-     * @type {Client}
-     */
-    this.Client = client;
+    super(client);
 
     /**
      * The XMPP connection stream
@@ -71,7 +68,7 @@ class XMPP {
    * @returns {void}
    */
   setup() {
-    this.resource = `V2:Fortnite:${this.Client.config.platform}::${this.uuid}`;
+    this.resource = `V2:Fortnite:${this.client.config.platform}::${this.uuid}`;
     this.stream = createClient({
       wsURL: `wss://${Endpoints.XMPP_SERVER}`,
       server: Endpoints.EPIC_PROD_ENV,
@@ -80,16 +77,16 @@ class XMPP {
         bosh: false,
       },
       credentials: {
-        jid: `${this.Client.user.id}@${Endpoints.EPIC_PROD_ENV}`,
+        jid: `${this.client.user.id}@${Endpoints.EPIC_PROD_ENV}`,
         host: Endpoints.EPIC_PROD_ENV,
-        username: this.Client.user.id,
-        password: this.Client.Auth.auths.token,
+        username: this.client.user.id,
+        password: this.client.auth.auths.token,
       },
       resource: this.resource,
     });
 
     this.stream.enableKeepAlive({
-      interval: this.Client.config.keepAliveInterval,
+      interval: this.client.config.keepAliveInterval,
     });
 
     this.setupEvents();
@@ -101,33 +98,33 @@ class XMPP {
    * @returns {Promise<Object>}
    */
   connect(isReconnect = false) {
-    if (!isReconnect) this.Client.debug('XMPP-Client connecting...');
-    else this.Client.debug('XMPP-Client reconnecting...');
+    if (!isReconnect) this.client.debug('XMPP-Client connecting...');
+    else this.client.debug('XMPP-Client reconnecting...');
     const startConnect = new Date().getTime();
     this.stream.connect();
 
     return new Promise((res) => {
       const failTimeout = setTimeout(() => {
-        this.Client.debug('XMPP-Client reconnection failed: Timeout of 15000ms exceed');
+        this.client.debug('XMPP-Client reconnection failed: Timeout of 15000ms exceed');
         res({ success: false, response: 'connection timeout of 15000ms exceed' });
       }, 15000);
       this.stream.once('session:started', async () => {
         clearTimeout(failTimeout);
         this.connected = true;
-        this.sendStatus(this.Client.config.status || 'Playing Battle Royale');
-        if (!isReconnect) this.Client.debug(`XMPP-Client successfully connected (${((Date.now() - startConnect) / 1000).toFixed(2)}s)`);
+        this.sendStatus(this.client.config.status || 'Playing Battle Royale');
+        if (!isReconnect) this.client.debug(`XMPP-Client successfully connected (${((Date.now() - startConnect) / 1000).toFixed(2)}s)`);
         else {
-          this.Client.debug(`XMPP-Client successfully reconnected (${((Date.now() - startConnect) / 1000).toFixed(2)}s)`);
-          if (this.Client.party) {
-            await this.Client.initParty();
-            await this.Client.party.patchPresence();
+          this.client.debug(`XMPP-Client successfully reconnected (${((Date.now() - startConnect) / 1000).toFixed(2)}s)`);
+          if (this.client.party) {
+            await this.client.initParty();
+            await this.client.party.patchPresence();
           }
         }
         res({ success: true });
       });
       this.stream.once('stream:error', (err) => {
         clearTimeout(failTimeout);
-        this.Client.debug(`XMPP-Client reconnection failed: ${this.Client.parseError(err)}`);
+        this.client.debug(`XMPP-Client reconnection failed: ${this.client.parseError(err)}`);
         res({ success: false, response: err });
       });
     });
@@ -138,17 +135,17 @@ class XMPP {
    * @returns {Promise<Object>}
    */
   disconnect() {
-    this.Client.debug('XMPP-Client disconnecting...');
+    this.client.debug('XMPP-Client disconnecting...');
     const startDisconnect = new Date().getTime();
     this.stream.disconnect();
     this.connected = false;
     return new Promise((res) => {
       this.stream.once('disconnected', () => {
-        this.Client.debug(`XMPP-Client successfully disconnected (${((Date.now() - startDisconnect) / 1000).toFixed(2)}s)`);
+        this.client.debug(`XMPP-Client successfully disconnected (${((Date.now() - startDisconnect) / 1000).toFixed(2)}s)`);
         res({ success: true });
       });
       setTimeout(() => {
-        this.Client.debug(`XMPP-Client successfully disconnected (${((Date.now() - startDisconnect) / 1000).toFixed(2)}s)`);
+        this.client.debug(`XMPP-Client successfully disconnected (${((Date.now() - startDisconnect) / 1000).toFixed(2)}s)`);
         res({ success: true });
       }, 4000);
     });
@@ -164,22 +161,22 @@ class XMPP {
     if (this.connected) await this.disconnect();
 
     this.uuid = UUID().replace(/-/g, '').toUpperCase();
-    this.resource = `V2:Fortnite:${this.Client.config.platform}::${this.uuid}`;
+    this.resource = `V2:Fortnite:${this.client.config.platform}::${this.uuid}`;
 
     this.stream.config = {
       ...this.stream.config,
       resource: this.resource,
       credentials: {
-        jid: `${this.Client.user.id}@${Endpoints.EPIC_PROD_ENV}`,
+        jid: `${this.client.user.id}@${Endpoints.EPIC_PROD_ENV}`,
         host: Endpoints.EPIC_PROD_ENV,
-        username: this.Client.user.id,
-        password: this.Client.Auth.auths.token,
+        username: this.client.user.id,
+        password: this.client.auth.auths.token,
       },
     };
 
-    this.Client.isReady = false;
+    this.client.isReady = false;
     const reconnect = await this.connect(true);
-    this.Client.isReady = true;
+    this.client.isReady = true;
     if (!reconnect.success) return reconnect;
     this.isReconnecting = false;
     return { success: true };
@@ -193,19 +190,19 @@ class XMPP {
     this.stream.on('disconnected', async () => {
       if (this.connected) {
         this.connected = false;
-        this.Client.isReady = false;
+        this.client.isReady = false;
         const { success } = await this.reconnect();
-        if (success) this.Client.isReady = true;
-        await this.Client.updateCache();
+        if (success) this.client.isReady = true;
+        await this.client.updateCache();
       }
     });
 
     this.stream.on('raw:incoming', (raw) => {
-      if (this.Client.config.xmppDebug) this.Client.debug(`IN ${raw}`);
+      if (this.client.config.xmppDebug) this.client.debug(`IN ${raw}`);
     });
 
     this.stream.on('raw:outgoing', (raw) => {
-      if (this.Client.config.xmppDebug) this.Client.debug(`OUT ${raw}`);
+      if (this.client.config.xmppDebug) this.client.debug(`OUT ${raw}`);
     });
 
     this.stream.on('message:sent', (m) => {
@@ -213,42 +210,42 @@ class XMPP {
     });
 
     this.stream.on('groupchat', async (g) => {
-      if (!this.Client.party || this.Client.party.id !== g.from.split('@')[0].replace('Party-', '')) return;
+      if (!this.client.party || this.client.party.id !== g.from.split('@')[0].replace('Party-', '')) return;
       if (g.body === 'Welcome! You created new Multi User Chat Room.') return;
       const [, id] = g.from.split(':');
-      if (id === this.Client.user.id) return;
-      const member = this.Client.party.members.get(id);
+      if (id === this.client.user.id) return;
+      const member = this.client.party.members.get(id);
       if (!member) return;
 
-      const partyMessage = new PartyMessage(this.Client, { body: g.body, author: member, chat: this.Client.party.chat });
-      this.Client.emit('party:member:message', partyMessage);
-      this.Client.emit(`party:member#${id}:message`, partyMessage);
+      const partyMessage = new PartyMessage(this.client, { body: g.body, author: member, chat: this.client.party.chat });
+      this.client.emit('party:member:message', partyMessage);
+      this.client.emit(`party:member#${id}:message`, partyMessage);
     });
 
     this.stream.on('presence', async (p) => {
-      await this.Client.waitUntilReady();
+      await this.client.waitUntilReady();
       if (p.type === 'unavailable' || !p.status) return;
       const fromId = p.from.split('@')[0];
-      if (fromId === this.Client.user.id) {
+      if (fromId === this.client.user.id) {
         this.stream.emit(`presence#${p.id}:sent`);
         return;
       }
       try {
-        if (!this.Client.friends.has(fromId)) await this.Client.waitForEvent(`friend#${fromId}:added`);
+        if (!this.client.friends.cache.has(fromId)) await this.client.waitForEvent(`friend#${fromId}:added`);
       } catch (err) {
         return;
       }
-      const before = this.Client.friends.get(fromId).presence;
-      const after = new FriendPresence(this.Client, JSON.parse(p.status), fromId);
-      if (this.Client.config.cachePresences) this.Client.friends.get(fromId).presence = after;
-      this.Client.emit('friend:presence', before, after);
-      this.Client.emit(`friend#${fromId}:presence`, before, after);
+      const before = this.client.friends.cache.get(fromId).presence;
+      const after = new FriendPresence(this.client, JSON.parse(p.status), fromId);
+      if (this.client.config.cachePresences) this.client.friends.cache.get(fromId).presence = after;
+      this.client.emit('friend:presence', before, after);
+      this.client.emit(`friend#${fromId}:presence`, before, after);
     });
 
     this.stream.on('chat', (c) => {
-      const message = new FriendMessage(this.Client, c);
-      this.Client.emit('friend:message', message);
-      this.Client.emit(`friend#${c.from.split('@')[0]}:message`, message);
+      const message = new FriendMessage(this.client, c);
+      this.client.emit('friend:message', message);
+      this.client.emit(`friend#${c.from.split('@')[0]}:message`, message);
     });
 
     this.stream.on('message', async (m) => {
@@ -257,104 +254,104 @@ class XMPP {
       if (!body.type) return;
       switch (body.type) {
         case 'com.epicgames.friends.core.apiobjects.Friend': {
-          await this.Client.waitUntilReady();
+          await this.client.waitUntilReady();
           const { payload } = body;
           const { status, accountId } = payload;
-          const user = await this.Client.getProfile(accountId);
+          const user = await this.client.getProfile(accountId);
           if (!user) break;
           if (status === 'ACCEPTED') {
-            const friend = new Friend(this.Client, {
+            const friend = new Friend(this.client, {
               ...user, favorite: payload.favorite, created: body.timestamp || Date.now(),
             });
-            this.Client.friends.set(friend.id, friend);
-            this.Client.pendingFriends.delete(accountId);
-            this.Client.emit('friend:added', friend);
-            this.Client.emit(`friend#${accountId}:added`, friend);
+            this.client.friends.add(friend);
+            this.client.friends.pending.cache.delete(accountId);
+            this.client.emit('friend:added', friend);
+            this.client.emit(`friend#${accountId}:added`, friend);
           } else if (status === 'PENDING') {
-            const friendRequest = new PendingFriend(this.Client, { ...user, direction: payload.direction === 'INBOUND' ? 'INCOMING' : 'OUTGOING' });
-            this.Client.pendingFriends.set(friendRequest.id, friendRequest);
+            const friendRequest = new PendingFriend(this.client, { ...user, direction: payload.direction === 'INBOUND' ? 'INCOMING' : 'OUTGOING' });
+            this.client.friends.pending.add(friendRequest);
             if (payload.direction === 'INBOUND') {
-              this.Client.emit('friend:request', friendRequest);
-              this.Client.emit(`friend#${accountId}:request`, friendRequest);
+              this.client.emit('friend:request', friendRequest);
+              this.client.emit(`friend#${accountId}:request`, friendRequest);
             } else {
-              this.Client.emit('friend:request:sent', friendRequest);
-              this.Client.emit(`friend#${accountId}:request:sent`, friendRequest);
+              this.client.emit('friend:request:sent', friendRequest);
+              this.client.emit(`friend#${accountId}:request:sent`, friendRequest);
             }
           }
         } break;
 
         case 'FRIENDSHIP_REMOVE': {
-          await this.Client.waitUntilReady();
+          await this.client.waitUntilReady();
           const { reason, from, to } = body;
-          const accountId = from === this.Client.user.id ? to : from;
+          const accountId = from === this.client.user.id ? to : from;
           if (reason === 'ABORTED' || reason === 'REJECTED') {
-            let friendRequest = this.Client.pendingFriends.get(accountId);
+            let friendRequest = this.client.friends.pending.cache.get(accountId);
             if (!friendRequest) {
-              const user = await this.Client.getProfile(accountId);
+              const user = await this.client.getProfile(accountId);
               if (!user) break;
-              friendRequest = new PendingFriend(this.Client, { ...user, direction: reason === 'ABORTED' ? 'OUTGOING' : 'INCOMING' });
-            } else this.Client.pendingFriends.delete(accountId);
-            this.Client.emit(`friend:request:${reason.toLowerCase()}`, friendRequest);
-            this.Client.emit(`friend#${accountId}:request:${reason.toLowerCase()}`, friendRequest);
+              friendRequest = new PendingFriend(this.client, { ...user, direction: reason === 'ABORTED' ? 'OUTGOING' : 'INCOMING' });
+            } else this.client.friends.pending.cache.delete(accountId);
+            this.client.emit(`friend:request:${reason.toLowerCase()}`, friendRequest);
+            this.client.emit(`friend#${accountId}:request:${reason.toLowerCase()}`, friendRequest);
           } else if (reason === 'REJECTED') {
-            const friendRequest = this.Client.pendingFriends.get(accountId);
-            this.Client.pendingFriends.delete(accountId);
-            this.Client.emit('friend:request:rejected', friendRequest);
-            this.Client.emit(`friend#${accountId}:request:rejected`, friendRequest);
+            const friendRequest = this.client.friends.pending.cache.get(accountId);
+            this.client.friends.pending.cache.delete(accountId);
+            this.client.emit('friend:request:rejected', friendRequest);
+            this.client.emit(`friend#${accountId}:request:rejected`, friendRequest);
           } else {
-            let friend = this.Client.friends.get(accountId);
+            let friend = this.client.friends.cache.get(accountId);
             if (!friend) {
-              const user = await this.Client.getProfile(accountId);
+              const user = await this.client.getProfile(accountId);
               if (!user) break;
-              friend = new Friend(this.Client, user);
-            } else this.Client.friends.delete(accountId);
-            this.Client.emit('friend:removed', friend);
-            this.Client.emit(`friend#${accountId}:removed`, friend);
+              friend = new Friend(this.client, user);
+            } else this.client.friends.cache.delete(accountId);
+            this.client.emit('friend:removed', friend);
+            this.client.emit(`friend#${accountId}:removed`, friend);
           }
         } break;
 
         case 'USER_BLOCKLIST_UPDATE': {
-          await this.Client.waitUntilReady();
+          await this.client.waitUntilReady();
           const { status, accountId } = body;
           if (status === 'BLOCKED') {
-            const friend = this.Client.friends.get(accountId);
+            const friend = this.client.friends.cache.get(accountId);
             if (!friend) break;
             friend.status = 'BLOCKED';
-            this.Client.blockedFriends.set(accountId, friend);
-            this.Client.friends.delete(accountId);
-            this.Client.emit('friend:blocked', friend);
-            this.Client.emit(`friend#${accountId}:blocked`, friend);
+            this.client.friends.blocked.add(friend);
+            this.client.friends.cache.delete(accountId);
+            this.client.emit('friend:blocked', friend);
+            this.client.emit(`friend#${accountId}:blocked`, friend);
           } else if (status === 'UNBLOCKED') {
-            const friend = this.Client.blockedFriends.get(accountId);
+            const friend = this.client.friends.blocked.cache.get(accountId);
             if (!friend) break;
             friend.status = 'FRIENDED';
-            this.Client.friends.set(accountId, friend);
-            this.Client.blockedFriends.delete(accountId);
-            this.Client.emit('friend:unblocked', friend);
-            this.Client.emit(`friend#${accountId}:unblocked`, friend);
+            this.client.friends.add(friend);
+            this.client.friends.blocked.cache.delete(accountId);
+            this.client.emit('friend:unblocked', friend);
+            this.client.emit(`friend#${accountId}:unblocked`, friend);
           }
         } break;
 
         case 'com.epicgames.social.party.notification.v0.PING': {
           const pingerId = body.pinger_id;
-          let data = await this.Client.Http.send(true, 'GET',
-            `${Endpoints.BR_PARTY}/user/${this.Client.user.id}/pings/${pingerId}/parties`, `bearer ${this.Client.Auth.auths.token}`);
+          let data = await this.client.http.send(true, 'GET',
+            `${Endpoints.BR_PARTY}/user/${this.client.user.id}/pings/${pingerId}/parties`, `bearer ${this.client.auth.auths.token}`);
           if (!data.success) {
-            this.Client.debug(`Failed fetching invite from ${pingerId}: ${this.Client.parseError(data.response)}`);
+            this.client.debug(`Failed fetching invite from ${pingerId}: ${this.client.parseError(data.response)}`);
             break;
           }
           if (!data.response[0]) {
-            this.Client.debug(`Failed fetching invite from ${pingerId}: No invite found`);
+            this.client.debug(`Failed fetching invite from ${pingerId}: No invite found`);
             break;
           }
           if (this.kickedPartyIds.some((i) => i === data.response[0].id)) {
-            this.Client.debug(`Failed fetching invite from ${pingerId}: The client previously got kicked from this party`);
+            this.client.debug(`Failed fetching invite from ${pingerId}: The client previously got kicked from this party`);
             break;
           }
           [data] = data.response;
           let party;
-          if (data.config.discoverability === 'ALL') party = await Party.Lookup(this.Client, data.id);
-          else party = new Party(this.Client, data);
+          if (data.config.discoverability === 'ALL') party = await Party.Lookup(this.client, data.id);
+          else party = new Party(this.client, data);
           let invite;
           for (const inv of data.invites) {
             if (inv.sent_by === pingerId && inv.status === 'SENT') {
@@ -362,137 +359,137 @@ class XMPP {
               break;
             }
           }
-          if (!invite) invite = PartyInvitation.createInvite(this.Client, pingerId, { ...body, ...data });
-          const invitation = new PartyInvitation(this.Client, party, invite);
-          this.Client.emit('party:invite', invitation);
-          this.Client.emit(`party#${party.id}:invite`, invitation);
+          if (!invite) invite = PartyInvitation.createInvite(this.client, pingerId, { ...body, ...data });
+          const invitation = new PartyInvitation(this.client, party, invite);
+          this.client.emit('party:invite', invitation);
+          this.client.emit(`party#${party.id}:invite`, invitation);
         } break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_JOINED': {
-          await this.Client.partyLock.wait();
+          await this.client.partyLock.wait();
           const accountId = body.account_id;
-          if (!this.Client.party || this.Client.party.id !== body.party_id) break;
-          if (accountId === this.Client.user.id) {
-            if (!this.Client.party.me) this.Client.party.members.set(accountId, new ClientPartyMember(this.Client.party, body));
-            await this.Client.party.me.sendPatch();
-          } else this.Client.party.members.set(accountId, new PartyMember(this.Client.party, body));
-          const partyMember = this.Client.party.members.get(accountId);
+          if (!this.client.party || this.client.party.id !== body.party_id) break;
+          if (accountId === this.client.user.id) {
+            if (!this.client.party.me) this.client.party.members.set(accountId, new ClientPartyMember(this.client.party, body));
+            await this.client.party.me.sendPatch();
+          } else this.client.party.members.set(accountId, new PartyMember(this.client.party, body));
+          const partyMember = this.client.party.members.get(accountId);
           if (!partyMember.displayName) await partyMember.fetch();
-          this.Client.party.patchPresence();
-          if (this.Client.party.me.isLeader) await this.Client.party.refreshSquadAssignments();
-          this.Client.emit('party:member:joined', partyMember);
-          this.Client.emit(`party:member#${accountId}:joined`, partyMember);
+          this.client.party.patchPresence();
+          if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
+          this.client.emit('party:member:joined', partyMember);
+          this.client.emit(`party:member#${accountId}:joined`, partyMember);
         } break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_STATE_UPDATED': {
-          await this.Client.partyLock.wait();
-          if (!this.Client.party || this.Client.party.id !== body.party_id) break;
+          await this.client.partyLock.wait();
+          if (!this.client.party || this.client.party.id !== body.party_id) break;
           const accountId = body.account_id;
-          const partyMember = this.Client.party.members.get(accountId);
+          const partyMember = this.client.party.members.get(accountId);
           if (!partyMember) break;
           partyMember.update(body);
-          this.Client.emit('party:member:updated', partyMember);
-          this.Client.emit(`party:member#${accountId}:updated`, partyMember);
+          this.client.emit('party:member:updated', partyMember);
+          this.client.emit(`party:member#${accountId}:updated`, partyMember);
         } break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_LEFT': {
-          await this.Client.partyLock.wait();
-          if (!this.Client.party || this.Client.party.id !== body.party_id) break;
+          await this.client.partyLock.wait();
+          if (!this.client.party || this.client.party.id !== body.party_id) break;
           const accountId = body.account_id;
-          if (accountId === this.Client.user.id) break;
-          const partyMember = this.Client.party.members.get(accountId);
+          if (accountId === this.client.user.id) break;
+          const partyMember = this.client.party.members.get(accountId);
           if (!partyMember) break;
-          this.Client.party.members.delete(accountId);
-          this.Client.party.patchPresence();
-          if (this.Client.party.me.isLeader) await this.Client.party.refreshSquadAssignments();
-          this.Client.emit('party:member:left', partyMember);
-          this.Client.emit(`party:member#${accountId}:left`, partyMember);
+          this.client.party.members.delete(accountId);
+          this.client.party.patchPresence();
+          if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
+          this.client.emit('party:member:left', partyMember);
+          this.client.emit(`party:member#${accountId}:left`, partyMember);
         } break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_EXPIRED': {
-          await this.Client.partyLock.wait();
-          if (!this.Client.party || this.Client.party.id !== body.party_id) break;
+          await this.client.partyLock.wait();
+          if (!this.client.party || this.client.party.id !== body.party_id) break;
           const accountId = body.account_id;
-          if (accountId === this.Client.user.id) break;
-          const partyMember = this.Client.party.members.get(accountId);
+          if (accountId === this.client.user.id) break;
+          const partyMember = this.client.party.members.get(accountId);
           if (!partyMember) break;
-          this.Client.party.members.delete(accountId);
-          this.Client.party.patchPresence();
-          if (this.Client.party.me.isLeader) this.Client.party.refreshSquadAssignments();
-          this.Client.emit('party:member:expired', partyMember);
-          this.Client.emit(`party:member#${accountId}:expired`, partyMember);
+          this.client.party.members.delete(accountId);
+          this.client.party.patchPresence();
+          if (this.client.party.me.isLeader) this.client.party.refreshSquadAssignments();
+          this.client.emit('party:member:expired', partyMember);
+          this.client.emit(`party:member#${accountId}:expired`, partyMember);
         } break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_KICKED': {
-          await this.Client.partyLock.wait();
-          if (!this.Client.party || this.Client.party.id !== body.party_id) break;
+          await this.client.partyLock.wait();
+          if (!this.client.party || this.client.party.id !== body.party_id) break;
           const accountId = body.account_id;
-          const partyMember = this.Client.party.members.get(accountId);
-          if (accountId === this.Client.user.id) {
+          const partyMember = this.client.party.members.get(accountId);
+          if (accountId === this.client.user.id) {
             this.kickedPartyIds.push(body.party_id);
-            this.Client.party = undefined;
-            await this.Client.initParty();
+            this.client.party = undefined;
+            await this.client.initParty();
           } else {
             if (!partyMember) break;
-            this.Client.party.members.delete(accountId);
-            this.Client.party.patchPresence();
-            if (this.Client.party.me.isLeader) this.Client.party.refreshSquadAssignments();
+            this.client.party.members.delete(accountId);
+            this.client.party.patchPresence();
+            if (this.client.party.me.isLeader) this.client.party.refreshSquadAssignments();
           }
-          this.Client.emit('party:member:kicked', partyMember);
-          this.Client.emit(`party:member#${accountId}:kicked`, partyMember);
+          this.client.emit('party:member:kicked', partyMember);
+          this.client.emit(`party:member#${accountId}:kicked`, partyMember);
         } break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_DISCONNECTED': {
-          await this.Client.partyLock.wait();
-          if (!this.Client.party || this.Client.party.id !== body.party_id) break;
+          await this.client.partyLock.wait();
+          if (!this.client.party || this.client.party.id !== body.party_id) break;
           const accountId = body.account_id;
-          if (accountId === this.Client.user.id) break;
-          const partyMember = this.Client.party.members.get(accountId);
+          if (accountId === this.client.user.id) break;
+          const partyMember = this.client.party.members.get(accountId);
           if (!partyMember) break;
-          this.Client.party.members.delete(accountId);
-          this.Client.party.patchPresence();
-          if (this.Client.party.me.isLeader) this.Client.party.refreshSquadAssignments();
-          this.Client.emit('party:member:disconnected', partyMember);
-          this.Client.emit(`party:member#${accountId}:disconnected`, partyMember);
+          this.client.party.members.delete(accountId);
+          this.client.party.patchPresence();
+          if (this.client.party.me.isLeader) this.client.party.refreshSquadAssignments();
+          this.client.emit('party:member:disconnected', partyMember);
+          this.client.emit(`party:member#${accountId}:disconnected`, partyMember);
         } break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_NEW_CAPTAIN': {
-          await this.Client.partyLock.wait();
-          if (!this.Client.party || !this.Client.party.leader || this.Client.party.id !== body.party_id) break;
-          this.Client.party.leader.role = '';
-          this.Client.party.patchAssignmentsLocked = false;
-          const partyMember = this.Client.party.members.get(body.account_id);
+          await this.client.partyLock.wait();
+          if (!this.client.party || !this.client.party.leader || this.client.party.id !== body.party_id) break;
+          this.client.party.leader.role = '';
+          this.client.party.patchAssignmentsLocked = false;
+          const partyMember = this.client.party.members.get(body.account_id);
           if (!partyMember) break;
-          this.Client.party.members.get(body.account_id).role = 'CAPTAIN';
-          this.Client.party.patchPresence();
+          this.client.party.members.get(body.account_id).role = 'CAPTAIN';
+          this.client.party.patchPresence();
 
-          this.Client.emit('party:member:promoted', partyMember);
-          this.Client.emit(`party:member#${body.account_id}:promoted`, partyMember);
+          this.client.emit('party:member:promoted', partyMember);
+          this.client.emit(`party:member#${body.account_id}:promoted`, partyMember);
         } break;
 
         case 'com.epicgames.social.party.notification.v0.PARTY_UPDATED':
-          await this.Client.partyLock.wait();
-          if (!this.Client.party || this.Client.party.id !== body.party_id) break;
-          this.Client.party.update(body);
-          this.Client.party.patchPresence();
-          this.Client.emit('party:updated', this.Client.party);
+          await this.client.partyLock.wait();
+          if (!this.client.party || this.client.party.id !== body.party_id) break;
+          this.client.party.update(body);
+          this.client.party.patchPresence();
+          this.client.emit('party:updated', this.client.party);
           break;
 
         case 'com.epicgames.social.party.notification.v0.MEMBER_REQUIRE_CONFIRMATION':
-          if (this.Client.party.me.isLeader) {
-            this.Client.Http.send(true, 'POST',
-              `${Endpoints.BR_PARTY}/parties/${this.Client.party.id}/members/${body.account_id}/confirm`, `bearer ${this.Client.Auth.auths.token}`);
+          if (this.client.party.me.isLeader) {
+            this.client.http.send(true, 'POST',
+              `${Endpoints.BR_PARTY}/parties/${this.client.party.id}/members/${body.account_id}/confirm`, `bearer ${this.client.auth.auths.token}`);
           }
           break;
 
         case 'com.epicgames.social.party.notification.v0.INVITE_DECLINED': {
-          const friend = this.Client.friends.get(body.invitee_id);
+          const friend = this.client.friends.cache.get(body.invitee_id);
           if (!friend) return;
-          this.Client.emit('party:invite:declined', friend);
-          this.Client.emit(`party#${body.party_id}:invite:declined`, friend);
+          this.client.emit('party:invite:declined', friend);
+          this.client.emit(`party#${body.party_id}:invite:declined`, friend);
         } break;
 
-        default: if (this.Client.config.xmppDebug) this.Client.debug(`New Unknown XMPP message: ${JSON.stringify(m)}`); break;
+        default: if (this.client.config.xmppDebug) this.client.debug(`New Unknown XMPP message: ${JSON.stringify(m)}`); break;
       }
     });
   }

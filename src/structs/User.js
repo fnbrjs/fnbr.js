@@ -1,4 +1,6 @@
 /* eslint-disable max-len */
+// const Base = require('../client/Base');
+
 /**
  * Represents a user
  */
@@ -8,7 +10,7 @@ class User {
    * @param {Object} data The user's data
    */
   constructor(client, data) {
-    Object.defineProperty(this, 'Client', { value: client });
+    Object.defineProperty(this, 'client', { value: client });
     Object.defineProperty(this, 'data', { value: data });
 
     /**
@@ -47,7 +49,7 @@ class User {
    * @returns {Promise<void>}
    */
   async addFriend() {
-    await this.Client.addFriend(this.id);
+    await this.client.addFriend(this.id);
   }
 
   /**
@@ -55,7 +57,7 @@ class User {
    * @returns {Promise<User>} This user
    */
   async fetch() {
-    const fetchedUser = await this.Client.getProfile(this.id);
+    const fetchedUser = await this.client.getProfile(this.id);
     this.displayName = fetchedUser.displayName;
     this.externalAuths = fetchedUser.externalAuths;
     this.links = fetchedUser.links;
@@ -69,7 +71,7 @@ class User {
    * @returns {Promise<Object>} The user's stats
    */
   async fetchStats(startTime, endTime) {
-    return this.Client.getBrStats(this.id, startTime, endTime);
+    return this.client.getBrStats(this.id, startTime, endTime);
   }
 }
 

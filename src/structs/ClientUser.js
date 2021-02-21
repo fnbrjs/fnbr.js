@@ -11,7 +11,7 @@ class ClientUser extends User {
    */
   constructor(client, data) {
     super(client, data);
-    Object.defineProperty(this, 'Client', { value: client });
+    Object.defineProperty(this, 'client', { value: client });
     Object.defineProperty(this, 'data', { value: data });
 
     /**

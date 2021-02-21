@@ -7,7 +7,7 @@ class CreatorCode {
    * @param {Object} data The creator code data
    */
   constructor(client, data) {
-    Object.defineProperty(this, 'Client', { value: client });
+    Object.defineProperty(this, 'client', { value: client });
     Object.defineProperty(this, 'data', { value: data });
 
     /**

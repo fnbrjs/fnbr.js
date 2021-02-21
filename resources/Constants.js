@@ -6,7 +6,7 @@ const Enums = require('../enums');
  * The options for a client
  * @typedef {Object} ClientOptions
  * @property {boolean} [savePartyMemberMeta=true] Whether to save the party member meta
- * @property {HttpOptions} [http] The options to be used for the client's HTTP manager
+ * @property {HTTPOptions} [http] The options to be used for the client's HTTP manager
  * @property {function} [debug=console.log] Used to send debug messages
  * @property {boolean} [httpDebug=false] Whether to send HTTP debug messages
  * @property {boolean} [xmppDebug=false] Whether to send XMPP debug messages
@@ -23,7 +23,7 @@ module.exports.ClientOptions = Object.freeze({
   savePartyMemberMeta: true,
   /**
    * The options to be used for the client's HTTP manager
-   * @typedef {Object} HttpOptions
+   * @typedef {Object} HTTPOptions
    * @property {number} [timeout=10000] The timeout (in milliseconds) of the HTTP requests
    * @property {Object} [header={}] The default headers that will be used for each HTTP request
    * @property {boolean} [json=true] Whether to return an HTTP request's response as an JSON object

@@ -1,8 +1,7 @@
 /* eslint-disable max-len */
 /* eslint-disable camelcase */
 const { readFile } = require('fs').promises;
-// eslint-disable-next-line no-unused-vars
-const Client = require('.');
+const Base = require('./Base');
 const Endpoints = require('../../resources/Endpoints');
 const Tokens = require('../../resources/Tokens');
 
@@ -10,16 +9,12 @@ const Tokens = require('../../resources/Tokens');
  * Represents the authentication manager of a client
  * @private
  */
-class Authenticator {
+class Authenticator extends Base {
   /**
    * @param {Client} client The main client
    */
   constructor(client) {
-    /**
-     * The main client
-     * @type {Client}
-     */
-    this.Client = client;
+    super(client);
 
     /**
      * The authentification data
@@ -54,11 +49,11 @@ class Authenticator {
    * @returns {Promise<Object>}
    */
   async authenticate() {
-    this.Client.debug('Authenticating...');
+    this.client.debug('Authenticating...');
     const startAuth = new Date().getTime();
 
     let auth;
-    const authCreds = this.Client.config.auth;
+    const authCreds = this.client.config.auth;
 
     if (authCreds.deviceAuth) {
       auth = await this.deviceAuthAuthenticate(authCreds.deviceAuth);
@@ -76,13 +71,13 @@ class Authenticator {
 
     if (!auth.success) return auth;
 
-    if (!authCreds.deviceAuth && this.Client.listenerCount('deviceauth:created') > 0) {
+    if (!authCreds.deviceAuth && this.client.listenerCount('deviceauth:created') > 0) {
       const deviceauth = await this.generateDeviceAuth(auth.response);
       if (deviceauth.success) {
         const deviceAuth = { accountId: deviceauth.response.accountId, deviceId: deviceauth.response.deviceId, secret: deviceauth.response.secret };
-        this.Client.emit('deviceauth:created', deviceAuth);
-        this.Client.config.auth.deviceAuth = deviceAuth;
-      } else this.Client.debug(`Couldn't create device auth: ${deviceauth.response}`);
+        this.client.emit('deviceauth:created', deviceAuth);
+        this.client.config.auth.deviceAuth = deviceAuth;
+      } else this.client.debug(`Couldn't create device auth: ${deviceauth.response}`);
     }
 
     this.auths = {
@@ -100,15 +95,15 @@ class Authenticator {
       displayName: auth.response.displayName,
     };
 
-    await this.Client.Http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL_MULTIPLE}?killType=OTHERS_ACCOUNT_CLIENT_SERVICE`, `bearer ${this.auths.token}`);
+    await this.client.http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL_MULTIPLE}?killType=OTHERS_ACCOUNT_CLIENT_SERVICE`, `bearer ${this.auths.token}`);
 
-    if (this.Client.config.auth.checkEULA) {
+    if (this.client.config.auth.checkEULA) {
       const EULAstatus = await this.acceptEULA();
-      if (!EULAstatus.success) this.Client.debug('EULA checking failed!');
-      if (EULAstatus.response.alreadyAccepted === false) this.Client.debug('Successfully accepted the EULA!');
+      if (!EULAstatus.success) this.client.debug('EULA checking failed!');
+      if (EULAstatus.response.alreadyAccepted === false) this.client.debug('Successfully accepted the EULA!');
     }
 
-    this.Client.debug(`Authentification successful (${((Date.now() - startAuth) / 1000).toFixed(2)}s)`);
+    this.client.debug(`Authentification successful (${((Date.now() - startAuth) / 1000).toFixed(2)}s)`);
     return auth;
   }
 
@@ -120,7 +115,7 @@ class Authenticator {
     let tokenIsValid = true;
 
     if (forceVerify) {
-      const tokenCheck = await this.Client.Http.send(false, 'GET', Endpoints.OAUTH_TOKEN_VERIFY, `bearer ${this.auths.token}`);
+      const tokenCheck = await this.client.http.send(false, 'GET', Endpoints.OAUTH_TOKEN_VERIFY, `bearer ${this.auths.token}`);
       if (tokenCheck.response.errorCode === 'errors.com.epicgames.common.oauth.invalid_token') tokenIsValid = false;
     }
 
@@ -142,17 +137,17 @@ class Authenticator {
    * @returns {Promise<Object>}
    */
   async reauthenticate() {
-    if (this.Client.reauthLock.active) return { success: true };
-    this.Client.reauthLock.active = true;
-    this.Client.debug('Reauthenticating...');
+    if (this.client.reauthLock.active) return { success: true };
+    this.client.reauthLock.active = true;
+    this.client.debug('Reauthenticating...');
     const startAuth = new Date().getTime();
 
     let auth;
-    if (this.Client.config.auth.deviceAuth) auth = await this.deviceAuthAuthenticate(this.Client.config.auth.deviceAuth);
+    if (this.client.config.auth.deviceAuth) auth = await this.deviceAuthAuthenticate(this.client.config.auth.deviceAuth);
     else auth = this.getOauthToken('refresh_token', { refresh_token: this.reauths.token });
 
     if (!auth.success) {
-      this.Client.reauthLock.active = false;
+      this.client.reauthLock.active = false;
       return auth;
     }
 
@@ -171,8 +166,8 @@ class Authenticator {
       displayName: auth.response.displayName,
     };
 
-    this.Client.debug(`Reauthentification successful (${((Date.now() - startAuth) / 1000).toFixed(2)}s)`);
-    this.Client.reauthLock.active = false;
+    this.client.debug(`Reauthentification successful (${((Date.now() - startAuth) / 1000).toFixed(2)}s)`);
+    this.client.reauthLock.active = false;
     return { success: true };
   }
 
@@ -288,17 +283,17 @@ class Authenticator {
     const deviceCode = await this.generateDeviceCode();
     if (!deviceCode.success) return deviceCode;
 
-    if (this.Client.listenerCount('devicecode:prompt') > 0) this.Client.emit('devicecode:prompt', deviceCode.response.verification_uri_complete);
+    if (this.client.listenerCount('devicecode:prompt') > 0) this.client.emit('devicecode:prompt', deviceCode.response.verification_uri_complete);
     else {
-      this.Client.debug(`Device code url: ${deviceCode.response.verification_uri_complete}`);
-      this.Client.debug('Please listen to the devicecode:prompt event instead of using the link above in production!');
+      this.client.debug(`Device code url: ${deviceCode.response.verification_uri_complete}`);
+      this.client.debug('Please listen to the devicecode:prompt event instead of using the link above in production!');
     }
 
     const { success, response } = await this.useDeviceCode(deviceCode.response.device_code, deviceCode.response.interval);
     if (!success) return response;
     const { access_token: switchAuthToken } = response;
 
-    const exchangeCodeResponse = await this.Client.Http.send(false, 'GET', Endpoints.OAUTH_EXCHANGE, `bearer ${switchAuthToken}`);
+    const exchangeCodeResponse = await this.client.http.send(false, 'GET', Endpoints.OAUTH_EXCHANGE, `bearer ${switchAuthToken}`);
 
     return this.exchangeCodeAuthenticate(exchangeCodeResponse.response.code);
   }
@@ -317,7 +312,7 @@ class Authenticator {
       ...valuePair,
     };
 
-    return this.Client.Http.send(false, 'POST', Endpoints.OAUTH_TOKEN_CREATE, `basic ${token}`, { 'Content-Type': 'application/x-www-form-urlencoded' }, null, formData);
+    return this.client.http.send(false, 'POST', Endpoints.OAUTH_TOKEN_CREATE, `basic ${token}`, { 'Content-Type': 'application/x-www-form-urlencoded' }, null, formData);
   }
 
   /**
@@ -329,7 +324,7 @@ class Authenticator {
     if (!switchTokenRequest.success) return switchTokenRequest;
     const switchToken = switchTokenRequest.response.access_token;
 
-    const deviceCodeRequest = await this.Client.Http.send(false, 'POST', Endpoints.OAUTH_DEVICE_CODE, `bearer ${switchToken}`,
+    const deviceCodeRequest = await this.client.http.send(false, 'POST', Endpoints.OAUTH_DEVICE_CODE, `bearer ${switchToken}`,
       { 'Content-Type': 'application/x-www-form-urlencoded' }, 'prompt=login');
 
     return deviceCodeRequest;
@@ -363,7 +358,7 @@ class Authenticator {
    * @returns {Promise<Object>}
    */
   async generateDeviceAuth(tokenResponse) {
-    return this.Client.Http.send(true, 'POST', `${Endpoints.OAUTH_DEVICE_AUTH}/${tokenResponse.account_id}/deviceAuth`,
+    return this.client.http.send(true, 'POST', `${Endpoints.OAUTH_DEVICE_AUTH}/${tokenResponse.account_id}/deviceAuth`,
       `bearer ${tokenResponse.access_token}`);
   }
 
@@ -372,15 +367,15 @@ class Authenticator {
    * @returns {Promise<Object>}
    */
   async acceptEULA() {
-    const EULAdata = await this.Client.Http.send(false, 'GET', `${Endpoints.INIT_EULA}/account/${this.account.id}`, `bearer ${this.auths.token}`);
+    const EULAdata = await this.client.http.send(false, 'GET', `${Endpoints.INIT_EULA}/account/${this.account.id}`, `bearer ${this.auths.token}`);
     if (!EULAdata.success) return EULAdata;
     if (!EULAdata.response) return { success: true, response: { alreadyAccepted: true } };
 
-    const EULAaccepted = await this.Client.Http.send(false, 'POST',
+    const EULAaccepted = await this.client.http.send(false, 'POST',
       `${Endpoints.INIT_EULA}/version/${EULAdata.response.version}/account/${this.account.id}/accept?locale=${EULAdata.response.locale}`, `bearer ${this.auths.token}`);
     if (!EULAaccepted.success) return EULAaccepted;
 
-    const FortniteAccess = await this.Client.Http.send(false, 'POST',
+    const FortniteAccess = await this.client.http.send(false, 'POST',
       `${Endpoints.INIT_GRANTACCESS}/${this.account.id}`, `bearer ${this.auths.token}`);
     if (!FortniteAccess.success) return FortniteAccess;
 

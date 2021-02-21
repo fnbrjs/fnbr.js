@@ -7,7 +7,7 @@ class PartyMessage {
       * @param {Client} client The main client
       * @param {Object} data The data of the message
       */
-    Object.defineProperty(this, 'Client', { value: client });
+    Object.defineProperty(this, 'client', { value: client });
     Object.defineProperty(this, 'data', { value: data });
     Object.defineProperty(this, 'chat', { value: this.data.chat });
 

@@ -10,13 +10,13 @@ class FriendPresence {
    * @param {string} fromId The id of friend this presence belongs to
    */
   constructor(client, data, fromId) {
-    Object.defineProperty(this, 'Client', { value: client });
+    Object.defineProperty(this, 'client', { value: client });
 
     /**
      * The friend this presence belongs to
      * @type {string}
      */
-    this.friend = this.Client.friends.get(fromId);
+    this.friend = this.client.friends.cache.get(fromId);
 
     /**
      * The status of this friend presence

@@ -1,4 +1,4 @@
-const Meta = require('../Util/Meta');
+const Meta = require('../util/Meta');
 
 /**
  * Represents a party member's meta
@@ -105,7 +105,7 @@ class PartyMemberMeta extends Meta {
       }),
       'Default:Platform_j': JSON.stringify({
         Platform: {
-          platformStr: this.Member.Client.config.platform,
+          platformStr: this.Member.client.config.platform,
         },
       }),
       'Default:PlatformUniqueId_s': 'INVALID',

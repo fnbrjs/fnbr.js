@@ -30,8 +30,8 @@ class PendingFriend extends User {
    * @returns {Promise<Friend>}
    */
   async accept() {
-    await this.Client.addFriend(this.id);
-    return this.Client.waitForEvent(`friend#${this.id}:added`, 10000);
+    await this.client.addFriend(this.id);
+    return this.client.waitForEvent(`friend#${this.id}:added`, 10000);
   }
 
   /**
@@ -39,7 +39,7 @@ class PendingFriend extends User {
    * @returns {Promise<void>}
    */
   async reject() {
-    await this.Client.removeFriend(this.id);
+    await this.client.removeFriend(this.id);
   }
 
   /**
@@ -47,7 +47,7 @@ class PendingFriend extends User {
    * @returns {Promise<void>}
    */
   async abort() {
-    await this.Client.removeFriend(this.id);
+    await this.client.removeFriend(this.id);
   }
 
   /**
@@ -55,7 +55,7 @@ class PendingFriend extends User {
    * @returns {Promise<void>}
    */
   async block() {
-    await this.Client.blockFriend(this.id);
+    await this.client.blockUser(this.id);
   }
 }
 

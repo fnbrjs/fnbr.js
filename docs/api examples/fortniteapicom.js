@@ -20,13 +20,13 @@ const handleCommand = async (m) => {
   if (command === 'outfit' || command === 'skin') {
     const skin = await fetchCosmetic(args.join(' '), 'outfit');
     if (skin) {
-      m.Client.party.me.setOutfit(skin.id);
+      m.client.party.me.setOutfit(skin.id);
       m.reply(`Set the skin to ${skin.name}!`);
     } else m.reply(`The skin ${args.join(' ')} wasn't found!`);
   } else if (command === 'emote' || command === 'dance') {
     const emote = await fetchCosmetic(args.join(' '), 'emote');
     if (emote) {
-      m.Client.party.me.setEmote(emote.id);
+      m.client.party.me.setEmote(emote.id);
       m.reply(`Set the emote to ${emote.name}!`);
     } else m.reply(`The emote ${args.join(' ')} wasn't found!`);
   }

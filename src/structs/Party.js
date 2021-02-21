@@ -18,7 +18,7 @@ class Party {
    * @param {Object} data The party's data
    */
   constructor(client, data) {
-    Object.defineProperty(this, 'Client', { value: client });
+    Object.defineProperty(this, 'client', { value: client });
     Object.defineProperty(this, 'data', { value: data });
 
     /**
@@ -37,7 +37,7 @@ class Party {
      * The config of this party
      * @type {ClientOptions.partyConfig}
      */
-    this.config = { ...this.Client.config.partyConfig, ...this.Client.makeCamelCase(data.config) };
+    this.config = { ...this.client.config.partyConfig, ...this.client.makeCamelCase(data.config) };
 
     /**
      * The members of this party
@@ -45,7 +45,7 @@ class Party {
      */
     this.members = new Collection();
     data.members.forEach((m) => {
-      if (m.account_id === this.Client.user.id) this.members.set(m.account_id, new ClientPartyMember(this, m));
+      if (m.account_id === this.client.user.id) this.members.set(m.account_id, new ClientPartyMember(this, m));
       else this.members.set(m.account_id, new PartyMember(this, m));
     });
 
@@ -94,7 +94,7 @@ class Party {
    * @readonly
    */
   get me() {
-    return this.members.get(this.Client.user.id);
+    return this.members.get(this.client.user.id);
   }
 
   /**
@@ -120,26 +120,26 @@ class Party {
    * @returns {Promise<void>}
    */
   async join() {
-    if (this.Client.party) await this.Client.party.leave(false);
-    this.Client.partyLock.active = true;
-    const party = await this.Client.Http.send(true, 'POST',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.user.id}/join`, `bearer ${this.Client.Auth.auths.token}`, null, {
+    if (this.client.party) await this.client.party.leave(false);
+    this.client.partyLock.active = true;
+    const party = await this.client.http.send(true, 'POST',
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.client.user.id}/join`, `bearer ${this.client.auth.auths.token}`, null, {
         connection: {
-          id: this.Client.Xmpp.stream.jid,
+          id: this.client.xmpp.stream.jid,
           meta: {
-            'urn:epic:conn:platform_s': this.Client.config.platform,
+            'urn:epic:conn:platform_s': this.client.config.platform,
             'urn:epic:conn:type_s': 'game',
           },
           yield_leadership: false,
         },
         meta: {
-          'urn:epic:member:dn_s': this.Client.user.displayName,
+          'urn:epic:member:dn_s': this.client.user.displayName,
           'urn:epic:member:joinrequestusers_j': JSON.stringify({
             users: [
               {
-                id: this.Client.user.id,
-                dn: this.Client.user.displayName,
-                plat: this.Client.config.platform,
+                id: this.client.user.id,
+                dn: this.client.user.displayName,
+                plat: this.client.config.platform,
                 data: JSON.stringify({
                   CrossplayPreference: '1',
                   SubGame_u: '1',
@@ -150,19 +150,19 @@ class Party {
         },
       });
     if (!party.success) {
-      this.Client.partyLock.active = false;
+      this.client.partyLock.active = false;
       if (party.response.errorCode === 'errors.com.epicgames.social.party.user_has_party') {
-        await this.Client.initParty(false);
+        await this.client.initParty(false);
         await this.join();
       } else {
-        await this.Client.initParty();
-        throw new Error(`Failed joining party: ${this.Client.parseError(party.response)}`);
+        await this.client.initParty();
+        throw new Error(`Failed joining party: ${this.client.parseError(party.response)}`);
       }
     }
 
     await this.chat.join();
-    this.Client.party = this;
-    this.Client.partyLock.active = false;
+    this.client.party = this;
+    this.client.partyLock.active = false;
   }
 
   /**
@@ -176,9 +176,9 @@ class Party {
       ? {
         bIsPrivate: true,
       } : {
-        sourceId: this.Client.user.id,
-        sourceDisplayName: this.Client.user.displayName,
-        sourcePlatform: this.Client.config.platform,
+        sourceId: this.client.user.id,
+        sourceDisplayName: this.client.user.displayName,
+        sourcePlatform: this.client.config.platform,
         partyId: this.id,
         partyTypeId: 286331153,
         key: 'k',
@@ -205,19 +205,19 @@ class Party {
       },
       KairosProfile_j: {
         appInstalled: 'init',
-        avatar: this.Client.config.kairos.cid.toLowerCase(),
-        avatarBackground: this.Client.config.kairos.color.replace(/ /g, ''),
+        avatar: this.client.config.kairos.cid.toLowerCase(),
+        avatarBackground: this.client.config.kairos.color.replace(/ /g, ''),
       },
     };
     const presence = {
-      Status: this.Client.config.status || `Battle Royale Lobby - ${this.members.size} / ${this.config.maxSize}`,
+      Status: this.client.config.status || `Battle Royale Lobby - ${this.members.size} / ${this.config.maxSize}`,
       bIsPlaying: true,
       bIsJoinable: false,
       bHasVoiceSupport: false,
       SessionId: '',
       Properties: properties,
     };
-    this.Client.Xmpp.sendStatus(presence);
+    this.client.xmpp.sendStatus(presence);
   }
 
   /**
@@ -235,27 +235,27 @@ class Party {
    * @returns {Promise<SentPartyInvitation>}
    */
   async invite(friend) {
-    const cachedFriend = this.Client.friends.find((f) => f.id === friend || f.displayName === friend);
+    const cachedFriend = this.client.friends.cache.find((f) => f.id === friend || f.displayName === friend);
     if (!cachedFriend) throw new Error(`Failed sending party invitation to ${friend}: Friend not existing`);
     if (this.members.has(cachedFriend.id)) throw new Error(`Failed sending party invitation to ${friend}: Friend is already in the party`);
     if (this.members.size === this.config.maxSize) throw new Error(`Failed sending party invitation to ${friend}: Party is full`);
 
     let data;
     if (this.isPrivate) {
-      data = await this.Client.Http.send(true, 'POST',
-        `${Endpoints.BR_PARTY}/parties/${this.id}/invites/${cachedFriend.id}?sendPing=true`, `bearer ${this.Client.Auth.auths.token}`, null, {
+      data = await this.client.http.send(true, 'POST',
+        `${Endpoints.BR_PARTY}/parties/${this.id}/invites/${cachedFriend.id}?sendPing=true`, `bearer ${this.client.auth.auths.token}`, null, {
           'urn:epic:cfg:build-id_s': '1:3:',
-          'urn:epic:conn:platform_s': this.Client.config.platform,
+          'urn:epic:conn:platform_s': this.client.config.platform,
           'urn:epic:conn:type_s': 'game',
           'urn:epic:invite:platformdata_s': '',
-          'urn:epic:member:dn_s': this.Client.user.displayName,
+          'urn:epic:member:dn_s': this.client.user.displayName,
         });
     } else {
-      data = await this.Client.Http.send(true, 'POST', `${Endpoints.BR_PARTY}/user/${cachedFriend.id}/pings/${this.Client.user.id}`,
-        `bearer ${this.Client.Auth.auths.token}`, null, { 'urn:epic:invite:platformdata_s': '' });
+      data = await this.client.http.send(true, 'POST', `${Endpoints.BR_PARTY}/user/${cachedFriend.id}/pings/${this.client.user.id}`,
+        `bearer ${this.client.auth.auths.token}`, null, { 'urn:epic:invite:platformdata_s': '' });
     }
-    if (!data.success) throw new Error(`Failed sending party invitation to ${friend}: ${this.Client.parseError(data.response)}`);
-    return new SentPartyInvitation(this.Client, this, cachedFriend, {
+    if (!data.success) throw new Error(`Failed sending party invitation to ${friend}: ${this.client.parseError(data.response)}`);
+    return new SentPartyInvitation(this.client, this, cachedFriend, {
       sent_at: Date.now(),
     });
   }
@@ -266,22 +266,22 @@ class Party {
    * @returns {Promise<void>}
    */
   async leave(createNew = true) {
-    this.Client.partyLock.active = true;
+    this.client.partyLock.active = true;
     this.chat.leave();
     this.patchQueue = [];
     if (this.me) this.me.patchQueue = [];
-    const party = await this.Client.Http.send(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.Client.user.id}`, `bearer ${this.Client.Auth.auths.token}`);
+    const party = await this.client.http.send(true, 'DELETE',
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.client.user.id}`, `bearer ${this.client.auth.auths.token}`);
     if (!party.success) {
-      this.Client.partyLock.active = false;
+      this.client.partyLock.active = false;
       if (party.response.errorCode === 'errors.com.epicgames.social.party.party_not_found') {
-        await this.Client.initParty();
-      } else throw new Error(`Failed leaving party: ${this.Client.parseError(party.response)}`);
+        await this.client.initParty();
+      } else throw new Error(`Failed leaving party: ${this.client.parseError(party.response)}`);
     }
-    this.Client.party = undefined;
-    this.Client.partyLock.active = false;
+    this.client.party = undefined;
+    this.client.partyLock.active = false;
 
-    if (createNew) await Party.Create(this.Client);
+    if (createNew) await Party.Create(this.client);
   }
 
   /**
@@ -299,8 +299,8 @@ class Party {
     }
     this.currentlyPatching = true;
 
-    const patch = await this.Client.Http.send(true, 'PATCH',
-      `${Endpoints.BR_PARTY}/parties/${this.id}`, `bearer ${this.Client.Auth.auths.token}`, null, {
+    const patch = await this.client.http.send(true, 'PATCH',
+      `${Endpoints.BR_PARTY}/parties/${this.id}`, `bearer ${this.client.auth.auths.token}`, null, {
         config: {
           join_confirmation: this.config.joinConfirmation,
           joinability: this.config.joinability,
@@ -378,7 +378,7 @@ class Party {
       throw new Error(`Cannot change party privacy: ${privacy} is not a valid party privacy. Use the enum`);
     }
 
-    if (!this.Client.partyLock.active && this.config.privacy === privacy) throw new Error('Cannot change party privacy: You tried setting the privacy to the current one');
+    if (!this.client.partyLock.active && this.config.privacy === privacy) throw new Error('Cannot change party privacy: You tried setting the privacy to the current one');
 
     const updated = {};
     const deleted = [];
@@ -438,9 +438,9 @@ class Party {
     if (!this.me.isLeader) throw new Error(`Cannot promote ${member}: Client isn't party leader`);
     const partyMember = this.members.find((m) => m.id === member || m.displayName === member);
     if (!partyMember) throw new Error(`Cannot promote ${member}: Member not in party`);
-    const promotion = await this.Client.Http.send(true, 'POST',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}/promote`, `bearer ${this.Client.Auth.auths.token}`);
-    if (!promotion.success) throw new Error(`Cannot promote ${member}: ${this.Client.parseError(promotion.response)}`);
+    const promotion = await this.client.http.send(true, 'POST',
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}/promote`, `bearer ${this.client.auth.auths.token}`);
+    if (!promotion.success) throw new Error(`Cannot promote ${member}: ${this.client.parseError(promotion.response)}`);
   }
 
   /**
@@ -452,9 +452,9 @@ class Party {
     if (!this.me.isLeader) throw new Error(`Cannot kick ${member}: Client isn't party leader`);
     const partyMember = this.members.find((m) => m.id === member || m.displayName === member);
     if (!partyMember) throw new Error(`Cannot kick ${member}: Member not in party`);
-    const kick = await this.Client.Http.send(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}`, `bearer ${this.Client.Auth.auths.token}`);
-    if (!kick.success) throw new Error(`Cannot kick ${member}: ${this.Client.parseError(kick.response)}`);
+    const kick = await this.client.http.send(true, 'DELETE',
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}`, `bearer ${this.client.auth.auths.token}`);
+    if (!kick.success) throw new Error(`Cannot kick ${member}: ${this.client.parseError(kick.response)}`);
   }
 
   /**
@@ -476,7 +476,7 @@ class Party {
       this.patchAssignmentsLocked = true;
       await this.sendPatch({
         'Default:RawSquadAssignments_j': this.meta.set('Default:RawSquadAssignments_j', {
-          RawSquadAssignments: [{ memberId: this.Client.user.id, absoluteMemberIdx: 0 }],
+          RawSquadAssignments: [{ memberId: this.client.user.id, absoluteMemberIdx: 0 }],
         }),
       });
     } else {
@@ -510,7 +510,7 @@ class Party {
    * @returns {Promise<Party>}
    */
   static async LookupSelf(client) {
-    const party = await client.Http.send(true, 'GET', `${Endpoints.BR_PARTY}/user/${client.user.id}`, `bearer ${client.Auth.auths.token}`);
+    const party = await client.http.send(true, 'GET', `${Endpoints.BR_PARTY}/user/${client.user.id}`, `bearer ${client.auth.auths.token}`);
     if (!party.success) throw new Error(`Failed looking up clientparty: ${client.parseError(party.response)}`);
     if (!party.response.current[0]) return undefined;
     return new Party(client, party.response.current[0]);
@@ -523,7 +523,7 @@ class Party {
    * @returns {Promise<Party>}
    */
   static async Lookup(client, id) {
-    const party = await client.Http.send(true, 'GET', `${Endpoints.BR_PARTY}/parties/${id}`, `bearer ${client.Auth.auths.token}`);
+    const party = await client.http.send(true, 'GET', `${Endpoints.BR_PARTY}/parties/${id}`, `bearer ${client.auth.auths.token}`);
     if (!party.success) throw new Error(`Failed looking up party: ${client.parseError(party.response)}`);
     if (!party.response) throw new Error(`Failed looking up party: Party ${id} not found`);
     return new Party(client, party.response);
@@ -537,7 +537,7 @@ class Party {
   static async Create(client, config) {
     client.partyLock.active = true;
     const partyConfig = { ...client.config.partyConfig, ...config };
-    const party = await client.Http.send(true, 'POST', `${Endpoints.BR_PARTY}/parties`, `bearer ${client.Auth.auths.token}`, null, {
+    const party = await client.http.send(true, 'POST', `${Endpoints.BR_PARTY}/parties`, `bearer ${client.auth.auths.token}`, null, {
       config: {
         join_confirmation: partyConfig.joinConfirmation,
         joinability: partyConfig.joinability,
@@ -545,7 +545,7 @@ class Party {
       },
       join_info: {
         connection: {
-          id: client.Xmpp.stream.jid,
+          id: client.xmpp.stream.jid,
           meta: {
             'urn:epic:conn:platform_s': client.config.platform,
             'urn:epic:conn:type_s': 'game',

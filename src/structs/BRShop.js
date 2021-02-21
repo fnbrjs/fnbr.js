@@ -5,12 +5,9 @@ const BRShopOffer = require('./BRShopOffer');
  */
 class BRShop {
   /**
-   * @param {Client} client The main client
    * @param {Object} data The shop data
    */
-  constructor(client, data) {
-    Object.defineProperty(this, 'Client', { value: client });
-
+  constructor(data) {
     /**
      * The daily offers
      * @type {BRShopOffer}

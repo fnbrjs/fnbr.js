@@ -1,7 +1,5 @@
 const User = require('./User');
 const Party = require('./Party');
-// eslint-disable-next-line no-unused-vars
-const SentPartyInvitation = require('./SentPartyInvitation');
 
 /**
  * Represents an Epic Games friend of a client
@@ -56,12 +54,6 @@ class Friend extends User {
      * @type {FriendPresence}
      */
     this.presence = data.presence;
-
-    /**
-     * Whether this friend is blocked or not
-     * @type {boolean}
-     */
-    this.isBlocked = data.blocked || false;
   }
 
   /**
@@ -91,7 +83,7 @@ class Friend extends User {
    * @returns {Promise<void>}
    */
   async remove() {
-    await this.Client.removeFriend(this.id);
+    await this.client.removeFriend(this.id);
   }
 
   /**
@@ -100,7 +92,7 @@ class Friend extends User {
    * @returns {Promise<FriendMessage>}
    */
   async sendMessage(message) {
-    return this.Client.sendFriendMessage(this.id, message);
+    return this.client.sendFriendMessage(this.id, message);
   }
 
   /**
@@ -108,8 +100,8 @@ class Friend extends User {
    * @returns {Promise<SentPartyInvitation>}
    */
   async invite() {
-    if (!this.Client.party) throw new Error(`Failed sending party invitation to ${this.id}: Client is not in a party`);
-    return this.Client.party.invite(this.id);
+    if (!this.client.party) throw new Error(`Failed sending party invitation to ${this.id}: Client is not in a party`);
+    return this.client.party.invite(this.id);
   }
 
   /**
@@ -117,17 +109,7 @@ class Friend extends User {
    * @returns {Promise<void>}
    */
   async block() {
-    await this.Client.blockFriend(this.id);
-    this.isBlocked = true;
-  }
-
-  /**
-   * Unblocks this friend
-   * @returns {Promise<void>}
-   */
-  async unblock() {
-    await this.Client.unblockFriend(this.id);
-    this.isBlocked = false;
+    await this.client.blockUser(this.id);
   }
 
   /**
@@ -136,7 +118,7 @@ class Friend extends User {
    */
   async joinParty() {
     if (!this.isJoinable) throw new Error('Cannot join friend party: Party not joinable');
-    const party = await Party.Lookup(this.Client, this.presence.partyData.id);
+    const party = await Party.Lookup(this.client, this.presence.partyData.id);
     await party.join();
   }
 }

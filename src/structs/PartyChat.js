@@ -8,9 +8,9 @@ class PartyChat {
    * @param {Object} party The chatroom's party
    */
   constructor(party) {
-    Object.defineProperty(this, 'Party', { value: party });
-    Object.defineProperty(this, 'Client', { value: this.Party.Client });
-    Object.defineProperty(this, 'Stream', { value: this.Client.Xmpp.stream });
+    Object.defineProperty(this, 'party', { value: party });
+    Object.defineProperty(this, 'client', { value: this.party.client });
+    Object.defineProperty(this, 'stream', { value: this.client.xmpp.stream });
 
     /**
      * Whether the client is connected to the chat room or not
@@ -22,13 +22,13 @@ class PartyChat {
      * The jid of this chat room
      * @type {string}
      */
-    this.jid = `Party-${this.Party.id}@muc.prod.ol.epicgames.com`;
+    this.jid = `Party-${this.party.id}@muc.prod.ol.epicgames.com`;
 
     /**
      * The nick of the client's user in this chat room
      * @type {string}
      */
-    this.nick = `${this.Client.user.displayName}:${this.Client.user.id}:${this.Client.Xmpp.resource}`;
+    this.nick = `${this.client.user.displayName}:${this.client.user.id}:${this.client.xmpp.resource}`;
   }
 
   /**
@@ -38,13 +38,13 @@ class PartyChat {
    */
   async send(message) {
     if (!await this.waitForConnected()) return undefined;
-    const msgId = this.Stream.sendMessage({
+    const msgId = this.stream.sendMessage({
       to: this.jid,
       type: 'groupchat',
       body: message,
     });
     return new Promise((res, rej) => {
-      this.Stream.once(`message#${msgId}:sent`, () => res(new PartyMessage(this.Client, { body: message, author: this.Party.me, chat: this })));
+      this.stream.once(`message#${msgId}:sent`, () => res(new PartyMessage(this.client, { body: message, author: this.party.me, chat: this })));
       setTimeout(() => rej(new Error('Failed sending a party message: Message timeout of 20000ms exceeded')), 20000);
     });
   }
@@ -54,9 +54,9 @@ class PartyChat {
    * @returns {Promise<void>}
    */
   join() {
-    this.Stream.joinRoom(this.jid, this.nick);
+    this.stream.joinRoom(this.jid, this.nick);
     return new Promise((res, rej) => {
-      this.Stream.once('muc:join', () => { res(); this.connected = true; });
+      this.stream.once('muc:join', () => { res(); this.connected = true; });
       setTimeout(() => rej(new Error('Cannot join party chat: Timeout of 20000ms exceed')), 20000);
     });
   }
@@ -66,9 +66,9 @@ class PartyChat {
    * @returns {Promise<void>}
    */
   leave() {
-    this.Stream.leaveRoom(this.jid, this.nick);
+    this.stream.leaveRoom(this.jid, this.nick);
     return new Promise((res) => {
-      this.Stream.once('muc:leave', () => { res(); this.connected = false; });
+      this.stream.once('muc:leave', () => { res(); this.connected = false; });
       setTimeout(() => { res(); this.connected = false; }, 5000);
     });
   }

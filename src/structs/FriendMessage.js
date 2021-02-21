@@ -7,7 +7,7 @@ class FriendMessage {
    * @param {Client} client The main client
    * @param {Object} data The friend message's data
    */
-    Object.defineProperty(this, 'Client', { value: client });
+    Object.defineProperty(this, 'client', { value: client });
     Object.defineProperty(this, 'data', { value: data });
 
     /**
@@ -20,7 +20,7 @@ class FriendMessage {
      * The friend who sent the message
      * @type {Friend}
      */
-    this.author = data.author || this.Client.friends.get(data.from.split('@')[0]);
+    this.author = data.author || this.client.friends.cache.get(data.from.split('@')[0]);
   }
 
   /**
@@ -29,8 +29,8 @@ class FriendMessage {
    * @returns {Promise<FriendMessage>}
    */
   async reply(message) {
-    if (this.author.id === this.Client.user.id) throw new Error(`Failed sending a friend message to ${this.author.id}: You can't send a message to yourself`);
-    return this.Client.sendFriendMessage(this.author.id, message);
+    if (this.author.id === this.client.user.id) throw new Error(`Failed sending a friend message to ${this.author.id}: You can't send a message to yourself`);
+    return this.client.sendFriendMessage(this.author.id, message);
   }
 }
 

@@ -11,7 +11,7 @@ class PartyInvitation {
    * @param {Object} data The invitation's data
    */
   constructor(client, party, data) {
-    this.Client = client;
+    this.client = client;
 
     /**
      * The party of this invitation
@@ -23,7 +23,7 @@ class PartyInvitation {
      * The friend that sent this invitation
      * @type {Friend}
      */
-    this.sender = this.Client.friends.get(data.sent_by);
+    this.sender = this.client.friends.cache.get(data.sent_by);
 
     /**
      * The Date when the party invitation was created
@@ -56,9 +56,9 @@ class PartyInvitation {
     if (this.expired) throw new Error(`Failed accepting party ${this.party.id} invite from ${this.sender.id}: The party invitation was already accepted/declined or it expired`);
     await this.party.join();
     this.expired = true;
-    const data = await this.Client.Http.send(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/user/${this.Client.user.id}/pings/${this.sender.id}`, `bearer ${this.Client.Auth.auths.token}`);
-    if (!data.success) throw new Error(`Failed accepting party ${this.party.id} invite from ${this.sender.id}: ${this.Client.parseError(data.response)}`);
+    const data = await this.client.http.send(true, 'DELETE',
+      `${Endpoints.BR_PARTY}/user/${this.client.user.id}/pings/${this.sender.id}`, `bearer ${this.client.auth.auths.token}`);
+    if (!data.success) throw new Error(`Failed accepting party ${this.party.id} invite from ${this.sender.id}: ${this.client.parseError(data.response)}`);
   }
 
   /**
@@ -67,9 +67,9 @@ class PartyInvitation {
    */
   async decline() {
     if (this.expired) throw new Error(`Failed declining party ${this.party.id} invite from ${this.sender.id}: The party invitation was already accepted/declined or it expired`);
-    const data = await this.Client.Http.send(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/user/${this.Client.user.id}/pings/${this.sender.id}`, `bearer ${this.Client.Auth.auths.token}`);
-    if (!data.success) throw new Error(`Failed declining party ${this.party.id} invite from ${this.sender.id}: ${this.Client.parseError(data.response)}`);
+    const data = await this.client.http.send(true, 'DELETE',
+      `${Endpoints.BR_PARTY}/user/${this.client.user.id}/pings/${this.sender.id}`, `bearer ${this.client.auth.auths.token}`);
+    if (!data.success) throw new Error(`Failed declining party ${this.party.id} invite from ${this.sender.id}: ${this.client.parseError(data.response)}`);
     this.expired = true;
   }
 

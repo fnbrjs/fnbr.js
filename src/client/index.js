@@ -8,33 +8,23 @@ const { EventEmitter } = require('events');
 const { createInterface } = require('readline');
 const onExit = require('async-exit-hook');
 const zlib = require('zlib');
-const Collection = require('@discordjs/collection');
-const Authenticator = require('./auth.js');
-const Xmpp = require('../XMPP');
-const Http = require('../Util/http');
-const Endpoints = require('../../resources/Endpoints.js');
-const ClientUser = require('../Structures/ClientUser.js');
-const Friend = require('../Structures/Friend.js');
-const PendingFriend = require('../Structures/PendingFriend.js');
-const User = require('../Structures/User');
-const CreatorCode = require('../Structures/CreatorCode');
+const Authenticator = require('./Authenticator');
+const XMPP = require('./XMPP');
+const HTTP = require('./HTTP');
+const Endpoints = require('../../resources/Endpoints');
+const ClientUser = require('../structs/ClientUser');
+const FriendManager = require('./managers/FriendManager');
+const Friend = require('../structs/Friend');
+const BlockedUser = require('../structs/BlockedUser');
+const PendingFriend = require('../structs/PendingFriend');
+const User = require('../structs/User');
+const CreatorCode = require('../structs/CreatorCode');
 const Enums = require('../../enums');
-const FriendMessage = require('../Structures/FriendMessage.js');
-const Party = require('../Structures/Party.js');
-const News = require('../Structures/News.js');
-const BRShop = require('../Structures/BRShop.js');
-// eslint-disable-next-line no-unused-vars
-const SentPartyInvitation = require('../Structures/SentPartyInvitation.js');
-// eslint-disable-next-line no-unused-vars
-const { ClientOptions, DeviceAuthCredentials } = require('../../resources/Constants');
-// eslint-disable-next-line no-unused-vars
-const PartyMessage = require('../Structures/PartyMessage.js');
-// eslint-disable-next-line no-unused-vars
-const FriendPresence = require('../Structures/FriendPresence.js');
-// eslint-disable-next-line no-unused-vars
-const PartyInvitation = require('../Structures/PartyInvitation.js');
-// eslint-disable-next-line no-unused-vars
-const PartyMember = require('../Structures/PartyMember.js');
+const FriendMessage = require('../structs/FriendMessage');
+const Party = require('../structs/Party');
+const News = require('../structs/News');
+const BRShop = require('../structs/BRShop');
+const { ClientOptions } = require('../../resources/Constants');
 
 /**
  * The main client
@@ -82,34 +72,24 @@ class Client extends EventEmitter {
      * @type {Authenticator}
      * @private
      */
-    this.Auth = new Authenticator(this);
+    this.auth = new Authenticator(this);
     /**
      * The HTTP manager of the client
-     * @type {Http}
+     * @type {HTTP}
      * @private
      */
-    this.Http = new Http(this);
+    this.http = new HTTP(this);
     /**
      * The XMPP manager of the client
-     * @type {Xmpp}
+     * @type {XMPP}
      * @private
      */
-    this.Xmpp = new Xmpp(this);
+    this.xmpp = new XMPP(this);
     /**
-     * The friends cache of the client's user
-     * @type {Collection}
+     * The friend manager of the client
+     * @type {FriendManager}
      */
-    this.friends = new Collection();
-    /**
-     * The pending friends cache of the client's user
-     * @type {Collection}
-     */
-    this.pendingFriends = new Collection();
-    /**
-     * The blocked friends cache of the client's user
-     * @type {Collection}
-     */
-    this.blockedFriends = new Collection();
+    this.friends = new FriendManager();
 
     /**
      * The client's party lock
@@ -180,20 +160,20 @@ class Client extends EventEmitter {
    * @returns {Promise<void>}
    */
   async login() {
-    const auth = await this.Auth.authenticate();
+    const auth = await this.auth.authenticate();
     if (!auth.success) throw new Error(`Authentification failed: ${this.parseError(auth.response)}`);
 
-    this.tokenCheckInterval = setInterval(() => this.Auth.refreshToken(true), 10 * 60000);
+    this.tokenCheckInterval = setInterval(() => this.auth.refreshToken(true), 10 * 60000);
 
-    const clientInfo = await this.Http.send(false, 'GET', `${Endpoints.ACCOUNT_ID}/${this.Auth.account.id}`, `bearer ${this.Auth.auths.token}`);
+    const clientInfo = await this.http.send(false, 'GET', `${Endpoints.ACCOUNT_ID}/${this.auth.account.id}`, `bearer ${this.auth.auths.token}`);
     if (!clientInfo.success) throw new Error(`Client account lookup failed: ${this.parseError(clientInfo.response)}`);
     this.user = new ClientUser(this, clientInfo.response);
 
     await this.updateCache();
 
-    this.Xmpp.setup();
+    this.xmpp.setup();
 
-    const xmpp = await this.Xmpp.connect();
+    const xmpp = await this.xmpp.connect();
     if (!xmpp.success) throw new Error(`XMPP-client connecting failed: ${this.parseError(xmpp.response)}`);
 
     await this.initParty();
@@ -208,7 +188,7 @@ class Client extends EventEmitter {
    */
   async logout() {
     if (this.tokenCheckInterval) clearInterval(this.tokenCheckInterval);
-    if (this.Xmpp.connected) await this.Xmpp.disconnect();
+    if (this.xmpp.connected) await this.xmpp.disconnect();
     if (this.party) {
       try {
         await this.party.leave(false);
@@ -216,14 +196,14 @@ class Client extends EventEmitter {
         // ignore party leave errors on logout
       }
     }
-    if (this.Auth.auths.token) await this.Http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${this.Auth.auths.token}`, `bearer ${this.Auth.auths.token}`);
+    if (this.auth.auths.token) await this.http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${this.auth.auths.token}`, `bearer ${this.auth.auths.token}`);
 
-    this.Auth.auths.token = undefined;
-    this.Auth.auths.expires_at = undefined;
+    this.auth.auths.token = undefined;
+    this.auth.auths.expires_at = undefined;
 
-    this.friends.clear();
-    this.pendingFriends.clear();
-    this.blockedFriends.clear();
+    this.friends.cache.clear();
+    this.friends.pending.cache.clear();
+    this.friends.blocked.cache.clear();
 
     this.isReady = false;
   }
@@ -244,40 +224,39 @@ class Client extends EventEmitter {
    */
   async updateCache() {
     const [rawFriends, friendsSummary] = await Promise.all([
-      this.Http.send(true, 'GET', `${Endpoints.FRIENDS}/public/friends/${this.user.id}?includePending=true`, `bearer ${this.Auth.auths.token}`),
-      this.Http.send(true, 'GET', `${Endpoints.FRIENDS}/v1/${this.user.id}/summary?displayNames=true`, `bearer ${this.Auth.auths.token}`),
+      this.http.send(true, 'GET', `${Endpoints.FRIENDS}/public/friends/${this.user.id}?includePending=true`, `bearer ${this.auth.auths.token}`),
+      this.http.send(true, 'GET', `${Endpoints.FRIENDS}/v1/${this.user.id}/summary?displayNames=true`, `bearer ${this.auth.auths.token}`),
     ]);
 
     if (!rawFriends.success) throw new Error(`Cannot update friend cache: ${this.parseError(rawFriends.response)}`);
     if (!friendsSummary.success) throw new Error(`Cannot update friend cache: ${this.parseError(friendsSummary.response)}`);
 
-    this.friends.clear();
-    this.blockedFriends.clear();
-    this.pendingFriends.clear();
-
+    const friends = {};
+    const pending = {};
+    const blocked = {};
     for (const rawFriend of rawFriends.response) {
-      if (rawFriend.status === 'ACCEPTED') this.friends.set(rawFriend.accountId, rawFriend);
-      else if (rawFriend.status === 'PENDING') this.pendingFriends.set(rawFriend.accountId, rawFriend);
-      else if (rawFriend.status === 'BLOCKED') this.blockedFriends.set(rawFriend.accountId, rawFriend);
+      if (rawFriend.status === 'ACCEPTED') friends[rawFriend.accountId] = rawFriend;
+      else if (rawFriend.status === 'PENDING') pending[rawFriend.accountId] = rawFriend;
+      else if (rawFriend.status === 'BLOCKED') blocked[rawFriend.accountId] = rawFriend;
     }
 
-    for (const friendedFriend of friendsSummary.response.friends) {
-      const friend = this.friends.get(friendedFriend.accountId);
-      this.friends.set(friendedFriend.accountId, new Friend(this, { ...friend, ...friendedFriend }));
+    this.friends.cache.clear();
+    this.friends.pending.cache.clear();
+    this.friends.blocked.cache.clear();
+
+    for (const friend of friendsSummary.response.friends) {
+      this.friends.add(new Friend(this, { ...friends[friend.accountId], ...friend }));
     }
 
-    for (const blockedFriend of friendsSummary.response.blocklist) {
-      const friend = this.blockedFriends.get(blockedFriend.accountId);
-      this.blockedFriends.set(blockedFriend.accountId, new Friend(this, { ...friend, ...blockedFriend, blocked: true }));
+    for (const blockedUser of friendsSummary.response.blocklist) {
+      this.friends.blocked.add(new BlockedUser(this, { ...blocked[blockedUser.accountId], ...blockedUser }));
     }
 
     for (const incomingFriend of friendsSummary.response.incoming) {
-      const friend = this.pendingFriends.get(incomingFriend.accountId);
-      this.pendingFriends.set(incomingFriend.accountId, new PendingFriend(this, { ...friend, ...incomingFriend, direction: 'INCOMING' }));
+      this.friends.pending.add(new PendingFriend(this, { ...pending[incomingFriend.accountId], ...incomingFriend, direction: 'INCOMING' }));
     }
     for (const outgoingFriend of friendsSummary.response.outgoing) {
-      const friend = this.pendingFriends.get(outgoingFriend.accountId);
-      this.pendingFriends.set(outgoingFriend.accountId, new PendingFriend(this, { ...friend, ...outgoingFriend, direction: 'OUTGOING' }));
+      this.friends.pending.add(new PendingFriend(this, { ...pending[outgoingFriend.accountId], ...outgoingFriend, direction: 'OUTGOING' }));
     }
   }
 
@@ -420,9 +399,9 @@ class Client extends EventEmitter {
   async getProfile(query) {
     let user;
     if (typeof query === 'string') {
-      if (/.*@.*\..*/.test(query)) user = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_EMAIL}/${encodeURI(query)}`, `bearer ${this.Auth.auths.token}`);
-      else if (query.length === 32) user = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${query}`, `bearer ${this.Auth.auths.token}`);
-      else user = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURI(query)}`, `bearer ${this.Auth.auths.token}`);
+      if (/.*@.*\..*/.test(query)) user = await this.http.send(true, 'GET', `${Endpoints.ACCOUNT_EMAIL}/${encodeURI(query)}`, `bearer ${this.auth.auths.token}`);
+      else if (query.length === 32) user = await this.http.send(true, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${query}`, `bearer ${this.auth.auths.token}`);
+      else user = await this.http.send(true, 'GET', `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURI(query)}`, `bearer ${this.auth.auths.token}`);
 
       return user.success ? new User(this, Array.isArray(user.response) ? user.response[0] : user.response) : undefined;
     } if (query instanceof Array) {
@@ -436,11 +415,11 @@ class Client extends EventEmitter {
         else names.push(userQuery);
       }
 
-      const nameResults = (await Promise.all(names.map((name) => this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURI(name)}`, `bearer ${this.Auth.auths.token}`))))
+      const nameResults = (await Promise.all(names.map((name) => this.http.send(true, 'GET', `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURI(name)}`, `bearer ${this.auth.auths.token}`))))
         .filter((name) => name.success).map((name) => new User(this, name.response));
-      const emailResults = (await Promise.all(emails.map((email) => this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_EMAIL}/${encodeURI(email)}`, `bearer ${this.Auth.auths.token}`))))
+      const emailResults = (await Promise.all(emails.map((email) => this.http.send(true, 'GET', `${Endpoints.ACCOUNT_EMAIL}/${encodeURI(email)}`, `bearer ${this.auth.auths.token}`))))
         .filter((email) => email.success).map((email) => new User(this, email.response));
-      let idResults = await this.Http.send(true, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${ids.join('&accountId=')}`, `bearer ${this.Auth.auths.token}`);
+      let idResults = await this.http.send(true, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${ids.join('&accountId=')}`, `bearer ${this.auth.auths.token}`);
       if (idResults.success) idResults = idResults.response.map((idr) => new User(this, idr));
       else idResults = [];
 
@@ -462,15 +441,15 @@ class Client extends EventEmitter {
   setStatus(status, to) {
     let id;
     if (to) {
-      const cachedFriend = this.friends.find((f) => f.id === to || f.displayName === to);
+      const cachedFriend = this.friends.cache.find((f) => f.id === to || f.displayName === to);
       if (!cachedFriend) throw new Error(`Failed sending a status to ${to}: Friend not existing`);
-      id = this.Xmpp.sendStatus(status, `${cachedFriend.id}@${Endpoints.EPIC_PROD_ENV}`);
+      id = this.xmpp.sendStatus(status, `${cachedFriend.id}@${Endpoints.EPIC_PROD_ENV}`);
       return undefined;
     }
     this.config.status = status;
-    id = this.Xmpp.sendStatus(status);
+    id = this.xmpp.sendStatus(status);
     return new Promise((res, rej) => {
-      this.Xmpp.stream.on(`presence#${id}:sent`, () => res());
+      this.xmpp.stream.on(`presence#${id}:sent`, () => res());
       setTimeout(() => rej(new Error('Failed sending a status: Status timeout of 20000ms exceeded')), 20000);
     });
   }
@@ -490,7 +469,7 @@ class Client extends EventEmitter {
       if (!lookedUpUser) throw new Error(`Adding ${user} as a friend failed: Account not found`);
       userId = lookedUpUser.id;
     }
-    const userRequest = await this.Http.send(true, 'POST', `${Endpoints.FRIEND_ADD}/${this.user.id}/${userId}`, `bearer ${this.Auth.auths.token}`);
+    const userRequest = await this.http.send(true, 'POST', `${Endpoints.FRIEND_ADD}/${this.user.id}/${userId}`, `bearer ${this.auth.auths.token}`);
     if (!userRequest.success) throw new Error(`Adding ${userId} as a friend failed: ${this.parseError(userRequest.response)}`);
   }
 
@@ -507,34 +486,34 @@ class Client extends EventEmitter {
       if (!lookedUpUser) throw new Error(`Removing ${user} as a friend failed: Account not found`);
       userId = lookedUpUser.id;
     }
-    const userRequest = await this.Http.send(true, 'DELETE', `${Endpoints.FRIEND_DELETE}/${this.user.id}/friends/${userId}`, `bearer ${this.Auth.auths.token}`);
+    const userRequest = await this.http.send(true, 'DELETE', `${Endpoints.FRIEND_DELETE}/${this.user.id}/friends/${userId}`, `bearer ${this.auth.auths.token}`);
     if (!userRequest.success) throw new Error(`Removing ${user} as a friend failed: ${this.parseError(userRequest.response)}`);
   }
 
   /**
-   * Blocks a friend
-   * @param {string} friend The id, name or email of the friend
+   * Blocks a user
+   * @param {string} user The id, name or email of the user
    * @returns {Promise<void>}
    */
-  async blockFriend(friend) {
-    const cachedFriend = this.friends.find((f) => f.id === friend || f.displayName === friend);
-    if (!cachedFriend) throw new Error(`Blocking ${friend} failed: Friend not existing`);
+  async blockUser(user) {
+    const profile = await this.getProfile(user);
+    if (!profile) throw new Error(`Blocking ${user} failed: User doesn't exist`);
 
-    const blockListUpdate = await this.Http.send(true, 'POST', `${Endpoints.FRIEND_BLOCK}/${this.user.id}/${cachedFriend.id}`, `bearer ${this.Auth.auths.token}`);
-    if (!blockListUpdate.success) throw new Error(`Blocking ${friend} failed: ${this.parseError(blockListUpdate.response)}`);
+    const blockListUpdate = await this.http.send(true, 'POST', `${Endpoints.FRIEND_BLOCK}/${this.user.id}/${profile.id}`, `bearer ${this.auth.auths.token}`);
+    if (!blockListUpdate.success) throw new Error(`Blocking ${user} failed: ${this.parseError(blockListUpdate.response)}`);
   }
 
   /**
-   * Unblocks a friend
-   * @param {string} friend The id, name or email of the friend
+   * Unblocks a user
+   * @param {string} user The id, name or email of the user
    * @returns {Promise<void>}
    */
-  async unblockFriend(friend) {
-    const cachedBlockedFriend = this.blockedFriends.find((f) => f.id === friend || f.displayName === friend);
-    if (!cachedBlockedFriend) throw new Error(`Unblocking ${friend} failed: User not in the blocklist`);
+  async unblockUser(user) {
+    const cachedBlockedUser = this.friends.blocked.cache.find((u) => u.id === user || u.displayName === user);
+    if (!cachedBlockedUser) throw new Error(`Unblocking ${user} failed: User not in the blocklist`);
 
-    const blockListUpdate = await this.Http.send(true, 'DELETE', `${Endpoints.FRIEND_BLOCK}/${this.user.id}/${cachedBlockedFriend.id}`, `bearer ${this.Auth.auths.token}`);
-    if (!blockListUpdate.success) throw new Error(`Unblocking ${friend} failed: ${this.parseError(blockListUpdate.response)}`);
+    const blockListUpdate = await this.http.send(true, 'DELETE', `${Endpoints.FRIEND_BLOCK}/${this.user.id}/${cachedBlockedUser.id}`, `bearer ${this.auth.auths.token}`);
+    if (!blockListUpdate.success) throw new Error(`Unblocking ${user} failed: ${this.parseError(blockListUpdate.response)}`);
   }
 
   /**
@@ -545,16 +524,16 @@ class Client extends EventEmitter {
    */
   async sendFriendMessage(friend, message) {
     if (!message) throw new Error(`Failed sending a friend message to ${friend}: Cannot send an empty message`);
-    const cachedFriend = this.friends.find((f) => f.id === friend || f.displayName === friend);
+    const cachedFriend = this.friends.cache.find((f) => f.id === friend || f.displayName === friend);
     if (!cachedFriend) throw new Error(`Failed sending a friend message to ${friend}: Friend not existing`);
-    const id = this.Xmpp.stream.sendMessage({
+    const id = this.xmpp.stream.sendMessage({
       to: `${cachedFriend.id}@${Endpoints.EPIC_PROD_ENV}`,
       type: 'chat',
       body: message,
     });
 
     return new Promise((res, rej) => {
-      this.Xmpp.stream.once(`message#${id}:sent`, () => res(new FriendMessage(this, { body: message, author: this.user })));
+      this.xmpp.stream.once(`message#${id}:sent`, () => res(new FriendMessage(this, { body: message, author: this.user })));
       setTimeout(() => rej(new Error(`Failed sending a friend message to ${friend}: Message timeout of 20000ms exceeded`)), 20000);
     });
   }
@@ -578,7 +557,7 @@ class Client extends EventEmitter {
    */
   async getNews(mode = Enums.Gamemode.BATTLE_ROYALE, language = Enums.Language.ENGLISH) {
     if (!Object.values(Enums.Gamemode).includes(mode)) throw new Error(`Fetching news failed: ${mode} is not a valid gamemode! Use the enum`);
-    const gamemodeNews = await this.Http.send(false, 'GET', `${Endpoints.BR_NEWS}/${mode}news${mode === 'savetheworld' ? '' : 'v2'}?lang=${language}`);
+    const gamemodeNews = await this.http.send(false, 'GET', `${Endpoints.BR_NEWS}/${mode}news${mode === 'savetheworld' ? '' : 'v2'}?lang=${language}`);
     if (!gamemodeNews.success) throw new Error(`Fetching news failed: ${this.parseError(gamemodeNews.response)}`);
 
     const { messages, motds, platform_motds: platformMotds } = gamemodeNews.response.news;
@@ -607,7 +586,7 @@ class Client extends EventEmitter {
     if (startTime) params.push(`startTime=${startTime}`);
     if (endTime) params.push(`endTime=${endTime}`);
 
-    const stats = await this.Http.send(true, 'GET', `${Endpoints.BR_STATS_V2}/account/${userId}${params[0] ? `?${params.join('&')}` : ''}`, `bearer ${this.Auth.auths.token}`);
+    const stats = await this.http.send(true, 'GET', `${Endpoints.BR_STATS_V2}/account/${userId}${params[0] ? `?${params.join('&')}` : ''}`, `bearer ${this.auth.auths.token}`);
     if (!stats.success) throw new Error(`Fetching ${user}'s stats failed: ${this.parseError(stats.response)}`);
 
     return stats.response;
@@ -620,7 +599,7 @@ class Client extends EventEmitter {
    * @returns {Promise<CreatorCode>|Promise<Array<CreatorCode>>}
    */
   async getCreatorCode(code, showSimilar = false) {
-    const codeRes = await this.Http.send(false, 'GET', `${Endpoints.BR_SAC_SEARCH}?slug=${code}`);
+    const codeRes = await this.http.send(false, 'GET', `${Endpoints.BR_SAC_SEARCH}?slug=${code}`);
     if (!codeRes.success) throw new Error(`Fetching the creator code ${code} failed: ${this.parseError(codeRes.response)}`);
 
     const codes = codeRes.response.filter((c) => showSimilar ? true : c.slug === code.toLowerCase());
@@ -640,10 +619,10 @@ class Client extends EventEmitter {
    * @returns {Promise<BRShop>} The Battle Royale store
    */
   async getBRStore(language = Enums.Language.ENGLISH) {
-    const shop = await this.Http.send(true, 'GET', `${Endpoints.BR_STORE}?lang=${language}`, `bearer ${this.Auth.auths.token}`);
+    const shop = await this.http.send(true, 'GET', `${Endpoints.BR_STORE}?lang=${language}`, `bearer ${this.auth.auths.token}`);
     if (!shop.success) throw new Error(`Fetching shop failed: ${this.parseError(shop.response)}`);
 
-    return new BRShop(this, shop.response.storefronts);
+    return new BRShop(shop.response.storefronts);
   }
 
   /**
@@ -652,7 +631,7 @@ class Client extends EventEmitter {
    * @returns {Promise<Object>} The Battle Royale event flags
    */
   async getBREventFlags(language = Enums.Language.ENGLISH) {
-    const eventFlags = await this.Http.send(true, 'GET', `${Endpoints.BR_EVENT_FLAGS}?lang=${language}`, `bearer ${this.Auth.auths.token}`);
+    const eventFlags = await this.http.send(true, 'GET', `${Endpoints.BR_EVENT_FLAGS}?lang=${language}`, `bearer ${this.auth.auths.token}`);
     if (!eventFlags.success) throw new Error(`Fetching challenges failed: ${this.parseError(eventFlags.response)}`);
 
     return eventFlags.response;
@@ -663,7 +642,7 @@ class Client extends EventEmitter {
    * @returns {Promise<Object>} The server status
    */
   async getFortniteServerStatus() {
-    const fortniteServerStatus = await this.Http.send(true, 'GET', Endpoints.BR_SERVER_STATUS, `bearer ${this.Auth.auths.token}`);
+    const fortniteServerStatus = await this.http.send(true, 'GET', Endpoints.BR_SERVER_STATUS, `bearer ${this.auth.auths.token}`);
     if (!fortniteServerStatus.success) throw new Error(`Fetching Fortnite server status failed: ${this.parseError(fortniteServerStatus.response)}`);
 
     return fortniteServerStatus.response[0];
@@ -674,7 +653,7 @@ class Client extends EventEmitter {
    * @returns {Promise<Object>} The server status
    */
   async getServerStatus() {
-    const serverStatus = await this.Http.send(false, 'GET', Endpoints.SERVER_STATUS_SUMMARY);
+    const serverStatus = await this.http.send(false, 'GET', Endpoints.SERVER_STATUS_SUMMARY);
     if (!serverStatus.success) throw new Error(`Fetching server status failed: ${this.parseError(serverStatus.response)}`);
 
     return serverStatus.response;
@@ -687,12 +666,12 @@ class Client extends EventEmitter {
    * @returns {Promise<Object>} The tournaments
    */
   async getTournaments(region = 'EU', platform = 'Windows') {
-    const tournamentsData = await this.Http.send(true, 'GET',
-      `${Endpoints.BR_TOURNAMENTS}/${this.user.id}?region=${region}&showPastEvents=true`, `bearer ${this.Auth.auths.token}`);
+    const tournamentsData = await this.http.send(true, 'GET',
+      `${Endpoints.BR_TOURNAMENTS}/${this.user.id}?region=${region}&showPastEvents=true`, `bearer ${this.auth.auths.token}`);
     if (!tournamentsData.success) throw new Error(`Fetching tournaments failed: ${this.parseError(tournamentsData.response)}`);
 
-    const tournamentsDownload = await this.Http.send(true, 'GET',
-      `${Endpoints.BR_TOURNAMENTS_DOWNLOAD}/${this.user.id}?region=${region}&platform=${platform}&teamAccountIds=${this.user.id}`, `bearer ${this.Auth.auths.token}`);
+    const tournamentsDownload = await this.http.send(true, 'GET',
+      `${Endpoints.BR_TOURNAMENTS_DOWNLOAD}/${this.user.id}?region=${region}&platform=${platform}&teamAccountIds=${this.user.id}`, `bearer ${this.auth.auths.token}`);
     if (!tournamentsDownload.success) throw new Error(`Fetching tournaments failed: ${this.parseError(tournamentsDownload.response)}`);
 
     tournamentsDownload.response.events.forEach((e) => {
@@ -714,9 +693,9 @@ class Client extends EventEmitter {
    * @returns {Promise<Object>} The tournament window
    */
   async getTournamentWindow(eventId, windowId, showLiveSessions = false, page = 0) {
-    const window = await this.Http.send(true, 'GET', `${Endpoints.BR_TOURNAMENT_WINDOW}/${eventId}/${windowId}/`
+    const window = await this.http.send(true, 'GET', `${Endpoints.BR_TOURNAMENT_WINDOW}/${eventId}/${windowId}/`
       + `${this.user.id}?page=${page}&rank=0&teamAccountIds=&appId=Fortnite&showLiveSessions=${showLiveSessions}`,
-    `bearer ${this.Auth.auths.token}`);
+    `bearer ${this.auth.auths.token}`);
     if (!window.success) throw new Error(`Fetching events failed: ${this.parseError(window.response)}`);
 
     return window.response;
@@ -727,7 +706,7 @@ class Client extends EventEmitter {
    * @returns {Promise<Object>} Radio stations
    */
   async getRadioStations() {
-    const fortniteContent = await this.Http.send(false, 'GET', Endpoints.BR_NEWS);
+    const fortniteContent = await this.http.send(false, 'GET', Endpoints.BR_NEWS);
     if (!fortniteContent.success) throw new Error(`Fetching radio stations failed: ${this.parseError(fortniteContent.response)}`);
 
     const { stations } = fortniteContent.response.radioStations.radioStationList;
@@ -745,7 +724,7 @@ class Client extends EventEmitter {
    * in cmd: ffmpeg -protocol_whitelist https,file,tcp,tls -i stream.m3u8 -ab 211200 radio.mp3
    */
   async getRadioStream(id, language = Enums.Language.ENGLISH) {
-    const streamBlurlFile = await this.Http.send(false, 'GET', `${Endpoints.BR_STREAM}/${id}/master.blurl`);
+    const streamBlurlFile = await this.http.send(false, 'GET', `${Endpoints.BR_STREAM}/${id}/master.blurl`);
     if (!streamBlurlFile.success) throw new Error(`Downloading radio stream failed: ${this.parseError(streamBlurlFile.response.toString())}`);
 
     const jsonData = await new Promise((res) => zlib.inflate(streamBlurlFile.response.slice(8), (err, decomBuf) => res(JSON.parse(decomBuf))));
@@ -772,7 +751,7 @@ class Client extends EventEmitter {
    * in cmd: ffmpeg -protocol_whitelist https,file,tcp,tls -i ./video.m3u8 ./newsVid.mp4
    */
   async getBlurlVideo(id, language = Enums.Language.ENGLISH, resolution = '1920x1080') {
-    const blurlFile = await this.Http.send(false, 'GET', `${Endpoints.BR_STREAM}/${id}/master.blurl`);
+    const blurlFile = await this.http.send(false, 'GET', `${Endpoints.BR_STREAM}/${id}/master.blurl`);
     if (!blurlFile.success) throw new Error(`Downloading blurl video failed: ${this.parseError(blurlFile.response.toString())}`);
 
     const videoJsonData = await new Promise((res) => zlib.inflate(blurlFile.response.slice(8), (err, decomBuf) => res(JSON.parse(decomBuf))));
@@ -813,12 +792,12 @@ class Client extends EventEmitter {
    * @returns {Object} The replay json data
    */
   async getTournamentReplay(sessionId, downloads = ['Checkpoints', 'Events', 'DataChunks'], outputEncoding = 'hex') {
-    const tournamentDataLocation = await this.Http.send(true, 'GET', `${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, `bearer ${this.Auth.auths.token}`);
+    const tournamentDataLocation = await this.http.send(true, 'GET', `${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, `bearer ${this.auth.auths.token}`);
 
-    const { response: tournamentReplayData } = await this.Http.send(true, 'GET', Object.values(tournamentDataLocation.response.files)[0].readLink);
+    const { response: tournamentReplayData } = await this.http.send(true, 'GET', Object.values(tournamentDataLocation.response.files)[0].readLink);
 
-    const headerLocation = await this.Http.send(false, 'GET', `${Endpoints.BR_REPLAY}%2F${sessionId}%2Fheader.bin`, `bearer ${this.Auth.auths.token}`);
-    const header = await this.Http.send(false, 'GET', Object.values(headerLocation.response.files)[0].readLink, `bearer ${this.Auth.auths.token}`);
+    const headerLocation = await this.http.send(false, 'GET', `${Endpoints.BR_REPLAY}%2F${sessionId}%2Fheader.bin`, `bearer ${this.auth.auths.token}`);
+    const header = await this.http.send(false, 'GET', Object.values(headerLocation.response.files)[0].readLink, `bearer ${this.auth.auths.token}`);
     tournamentReplayData.Header = { data: Buffer.from(header.response).toString(outputEncoding) };
 
     const promises = [];
@@ -826,8 +805,8 @@ class Client extends EventEmitter {
       const chunks = tournamentReplayData[downloadKey];
       for (const chunk of chunks) {
         const download = async () => {
-          const location = await this.Http.send(false, 'GET', `${Endpoints.BR_REPLAY}%2F${sessionId}%2F${chunk.Id}.bin`, `bearer ${this.Auth.auths.token}`);
-          const binaryFile = await this.Http.send(true, 'GET', Object.values(location.response.files)[0].readLink);
+          const location = await this.http.send(false, 'GET', `${Endpoints.BR_REPLAY}%2F${sessionId}%2F${chunk.Id}.bin`, `bearer ${this.auth.auths.token}`);
+          const binaryFile = await this.http.send(true, 'GET', Object.values(location.response.files)[0].readLink);
           if (chunk.Group === 'Highlight') tournamentReplayData.Highlight = binaryFile.response;
           else tournamentReplayData[downloadKey].find((c) => c.Id === chunk.Id).data = Buffer.from(binaryFile.response).toString(outputEncoding);
         };

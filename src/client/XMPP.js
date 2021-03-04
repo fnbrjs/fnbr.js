@@ -16,6 +16,7 @@ const Party = require('../structs/Party');
 
 /**
  * Represents the XMPP manager of a client
+ * @extends {Base}
  * @private
  */
 class XMPP extends Base {

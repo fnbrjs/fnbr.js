@@ -6,6 +6,7 @@ class Base {
   constructor(client) {
     /**
      * The main client
+     * @name Base#client
      * @type {Client}
      * @readonly
      */

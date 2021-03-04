@@ -6,6 +6,7 @@ const Base = require('../Base');
 /**
  * Represents the base class for managers
  * @abstract
+ * @extends {Base}
  */
 class BaseManager extends Base {
   constructor(client, holds, iterable = []) {
@@ -28,6 +29,13 @@ class BaseManager extends Base {
     if (iterable) for (const i of iterable) this.add(i);
   }
 
+  /**
+   * Inserts data into this Manager's cache
+   * @private
+   * @param {Object} data The data that should be inserted
+   * @param {?string} id The data's id
+   * @returns {?Object} The inserted data
+   */
   add(data, id) {
     const existing = this.cache.get(id || data.id);
     if (existing && existing._patch) existing._patch(data);

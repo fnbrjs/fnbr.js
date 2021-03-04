@@ -3,6 +3,7 @@ const PendingFriend = require('../../structs/PendingFriend');
 
 /**
  * Represents the pending friends manager
+ * @extends {BaseManager}
  */
 class PendingFriendManager extends BaseManager {
   constructor(client) {

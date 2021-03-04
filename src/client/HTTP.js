@@ -4,6 +4,7 @@ const { ClientOptions } = require('../../resources/Constants');
 
 /**
  * Represents the HTTP manager of a client
+ * @extends {Base}
  * @private
  */
 class HTTP extends Base {

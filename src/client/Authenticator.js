@@ -7,6 +7,7 @@ const Tokens = require('../../resources/Tokens');
 
 /**
  * Represents the authentication manager of a client
+ * @extends {Base}
  * @private
  */
 class Authenticator extends Base {

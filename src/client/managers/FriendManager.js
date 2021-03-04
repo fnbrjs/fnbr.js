@@ -5,6 +5,7 @@ const BlockedUserManager = require('./BlockedUserManager');
 
 /**
  * Represents the friend manager
+ * @extends {BaseManager}
  */
 class FriendManager extends BaseManager {
   constructor(client) {

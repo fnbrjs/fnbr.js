@@ -1,6 +1,8 @@
+/* eslint-disable no-restricted-syntax */
 /* eslint-disable max-len */
 /* eslint-disable camelcase */
 const { readFile } = require('fs').promises;
+const Collection = require('@discordjs/collection');
 const Base = require('./Base');
 const Endpoints = require('../../resources/Endpoints');
 const Tokens = require('../../resources/Tokens');
@@ -19,21 +21,9 @@ class Authenticator extends Base {
 
     /**
      * The authentification data
-     * @type {AuthData}
+     * @type {Collection.Collection<string, AuthData>}
      */
-    this.auths = {
-      token: undefined,
-      expires_at: undefined,
-    };
-
-    /**
-     * The reauthentification data
-     * @type {AuthData}
-     */
-    this.reauths = {
-      token: undefined,
-      expires_at: undefined,
-    };
+    this.auths = new Collection();
 
     /**
      * The client's account
@@ -52,6 +42,15 @@ class Authenticator extends Base {
   async authenticate() {
     this.client.debug('Authenticating...');
     const startAuth = new Date().getTime();
+
+    const clientCredsAuth = await this.getOauthToken('client_credentials', {}, Tokens.FORTNITE_IOS);
+    if (!clientCredsAuth.success) return clientCredsAuth;
+
+    this.auths.set('clientcreds', {
+      token: clientCredsAuth.response.access_token,
+      expires_at: clientCredsAuth.response.expires_at,
+      refresh_token: clientCredsAuth.response.refresh_token,
+    });
 
     let auth;
     const authCreds = this.client.config.auth;
@@ -72,36 +71,32 @@ class Authenticator extends Base {
 
     if (!auth.success) return auth;
 
-    if (!authCreds.deviceAuth && this.client.listenerCount('deviceauth:created') > 0) {
-      const deviceauth = await this.generateDeviceAuth(auth.response);
-      if (deviceauth.success) {
-        const deviceAuth = { accountId: deviceauth.response.accountId, deviceId: deviceauth.response.deviceId, secret: deviceauth.response.secret };
-        this.Client.emit('deviceauth:created', deviceAuth);
-        this.Client.config.auth.deviceAuth = deviceAuth;
-      } else this.Client.debug(`Couldn't create device auth: ${this.Client.parseError(deviceauth.response)}`);
-    }
-
-    this.auths = {
+    this.auths.set('fortnite', {
       token: auth.response.access_token,
       expires_at: auth.response.expires_at,
-    };
-
-    this.reauths = {
-      token: auth.response.refresh_token,
-      expires_at: auth.response.refresh_expires_at,
-    };
+      refresh_token: auth.response.refresh_token,
+    });
 
     this.account = {
       id: auth.response.account_id,
       displayName: auth.response.displayName,
     };
 
-    await this.client.http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL_MULTIPLE}?killType=OTHERS_ACCOUNT_CLIENT_SERVICE`, `bearer ${this.auths.token}`);
+    await this.client.http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL_MULTIPLE}?killType=OTHERS_ACCOUNT_CLIENT_SERVICE`, 'fortnite');
 
     if (this.client.config.auth.checkEULA) {
       const EULAstatus = await this.acceptEULA();
       if (!EULAstatus.success) this.client.debug('EULA checking failed!');
       if (EULAstatus.response.alreadyAccepted === false) this.client.debug('Successfully accepted the EULA!');
+    }
+
+    if (!authCreds.deviceAuth && this.client.listenerCount('deviceauth:created') > 0) {
+      const deviceauth = await this.generateDeviceAuth();
+      if (deviceauth.success) {
+        const deviceAuth = { accountId: deviceauth.response.accountId, deviceId: deviceauth.response.deviceId, secret: deviceauth.response.secret };
+        this.Client.emit('deviceauth:created', deviceAuth);
+        this.Client.config.auth.deviceAuth = deviceAuth;
+      } else this.Client.debug(`Couldn't create device auth: ${this.Client.parseError(deviceauth.response)}`);
     }
 
     this.client.debug(`Authentification successful (${((Date.now() - startAuth) / 1000).toFixed(2)}s)`);
@@ -110,23 +105,27 @@ class Authenticator extends Base {
 
   /**
    * Checks if a token refresh is needed and reauthenticates if needed
-   * @param {boolean} [forceVerify=false] Whether the access token should be verified
+   * @param {boolean} [forceVerify=false] Whether the access token should be verified via an endpoint
+   * @param {string} authType The auth type (eg "fortnite" or "clientcreds")
    */
-  async refreshToken(forceVerify = false) {
+  async refreshToken(forceVerify = false, authType = 'fortnite') {
     let tokenIsValid = true;
 
+    const authObject = this.auths.get(authType);
+    if (!authObject) throw new Error('Cannot verify token: Auth type does not exist');
+
     if (forceVerify) {
-      const tokenCheck = await this.client.http.send(false, 'GET', Endpoints.OAUTH_TOKEN_VERIFY, `bearer ${this.auths.token}`);
+      const tokenCheck = await this.client.http.send(false, 'GET', Endpoints.OAUTH_TOKEN_VERIFY, authType);
       if (tokenCheck.response.errorCode === 'errors.com.epicgames.common.oauth.invalid_token') tokenIsValid = false;
     }
 
     if (tokenIsValid) {
-      const tokenExpires = new Date(this.auths.expires_at).getTime();
+      const tokenExpires = new Date(authObject.expires_at).getTime();
       if (tokenExpires < (Date.now() + 1000 * 60 * 10)) tokenIsValid = false;
     }
 
     if (!tokenIsValid) {
-      const reAuth = await this.reauthenticate();
+      const reAuth = await this.reauthenticate(authType);
       if (!reAuth.success) return reAuth;
     }
 
@@ -135,41 +134,53 @@ class Authenticator extends Base {
 
   /**
    * Reauthenticates / Refreshes the access token
+   * @param {string} authType The auth type (eg "fortnite" or "clientcreds")
    * @returns {Promise<Object>}
    */
-  async reauthenticate() {
+  async reauthenticate(authType) {
     if (this.client.reauthLock.active) return { success: true };
+
+    const authObject = this.auths.get(authType);
+    if (!authObject) throw new Error('Cannot verify token: Auth type does not exist');
+
     this.client.reauthLock.active = true;
     this.client.debug('Reauthenticating...');
     const startAuth = new Date().getTime();
 
-    let auth;
-    if (this.client.config.auth.deviceAuth) auth = await this.deviceAuthAuthenticate(this.client.config.auth.deviceAuth);
-    else auth = this.getOauthToken('refresh_token', { refresh_token: this.reauths.token });
+    let auth = await this.getOauthToken('refresh_token', { refresh_token: authObject.refresh_token });
+
+    if (!auth.success) {
+      if (authType === 'clientcreds') auth = await this.getOauthToken('client_credentials', {}, Tokens.FORTNITE_IOS);
+      else if (this.client.config.auth.deviceAuth) auth = await this.deviceAuthAuthenticate(this.client.config.auth.deviceAuth);
+    }
 
     if (!auth.success) {
       this.client.reauthLock.active = false;
       return auth;
     }
 
-    this.auths = {
+    this.auths.set(authType, {
       token: auth.response.access_token,
       expires_at: auth.response.expires_at,
-    };
-
-    this.reauths = {
-      token: auth.response.refresh_token,
-      expires_at: auth.response.refresh_expires_at,
-    };
-
-    this.account = {
-      id: auth.response.account_id,
-      displayName: auth.response.displayName,
-    };
+      refresh_token: auth.response.refresh_token,
+    });
 
     this.client.debug(`Reauthentification successful (${((Date.now() - startAuth) / 1000).toFixed(2)}s)`);
     this.client.reauthLock.active = false;
     return { success: true };
+  }
+
+  /**
+   * Kill all active auth sessions
+   */
+  async killTokens() {
+    const proms = [];
+    for (const [authType, auth] of this.auths) {
+      proms.push(this.client.http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${auth.token}`, authType));
+    }
+
+    await Promise.all(proms);
+    this.auths.clear();
   }
 
   /**
@@ -292,9 +303,14 @@ class Authenticator extends Base {
 
     const deviceCodeResponse = await this.useDeviceCode(deviceCode.response.device_code, deviceCode.response.interval);
     if (!deviceCodeResponse.success) return deviceCodeResponse;
-    const { access_token: switchAuthToken } = deviceCodeResponse.response;
 
-    const exchangeCodeResponse = await this.client.http.send(false, 'GET', Endpoints.OAUTH_EXCHANGE, `bearer ${switchAuthToken}`);
+    this.auths.set('fortniteswitch', {
+      token: deviceCodeResponse.response.access_token,
+      expires_at: deviceCodeResponse.response.expires_at,
+      refresh_token: deviceCodeResponse.response.refresh_token,
+    });
+
+    const exchangeCodeResponse = await this.client.http.send(false, 'GET', Endpoints.OAUTH_EXCHANGE, 'fortniteswitch');
 
     return this.exchangeCodeAuthenticate(exchangeCodeResponse.response.code);
   }
@@ -323,9 +339,14 @@ class Authenticator extends Base {
   async generateDeviceCode() {
     const switchTokenRequest = await this.getOauthToken('client_credentials', {}, Tokens.FORTNITE_SWITCH);
     if (!switchTokenRequest.success) return switchTokenRequest;
-    const switchToken = switchTokenRequest.response.access_token;
 
-    const deviceCodeRequest = await this.client.http.send(false, 'POST', Endpoints.OAUTH_DEVICE_CODE, `bearer ${switchToken}`,
+    this.auths.set('clientcredsswitch', {
+      token: switchTokenRequest.response.access_token,
+      expires_at: switchTokenRequest.response.expires_at,
+      refresh_token: switchTokenRequest.response.refresh_token,
+    });
+
+    const deviceCodeRequest = await this.client.http.send(false, 'POST', Endpoints.OAUTH_DEVICE_CODE, 'clientcredsswitch',
       { 'Content-Type': 'application/x-www-form-urlencoded' }, 'prompt=login');
 
     return deviceCodeRequest;
@@ -355,12 +376,10 @@ class Authenticator extends Base {
 
   /**
    * Generates a device auth
-   * @param {Object} tokenResponse The response from the oauth token request
    * @returns {Promise<Object>}
    */
-  async generateDeviceAuth(tokenResponse) {
-    return this.client.http.send(true, 'POST', `${Endpoints.OAUTH_DEVICE_AUTH}/${tokenResponse.account_id}/deviceAuth`,
-      `bearer ${tokenResponse.access_token}`);
+  async generateDeviceAuth() {
+    return this.client.http.send(true, 'POST', `${Endpoints.OAUTH_DEVICE_AUTH}/${this.account.id}/deviceAuth`, 'fortnite');
   }
 
   /**
@@ -368,16 +387,15 @@ class Authenticator extends Base {
    * @returns {Promise<Object>}
    */
   async acceptEULA() {
-    const EULAdata = await this.client.http.send(false, 'GET', `${Endpoints.INIT_EULA}/account/${this.account.id}`, `bearer ${this.auths.token}`);
+    const EULAdata = await this.client.http.send(false, 'GET', `${Endpoints.INIT_EULA}/account/${this.account.id}`, 'fortnite');
     if (!EULAdata.success) return EULAdata;
     if (!EULAdata.response) return { success: true, response: { alreadyAccepted: true } };
 
     const EULAaccepted = await this.client.http.send(false, 'POST',
-      `${Endpoints.INIT_EULA}/version/${EULAdata.response.version}/account/${this.account.id}/accept?locale=${EULAdata.response.locale}`, `bearer ${this.auths.token}`);
+      `${Endpoints.INIT_EULA}/version/${EULAdata.response.version}/account/${this.account.id}/accept?locale=${EULAdata.response.locale}`, 'fortnite');
     if (!EULAaccepted.success) return EULAaccepted;
 
-    const FortniteAccess = await this.client.http.send(false, 'POST',
-      `${Endpoints.INIT_GRANTACCESS}/${this.account.id}`, `bearer ${this.auths.token}`);
+    const FortniteAccess = await this.client.http.send(false, 'POST', `${Endpoints.INIT_GRANTACCESS}/${this.account.id}`, 'fortnite');
     if (!FortniteAccess.success) return FortniteAccess;
 
     return { success: true, response: { alreadyAccepted: false } };

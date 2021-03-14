@@ -20,6 +20,13 @@ describe('Client startup', () => {
   it('should be connected to xmpp', () => {
     assert.strictEqual(client.xmpp.stream.sessionStarted, true, 'Client must be connected to xmpp');
   });
+  it('should reauthenticate', async function login() {
+    this.timeout(15000);
+    const fnReauth = await client.auth.reauthenticate('fortnite');
+    const ccReauth = await client.auth.reauthenticate('clientcreds');
+    assert.strictEqual(fnReauth.success, true, 'Fortnite reauth must be successful');
+    assert.strictEqual(ccReauth.success, true, 'Client credentials reauth must be successful');
+  });
 });
 
 describe('Client cache', () => {

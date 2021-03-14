@@ -163,9 +163,9 @@ class Client extends EventEmitter {
     const auth = await this.auth.authenticate();
     if (!auth.success) throw new Error(`Authentification failed: ${this.parseError(auth.response)}`);
 
-    this.tokenCheckInterval = setInterval(() => this.auth.refreshToken(true), 10 * 60000);
+    this.tokenCheckInterval = setInterval(() => this.auth.refreshToken(true), 10 * 60 * 1000);
 
-    const clientInfo = await this.http.send(false, 'GET', `${Endpoints.ACCOUNT_ID}/${this.auth.account.id}`, `bearer ${this.auth.auths.token}`);
+    const clientInfo = await this.http.send(false, 'GET', `${Endpoints.ACCOUNT_ID}/${this.auth.account.id}`, 'fortnite');
     if (!clientInfo.success) throw new Error(`Client account lookup failed: ${this.parseError(clientInfo.response)}`);
     this.user = new ClientUser(this, clientInfo.response);
 
@@ -196,10 +196,7 @@ class Client extends EventEmitter {
         // ignore party leave errors on logout
       }
     }
-    if (this.auth.auths.token) await this.http.send(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${this.auth.auths.token}`, `bearer ${this.auth.auths.token}`);
-
-    this.auth.auths.token = undefined;
-    this.auth.auths.expires_at = undefined;
+    await this.auth.killTokens();
 
     this.friends.cache.clear();
     this.friends.pending.cache.clear();
@@ -224,8 +221,8 @@ class Client extends EventEmitter {
    */
   async updateCache() {
     const [rawFriends, friendsSummary] = await Promise.all([
-      this.http.send(true, 'GET', `${Endpoints.FRIENDS}/public/friends/${this.user.id}?includePending=true`, `bearer ${this.auth.auths.token}`),
-      this.http.send(true, 'GET', `${Endpoints.FRIENDS}/v1/${this.user.id}/summary?displayNames=true`, `bearer ${this.auth.auths.token}`),
+      this.http.send(true, 'GET', `${Endpoints.FRIENDS}/public/friends/${this.user.id}?includePending=true`, 'fortnite'),
+      this.http.send(true, 'GET', `${Endpoints.FRIENDS}/v1/${this.user.id}/summary?displayNames=true`, 'fortnite'),
     ]);
 
     if (!rawFriends.success) throw new Error(`Cannot update friend cache: ${this.parseError(rawFriends.response)}`);
@@ -399,9 +396,9 @@ class Client extends EventEmitter {
   async getProfile(query) {
     let user;
     if (typeof query === 'string') {
-      if (/.*@.*\..*/.test(query)) user = await this.http.send(true, 'GET', `${Endpoints.ACCOUNT_EMAIL}/${encodeURI(query)}`, `bearer ${this.auth.auths.token}`);
-      else if (query.length === 32) user = await this.http.send(true, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${query}`, `bearer ${this.auth.auths.token}`);
-      else user = await this.http.send(true, 'GET', `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURI(query)}`, `bearer ${this.auth.auths.token}`);
+      if (/.*@.*\..*/.test(query)) user = await this.http.send(true, 'GET', `${Endpoints.ACCOUNT_EMAIL}/${encodeURI(query)}`, 'fortnite');
+      else if (query.length === 32) user = await this.http.send(true, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${query}`, 'fortnite');
+      else user = await this.http.send(true, 'GET', `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURI(query)}`, 'fortnite');
 
       return user.success ? new User(this, Array.isArray(user.response) ? user.response[0] : user.response) : undefined;
     } if (query instanceof Array) {
@@ -415,11 +412,11 @@ class Client extends EventEmitter {
         else names.push(userQuery);
       }
 
-      const nameResults = (await Promise.all(names.map((name) => this.http.send(true, 'GET', `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURI(name)}`, `bearer ${this.auth.auths.token}`))))
+      const nameResults = (await Promise.all(names.map((name) => this.http.send(true, 'GET', `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURI(name)}`, 'fortnite'))))
         .filter((name) => name.success).map((name) => new User(this, name.response));
-      const emailResults = (await Promise.all(emails.map((email) => this.http.send(true, 'GET', `${Endpoints.ACCOUNT_EMAIL}/${encodeURI(email)}`, `bearer ${this.auth.auths.token}`))))
+      const emailResults = (await Promise.all(emails.map((email) => this.http.send(true, 'GET', `${Endpoints.ACCOUNT_EMAIL}/${encodeURI(email)}`, 'fortnite'))))
         .filter((email) => email.success).map((email) => new User(this, email.response));
-      let idResults = await this.http.send(true, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${ids.join('&accountId=')}`, `bearer ${this.auth.auths.token}`);
+      let idResults = await this.http.send(true, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${ids.join('&accountId=')}`, 'fortnite');
       if (idResults.success) idResults = idResults.response.map((idr) => new User(this, idr));
       else idResults = [];
 
@@ -469,7 +466,7 @@ class Client extends EventEmitter {
       if (!lookedUpUser) throw new Error(`Adding ${user} as a friend failed: Account not found`);
       userId = lookedUpUser.id;
     }
-    const userRequest = await this.http.send(true, 'POST', `${Endpoints.FRIEND_ADD}/${this.user.id}/${userId}`, `bearer ${this.auth.auths.token}`);
+    const userRequest = await this.http.send(true, 'POST', `${Endpoints.FRIEND_ADD}/${this.user.id}/${userId}`, 'fortnite');
     if (!userRequest.success) throw new Error(`Adding ${userId} as a friend failed: ${this.parseError(userRequest.response)}`);
   }
 
@@ -486,7 +483,7 @@ class Client extends EventEmitter {
       if (!lookedUpUser) throw new Error(`Removing ${user} as a friend failed: Account not found`);
       userId = lookedUpUser.id;
     }
-    const userRequest = await this.http.send(true, 'DELETE', `${Endpoints.FRIEND_DELETE}/${this.user.id}/friends/${userId}`, `bearer ${this.auth.auths.token}`);
+    const userRequest = await this.http.send(true, 'DELETE', `${Endpoints.FRIEND_DELETE}/${this.user.id}/friends/${userId}`, 'fortnite');
     if (!userRequest.success) throw new Error(`Removing ${user} as a friend failed: ${this.parseError(userRequest.response)}`);
   }
 
@@ -499,7 +496,7 @@ class Client extends EventEmitter {
     const profile = await this.getProfile(user);
     if (!profile) throw new Error(`Blocking ${user} failed: User doesn't exist`);
 
-    const blockListUpdate = await this.http.send(true, 'POST', `${Endpoints.FRIEND_BLOCK}/${this.user.id}/${profile.id}`, `bearer ${this.auth.auths.token}`);
+    const blockListUpdate = await this.http.send(true, 'POST', `${Endpoints.FRIEND_BLOCK}/${this.user.id}/${profile.id}`, 'fortnite');
     if (!blockListUpdate.success) throw new Error(`Blocking ${user} failed: ${this.parseError(blockListUpdate.response)}`);
   }
 
@@ -512,7 +509,7 @@ class Client extends EventEmitter {
     const cachedBlockedUser = this.friends.blocked.cache.find((u) => u.id === user || u.displayName === user);
     if (!cachedBlockedUser) throw new Error(`Unblocking ${user} failed: User not in the blocklist`);
 
-    const blockListUpdate = await this.http.send(true, 'DELETE', `${Endpoints.FRIEND_BLOCK}/${this.user.id}/${cachedBlockedUser.id}`, `bearer ${this.auth.auths.token}`);
+    const blockListUpdate = await this.http.send(true, 'DELETE', `${Endpoints.FRIEND_BLOCK}/${this.user.id}/${cachedBlockedUser.id}`, 'fortnite');
     if (!blockListUpdate.success) throw new Error(`Unblocking ${user} failed: ${this.parseError(blockListUpdate.response)}`);
   }
 
@@ -586,7 +583,7 @@ class Client extends EventEmitter {
     if (startTime) params.push(`startTime=${startTime}`);
     if (endTime) params.push(`endTime=${endTime}`);
 
-    const stats = await this.http.send(true, 'GET', `${Endpoints.BR_STATS_V2}/account/${userId}${params[0] ? `?${params.join('&')}` : ''}`, `bearer ${this.auth.auths.token}`);
+    const stats = await this.http.send(true, 'GET', `${Endpoints.BR_STATS_V2}/account/${userId}${params[0] ? `?${params.join('&')}` : ''}`, 'fortnite');
     if (!stats.success) throw new Error(`Fetching ${user}'s stats failed: ${this.parseError(stats.response)}`);
 
     return stats.response;
@@ -595,22 +592,14 @@ class Client extends EventEmitter {
   /**
    * Lookups for a creator code
    * @param {string} code The creator code
-   * @param {boolean} showSimilar Whether an array with similar creator codes should be returned
-   * @returns {Promise<CreatorCode>|Promise<Array<CreatorCode>>}
+   * @returns {Promise<CreatorCode>}
    */
-  async getCreatorCode(code, showSimilar = false) {
-    const codeRes = await this.http.send(false, 'GET', `${Endpoints.BR_SAC_SEARCH}?slug=${code}`);
+  async getCreatorCode(code) {
+    const codeRes = await this.http.send(true, 'GET', `${Endpoints.BR_SAC}/${code}`, 'clientcreds');
     if (!codeRes.success) throw new Error(`Fetching the creator code ${code} failed: ${this.parseError(codeRes.response)}`);
 
-    const codes = codeRes.response.filter((c) => showSimilar ? true : c.slug === code.toLowerCase());
-    const parsedCodes = [];
-
-    for (const ccode of codes) {
-      const owner = await this.getProfile(ccode.id);
-      parsedCodes.push(new CreatorCode(this, { ...ccode, owner }));
-    }
-
-    return showSimilar ? parsedCodes : parsedCodes[0];
+    const owner = await this.getProfile(codeRes.response.id);
+    return new CreatorCode(this, { ...codeRes.response, owner });
   }
 
   /**
@@ -619,7 +608,7 @@ class Client extends EventEmitter {
    * @returns {Promise<BRShop>} The Battle Royale store
    */
   async getBRStore(language = Enums.Language.ENGLISH) {
-    const shop = await this.http.send(true, 'GET', `${Endpoints.BR_STORE}?lang=${language}`, `bearer ${this.auth.auths.token}`);
+    const shop = await this.http.send(true, 'GET', `${Endpoints.BR_STORE}?lang=${language}`, 'fortnite');
     if (!shop.success) throw new Error(`Fetching shop failed: ${this.parseError(shop.response)}`);
 
     return new BRShop(shop.response.storefronts);
@@ -631,7 +620,7 @@ class Client extends EventEmitter {
    * @returns {Promise<Object>} The Battle Royale event flags
    */
   async getBREventFlags(language = Enums.Language.ENGLISH) {
-    const eventFlags = await this.http.send(true, 'GET', `${Endpoints.BR_EVENT_FLAGS}?lang=${language}`, `bearer ${this.auth.auths.token}`);
+    const eventFlags = await this.http.send(true, 'GET', `${Endpoints.BR_EVENT_FLAGS}?lang=${language}`, 'fortnite');
     if (!eventFlags.success) throw new Error(`Fetching challenges failed: ${this.parseError(eventFlags.response)}`);
 
     return eventFlags.response;
@@ -642,7 +631,7 @@ class Client extends EventEmitter {
    * @returns {Promise<Object>} The server status
    */
   async getFortniteServerStatus() {
-    const fortniteServerStatus = await this.http.send(true, 'GET', Endpoints.BR_SERVER_STATUS, `bearer ${this.auth.auths.token}`);
+    const fortniteServerStatus = await this.http.send(true, 'GET', Endpoints.BR_SERVER_STATUS, 'fortnite');
     if (!fortniteServerStatus.success) throw new Error(`Fetching Fortnite server status failed: ${this.parseError(fortniteServerStatus.response)}`);
 
     return fortniteServerStatus.response[0];
@@ -667,11 +656,11 @@ class Client extends EventEmitter {
    */
   async getTournaments(region = 'EU', platform = 'Windows') {
     const tournamentsData = await this.http.send(true, 'GET',
-      `${Endpoints.BR_TOURNAMENTS}/${this.user.id}?region=${region}&showPastEvents=true`, `bearer ${this.auth.auths.token}`);
+      `${Endpoints.BR_TOURNAMENTS}/${this.user.id}?region=${region}&showPastEvents=true`, 'fortnite');
     if (!tournamentsData.success) throw new Error(`Fetching tournaments failed: ${this.parseError(tournamentsData.response)}`);
 
     const tournamentsDownload = await this.http.send(true, 'GET',
-      `${Endpoints.BR_TOURNAMENTS_DOWNLOAD}/${this.user.id}?region=${region}&platform=${platform}&teamAccountIds=${this.user.id}`, `bearer ${this.auth.auths.token}`);
+      `${Endpoints.BR_TOURNAMENTS_DOWNLOAD}/${this.user.id}?region=${region}&platform=${platform}&teamAccountIds=${this.user.id}`, 'fortnite');
     if (!tournamentsDownload.success) throw new Error(`Fetching tournaments failed: ${this.parseError(tournamentsDownload.response)}`);
 
     tournamentsDownload.response.events.forEach((e) => {
@@ -695,7 +684,7 @@ class Client extends EventEmitter {
   async getTournamentWindow(eventId, windowId, showLiveSessions = false, page = 0) {
     const window = await this.http.send(true, 'GET', `${Endpoints.BR_TOURNAMENT_WINDOW}/${eventId}/${windowId}/`
       + `${this.user.id}?page=${page}&rank=0&teamAccountIds=&appId=Fortnite&showLiveSessions=${showLiveSessions}`,
-    `bearer ${this.auth.auths.token}`);
+    'fortnite');
     if (!window.success) throw new Error(`Fetching events failed: ${this.parseError(window.response)}`);
 
     return window.response;
@@ -732,12 +721,13 @@ class Client extends EventEmitter {
     const stream = jsonData.playlists.find((p) => p.type === 'master' && p.language === language);
     if (!stream) throw new Error(`Downloading radio stream failed: Language ${language} is not available for this stream`);
 
-    const variantUrl = stream.data.match(/(?<=URI=")([a-z]|[0-9]|-)+\/variant_.._.._0.m3u8/)[0];
-    const baseUrl = `${Endpoints.BR_STREAM}/${id}/${variantUrl.replace(/variant_.._.._0.m3u8/, '')}`;
+    const baseUrl = stream.url.split('/').slice(0, -1).join('/');
+
+    const variantUrl = stream.data.match(/((?<=URI=")([a-z]|[0-9]|-)+\/)?variant_.._.._0.m3u8/)[0];
     const variantStream = jsonData.playlists.find((p) => p.type === 'variant' && p.rel_url === variantUrl);
 
-    return Buffer.from(variantStream.data.split(/\n/).map((l) => (l.startsWith('#') || !l ? l : `${baseUrl}${l}`))
-      .join('\n').replace('init_', `${baseUrl}init_`), 'utf-8');
+    return Buffer.from(variantStream.data.split(/\n/).map((l) => (l.startsWith('#') || !l ? l : `${baseUrl}/${l}`))
+      .join('\n').replace('init_', `${baseUrl}/init_`), 'utf-8');
   }
 
   /**
@@ -792,12 +782,12 @@ class Client extends EventEmitter {
    * @returns {Object} The replay json data
    */
   async getTournamentReplay(sessionId, downloads = ['Checkpoints', 'Events', 'DataChunks'], outputEncoding = 'hex') {
-    const tournamentDataLocation = await this.http.send(true, 'GET', `${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, `bearer ${this.auth.auths.token}`);
+    const tournamentDataLocation = await this.http.send(true, 'GET', `${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, 'fortnite');
 
     const { response: tournamentReplayData } = await this.http.send(true, 'GET', Object.values(tournamentDataLocation.response.files)[0].readLink);
 
-    const headerLocation = await this.http.send(false, 'GET', `${Endpoints.BR_REPLAY}%2F${sessionId}%2Fheader.bin`, `bearer ${this.auth.auths.token}`);
-    const header = await this.http.send(false, 'GET', Object.values(headerLocation.response.files)[0].readLink, `bearer ${this.auth.auths.token}`);
+    const headerLocation = await this.http.send(false, 'GET', `${Endpoints.BR_REPLAY}%2F${sessionId}%2Fheader.bin`, 'fortnite');
+    const header = await this.http.send(false, 'GET', Object.values(headerLocation.response.files)[0].readLink, 'fortnite');
     tournamentReplayData.Header = { data: Buffer.from(header.response).toString(outputEncoding) };
 
     const promises = [];
@@ -805,7 +795,7 @@ class Client extends EventEmitter {
       const chunks = tournamentReplayData[downloadKey];
       for (const chunk of chunks) {
         const download = async () => {
-          const location = await this.http.send(false, 'GET', `${Endpoints.BR_REPLAY}%2F${sessionId}%2F${chunk.Id}.bin`, `bearer ${this.auth.auths.token}`);
+          const location = await this.http.send(false, 'GET', `${Endpoints.BR_REPLAY}%2F${sessionId}%2F${chunk.Id}.bin`, 'fortnite');
           const binaryFile = await this.http.send(true, 'GET', Object.values(location.response.files)[0].readLink);
           if (chunk.Group === 'Highlight') tournamentReplayData.Highlight = binaryFile.response;
           else tournamentReplayData[downloadKey].find((c) => c.Id === chunk.Id).data = Buffer.from(binaryFile.response).toString(outputEncoding);

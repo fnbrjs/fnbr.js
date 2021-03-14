@@ -39,7 +39,7 @@ class HTTP extends Base {
    * @param {boolean} checkToken Whether the access token should be checked if it's valid
    * @param {string} method The HTTP method
    * @param {string} url The uri
-   * @param {string} auth The authorization header
+   * @param {string} auth The auth type (eg. "fortnite" or "clientcreds")
    * @param {Object} headers The headers
    * @param {Object} data The body
    * @param {Object} form The form
@@ -49,11 +49,15 @@ class HTTP extends Base {
     if (this.client.reauthLock.active && url !== 'https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/token') {
       await this.client.reauthLock.wait();
     }
-    if (checkToken) {
-      const tokenRefresh = await this.client.auth.refreshToken();
+
+    const authObject = this.client.auth.auths.get(auth);
+
+    if (checkToken && authObject) {
+      const tokenRefresh = await this.client.auth.refreshToken(false, auth);
       if (!tokenRefresh.success) {
-        this.client.debug('Restarting client as reauthentification failed: '
+        this.client.debug('Reauthentification failed: '
           + `${typeof tokenRefresh.response === 'object' ? JSON.stringify(tokenRefresh.response) : tokenRefresh.response}`);
+        this.client.debug('Restarting the client...');
         await this.client.restart();
       }
     }
@@ -64,7 +68,8 @@ class HTTP extends Base {
       headers: { },
     };
 
-    if (auth) reqOptions.headers.Authorization = auth;
+    if (authObject) reqOptions.headers.Authorization = `bearer ${authObject.token}`;
+    else if (auth && auth.startsWith('basic')) reqOptions.headers.Authorization = auth;
 
     if (data) reqOptions.data = data;
     else if (form) {

@@ -395,7 +395,7 @@ class ClientPartyMember extends PartyMember {
     this.currentlyPatching = true;
 
     const patch = await this.client.http.send(true, 'PATCH',
-      `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.id}/meta`, `bearer ${this.client.auth.auths.token}`, null, {
+      `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.id}/meta`, 'fortnite', null, {
         delete: [],
         revision: this.revision,
         update: updated || this.meta.schema,

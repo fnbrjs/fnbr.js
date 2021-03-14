@@ -23,7 +23,7 @@ class BaseManager extends Base {
 
     /**
      * Holds the cache
-     * @type {Collection}
+     * @type {Collection.Collection}
      */
     this.cache = new Collection();
     if (iterable) for (const i of iterable) this.add(i);

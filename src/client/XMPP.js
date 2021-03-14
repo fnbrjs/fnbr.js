@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable max-len */
 const { createClient } = require('stanza');
-const UUID = require('uuid/v4');
+const crypto = require('crypto');
 const Base = require('./Base');
 const Endpoints = require('../../resources/Endpoints');
 const FriendMessage = require('../structs/FriendMessage');
@@ -48,7 +48,7 @@ class XMPP extends Base {
      * The XMPP client's UUID
      * @type {string}
      */
-    this.uuid = UUID().replace(/-/g, '').toUpperCase();
+    this.uuid = crypto.randomBytes(16).toString('hex').toUpperCase();
 
     /**
      * The XMPP client's resource
@@ -81,7 +81,7 @@ class XMPP extends Base {
         jid: `${this.client.user.id}@${Endpoints.EPIC_PROD_ENV}`,
         host: Endpoints.EPIC_PROD_ENV,
         username: this.client.user.id,
-        password: this.client.auth.auths.token,
+        password: this.client.auth.auths.get('fortnite').token,
       },
       resource: this.resource,
     });
@@ -161,7 +161,7 @@ class XMPP extends Base {
     this.isReconnecting = true;
     if (this.connected) await this.disconnect();
 
-    this.uuid = UUID().replace(/-/g, '').toUpperCase();
+    this.uuid = crypto.randomBytes(16).toString('hex').toUpperCase();
     this.resource = `V2:Fortnite:${this.client.config.platform}::${this.uuid}`;
 
     this.stream.config = {
@@ -171,7 +171,7 @@ class XMPP extends Base {
         jid: `${this.client.user.id}@${Endpoints.EPIC_PROD_ENV}`,
         host: Endpoints.EPIC_PROD_ENV,
         username: this.client.user.id,
-        password: this.client.auth.auths.token,
+        password: this.client.auth.auths.get('fortnite').token,
       },
     };
 
@@ -336,7 +336,7 @@ class XMPP extends Base {
         case 'com.epicgames.social.party.notification.v0.PING': {
           const pingerId = body.pinger_id;
           let data = await this.client.http.send(true, 'GET',
-            `${Endpoints.BR_PARTY}/user/${this.client.user.id}/pings/${pingerId}/parties`, `bearer ${this.client.auth.auths.token}`);
+            `${Endpoints.BR_PARTY}/user/${this.client.user.id}/pings/${pingerId}/parties`, 'fortnite');
           if (!data.success) {
             this.client.debug(`Failed fetching invite from ${pingerId}: ${this.client.parseError(data.response)}`);
             break;
@@ -479,7 +479,7 @@ class XMPP extends Base {
         case 'com.epicgames.social.party.notification.v0.MEMBER_REQUIRE_CONFIRMATION':
           if (this.client.party.me.isLeader) {
             this.client.http.send(true, 'POST',
-              `${Endpoints.BR_PARTY}/parties/${this.client.party.id}/members/${body.account_id}/confirm`, `bearer ${this.client.auth.auths.token}`);
+              `${Endpoints.BR_PARTY}/parties/${this.client.party.id}/members/${body.account_id}/confirm`, 'fortnite');
           }
           break;
 

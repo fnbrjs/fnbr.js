@@ -49,7 +49,7 @@ class SentPartyInvitation {
   async cancel() {
     if (this.expired) throw new Error(`Failed canceling party ${this.party.id} invite for ${this.receiver.id}: The sent party invitation was already canceled, it expired or it was declined`);
     const data = await this.client.http.send(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/parties/${this.party.id}/invites/${this.receiver.id}`, `bearer ${this.client.auth.auths.token}`);
+      `${Endpoints.BR_PARTY}/parties/${this.party.id}/invites/${this.receiver.id}`, 'fortnite');
     if (!data.success) throw new Error(`Failed canceling party ${this.party.id} invite for ${this.receiver.id}: ${this.client.parseError(data.response)}`);
     this.expired = true;
   }
@@ -61,7 +61,7 @@ class SentPartyInvitation {
   async resend() {
     if (this.expired) throw new Error(`Failed resending party ${this.party.id} invite for ${this.receiver.id}: The sent party invitation was already canceled, it expired or it was declined`);
     const data = await this.client.http.send(true, 'POST',
-      `${Endpoints.BR_PARTY}/user/${this.receiver.id}/pings/${this.client.user.id}`, `bearer ${this.client.auth.auths.token}`);
+      `${Endpoints.BR_PARTY}/user/${this.receiver.id}/pings/${this.client.user.id}`, 'fortnite');
     if (!data.success) throw new Error(`Failed resending party ${this.party.id} invite for ${this.receiver.id}: ${this.client.parseError(data.response)}`);
     this.expired = true;
   }

@@ -91,12 +91,14 @@ module.exports.ClientOptions = Object.freeze({
  * Contains authorization data for Epic Games' services
  * @typedef {Object} AuthData
  * @property {?string} token The access token
- * @property {?string} expires_at The access token's expiration date as ISO string
+ * @property {?string} expires_at The access token's expiration date as an ISO string
+ * @property {?string} refresh_token The refresh token
  * @private
  */
 module.exports.AuthData = Object.freeze({
   token: undefined,
   expires_at: undefined,
+  refresh_token: undefined,
 });
 
 /**

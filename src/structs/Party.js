@@ -123,7 +123,7 @@ class Party {
     if (this.client.party) await this.client.party.leave(false);
     this.client.partyLock.active = true;
     const party = await this.client.http.send(true, 'POST',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.client.user.id}/join`, `bearer ${this.client.auth.auths.token}`, null, {
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.client.user.id}/join`, 'fortnite', null, {
         connection: {
           id: this.client.xmpp.stream.jid,
           meta: {
@@ -243,7 +243,7 @@ class Party {
     let data;
     if (this.isPrivate) {
       data = await this.client.http.send(true, 'POST',
-        `${Endpoints.BR_PARTY}/parties/${this.id}/invites/${cachedFriend.id}?sendPing=true`, `bearer ${this.client.auth.auths.token}`, null, {
+        `${Endpoints.BR_PARTY}/parties/${this.id}/invites/${cachedFriend.id}?sendPing=true`, 'fortnite', null, {
           'urn:epic:cfg:build-id_s': '1:3:',
           'urn:epic:conn:platform_s': this.client.config.platform,
           'urn:epic:conn:type_s': 'game',
@@ -252,7 +252,7 @@ class Party {
         });
     } else {
       data = await this.client.http.send(true, 'POST', `${Endpoints.BR_PARTY}/user/${cachedFriend.id}/pings/${this.client.user.id}`,
-        `bearer ${this.client.auth.auths.token}`, null, { 'urn:epic:invite:platformdata_s': '' });
+        'fortnite', null, { 'urn:epic:invite:platformdata_s': '' });
     }
     if (!data.success) throw new Error(`Failed sending party invitation to ${friend}: ${this.client.parseError(data.response)}`);
     return new SentPartyInvitation(this.client, this, cachedFriend, {
@@ -271,7 +271,7 @@ class Party {
     this.patchQueue = [];
     if (this.me) this.me.patchQueue = [];
     const party = await this.client.http.send(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.client.user.id}`, `bearer ${this.client.auth.auths.token}`);
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.client.user.id}`, 'fortnite');
     if (!party.success) {
       this.client.partyLock.active = false;
       if (party.response.errorCode === 'errors.com.epicgames.social.party.party_not_found') {
@@ -300,7 +300,7 @@ class Party {
     this.currentlyPatching = true;
 
     const patch = await this.client.http.send(true, 'PATCH',
-      `${Endpoints.BR_PARTY}/parties/${this.id}`, `bearer ${this.client.auth.auths.token}`, null, {
+      `${Endpoints.BR_PARTY}/parties/${this.id}`, 'fortnite', null, {
         config: {
           join_confirmation: this.config.joinConfirmation,
           joinability: this.config.joinability,
@@ -439,7 +439,7 @@ class Party {
     const partyMember = this.members.find((m) => m.id === member || m.displayName === member);
     if (!partyMember) throw new Error(`Cannot promote ${member}: Member not in party`);
     const promotion = await this.client.http.send(true, 'POST',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}/promote`, `bearer ${this.client.auth.auths.token}`);
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}/promote`, 'fortnite');
     if (!promotion.success) throw new Error(`Cannot promote ${member}: ${this.client.parseError(promotion.response)}`);
   }
 
@@ -453,7 +453,7 @@ class Party {
     const partyMember = this.members.find((m) => m.id === member || m.displayName === member);
     if (!partyMember) throw new Error(`Cannot kick ${member}: Member not in party`);
     const kick = await this.client.http.send(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}`, `bearer ${this.client.auth.auths.token}`);
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}`, 'fortnite');
     if (!kick.success) throw new Error(`Cannot kick ${member}: ${this.client.parseError(kick.response)}`);
   }
 
@@ -510,7 +510,7 @@ class Party {
    * @returns {Promise<Party>}
    */
   static async LookupSelf(client) {
-    const party = await client.http.send(true, 'GET', `${Endpoints.BR_PARTY}/user/${client.user.id}`, `bearer ${client.auth.auths.token}`);
+    const party = await client.http.send(true, 'GET', `${Endpoints.BR_PARTY}/user/${client.user.id}`, 'fortnite');
     if (!party.success) throw new Error(`Failed looking up clientparty: ${client.parseError(party.response)}`);
     if (!party.response.current[0]) return undefined;
     return new Party(client, party.response.current[0]);
@@ -523,7 +523,7 @@ class Party {
    * @returns {Promise<Party>}
    */
   static async Lookup(client, id) {
-    const party = await client.http.send(true, 'GET', `${Endpoints.BR_PARTY}/parties/${id}`, `bearer ${client.auth.auths.token}`);
+    const party = await client.http.send(true, 'GET', `${Endpoints.BR_PARTY}/parties/${id}`, 'fortnite');
     if (!party.success) throw new Error(`Failed looking up party: ${client.parseError(party.response)}`);
     if (!party.response) throw new Error(`Failed looking up party: Party ${id} not found`);
     return new Party(client, party.response);
@@ -537,7 +537,7 @@ class Party {
   static async Create(client, config) {
     client.partyLock.active = true;
     const partyConfig = { ...client.config.partyConfig, ...config };
-    const party = await client.http.send(true, 'POST', `${Endpoints.BR_PARTY}/parties`, `bearer ${client.auth.auths.token}`, null, {
+    const party = await client.http.send(true, 'POST', `${Endpoints.BR_PARTY}/parties`, 'fortnite', null, {
       config: {
         join_confirmation: partyConfig.joinConfirmation,
         joinability: partyConfig.joinability,

@@ -57,7 +57,7 @@ class PartyInvitation {
     await this.party.join();
     this.expired = true;
     const data = await this.client.http.send(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/user/${this.client.user.id}/pings/${this.sender.id}`, `bearer ${this.client.auth.auths.token}`);
+      `${Endpoints.BR_PARTY}/user/${this.client.user.id}/pings/${this.sender.id}`, 'fortnite');
     if (!data.success) throw new Error(`Failed accepting party ${this.party.id} invite from ${this.sender.id}: ${this.client.parseError(data.response)}`);
   }
 
@@ -68,7 +68,7 @@ class PartyInvitation {
   async decline() {
     if (this.expired) throw new Error(`Failed declining party ${this.party.id} invite from ${this.sender.id}: The party invitation was already accepted/declined or it expired`);
     const data = await this.client.http.send(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/user/${this.client.user.id}/pings/${this.sender.id}`, `bearer ${this.client.auth.auths.token}`);
+      `${Endpoints.BR_PARTY}/user/${this.client.user.id}/pings/${this.sender.id}`, 'fortnite');
     if (!data.success) throw new Error(`Failed declining party ${this.party.id} invite from ${this.sender.id}: ${this.client.parseError(data.response)}`);
     this.expired = true;
   }

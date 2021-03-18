@@ -39,7 +39,7 @@ Feel free to join [this Discord server](https://discord.gg/HsUFr5f)
 ## License
 MIT License
 
-Copyright (c) 2020 Nils S.
+Copyright (c) 2020-2021 Nils S.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

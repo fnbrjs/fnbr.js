@@ -55,18 +55,25 @@ class Authenticator extends Base {
     let auth;
     const authCreds = this.client.config.auth;
 
-    if (authCreds.deviceAuth) {
-      auth = await this.deviceAuthAuthenticate(authCreds.deviceAuth);
-    } else if (authCreds.exchangeCode) {
-      auth = await this.exchangeCodeAuthenticate(authCreds.exchangeCode);
-    } else if (authCreds.authorizationCode) {
-      auth = await this.authorizationCodeAuthenticate(authCreds.authorizationCode);
-    } else if (authCreds.refreshToken) {
-      auth = await this.refreshTokenAuthenticate(authCreds.refreshToken);
-    } else if (authCreds.deviceCode) {
-      auth = await this.deviceCodeAuthenticate();
-    } else {
-      return { success: false, response: 'No valid auth method found! Please provide one in the client config' };
+    switch (true) 
+    {
+      case authCred.deviceAuth != undefined:
+        auth = await this.deviceAuthAuthenticate(authCreds.deviceAuth);
+        break;
+      case authCreds.exchangeCode != undefined:
+        auth = await this.exchangeCodeAuthenticate(authCreds.exchangeCode);
+        break;
+      case authCreds.authorizationCode != undefined:
+        auth = await this.authorizationCodeAuthenticate(authCreds.authorizationCode);
+        break;
+      case authCreds.refreshToken != undefined: 
+        auth = await this.refreshTokenAuthenticate(authCreds.refreshToken);
+        break;
+      case authCreds.deviceCode != undefined:
+        auth = await this.deviceCodeAuthenticate();
+        break;
+      default:
+        return { success: false, response: 'No valid auth method found! Please provide one in the client config' };
     }
 
     if (!auth.success) return auth;

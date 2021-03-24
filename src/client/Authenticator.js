@@ -94,9 +94,9 @@ class Authenticator extends Base {
       const deviceauth = await this.generateDeviceAuth();
       if (deviceauth.success) {
         const deviceAuth = { accountId: deviceauth.response.accountId, deviceId: deviceauth.response.deviceId, secret: deviceauth.response.secret };
-        this.Client.emit('deviceauth:created', deviceAuth);
-        this.Client.config.auth.deviceAuth = deviceAuth;
-      } else this.Client.debug(`Couldn't create device auth: ${this.Client.parseError(deviceauth.response)}`);
+        this.client.emit('deviceauth:created', deviceAuth);
+        this.client.config.auth.deviceAuth = deviceAuth;
+      } else this.client.debug(`Couldn't create device auth: ${this.client.parseError(deviceauth.response)}`);
     }
 
     this.client.debug(`Authentification successful (${((Date.now() - startAuth) / 1000).toFixed(2)}s)`);

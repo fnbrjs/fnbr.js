@@ -1,5 +1,11 @@
 # fnbr.js
-A library to interact with fortnites http and xmpp services
+
+[![Node.js CI](https://github.com/fnbrjs/fnbr.js/actions/workflows/node.js.yml/badge.svg)](https://github.com/fnbrjs/fnbr.js/actions/workflows/node.js.yml)
+[![npm version](https://img.shields.io/npm/v/fnbr.svg)](https://npmjs.com/package/fnbr)
+[![npm downloads](https://img.shields.io/npm/dm/fnbr.svg)](https://npmjs.com/package/fnbr)
+[![license](https://img.shields.io/npm/l/fnbr.svg)](https://github.com/fnbrjs/fnbr.js/blob/master/LICENSE)
+
+A library to interact with Epic Games' Fortnite HTTP and XMPP services
 
 ## Installation
 ```

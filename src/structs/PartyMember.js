@@ -91,7 +91,7 @@ class PartyMember {
    * @readonly
    */
   get isReady() {
-    return this.meta.get('Default:GameReadiness_s') === 'Ready';
+    return this.meta.get('Default:LobbyState_j').LobbyState.gameReadiness === 'Ready';
   }
 
   /**

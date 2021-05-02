@@ -39,10 +39,13 @@ class PartyMemberMeta extends Meta {
           heroType: `FortHeroType'/Game/Athena/Heroes/${defCharacter}.${defCharacter}'`,
         },
       }),
-      'Default:MatchmakingLevel_U': '0',
-      'Default:ZoneInstanceId_s': '',
-      'Default:HomeBaseVersion_U': '1',
-      'Default:HasPreloadedAthena_b': false,
+      'Default:CampaignInfo_j': JSON.stringify({
+        CampaignInfo: {
+          matchmakingLevel: 0,
+          zoneInstanceId: '',
+          homeBaseVersion: 1,
+        },
+      }),
       'Default:FrontendEmote_j': JSON.stringify({
         FrontendEmote: {
           emoteItemDef: 'None',
@@ -51,23 +54,42 @@ class PartyMemberMeta extends Meta {
         },
       }),
       'Default:NumAthenaPlayersLeft_U': '0',
+      'Default:SpectateAPartyMemberAvailable_b': false,
       'Default:UtcTimeStartedMatchAthena_s': '0001-01-01T00:00:00.000Z',
-      'Default:GameReadiness_s': 'NotReady',
-      'Default:HiddenMatchmakingDelayMax_U': '0',
-      'Default:ReadyInputType_s': 'Count',
-      'Default:CurrentInputType_s': 'MouseAndKeyboard',
+      'Default:LobbyState_j': JSON.stringify({
+        LobbyState: {
+          inGameReadyCheckStatus: 'None',
+          gameReadiness: 'NotReady',
+          readyInputType: 'Count',
+          currentInputType: 'MouseAndKeyboard',
+          hiddenMatchmakingDelayMax: 0,
+          hasPreloadedAthena: true,
+        },
+      }),
       'Default:AssistedChallengeInfo_j': JSON.stringify({
         AssistedChallengeInfo: {
           questItemDef: 'None',
           objectivesCompleted: 0,
         },
       }),
+      'Default:FeatDefinition_s': 'None',
       'Default:MemberSquadAssignmentRequest_j': JSON.stringify({
         MemberSquadAssignmentRequest: {
           startingAbsoluteIdx: -1,
           targetAbsoluteIdx: -1,
           swapTargetMemberId: 'INVALID',
           version: 0,
+        },
+      }),
+      'Default:VoiceChatStatus_s': 'Enabled',
+      'Default:SidekickStatus_s': 'None',
+      'Default:FrontEndMapMarker_j': JSON.stringify({
+        FrontEndMapMarker: {
+          markerLocation: {
+            x: 0,
+            y: 0,
+          },
+          bIsSet: false,
         },
       }),
       'Default:AthenaCosmeticLoadout_j': JSON.stringify({
@@ -88,6 +110,9 @@ class PartyMemberMeta extends Meta {
           vL: {},
         },
       }),
+      'Default:ArbitraryCustomDataStore_j': JSON.stringify({
+        ArbitraryCustomDataStore: [],
+      }),
       'Default:AthenaBannerInfo_j': JSON.stringify({
         AthenaBannerInfo: {
           bannerIconId: 'standardbanner15',
@@ -103,19 +128,23 @@ class PartyMemberMeta extends Meta {
           friendBoostXp: 0,
         },
       }),
-      'Default:Platform_j': JSON.stringify({
-        Platform: {
-          platformStr: this.Member.client.config.platform,
+      'Default:PlatformData_j': JSON.stringify({
+        PlatformData: {
+          platform: {
+            platformDescription: {
+              name: this.Member.client.config.platform,
+              platformType: 'DESKTOP',
+              onlineSubsystem: 'None',
+              sessionType: '',
+              externalAccountType: '',
+              crossplayPool: 'DESKTOP',
+            },
+          },
+          uniqueId: 'INVALID',
+          sessionId: '',
         },
       }),
-      'Default:PlatformUniqueId_s': 'INVALID',
-      'Default:PlatformSessionId_s': '',
       'Default:CrossplayPreference_s': 'OptedIn',
-      'Default:VoiceChatEnabled_b': true,
-      'Default:VoiceConnectionId_s': '',
-      'Default:SpectateAPartyMemberAvailable_b': false,
-      'Default:FeatDefinition_s': 'None',
-      'Default:VoiceChatStatus_s': 'Disabled',
     };
 
     if (meta) this.update(meta, true);

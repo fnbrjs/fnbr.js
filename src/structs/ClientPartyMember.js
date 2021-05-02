@@ -41,9 +41,15 @@ class ClientPartyMember extends PartyMember {
    * @returns {Promise<void>}
    */
   async setReadiness(ready) {
+    let loadout = this.meta.get('Default:LobbyState_j');
+    loadout = this.meta.set('Default:LobbyState_j', {
+      ...loadout,
+      LobbyState: {
+        gameReadiness: ready ? 'Ready' : 'NotReady',
+      },
+    });
     await this.sendPatch({
-      'Default:GameReadiness_s': this.meta.set('Default:GameReadiness_s', ready ? 'Ready' : 'NotReady'),
-      'Default:ReadyInputType_s': this.meta.get('Default:CurrentInputType_s'),
+      'Default:LobbyState_j': loadout,
     });
   }
 
@@ -53,8 +59,15 @@ class ClientPartyMember extends PartyMember {
    * @returns {Promise<void>}
    */
   async setSittingOut(sittingOut) {
+    let loadout = this.meta.get('Default:LobbyState_j');
+    loadout = this.meta.set('Default:LobbyState_j', {
+      ...loadout,
+      LobbyState: {
+        gameReadiness: sittingOut ? 'SittingOut' : 'NotReady',
+      },
+    });
     await this.sendPatch({
-      'Default:GameReadiness_s': this.meta.set('Default:GameReadiness_s', sittingOut ? 'SittingOut' : 'NotReady'),
+      'Default:LobbyState_j': loadout,
     });
   }
 

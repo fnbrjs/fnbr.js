@@ -337,16 +337,16 @@ class Authenticator extends Base {
    * @returns {Promise<Object>}
    */
   async generateDeviceCode() {
-    const switchTokenRequest = await this.getOauthToken('client_credentials', {}, Tokens.FORTNITE_SWITCH);
-    if (!switchTokenRequest.success) return switchTokenRequest;
+    const dauntlessTokenRequest = await this.getOauthToken('client_credentials', {}, Tokens.DAUNTLESS_DIESEL);
+    if (!dauntlessTokenRequest.success) return dauntlessTokenRequest;
 
-    this.auths.set('clientcredsswitch', {
-      token: switchTokenRequest.response.access_token,
-      expires_at: switchTokenRequest.response.expires_at,
-      refresh_token: switchTokenRequest.response.refresh_token,
+    this.auths.set('clientcredsdauntless', {
+      token: dauntlessTokenRequest.response.access_token,
+      expires_at: dauntlessTokenRequest.response.expires_at,
+      refresh_token: dauntlessTokenRequest.response.refresh_token,
     });
 
-    const deviceCodeRequest = await this.client.http.send(false, 'POST', Endpoints.OAUTH_DEVICE_CODE, 'clientcredsswitch',
+    const deviceCodeRequest = await this.client.http.send(false, 'POST', Endpoints.OAUTH_DEVICE_CODE, 'clientcredsdauntless',
       { 'Content-Type': 'application/x-www-form-urlencoded' }, 'prompt=login');
 
     return deviceCodeRequest;

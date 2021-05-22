@@ -6,6 +6,7 @@ const Collection = require('@discordjs/collection');
 const Base = require('./Base');
 const Endpoints = require('../../resources/Endpoints');
 const Tokens = require('../../resources/Tokens');
+const { AuthData } = require('./../../resources/Constants')
 
 /**
  * Represents the authentication manager of a client
@@ -21,7 +22,7 @@ class Authenticator extends Base {
 
     /**
      * The authentification data
-     * @type {Collection.Collection<string, AuthData>}
+     * @type {Collection.Collection<String, AuthData>}
      */
     this.auths = new Collection();
 

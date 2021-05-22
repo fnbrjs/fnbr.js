@@ -3,6 +3,7 @@
 
 import * as events from 'events';
 import * as Client from './src/client';
+import * as Party from './src/structs/Party';
 import * as Enum from './enums/index';
 import * as PartyMessage from './src/structs/PartyMessage';
 import * as FriendPresence from './src/structs/FriendPresence';
@@ -11,7 +12,11 @@ import * as Friend from './src/structs/Friend';
 import * as PendingFriend from './src/structs/PendingFriend';
 import * as PartyInvitation from './src/structs/PartyInvitation';
 import * as PartyMember from './src/structs/PartyMember';
-import {DeviceAuthCredentials} from './resources/Constants';
+import { DeviceAuthCredentials } from './resources/Constants';
+import FriendManager from './src/client/managers/FriendManager';
+import * as ClientUser from './src/structs/ClientUser';
+import Authenticator from './src/client/Authenticator';
+
 
 declare class Client extends events.EventEmitter {
 
@@ -46,7 +51,69 @@ declare class Client extends events.EventEmitter {
      */
     constructor(args)
 
+
+    /**
+     * The config of the client
+     * @type {ClientOptions}
+     */
+    config;
+
+    /**
+     * Whether the client is ready or not
+     * @type {boolean}
+     */
+    isReady;
+
+    /**
+     * The default party member meta of the client
+     * @type {?Object}
+     * @private
+     */
+    lastMemberMeta;
+
+    /**
+     * The user of the client
+     * @type {ClientUser}
+     */
+    user = new ClientUser();
+
+    /**
+     * The party that the client is currently in
+     * @type {Party}
+     * @returns {Party}
+     */
+    party = new Party();
+
+    /**
+     * The authentication manager of the client
+     * @type {Authenticator}
+     * @private
+     */
+    auth = new Authenticator();
+
+    /**
+     * The HTTP manager of the client
+     * @type {HTTP}
+     * @private
+     */
+    http;
+    /**
+     * The XMPP manager of the client
+     * @type {XMPP}
+     * @private
+     */
+    xmpp;
+    /**
+     * The friend manager of the client
+     * @type {FriendManager}
+     */
+    friends = new FriendManager();
+
+
+
     // -------------------------------------GENERAL-------------------------------------
+
+
 
     /**
      * Initiates client's login process
@@ -320,4 +387,4 @@ declare class Client extends events.EventEmitter {
      */
     getTournamentReplay(sessionId, downloads, outputEncoding)
 }
-export {Client, Enum}
+export { Client, Enum }

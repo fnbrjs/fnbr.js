@@ -48,6 +48,7 @@ class ClientPartyMember extends PartyMember {
         gameReadiness: ready ? 'Ready' : 'NotReady',
       },
     });
+    
     await this.sendPatch({
       'Default:LobbyState_j': loadout,
     });

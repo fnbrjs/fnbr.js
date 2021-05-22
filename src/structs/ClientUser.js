@@ -1,5 +1,4 @@
 const User = require('./User');
-
 /**
  * Represents the user of a client
  * @extends {User}
@@ -18,7 +17,13 @@ class ClientUser extends User {
      * The first name of the client's Epic Games account
      * @type {string}
      */
-    this.name = data.name;
+    this.name = client
+
+    /**
+     * The account Id of the client's Epic Games account
+     * @type {string}
+     */
+    this.id;
 
     /**
      * The last name of the client's Epic Games account

@@ -14,7 +14,7 @@ import * as PartyInvitation from './src/structs/PartyInvitation';
 import * as PartyMember from './src/structs/PartyMember';
 import { DeviceAuthCredentials } from './resources/Constants';
 import FriendManager from './src/client/managers/FriendManager';
-import * as ClientUser from './src/structs/ClientUser';
+import * as ClientUser from './src/structs/ClientUser.js';
 import Authenticator from './src/client/Authenticator';
 
 
@@ -75,21 +75,21 @@ declare class Client extends events.EventEmitter {
      * The user of the client
      * @type {ClientUser}
      */
-    user = new ClientUser();
+    user;
 
     /**
      * The party that the client is currently in
      * @type {Party}
      * @returns {Party}
      */
-    party = new Party();
+    party;
 
     /**
      * The authentication manager of the client
      * @type {Authenticator}
      * @private
      */
-    auth = new Authenticator();
+    auth;
 
     /**
      * The HTTP manager of the client
@@ -107,7 +107,7 @@ declare class Client extends events.EventEmitter {
      * The friend manager of the client
      * @type {FriendManager}
      */
-    friends = new FriendManager();
+    friends;
 
 
 

@@ -62,6 +62,14 @@ class XMPP extends Base {
      * @type {Array}
      */
     this.kickedPartyIds = [];
+
+    /**
+     *
+     * The ping interval to prevent the client from disconnecting
+     * @type {Number}
+     * @private
+     */
+    this.PingIntervalId;
   }
 
   /**
@@ -91,6 +99,15 @@ class XMPP extends Base {
     });
 
     this.setupEvents();
+
+    this.PingIntervalId = setInterval(() => {
+      if (this.connected) {
+        this.stream.ping();
+      }
+      else {
+        clearInterval(this.PingIntervalId)
+      }
+    }, 30000); // 30 secondes
   }
 
   /**
@@ -178,6 +195,16 @@ class XMPP extends Base {
     this.client.isReady = false;
     const reconnect = await this.connect(true);
     this.client.isReady = true;
+
+    this.PingIntervalId = setInterval(() => {
+      if (this.connected) {
+        this.stream.ping();
+      }
+      else {
+        clearInterval(this.PingIntervalId)
+      }
+    }, 30000); // 30 secondes
+
     if (!reconnect.success) return reconnect;
     this.isReconnecting = false;
     return { success: true };

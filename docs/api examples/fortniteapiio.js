@@ -33,7 +33,7 @@ const handleCommand = async (m) => {
   } else if (command === 'emote' || command === 'dance') {
     const emote = await fetchCosmetic(args.join(' '), 'emote');
     if (emote) {
-      m.Client.party.me.setOutfit(emote.id);
+      m.Client.party.me.setEmote(emote.id);
       m.reply(`Set the emote to ${emote.name}!`);
     } else m.reply(`The emote ${args.join(' ')} wasn't found!`);
   }

@@ -253,6 +253,9 @@ class Authenticator extends Base {
         } catch (err) {
           return { success: false, response: `The file ${authorizationCode} is not existing or formatted incorrectly` };
         }
+      } else if (authorizationCode.startsWith('com.epicgames.fortnite://fnauth/')) {
+        let url = new URL(authorizationCode)
+        parsedAuthorizationCode = url.searchParams.get("code");
       } else {
         parsedAuthorizationCode = authorizationCode; break;
       } break;

@@ -1,22 +1,25 @@
-# fnbr.js
+<a href="https://fnbr.js.org"><img align="left" src="https://fnbr.js.org/static/logo-square.png" height=128 width=128 /></a>
 
-[![Node.js CI](https://github.com/fnbrjs/fnbr.js/actions/workflows/node.js.yml/badge.svg)](https://github.com/fnbrjs/fnbr.js/actions/workflows/node.js.yml)
-[![npm version](https://img.shields.io/npm/v/fnbr.svg)](https://npmjs.com/package/fnbr)
-[![npm downloads](https://img.shields.io/npm/dm/fnbr.svg)](https://npmjs.com/package/fnbr)
-[![license](https://img.shields.io/npm/l/fnbr.svg)](https://github.com/fnbrjs/fnbr.js/blob/master/LICENSE)
+[![CI Status](https://github.com/fnbrjs/fnbr.js/actions/workflows/node.js.yml/badge.svg)](https://github.com/fnbrjs/fnbr.js/actions/workflows/node.js.yml)
+[![NPM Version](https://img.shields.io/npm/v/fnbr.svg)](https://npmjs.com/package/fnbr)
+[![NPM Downloads](https://img.shields.io/npm/dm/fnbr.svg)](https://npmjs.com/package/fnbr)
+[![MIT License](https://img.shields.io/npm/l/fnbr.svg)](https://github.com/fnbrjs/fnbr.js/blob/master/LICENSE)
+[![Discord Server](https://discord.com/api/guilds/522121965952303105/widget.png)](https://discord.gg/u76QKTBRbf)
 
-A library to interact with Epic Games' Fortnite HTTP and XMPP services
+<br />
 
-## Installation
+A library to interact with Epic Games' Fortnite HTTP and XMPP services. Object-oriented, stable, and fast. Inspired by [Discord.JS](https://github.com/discordjs/discord.js) and [fortnitepy](https://github.com/Terbau/fortnitepy), FNBR.JS is the only actively maintained Fortnite Node.JS Library.
+
+<hr />
+
+<h2 align=center>Installation</h2>
+
 ```
-npm i fnbr
+npm install fnbr
 ```
 
-## Documentation
-The docs can be found [here](https://fnbr.js.org/)
-
-## Example
-Example: 
+<h2 align=center>Usage</h2>
+ 
 ```javascript
 const { Client } = require('fnbr');
 
@@ -26,41 +29,19 @@ const client = new Client({
   },
 });
 
-client.on('friend:message', (friendMessage) => {
-  console.log(`Message from ${friendMessage.author.displayName}: ${friendMessage.content}`);
-  if(friendMessage.content.toLowerCase().startsWith('ping')) {
-    friendMessage.author.sendMessage('Pong!');
+client.on('friend:message', (msg) => {
+  console.log(`Message from ${msg.author.displayName}: ${msg.content}`);
+  if (msg.content.toLowerCase().startsWith('ping')) {
+    msg.author.sendMessage('Pong!');
   }
 });
 
-(async () => {
-  await client.login();
-  console.log(`Logged on ${client.user.displayName}`);
-})();
+client.login().then(() => {
+  console.log(`Logged in as ${client.user.displayName}`);
+});
 ```
 
-## Help
-Feel free to join [this Discord server](https://discord.gg/HsUFr5f)
+<h2 align=center>Links</h2>
 
-## License
-MIT License
-
-Copyright (c) 2020-2021 Nils S.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+- [FNBR.JS](https://npmjs.com/package/fnbr) ([source](https://github.com/fnbrjs/fnbr.js))
+- [Documentation](https://fnbr.js.org) ([source](https://github.com/fnbrjs/docs))

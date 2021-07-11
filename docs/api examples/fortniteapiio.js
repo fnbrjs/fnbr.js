@@ -9,7 +9,7 @@ const APIKEY = '';
 const fetchCosmetic = async (name, type) => {
   try {
     const cosmetic = await get({
-      url: `https://fortniteapi.io/items/list?name=${encodeURI(name)}&type=${type}`,
+      url: `https://fortniteapi.io/v2/items/list?name=${encodeURI(name)}&type.id=${type}`,
       headers: { Authorization: APIKEY },
       json: true,
     });

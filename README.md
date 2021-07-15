@@ -6,18 +6,18 @@
 [![MIT License](https://img.shields.io/npm/l/fnbr.svg)](https://github.com/fnbrjs/fnbr.js/blob/master/LICENSE)
 [![Discord Server](https://discord.com/api/guilds/522121965952303105/widget.png)](https://discord.gg/u76QKTBRbf)
 
-A library to interact with Epic Games' Fortnite HTTP and XMPP services. Object-oriented, stable, and fast. Inspired by [Discord.JS](https://github.com/discordjs/discord.js) and [FortnitePY](https://github.com/Terbau/fortnitepy), FNBR.JS is the only actively maintained Fortnite Node.JS Library.
+An object-oriented, stable, fast and actively maintained library to interact with Epic Games' Fortnite HTTP and XMPP services. Inspired by [discord.js](https://github.com/discordjs/discord.js) and [fortnitepy](https://github.com/Terbau/fortnitepy).
 
 <br />
 <hr />
 
-<h2 align=center>Installation</h2>
+<h2>Installation</h2>
 
 ```
 npm install fnbr
 ```
 
-<h2 align=center>Usage</h2>
+<h2>Usage example</h2>
  
 ```javascript
 const { Client } = require('fnbr');
@@ -40,8 +40,12 @@ client.login().then(() => {
 });
 ```
 
-<h2 align=center>Links</h2>
+<h2>Links</h2>
 
-- [FNBR.JS](https://npmjs.com/package/fnbr) ([source](https://github.com/fnbrjs/fnbr.js))
-- [Documentation](https://fnbr.js.org) ([source](https://github.com/fnbrjs/docs))
-- [Support Server](https://discord.gg/u76QKTBRbf)
+- [NPM](https://npmjs.com/package/fnbr)
+- [Docs](https://fnbr.js.org)
+- [Discord](https://discord.gg/u76QKTBRbf)
+
+<h2>License</h2>
+
+fnbr.js is available under the MIT license. Check [LICENSE](https://github.com/fnbrjs/fnbr.js/blob/master/LICENSE) if you want to fully read it.

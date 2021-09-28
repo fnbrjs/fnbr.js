@@ -1,19 +1,18 @@
 /* eslint-disable */
 const { readFile, writeFile } = require('fs').promises;
-const { get } = require('request-promise');
+const axios = require('axios').default;
 const { Client } = require('fnbr');
 
-// Your fortniteapi.io api key https://dashboard.fortniteapi.io/
+// Your fortniteapi.io api key. Obtain one at https://dashboard.fortniteapi.io/
 const APIKEY = '';
 
 const fetchCosmetic = async (name, type) => {
   try {
-    const cosmetic = await get({
+    const cosmetic = await axios({
       url: `https://fortniteapi.io/v2/items/list?name=${encodeURI(name)}&type.id=${type}`,
       headers: { Authorization: APIKEY },
-      json: true,
     });
-    return cosmetic.items[0];
+    return cosmetic.data.items[0];
   } catch (err) {
     return undefined;
   }

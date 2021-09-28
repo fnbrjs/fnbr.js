@@ -1,11 +1,11 @@
 /* eslint-disable */
 const { readFile, writeFile } = require('fs').promises;
-const { get } = require('request-promise');
+const axios = require('axios').default;
 const { Client } = require('fnbr');
 
 const fetchCosmetic = async (name, type) => {
   try {
-    const cosmetic = (await get({ url: `https://fortnite-api.com/v2/cosmetics/br/search?name=${encodeURI(name)}&type=${type}`, json: true })).data;
+    const cosmetic = (await axios(`https://fortnite-api.com/v2/cosmetics/br/search?name=${encodeURI(name)}&type=${type}`)).data;
     return cosmetic;
   } catch (err) {
     return undefined;

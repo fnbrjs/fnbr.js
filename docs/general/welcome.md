@@ -1,7 +1,7 @@
 <div align="center">
   <br />
   <p>
-    <a href="https://fnbr.js.org/"><img src="/static/logo.svg" width="546" alt="fnbr.js" id="fnbrjs-logo" style="filter: drop-shadow(0 3px 4px #333);" /></a>
+    <a href="https://fnbr.js.org/"><img src="https://fnbr.js.org/static/logo.png" width="546" alt="fnbr.js" id="fnbrjs-logo" style="filter: drop-shadow(0 3px 4px #333);" /></a>
   </p>
   <p>
     <a href="https://nodei.co/npm/fnbr/"><img src="https://nodei.co/npm/fnbr.png?downloads=true&stars=true" alt="NPM info" /></a>
@@ -27,21 +27,20 @@ const client = new Client({
   },
 });
 
-client.on('friend:message', (friendMessage) => {
-  console.log(`Message from ${friendMessage.friend.displayName}: ${friendMessage.content}`);
-  if (friendMessage.content.toLowerCase().startsWith('ping')) {
-    friendMessage.author.sendMessage('Pong!');
+client.on('friend:message', (msg) => {
+  console.log(`Message from ${msg.author.displayName}: ${msg.content}`);
+  if (msg.content.toLowerCase().startsWith('ping')) {
+    msg.author.sendMessage('Pong!');
   }
 });
 
-(async () => {
-  await client.login();
+client.login().then(() => {
   console.log(`Logged in as ${client.user.displayName}`);
-})();
+});
 ```
 
 ## Help
-Feel free to join [this Discord server](https://discord.gg/HsUFr5f)
+Feel free to join [this Discord server](https://discord.gg/u76QKTBRbf)
 
 ## License
 MIT License

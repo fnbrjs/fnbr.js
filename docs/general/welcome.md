@@ -34,7 +34,7 @@ client.on('ready', () => {
   console.log(`Logged in as ${client.user.displayName}`);
 });
 
-client.login();
+client.login(); // this is a test
 ```
 
 ## Help

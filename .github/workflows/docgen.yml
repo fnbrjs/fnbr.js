@@ -38,6 +38,10 @@ jobs:
           repository: fnbrjs/docgen
           token: ${{ secrets.BOT_PAT }}
           path: docgen
+      
+      - name: Install Main Repository Dependencies
+        working-directory: ./main
+        run: npm ci
 
       - name: Install DocGen Dependencies
         working-directory: ./docgen
@@ -59,4 +63,4 @@ jobs:
           mv ../docgen/docs.json ./${awk -F/ '{print $NF}' <<< refs/heads/main}.json
           git add . -A
           git commit -m "Docs build for ${CURRENT_BRANCH}: ${GITHUB_SHA}" || true
-          git push https://fnbr-bot:${{ secrets.BOT_PAT }}@github.com/fnbrjs/fnbr.js docs
+          git push https://ThisNils:${{ secrets.BOT_PAT }}@github.com/fnbrjs/fnbr.js docs

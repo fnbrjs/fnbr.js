@@ -57,7 +57,6 @@ jobs:
 
       - name: Deploy Documentation
         working-directory: ./docs
-        shell: sh
         run: |
           CURRENT_BRANCH=`awk -F/ '{print $NF}' <<< $GITHUB_REF`
           mv ../docgen/docs.json ./${awk -F/ '{print $NF}' <<< refs/heads/main}.json

@@ -1,20 +1,17 @@
 /* eslint-disable */
 const { Client } = require('fnbr');
 
-const client = new Client({
-  auth: {
-    authorizationCode: '',
-  },
-});
+const client = new Client();
 
-client.on('friend:message', (friendMessage) => {
-  console.log(`Message from ${friendMessage.friend.displayName}: ${friendMessage.content}`);
-  if (friendMessage.content.toLowerCase().startsWith('ping')) {
-    friendMessage.author.sendMessage('Pong!');
+client.on('friend:message', (message) => {
+  console.log(`Message from ${message.friend.displayName}: ${message.content}`);
+  if (message.content.toLowerCase().startsWith('ping')) {
+    message.reply('Pong!');
   }
 });
 
-(async () => {
-  await client.login();
+client.on('ready', () => {
   console.log(`Logged in as ${client.user.displayName}`);
-})();
+});
+
+client.login();

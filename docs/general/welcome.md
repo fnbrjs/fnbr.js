@@ -9,7 +9,7 @@
 </div>
 
 # fnbr.js
-A library to interact with fortnites http and xmpp services
+A library to interact with Fortnite's HTTP and XMPP services
 
 ## Installation
 ```
@@ -21,22 +21,20 @@ Example:
 ```javascript
 const { Client } = require('fnbr');
 
-const client = new Client({
-  auth: {
-    authorizationCode: '',
-  },
-});
+const client = new Client();
 
-client.on('friend:message', (msg) => {
-  console.log(`Message from ${msg.author.displayName}: ${msg.content}`);
-  if (msg.content.toLowerCase().startsWith('ping')) {
-    msg.author.sendMessage('Pong!');
+client.on('friend:message', (message) => {
+  console.log(`Message from ${message.friend.displayName}: ${message.content}`);
+  if (message.content.toLowerCase().startsWith('ping')) {
+    message.reply('Pong!');
   }
 });
 
-client.login().then(() => {
+client.on('ready', () => {
   console.log(`Logged in as ${client.user.displayName}`);
 });
+
+client.login();
 ```
 
 ## Help
@@ -45,7 +43,7 @@ Feel free to join [this Discord server](https://discord.gg/u76QKTBRbf)
 ## License
 MIT License
 
-Copyright (c) 2020 Nils S.
+Copyright (c) 2020-2021 Nils S.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

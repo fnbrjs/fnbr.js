@@ -1,41 +1,45 @@
 [
-    {
-        "name": "general",
-        "files": [
-            {
-                "name": "Welcome",
-                "path": "welcome.md"
-            },
-            {
-                "name": "Authentication",
-                "path": "auth.md"
-            }
-        ]
-    },
-    {
-        "name": "examples",
-        "files": [
-            {
-                "name": "Simple Client",
-                "path": "simple.js"
-            },
-            {
-                "name": "DeviceAuth Client",
-                "path": "deviceauth.js"
-            }
-        ]
-    },
-    {
-        "name": "api examples",
-        "files": [
-            {
-                "name": "Fortnite-API.com",
-                "path": "fortniteapicom.js"
-            },
-            {
-                "name": "FortniteAPI.io",
-                "path": "fortniteapiio.js"
-            }
-        ]
-    }
+  {
+    "name": "general",
+    "files": [
+      {
+        "name": "Welcome",
+        "path": "welcome.md"
+      },
+      {
+        "name": "Authentication",
+        "path": "auth.md"
+      },
+      {
+        "name": "Changelog",
+        "path": "changelog.md"
+      }
+    ]
+  },
+  {
+    "name": "examples",
+    "files": [
+      {
+        "name": "Simple Client",
+        "path": "simple.js"
+      },
+      {
+        "name": "DeviceAuth Client",
+        "path": "deviceauth.js"
+      }
+    ]
+  },
+  {
+    "name": "api examples",
+    "files": [
+      {
+        "name": "Fortnite-API.com",
+        "path": "fortniteapicom.js"
+      },
+      {
+        "name": "FortniteAPI.io",
+        "path": "fortniteapiio.js"
+      }
+    ]
+  }
 ]

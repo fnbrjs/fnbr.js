@@ -5,6 +5,7 @@ fnbr.js does not support email & password as an authentication method as you get
 You should use an authorization code for the first time you login and generate a device auth.
 
 **Example:**
+How does that look like code wise?
 ```javascript
 const { readFile, writeFile } = require('fs').promises;
 const { Client } = require('fnbr');
@@ -26,8 +27,8 @@ const { Client } = require('fnbr');
 })();
 ```
 
-## How do I get an authorization code?
-You can use [this link](https://www.epicgames.com/id/logout?redirectUrl=https%3A//www.epicgames.com/id/login%3FredirectUrl%3Dhttps%253A%252F%252Fwww.epicgames.com%252Fid%252Fapi%252Fredirect%253FclientId%253D3446cd72694c4a4485d81b77adbb2141%2526responseType%253Dcode)! An authorization code can only be used once and expires after 300 seconds. Thats why you should generate a device auth with it
+## How do I obtain an authorization code?
+You can use [this link](https://www.epicgames.com/id/logout?redirectUrl=https%3A//www.epicgames.com/id/login%3FredirectUrl%3Dhttps%253A%252F%252Fwww.epicgames.com%252Fid%252Fapi%252Fredirect%253FclientId%253D3446cd72694c4a4485d81b77adbb2141%2526responseType%253Dcode) and copy the 32 character code! An authorization code can only be used once and expires after 300 seconds. Thats why you should generate a device auth with it.
 
 ## How does a device auth work?
-A device auth doesn't expire and it consists of a accountId, deviceId and secret. You can create as many device auths for an account as you want
+A device auth doesn't expire and it consists of a accountId, deviceId and secret. You can create as many device auths for an account as you want.

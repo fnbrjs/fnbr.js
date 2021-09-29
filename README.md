@@ -44,7 +44,7 @@ client.login().then(() => {
 
 - [NPM](https://npmjs.com/package/fnbr)
 - [Docs](https://fnbr.js.org)
-- [Discord](https://discord.gg/u76QKTBRbf)
+- [Discord](https://discord.gg/j5xZ54RJvR)
 
 <h2>License</h2>
 MIT License

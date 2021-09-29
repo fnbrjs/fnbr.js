@@ -38,7 +38,7 @@ client.login(); // this is a test
 ```
 
 ## Help
-Feel free to join [this Discord server](https://discord.gg/u76QKTBRbf)
+Feel free to join [this Discord server](https://discord.gg/j5xZ54RJvR)
 
 ## License
 MIT License

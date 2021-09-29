@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Built artifacts
+dist/
+
+# Code editors
+.vscode/
+.nova/
+.idea/
+
+# Docs
+docs.json
+
+# Testing scripts
+test.js
+
+# Documentation files
+docs/
+
+# Tests
+tests/

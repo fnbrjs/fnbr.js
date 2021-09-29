@@ -1,16 +1,24 @@
-# fnbr.js
-A library to interact with fortnites http and xmpp services
+<a href="https://fnbr.js.org"><img align="left" src="https://fnbr.js.org/static/logo-square.png" height=128 width=128 /></a>
 
-## Installation
+[![CI Status](https://github.com/fnbrjs/fnbr.js/actions/workflows/ci.yml/badge.svg)](https://github.com/fnbrjs/fnbr.js/actions/workflows/ci.yml)
+[![NPM Version](https://img.shields.io/npm/v/fnbr.svg)](https://npmjs.com/package/fnbr)
+[![NPM Downloads](https://img.shields.io/npm/dm/fnbr.svg)](https://npmjs.com/package/fnbr)
+[![MIT License](https://img.shields.io/npm/l/fnbr.svg)](https://github.com/fnbrjs/fnbr.js/blob/master/LICENSE)
+[![Discord Server](https://discord.com/api/guilds/522121965952303105/widget.png)](https://discord.gg/j5xZ54RJvR)
+
+An object-oriented, stable, fast and actively maintained library to interact with Epic Games' Fortnite HTTP and XMPP services. Inspired by [discord.js](https://github.com/discordjs/discord.js), [fortnitepy](https://github.com/Terbau/fortnitepy) and [epicgames-fortnite-client](https://github.com/SzymonLisowiec/node-epicgames-fortnite-client).
+
+<br />
+<hr />
+
+<h2>Installation</h2>
+
 ```
-npm i fnbr
+npm install fnbr
 ```
 
-## Documentation
-The docs can be found [here](https://fnbr.js.org/)
-
-## Example
-Example: 
+<h2>Usage example</h2>
+ 
 ```javascript
 const { Client } = require('fnbr');
 
@@ -20,26 +28,28 @@ const client = new Client({
   },
 });
 
-client.on('friend:message', (friendMessage) => {
-  console.log(`Message from ${friendMessage.author.displayName}: ${friendMessage.content}`);
-  if(friendMessage.content.toLowerCase().startsWith('ping')) {
-    friendMessage.author.sendMessage('Pong!');
+client.on('friend:message', (msg) => {
+  console.log(`Message from ${msg.author.displayName}: ${msg.content}`);
+  if (msg.content.toLowerCase().startsWith('ping')) {
+    msg.author.sendMessage('Pong!');
   }
 });
 
-(async () => {
-  await client.login();
-  console.log(`Logged on ${client.user.displayName}`);
-})();
+client.login().then(() => {
+  console.log(`Logged in as ${client.user.displayName}`);
+});
 ```
 
-## Help
-Feel free to join [this Discord server](https://discord.gg/HsUFr5f)
+<h2>Links</h2>
 
-## License
+- [NPM](https://npmjs.com/package/fnbr)
+- [Docs](https://fnbr.js.org)
+- [Discord](https://discord.gg/j5xZ54RJvR)
+
+<h2>License</h2>
 MIT License
 
-Copyright (c) 2020 Nils S.
+Copyright (c) 2020-2021 Nils S.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -1,11 +1,11 @@
 /* eslint-disable */
 const { readFile, writeFile } = require('fs').promises;
-const { get } = require('request-promise');
+const axios = require('axios').default;
 const { Client } = require('fnbr');
 
 const fetchCosmetic = async (name, type) => {
   try {
-    const cosmetic = (await get({ url: `https://fortnite-api.com/v2/cosmetics/br/search?name=${encodeURI(name)}&type=${type}`, json: true })).data;
+    const cosmetic = (await axios(`https://fortnite-api.com/v2/cosmetics/br/search?name=${encodeURI(name)}&type=${type}`)).data;
     return cosmetic;
   } catch (err) {
     return undefined;
@@ -20,13 +20,13 @@ const handleCommand = async (m) => {
   if (command === 'outfit' || command === 'skin') {
     const skin = await fetchCosmetic(args.join(' '), 'outfit');
     if (skin) {
-      m.Client.party.me.setOutfit(skin.id);
+      m.client.party.me.setOutfit(skin.id);
       m.reply(`Set the skin to ${skin.name}!`);
     } else m.reply(`The skin ${args.join(' ')} wasn't found!`);
   } else if (command === 'emote' || command === 'dance') {
     const emote = await fetchCosmetic(args.join(' '), 'emote');
     if (emote) {
-      m.Client.party.me.setOutfit(emote.id);
+      m.client.party.me.setEmote(emote.id);
       m.reply(`Set the emote to ${emote.name}!`);
     } else m.reply(`The emote ${args.join(' ')} wasn't found!`);
   }

@@ -1,0 +1,73 @@
+name: "CI"
+on:
+  push:
+    branches:
+      - '*'
+      - '!docs'
+    tags:
+      - '*'
+jobs:
+  docgen:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup git
+        run: |
+          git config --global user.name "FNBR Bot"
+          git config --global user.email fnbrjs@fortnite.ro
+
+      - name: Set Up NodeJS
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+
+      - name: Checkout Main Repository
+        uses: actions/checkout@v2
+        with:
+          path: main
+
+      - name: Checkout Main Repository Docs Branch
+        uses: actions/checkout@v2
+        with:
+          path: docs
+          ref: docs
+      
+      - name: Checkout DocGen Repository
+        uses: actions/checkout@v2
+        with:
+          repository: fnbrjs/docgen
+          token: ${{ secrets.BOT_PAT }}
+          path: docgen
+      
+      - name: Install Main Repository Dependencies
+        working-directory: ./main
+        run: npm ci
+
+      - name: Install DocGen Dependencies
+        working-directory: ./docgen
+        run: npm ci
+
+      - name: Compile DocGen
+        working-directory: ./docgen
+        run: npm run build
+
+      - name: Generate Documentation
+        working-directory: ./docgen
+        run: node . ../main
+
+      - uses: actions-ecosystem/action-regex-match@v2
+        id: current_branch
+        with:
+          text: ${{ github.ref }}
+          regex: '(?<=\/)(\w|\d|\.)+$'
+
+      - name: Deploy Documentation
+        working-directory: ./docs
+        shell: bash
+        env:
+          CURRENT_BRANCH: ${{ steps.current_branch.outputs.match  }}
+        run: |
+          mv ../docgen/docs.json ./${CURRENT_BRANCH}.json
+          git add . -A
+          git commit -m "Docs build for ${CURRENT_BRANCH}: ${GITHUB_SHA}"
+          git push https://fnbr-bot:${{ secrets.BOT_PAT }}@github.com/fnbrjs/fnbr.js docs

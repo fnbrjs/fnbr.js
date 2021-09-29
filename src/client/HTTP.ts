@@ -1,0 +1,207 @@
+/* eslint-disable no-restricted-syntax */
+import axios, {
+  AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse, Method, ResponseType,
+} from 'axios';
+import { URLSearchParams } from 'url';
+import { EpicgamesAPIResponse, EpicgamesGraphQLResponse, HTTPResponse } from '../../resources/httpResponses';
+import { AuthType } from '../../resources/structs';
+import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
+import EpicgamesGraphQLError from '../exceptions/EpicgamesGraphQLError';
+import Base from './Base';
+import Client from './Client';
+
+interface KeyValuePair {
+  [key: string]: any;
+}
+
+/**
+ * Represents the client's HTTP manager
+ * @private
+ */
+class HTTP extends Base {
+  /**
+   * The default requests options
+   */
+  public options: AxiosRequestConfig;
+
+  /**
+   * The axios instance
+   * @type {AxiosInstance}
+   */
+  public axios: AxiosInstance;
+
+  /**
+   * @param {Client} client The main client
+   */
+  constructor(client: Client) {
+    super(client);
+
+    this.options = {
+      ...this.client.config.http,
+    };
+
+    this.axios = axios.create(this.options);
+
+    // Clear all default content type headers
+    Object.keys(this.axios.defaults.headers).forEach((h) => delete this.axios.defaults.headers[h]['Content-Type']);
+  }
+
+  /**
+   * Sends a HTTP request
+   * @param method The HTTP method
+   * @param url The uri
+   * @param headers The headers
+   * @param data The body
+   * @param form The form
+   * @param responseType The axios response type
+   * @param retires How many times this request has been retried
+   */
+  async send(method: Method, url: string, headers: KeyValuePair = {}, body?: any, form?: KeyValuePair, responseType?: ResponseType, retries = 0): Promise<HTTPResponse> {
+    let data;
+
+    if (body) data = body;
+    else if (form) {
+      const urlSearchParams = new URLSearchParams();
+      for (const key of Object.keys(form)) {
+        urlSearchParams.append(key, form[key]);
+      }
+
+      data = urlSearchParams;
+    }
+
+    const reqStartTime = Date.now();
+    try {
+      const response = await this.axios.request({
+        method,
+        url,
+        headers,
+        data,
+        responseType,
+      });
+      this.client.debug(`${method} ${url} (${((Date.now() - reqStartTime) / 1000).toFixed(2)}s): `
+        + `${response.status} ${response.statusText || '???'}`, 'http');
+      return { response };
+    } catch (err: any) {
+      this.client.debug(`${method} ${url} (${((Date.now() - reqStartTime) / 1000).toFixed(2)}s): `
+        + `${err.response?.status || '???'} ${err.response?.statusText || '???'}`, 'http');
+
+      const errResponse = (err as AxiosError).response;
+
+      if (errResponse?.status.toString().startsWith('5') && retries < this.client.config.restRetryLimit) {
+        return this.send(method, url, headers, body, form, responseType, retries + 1);
+      }
+
+      if (errResponse?.status === 429 || errResponse?.data?.errorCode === 'errors.com.epicgames.common.throttled') {
+        const retryAfter = parseInt(errResponse.headers['Retry-After'] || errResponse.data.messageVars[0], 10);
+        if (!Number.isNaN(retryAfter)) {
+          const sleepTimeout = (retryAfter * 1000) + 500;
+          await new Promise<void>((res) => setTimeout(res, sleepTimeout));
+          return this.send(method, url, headers, body, form, responseType);
+        }
+      }
+
+      return { error: err as AxiosError };
+    }
+  }
+
+  /**
+   * Sends a HTTP request to the Epicgames API
+   * @param checkToken Whether the access token should be validated
+   * @param method The HTTP method
+   * @param url The uri
+   * @param auth The auth type (eg. "fortnite" or "clientcreds")
+   * @param headers The headers
+   * @param data The body
+   * @param form The form
+   * @param ignoreLocks Where the request should ignore locks such as the reauth lock
+   */
+  async sendEpicgamesRequest(checkToken: boolean, method: Method, url: string,
+    auth?: AuthType, headers: KeyValuePair = {}, data?: any, form?: KeyValuePair, ignoreLocks = false): Promise<EpicgamesAPIResponse> {
+    if (!ignoreLocks) await this.client.reauthLock.wait();
+
+    const finalHeaders = headers;
+    if (auth) {
+      const authData = this.client.auth.auths.get(auth);
+      if (authData && checkToken) {
+        const tokenCheck = await this.client.auth.checkToken(auth);
+        if (!tokenCheck) {
+          const reauth = await this.client.auth.reauthenticate(authData, auth);
+          if (reauth.error) return reauth;
+        }
+      }
+
+      finalHeaders.Authorization = `Bearer ${authData?.token}`;
+    }
+
+    const request = await this.send(method, url, finalHeaders, data, form);
+
+    if (request.error?.response?.data?.errorCode === 'errors.com.epicgames.common.oauth.invalid_token' && auth) {
+      const authData = this.client.auth.auths.get(auth);
+      if (authData) {
+        const reauth = await this.client.auth.reauthenticate(authData, auth);
+        if (reauth.error) return reauth;
+        return this.sendEpicgamesRequest(checkToken, method, url, auth, headers, data, form, ignoreLocks);
+      }
+    }
+
+    return {
+      response: request.response?.data,
+      error: request.error && request.error.response
+        && new EpicgamesAPIError(request.error.response?.data, request.error.config, request.error.response.status as number),
+    };
+  }
+
+  /**
+   * Sends a HTTP request to the Epicgames GraphQL API
+   * @param checkToken Whether the access token should be validated
+   * @param url The uri
+   * @param query The GraphQL query string
+   * @param variables The GraphQL variables
+   * @param auth The auth type (eg. "fortnite" or "clientcreds")
+   * @param operationName The GraphQL operation name (optional, will be auto set)
+   * @param ignoreLocks Where the request should ignore locks such as the reauth lock
+   */
+  async sendEpicgamesGraphQLRequest(checkToken: boolean, url: string, query: string, variables: KeyValuePair = {},
+    auth?: AuthType, operationName?: string, ignoreLocks = false): Promise<EpicgamesGraphQLResponse> {
+    if (!ignoreLocks) await this.client.reauthLock.wait();
+
+    const headers: KeyValuePair = {
+      'Content-Type': 'application/json',
+    };
+
+    if (auth) {
+      const authData = this.client.auth.auths.get(auth);
+      if (authData && checkToken) {
+        const tokenCheck = await this.client.auth.checkToken(auth);
+        if (!tokenCheck) {
+          const reauth = await this.client.auth.reauthenticate(authData, auth);
+          if (reauth.error) return reauth;
+        }
+      }
+
+      headers.Authorization = `Bearer ${authData?.token}`;
+    }
+
+    const finalOperationName = operationName || query.match(/((?<=mutation )|(?<=query ))\w+/)?.[0];
+
+    const request = await this.send('POST', url, headers, {
+      operationName: finalOperationName,
+      variables,
+      query,
+    });
+
+    const response: { response?: AxiosResponse, error?: AxiosError | EpicgamesGraphQLError } = request;
+
+    if (request.response?.data?.errors?.[0]) {
+      response.error = new EpicgamesGraphQLError(request.response?.data?.errors[0], request.response.config);
+      request.response = undefined;
+    }
+
+    return {
+      response: response.response?.data,
+      error: response.error,
+    };
+  }
+}
+
+export default HTTP;

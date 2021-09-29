@@ -1,7 +1,7 @@
 <div align="center">
   <br />
   <p>
-    <a href="https://fnbr.js.org/"><img src="/static/logo.svg" width="546" alt="fnbr.js" id="fnbrjs-logo" style="filter: drop-shadow(0 3px 4px #333);" /></a>
+    <a href="https://fnbr.js.org/"><img src="https://fnbr.js.org/static/logo.png" width="546" alt="fnbr.js" id="fnbrjs-logo" style="filter: drop-shadow(0 3px 4px #333);" /></a>
   </p>
   <p>
     <a href="https://nodei.co/npm/fnbr/"><img src="https://nodei.co/npm/fnbr.png?downloads=true&stars=true" alt="NPM info" /></a>
@@ -9,7 +9,7 @@
 </div>
 
 # fnbr.js
-A library to interact with fortnites http and xmpp services
+A library to interact with Fortnite's HTTP and XMPP services
 
 ## Installation
 ```
@@ -21,32 +21,29 @@ Example:
 ```javascript
 const { Client } = require('fnbr');
 
-const client = new Client({
-  auth: {
-    authorizationCode: '',
-  },
-});
+const client = new Client();
 
-client.on('friend:message', (friendMessage) => {
-  console.log(`Message from ${friendMessage.friend.displayName}: ${friendMessage.content}`);
-  if (friendMessage.content.toLowerCase().startsWith('ping')) {
-    friendMessage.author.sendMessage('Pong!');
+client.on('friend:message', (message) => {
+  console.log(`Message from ${message.author.displayName}: ${message.content}`);
+  if (message.content.toLowerCase().startsWith('ping')) {
+    message.reply('Pong!');
   }
 });
 
-(async () => {
-  await client.login();
+client.on('ready', () => {
   console.log(`Logged in as ${client.user.displayName}`);
-})();
+});
+
+client.login();
 ```
 
 ## Help
-Feel free to join [this Discord server](https://discord.gg/HsUFr5f)
+Feel free to join [this Discord server](https://discord.gg/j5xZ54RJvR)
 
 ## License
 MIT License
 
-Copyright (c) 2020 Nils S.
+Copyright (c) 2020-2021 Nils S.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

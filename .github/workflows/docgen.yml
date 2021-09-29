@@ -58,7 +58,7 @@ jobs:
       - uses: actions-ecosystem/action-regex-match@v2
         id: current_branch
         with:
-          text: ${{ GITHUB_REF }}
+          text: ${{ github.ref }}
           regex: '(?<=\/)(\w|\d|\.)+$'
 
       - name: Deploy Documentation

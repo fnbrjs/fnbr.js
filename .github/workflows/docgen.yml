@@ -55,12 +55,19 @@ jobs:
         working-directory: ./docgen
         run: node . ../main
 
+      - uses: actions-ecosystem/action-regex-match@v2
+        id: current_branch
+        with:
+          text: ${{ GITHUB_REF }}
+          regex: '(?<=\/)(\w|\d|\.)+$'
+
       - name: Deploy Documentation
         working-directory: ./docs
         shell: bash
+        env:
+          CURRENT_BRANCH: ${{ steps.current_branch.outputs.match  }}
         run: |
-          CURRENT_BRANCH=`awk -F/ '{print $NF}' <<< $GITHUB_REF`
-          mv ../docgen/docs.json ./${awk -F/ '{print $NF}' <<< refs/heads/main}.json
+          mv ../docgen/docs.json ./${CURRENT_BRANCH}.json
           git add . -A
-          git commit -m "Docs build for ${CURRENT_BRANCH}: ${GITHUB_SHA}" || true
-          git push https://ThisNils:${{ secrets.BOT_PAT }}@github.com/fnbrjs/fnbr.js docs
+          git commit -m "Docs build for ${CURRENT_BRANCH}: ${GITHUB_SHA}"
+          git push https://fnbr-bot:${{ secrets.BOT_PAT }}@github.com/fnbrjs/fnbr.js docs

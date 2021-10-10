@@ -93,7 +93,7 @@ class ClientPartyMeta extends PartyMeta {
     }
 
     this.party.members.forEach((m) => {
-      if (m.id !== this.party.client.user?.id) {
+      if (m.id !== this.party.client.user?.id && !this.party.hiddenMemberIds.includes(m.id)) {
         assignments.push({
           memberId: m.id,
           absoluteMemberIdx: i,

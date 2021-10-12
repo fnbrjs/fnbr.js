@@ -8,7 +8,6 @@ import ClientParty from '../src/structures/ClientParty';
 import ClientPartyMember from '../src/structures/ClientPartyMember';
 import ClientUser from '../src/structures/ClientUser';
 import Friend from '../src/structures/Friend';
-import FriendMessage from '../src/structures/BaseFriendMessage';
 import FriendPresence from '../src/structures/FriendPresence';
 import IncomingPendingFriend from '../src/structures/IncomingPendingFriend';
 import OutgoingPendingFriend from '../src/structures/OutgoingPendingFriend';

@@ -147,6 +147,7 @@ export const SeasonStart = Object.freeze({
   CH2_S5: 1606867201,
   CH2_S6: 1615852801,
   CH2_S7: 1623110401,
+  CH2_S8: 1631491201,
 });
 
 export const SeasonEnd = Object.freeze({
@@ -166,6 +167,7 @@ export const SeasonEnd = Object.freeze({
   CH2_S4: 1606867200,
   CH2_S5: 1615852800,
   CH2_S6: 1623110400,
+  CH2_S7: 1631491200,
 });
 
 export default Object.freeze({

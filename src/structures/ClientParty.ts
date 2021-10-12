@@ -339,7 +339,7 @@ class ClientParty extends Party {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
     if (hide) {
-      this.hiddenMemberIds = this.members.map((m) => m.id);
+      this.hiddenMemberIds = this.members.filter((m) => m.id !== this.me.id).map((m) => m.id);
     } else {
       this.hiddenMemberIds = [];
     }

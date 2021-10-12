@@ -1,10 +1,23 @@
 # Changelog
 
 
+## 2.0.1
+
+### Additions
+* Season Timestamps
+  * Added season end timestamp for CH2_S7
+  * Added season start timestamp for CH2_S8
+
+### Fixes
+* Parties
+  * Fixed `ClientParty#hideMembers()` (did not hide members properly)
+
+<hr>
+
 ## 2.0.0 
 
 ### Additions
-* TypeScript rewrite
+* TypeScript Rewrite
   * The library has been completely rewritten in TypeScript
   * Type definitions for all classes
   * Better intellisense
@@ -102,7 +115,7 @@
 
 ## 1.4.1
 
-## Fixes
+### Fixes
 * Parties
   * Fixed "outdated version" bug that occured when a user tried to join the client's party
 
@@ -119,7 +132,7 @@
 * Documentation
   * Added third party API examples
 
-## Fixes
+### Fixes
 * Parties
   * Fixed extremely rare bug that caused the party to be stuck on the patching state
   * Fixed bug that prevented users from accepting the bot's party invites if its party is private
@@ -140,7 +153,7 @@
 * Client Methods
   * Added `Client#getFortniteServerStatus()`
 
-## Fixes
+### Fixes
 * Parties
   * Updated the party build id for version 14.10 ("old version" join bug)
   * Fixed cosmetic variants
@@ -172,7 +185,7 @@
 * Debugging
   * Added total request time to HTTP debugging 
 
-## Fixes
+### Fixes
 * Parties
   * Fixed error that occured when the client accepted another bot's invites
   * Trying to join a party which the client previously got kicked from now throws an error
@@ -202,7 +215,7 @@
 * Parties
   * **(Breaking)** `PartyMember#outfit`, `PartyMember#pickaxe` and `PartyMember#emote` now return the ID instead of the asset path
 
-## Fixes
+### Fixes
 * Parties
   * Fixed error that occured when the client got kicked from its party
   * Fixed accepting party invites & joining parties

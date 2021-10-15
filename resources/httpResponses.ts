@@ -1,11 +1,11 @@
 /* eslint-disable camelcase */
-import { AxiosError, AxiosResponse } from 'axios';
+import { AxiosError } from 'axios';
 import EpicgamesAPIError from '../src/exceptions/EpicgamesAPIError';
 import EpicgamesGraphQLError from '../src/exceptions/EpicgamesGraphQLError';
 import { FullPlatform, Region } from './structs';
 
 export interface HTTPResponse {
-  response?: AxiosResponse;
+  response?: any;
   error?: AxiosError;
 }
 

@@ -151,7 +151,7 @@ class Client extends EventEmitter {
       connectToXMPP: true,
       fetchFriends: true,
       restRetryLimit: 1,
-      handleRateLimits: true,
+      handleRatelimits: true,
       partyBuildId: '1:3:',
       tokenVerifyInterval: 1200000,
       ...config,
@@ -438,15 +438,15 @@ class Client extends EventEmitter {
     this.blockedUsers.clear();
 
     friendsSummary.response.friends.forEach((f: any) => {
-      this.friends.set(f.accountId, new Friend(this, f));
+      this.friends.set(f.accountId, new Friend(this, { ...f, id: f.accountId }));
     });
 
     friendsSummary.response.incoming.forEach((f: any) => {
-      this.pendingFriends.set(f.accountId, new IncomingPendingFriend(this, f));
+      this.pendingFriends.set(f.accountId, new IncomingPendingFriend(this, { ...f, id: f.accountId }));
     });
 
     friendsSummary.response.outgoing.forEach((f: any) => {
-      this.pendingFriends.set(f.accountId, new OutgoingPendingFriend(this, f));
+      this.pendingFriends.set(f.accountId, new OutgoingPendingFriend(this, { ...f, id: f.accountId }));
     });
 
     friendsSummary.response.blocklist.forEach((u: any) => {

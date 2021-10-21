@@ -107,16 +107,16 @@ export interface PartyConfig {
 
 export type PresenceOnlineType = 'away' | 'chat' | 'dnd' | 'xa' | 'online';
 
-export interface ClientOptions {
+export interface ClientConfig {
   /**
    * Whether the party member meta (outfit, emote, etc) should be saved so they are kept when joining a new party
    */
-  savePartyMemberMeta?: boolean;
+  savePartyMemberMeta: boolean;
 
   /**
    * Additional axios request options
    */
-  http?: AxiosRequestConfig;
+  http: AxiosRequestConfig;
 
   /**
    * Debug function used for general debugging purposes
@@ -141,104 +141,86 @@ export interface ClientOptions {
   /**
    * Default online type of the bot (eg "away"). None for online
    */
-  defaultOnlineType?: PresenceOnlineType;
+  defaultOnlineType: PresenceOnlineType;
 
   /**
    * The client's platform (WIN by default)
    */
-  platform?: Platform;
+  platform: Platform;
 
   /**
    * The client's default party member meta (can be used to set a custom default skin, etc)
    */
-  defaultPartyMemberMeta?: Schema;
+  defaultPartyMemberMeta: Schema;
 
   /**
    * Custom keep alive interval for the xmpp websocket connection.
    * You should lower this value if the client randomly reconnects
    */
-  xmppKeepAliveInterval?: number;
+  xmppKeepAliveInterval: number;
 
   /**
    * Settings that affect the way the client caches certain data
    */
-  cacheSettings?: CacheSettings;
+  cacheSettings: CacheSettings;
 
   /**
    * Client authentication options. By default the client will ask you for an authorization code
    */
-  auth?: AuthOptions;
+  auth: AuthOptions;
 
   /**
    * Default config used for creating parties
    */
-  partyConfig?: PartyOptions;
+  partyConfig: PartyOptions;
 
   /**
    * Whether the client should create a party on startup
    */
-  createParty?: boolean;
+  createParty: boolean;
 
   /**
    * Whether a new party should be force created on start (even if the client is already member of a party)
    */
-  forceNewParty?: boolean;
+  forceNewParty: boolean;
 
   /**
    * Whether the client should connect via XMPP.
    * NOTE: If you disable this, almost all features related to friend caching will no longer work.
    * Do not disable this unless you know what you're doing
    */
-  connectToXMPP?: boolean;
+  connectToXMPP: boolean;
 
   /**
    * Whether the client should fetch all friends on startup.
    * NOTE: If you disable this, almost all features related to friend caching will no longer work.
    * Do not disable this unless you know what you're doing
    */
-  fetchFriends?: boolean;
+  fetchFriends: boolean;
 
   /**
    * How many times to retry on HTTP 5xx errors
    */
-  restRetryLimit?: number;
+  restRetryLimit: number;
 
   /**
    * Whether the client should handle rate limits (429 status code responses)
    */
-  handleRatelimits?: boolean;
+  handleRatelimits: boolean;
 
   /**
    * The party build id (does not change very often, don't change this unless you know what you're doing)
    */
-  partyBuildId?: string;
+  partyBuildId: string;
 
   /**
    * Custom token verification interval.
    * Usually, there is no need to change this
    */
-  tokenVerifyInterval?: number;
-}
-
-export interface ClientConfig extends ClientOptions {
-  savePartyMemberMeta: boolean;
-  http: AxiosRequestConfig;
-  defaultOnlineType: PresenceOnlineType;
-  platform: Platform;
-  defaultPartyMemberMeta: Schema;
-  xmppKeepAliveInterval: number;
-  cacheSettings: CacheSettings;
-  auth: AuthOptions;
-  partyConfig: PartyOptions;
-  createParty: boolean;
-  forceNewParty: boolean;
-  connectToXMPP: boolean;
-  fetchFriends: boolean;
-  restRetryLimit: number;
-  handleRateLimits: boolean;
-  partyBuildId: string;
   tokenVerifyInterval: number;
 }
+
+export interface ClientOptions extends Partial<ClientConfig> {}
 
 export interface ClientEvents {
   /**

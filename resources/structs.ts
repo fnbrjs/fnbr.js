@@ -301,10 +301,10 @@ export interface ClientEvents {
   'friend:request:aborted': (pendingFriend: IncomingPendingFriend | OutgoingPendingFriend) => void;
 
   /**
-   * Emitted when an outgoing friendship request got declined
+   * Emitted when the client declined an incoming friendship request or when someone declined an outgoing friendship request
    * @param pendingFriend The previously pending friend
    */
-  'friend:request:declined': (pendingFriend: OutgoingPendingFriend) => void;
+  'friend:request:declined': (pendingFriend: IncomingPendingFriend | OutgoingPendingFriend) => void;
 
   /**
    * Emitted when a user got removed from the client's friend list

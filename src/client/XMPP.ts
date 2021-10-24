@@ -343,7 +343,7 @@ class XMPP extends Base {
               this.client.emit('friend:request:aborted', pendingFriend);
             } else if (reason === 'REJECTED') {
               const pendingFriend = this.client.pendingFriends.get(accountId);
-              if (!pendingFriend || !(pendingFriend instanceof OutgoingPendingFriend)) break;
+              if (!pendingFriend) break;
 
               this.client.pendingFriends.delete(pendingFriend.id);
               this.client.emit('friend:request:declined', pendingFriend);

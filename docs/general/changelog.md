@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.0.2
+
+### Fixes
+* Friend Caches
+  * Fixed an issue that caused the friend cache to hold no values
+* Client Config
+  * Fixed missing documentation for some `ClientOptions` properties
+
+<hr>
 
 ## 2.0.1
 
@@ -14,7 +23,7 @@
 
 <hr>
 
-## 2.0.0 
+## 2.0.0
 
 ### Additions
 * TypeScript Rewrite

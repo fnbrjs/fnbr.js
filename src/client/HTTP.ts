@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-syntax */
 import axios, {
-  AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse, Method, ResponseType,
+  AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse, HeadersDefaults, Method, ResponseType,
 } from 'axios';
 import { URLSearchParams } from 'url';
 import { EpicgamesAPIResponse, EpicgamesGraphQLResponse, HTTPResponse } from '../../resources/httpResponses';
@@ -43,7 +43,9 @@ class HTTP extends Base {
     this.axios = axios.create(this.options);
 
     // Clear all default content type headers
-    Object.keys(this.axios.defaults.headers).forEach((h) => delete this.axios.defaults.headers[h]['Content-Type']);
+    (Object.keys(this.axios.defaults.headers) as (keyof HeadersDefaults)[]).forEach((h) => {
+      delete this.axios.defaults.headers[h]?.['Content-Type'];
+    });
   }
 
   /**
@@ -91,8 +93,8 @@ class HTTP extends Base {
         return this.send(method, url, headers, body, form, responseType, retries + 1);
       }
 
-      if (errResponse?.status === 429 || errResponse?.data?.errorCode === 'errors.com.epicgames.common.throttled') {
-        const retryAfter = parseInt(errResponse.headers['Retry-After'] || errResponse.data.messageVars[0], 10);
+      if (errResponse && (errResponse.status === 429 || (errResponse?.data as any)?.errorCode === 'errors.com.epicgames.common.throttled')) {
+        const retryAfter = parseInt(errResponse.headers['Retry-After'] || (errResponse.data as any).messageVars[0], 10);
         if (!Number.isNaN(retryAfter)) {
           const sleepTimeout = (retryAfter * 1000) + 500;
           await new Promise<void>((res) => setTimeout(res, sleepTimeout));
@@ -135,7 +137,7 @@ class HTTP extends Base {
 
     const request = await this.send(method, url, finalHeaders, data, form);
 
-    if (request.error?.response?.data?.errorCode === 'errors.com.epicgames.common.oauth.invalid_token' && auth) {
+    if ((request.error?.response?.data as any)?.errorCode === 'errors.com.epicgames.common.oauth.invalid_token' && auth) {
       const authData = this.client.auth.auths.get(auth);
       if (authData) {
         const reauth = await this.client.auth.reauthenticate(authData, auth);
@@ -147,7 +149,7 @@ class HTTP extends Base {
     return {
       response: request.response?.data,
       error: request.error && request.error.response
-        && new EpicgamesAPIError(request.error.response?.data, request.error.config, request.error.response.status as number),
+        && new EpicgamesAPIError(request.error.response?.data as any, request.error.config, request.error.response.status as number),
     };
   }
 

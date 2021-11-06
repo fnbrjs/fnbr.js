@@ -1047,6 +1047,12 @@ class Client extends EventEmitter {
     return buildReplay(replayData, downloadConfig.addStatsPlaceholder);
   }
 
+  /**
+   * Fetches a creative island by its code
+   * @param code The island code
+   * @throws {CreativeIslandNotFoundError} A creative island with the provided code does not exist
+   * @throws {EpicgamesAPIError}
+   */
   public async getCreativeIsland(code: string): Promise<CreativeIslandInfo> {
     const islandInfo = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.CREATIVE_ISLAND_LOOKUP}/${code}`, 'fortnite');
     if (islandInfo.error) {

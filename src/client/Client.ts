@@ -13,7 +13,7 @@ import {
   ClientOptions, ClientConfig, ClientEvents, StatsData, NewsMOTD, NewsMessage, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
-  ReplayDownloadConfig, CreativeIslandInfo,
+  ReplayDownloadConfig,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -21,8 +21,8 @@ import XMPP from './XMPP';
 import Friend from '../structures/Friend';
 import User from '../structures/User';
 import {
-  BlurlStreamData,
-  BlurlStreamMasterPlaylistData,
+  BlurlStreamData, CreativeIslandData,
+  BlurlStreamMasterPlaylistData, CreativeDiscoveryPanel,
   EpicgamesAPIResponse, TournamentData, TournamentDisplayData,
   TournamentWindowResults, TournamentWindowTemplateData,
 } from '../../resources/httpResponses';
@@ -1053,7 +1053,7 @@ class Client extends EventEmitter {
    * @throws {CreativeIslandNotFoundError} A creative island with the provided code does not exist
    * @throws {EpicgamesAPIError}
    */
-  public async getCreativeIsland(code: string): Promise<CreativeIslandInfo> {
+  public async getCreativeIsland(code: string): Promise<CreativeIslandData> {
     const islandInfo = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.CREATIVE_ISLAND_LOOKUP}/${code}`, 'fortnite');
     if (islandInfo.error) {
       if (islandInfo.error.code === 'errors.com.epicgames.links.no_active_version') throw new CreativeIslandNotFoundError(code);
@@ -1061,6 +1061,27 @@ class Client extends EventEmitter {
     }
 
     return islandInfo.response;
+  }
+
+  /**
+   * Fetches the creative discovery surface
+   * @param gameVersion The current game version (MAJOR.MINOR)
+   * @throws {EpicgamesAPIError}
+   */
+  public async getCreativeDiscoveryPanels(gameVersion = '18.30'): Promise<CreativeDiscoveryPanel[]> {
+    const creativeDiscovery = await this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.CREATIVE_DISCOVERY}/${this.user?.id}`, 'fortnite', {
+      'Content-Type': 'application/json',
+      'User-Agent': `Fortnite/++Fortnite+Release-${gameVersion}-CL-00000000 Windows/10`,
+    }, {
+      surfaceName: 'CreativeDiscoverySurface_Frontend',
+      partyMemberIds: [this.user?.id],
+    });
+
+    if (creativeDiscovery.error) {
+      throw creativeDiscovery.error;
+    }
+
+    return creativeDiscovery.response.Panels;
   }
 
   /**

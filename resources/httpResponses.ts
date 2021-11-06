@@ -290,3 +290,63 @@ export interface BlurlStreamData {
   lrcs: string;
   duration?: number;
 }
+
+export interface CreativeIslandData {
+  namespace: string;
+  accountId: string;
+  creatorName: string;
+  mnemonic: string;
+  linkType: string;
+  metadata: {
+    mode: string;
+    quicksilver_id: string;
+    image_url: string;
+    tagline: string;
+    islandType: string;
+    title: string;
+    locale: string;
+    matchmaking: {
+      selectedJoinInProgressType: number;
+      playersPerTeam: number;
+      maximumNumberOfPlayers: number;
+      override_Playlist: string;
+      playerCount: number;
+      mmsType: string;
+      mmsPrivacy: string;
+      numberOfTeams: number;
+      bAllowJoinInProgress: boolean;
+      minimumNumberOfPlayers: number;
+      joinInProgressTeam: number;
+    };
+    supportCode: string;
+    introduction: string;
+    generated_image_urls: {
+      url_s: string;
+      url_m: string;
+      compressed: {
+        url_s: string;
+        url_m: string;
+        url: string;
+      };
+      url: string;
+    };
+  };
+  version: number;
+  active: boolean;
+  disabled: boolean;
+  created: string;
+  published: string;
+  descriptionTags: string[];
+  moderationStatus: string;
+}
+
+export interface CreativeDiscoveryPanel {
+  PanelName: string;
+  Pages: {
+    results: {
+      linkData: CreativeIslandData;
+      isFavorite: boolean;
+    }[];
+    hasMore: boolean;
+  }[];
+}

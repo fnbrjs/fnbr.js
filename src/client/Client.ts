@@ -13,7 +13,7 @@ import {
   ClientOptions, ClientConfig, ClientEvents, StatsData, NewsMOTD, NewsMessage, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
-  ReplayDownloadConfig,
+  ReplayDownloadConfig, CreativeIslandInfo,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -53,6 +53,7 @@ import UserSearchResult from '../structures/UserSearchResult';
 import RadioStation from '../structures/RadioStation';
 import SentFriendMessage from '../structures/SentFriendMessage';
 import MatchNotFoundError from '../exceptions/MatchNotFoundError';
+import CreativeIslandNotFoundError from '../exceptions/CreativeIslandNotFoundError';
 
 /**
  * Represets the main client
@@ -1044,6 +1045,16 @@ class Client extends EventEmitter {
     await Promise.all(promises);
 
     return buildReplay(replayData, downloadConfig.addStatsPlaceholder);
+  }
+
+  public async getCreativeIsland(code: string): Promise<CreativeIslandInfo> {
+    const islandInfo = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.CREATIVE_ISLAND_LOOKUP}/${code}`, 'fortnite');
+    if (islandInfo.error) {
+      if (islandInfo.error.code === 'errors.com.epicgames.links.no_active_version') throw new CreativeIslandNotFoundError(code);
+      throw islandInfo.error;
+    }
+
+    return islandInfo.response;
   }
 
   /**

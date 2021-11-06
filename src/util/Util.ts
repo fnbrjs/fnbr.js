@@ -1,7 +1,10 @@
 /* eslint-disable no-restricted-syntax */
 import readline from 'readline';
 import zlib from 'zlib';
-import { Schema } from '../../resources/structs';
+import {
+  Schema, ReplayData, ReplayDataChunk, ReplayEvent,
+} from '../../resources/structs';
+import BinaryWriter from './BinaryWriter';
 
 const defaultCharacters = [
   'CID_556_Athena_Commando_F_RebirthDefaultA',
@@ -127,4 +130,94 @@ export const parseM3U8File = (data: string) => {
   }
 
   return output;
+};
+
+const buildReplayMeta = (replay: BinaryWriter, replayData: ReplayData) => {
+  replay
+    .writeUInt32(480436863)
+    .writeUInt32(6)
+    .writeUInt32(replayData.LengthInMS)
+    .writeUInt32(replayData.NetworkVersion)
+    .writeUInt32(replayData.Changelist)
+    .writeString(replayData.FriendlyName)
+    .writeBool(replayData.bIsLive)
+    .writeUInt64((BigInt(new Date(replayData.Timestamp).getTime()) * BigInt('10000')) + BigInt('621355968000000000'))
+    .writeBool(replayData.bCompressed)
+    .writeBool(false)
+    .writeUInt32(0);
+};
+
+type ReplayChunkData = Partial<ReplayEvent & ReplayDataChunk>;
+
+interface ReplayChunk extends ReplayChunkData {
+  chunkType: number;
+  data: Buffer;
+}
+
+const buildChunks = (replay: BinaryWriter, replayData: ReplayData) => {
+  const chunks: ReplayChunk[] = [{
+    chunkType: 0,
+    data: replayData.Header,
+  },
+  ...replayData.DataChunks.map((c) => ({
+    ...c,
+    chunkType: 1,
+  })),
+  ...replayData.Events.map((c) => ({
+    ...c,
+    chunkType: 3,
+  }))];
+
+  for (const chunk of chunks) {
+    replay.writeUInt32(chunk.chunkType);
+
+    const chunkSizeOffset = replay.offset;
+    replay.writeInt32(0);
+
+    switch (chunk.chunkType) {
+      case 0:
+        replay.writeBytes(chunk.data);
+        break;
+      case 1:
+        replay
+          .writeUInt32(chunk.Time1!)
+          .writeUInt32(chunk.Time2!)
+          .writeUInt32(chunk.data.length)
+          .writeInt32(chunk.SizeInBytes!)
+          .writeBytes(chunk.data);
+        break;
+      case 3:
+        replay
+          .writeString(chunk.Id!)
+          .writeString(chunk.Group!)
+          .writeString(chunk.Metadata || '')
+          .writeUInt32(chunk.Time1!)
+          .writeUInt32(chunk.Time2!)
+          .writeUInt32(chunk.data.length)
+          .writeBytes(chunk.data);
+        break;
+    }
+
+    const chunkSize = replay.offset - (chunkSizeOffset + 4);
+
+    const savedOffset = replay.offset;
+    replay
+      .goto(chunkSizeOffset)
+      .writeInt32(chunkSize)
+      .goto(savedOffset);
+  }
+};
+
+export const buildReplay = (replayData: ReplayData) => {
+  const finalReplayByteLength = 48 + replayData.FriendlyName.length // meta
+    + 8 + replayData.Header.length // header
+    + replayData.DataChunks.map((c) => 24 + c.data.length).reduce((acc, cur) => acc + cur) // datachunks
+    + replayData.Events.map((e) => 35 + e.Id.length + e.Group.length + (e.Metadata?.length || 0) + e.data.length).reduce((acc, cur) => acc + cur); // events
+
+  const replay = new BinaryWriter(Buffer.alloc(finalReplayByteLength));
+
+  buildReplayMeta(replay, replayData);
+  buildChunks(replay, replayData);
+
+  return replay.buffer;
 };

@@ -873,6 +873,15 @@ export interface ReplayDataChunk {
   data: Buffer;
 }
 
+export interface ReplayCheckpoint {
+  Id: string;
+  Group: string;
+  Metadata: string;
+  Time1: number;
+  Time2: number;
+  data: Buffer;
+}
+
 export interface ReplayData {
   ReplayName: string;
   LengthInMS: number;
@@ -883,7 +892,30 @@ export interface ReplayData {
   bIsLive: boolean;
   bCompressed: boolean;
   DesiredDelayInSeconds: number;
-  Events: ReplayEvent[];
-  DataChunks: ReplayDataChunk[];
+  Checkpoints?: ReplayCheckpoint[];
+  Events?: ReplayEvent[];
+  DataChunks?: ReplayDataChunk[];
   Header: Buffer;
 }
+
+export type ReplayDataType = 'EVENT' | 'DATACHUNK' | 'CHECKPOINT';
+
+export interface ReplayDownloadConfig {
+  /**
+   * Which replay data types to download.
+   * EVENT data contains basic information like eliminations, you will only need EVENT data for ThisNils/node-replay-reader.
+   * DATACHUNK data contains information that is required for most parsing libraries.
+   * CHECKPOINT data contains information that is pretty much only useful if you want to use the replay ingame.
+   * By default, only events and data chunks are downloaded
+   */
+  dataTypes: ReplayDataType[];
+
+  /**
+   * Whether a placeholder for AthenaMatchStats and AthenaMatchTeamStats should be added.
+   * Required if you want to use the replay ingame, otherwise useless.
+   * By default, this is set to false
+   */
+  addStatsPlaceholder: boolean;
+}
+
+export interface ReplayDownloadOptions extends Partial<ReplayDownloadConfig> {}

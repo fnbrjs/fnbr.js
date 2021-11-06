@@ -106,10 +106,10 @@ class BinaryWriter {
   /**
    * Write a string
    */
-  writeString(value: string) {
-    this.writeInt32(value.length + 1);
-    this.writeBytes(Buffer.from(value, 'utf-8'));
-    this.skip(1);
+  writeString(value: string, encoding: 'utf8' | 'utf16le' = 'utf8') {
+    this.writeInt32(encoding === 'utf8' ? value.length + 1 : -(value.length + 1));
+    this.writeBytes(Buffer.from(value, encoding));
+    this.skip(encoding === 'utf8' ? 1 : 2);
     return this;
   }
 

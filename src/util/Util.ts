@@ -1,6 +1,7 @@
 /* eslint-disable no-restricted-syntax */
 import readline from 'readline';
 import zlib from 'zlib';
+import crypto from 'crypto';
 import {
   Schema, ReplayData, ReplayDataChunk, ReplayEvent,
 } from '../../resources/structs';
@@ -139,7 +140,7 @@ const buildReplayMeta = (replay: BinaryWriter, replayData: ReplayData) => {
     .writeUInt32(replayData.LengthInMS)
     .writeUInt32(replayData.NetworkVersion)
     .writeUInt32(replayData.Changelist)
-    .writeString(replayData.FriendlyName)
+    .writeString(replayData.FriendlyName.padEnd(256), 'utf16le')
     .writeBool(replayData.bIsLive)
     .writeUInt64((BigInt(new Date(replayData.Timestamp).getTime()) * BigInt('10000')) + BigInt('621355968000000000'))
     .writeBool(replayData.bCompressed)
@@ -159,14 +160,18 @@ const buildChunks = (replay: BinaryWriter, replayData: ReplayData) => {
     chunkType: 0,
     data: replayData.Header,
   },
-  ...replayData.DataChunks.map((c) => ({
+  ...replayData.DataChunks?.map((c) => ({
     ...c,
     chunkType: 1,
-  })),
-  ...replayData.Events.map((c) => ({
+  })) || [],
+  ...replayData.Checkpoints?.map((c) => ({
+    ...c,
+    chunkType: 2,
+  })) || [],
+  ...replayData.Events?.map((c) => ({
     ...c,
     chunkType: 3,
-  }))];
+  })) || []];
 
   for (const chunk of chunks) {
     replay.writeUInt32(chunk.chunkType);
@@ -184,6 +189,16 @@ const buildChunks = (replay: BinaryWriter, replayData: ReplayData) => {
           .writeUInt32(chunk.Time2!)
           .writeUInt32(chunk.data.length)
           .writeInt32(chunk.SizeInBytes!)
+          .writeBytes(chunk.data);
+        break;
+      case 2:
+        replay
+          .writeString(chunk.Id!)
+          .writeString(chunk.Group!)
+          .writeString(chunk.Metadata || '')
+          .writeUInt32(chunk.Time1!)
+          .writeUInt32(chunk.Time2!)
+          .writeUInt32(chunk.data.length)
           .writeBytes(chunk.data);
         break;
       case 3:
@@ -208,11 +223,34 @@ const buildChunks = (replay: BinaryWriter, replayData: ReplayData) => {
   }
 };
 
-export const buildReplay = (replayData: ReplayData) => {
-  const finalReplayByteLength = 48 + replayData.FriendlyName.length // meta
+export const buildReplay = (replayData: ReplayData, addStats = true) => {
+  if (replayData.Events && addStats) {
+    replayData.Events.push({
+      Id: `${replayData.ReplayName}_${crypto.randomBytes(16).toString('hex')}`,
+      Group: 'AthenaReplayBrowserEvents',
+      Metadata: 'AthenaMatchStats',
+      data: Buffer.alloc(48),
+      Time1: replayData.LengthInMS - 15000,
+      Time2: replayData.LengthInMS - 15000,
+    });
+
+    replayData.Events.push({
+      Id: `${replayData.ReplayName}_${crypto.randomBytes(16).toString('hex')}`,
+      Group: 'AthenaReplayBrowserEvents',
+      Metadata: 'AthenaMatchTeamStats',
+      data: Buffer.alloc(12),
+      Time1: replayData.LengthInMS - 15000,
+      Time2: replayData.LengthInMS - 15000,
+    });
+  }
+
+  const finalReplayByteLength = 562 // meta
     + 8 + replayData.Header.length // header
-    + replayData.DataChunks.map((c) => 24 + c.data.length).reduce((acc, cur) => acc + cur) // datachunks
-    + replayData.Events.map((e) => 35 + e.Id.length + e.Group.length + (e.Metadata?.length || 0) + e.data.length).reduce((acc, cur) => acc + cur); // events
+    + (replayData.DataChunks?.map((c) => 8 + 16 + c.data.length).reduce((acc, cur) => acc + cur) || 0) // datachunks
+    + (replayData.Events?.map((e) => 8 + 12 + e.Id.length + 5 + e.Group.length + 5
+      + (e.Metadata ? e.Metadata.length + 5 : 5) + e.data.length).reduce((acc, cur) => acc + cur) || 0) // events
+    + (replayData.Checkpoints?.map((c) => 8 + 12 + c.Id.length + 5 + c.Group.length + 5
+      + (c.Metadata ? c.Metadata.length + 5 : 5) + c.data.length).reduce((acc, cur) => acc + cur) || 0); // checkpoints
 
   const replay = new BinaryWriter(Buffer.alloc(finalReplayByteLength));
 

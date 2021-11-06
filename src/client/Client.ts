@@ -12,7 +12,8 @@ import AsyncLock from '../util/AsyncLock';
 import {
   ClientOptions, ClientConfig, ClientEvents, StatsData, NewsMOTD, NewsMessage, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
-  TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData,
+  TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
+  ReplayDownloadConfig,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -973,11 +974,18 @@ class Client extends EventEmitter {
    * Downloads a tournament replay by its session ID.
    * This method returns a regular Fortnite replay file, can be parsed using https://github.com/ThisNils/node-replay-reader
    * @param sessionId The session ID
+   * @param includeCheckpoints Whether to include checkpoint data. Pretty much only useful if you want to use the replay in the actual game
    * @throws {MatchNotFoundError} The match wasn't found
    * @throws {EpicgamesAPIError}
    * @throws {AxiosError}
    */
-  public async downloadTournamentReplay(sessionId: string) {
+  public async downloadTournamentReplay(sessionId: string, options: ReplayDownloadOptions) {
+    const downloadConfig: ReplayDownloadConfig = {
+      dataTypes: ['EVENT', 'DATACHUNK'],
+      addStatsPlaceholder: false,
+      ...options,
+    };
+
     const downloadReplayCDNFile = async (url: string, responseType: ResponseType) => {
       const fileLocationInfo = await this.http.sendEpicgamesRequest(true, 'GET', url, 'fortnite');
       if (fileLocationInfo.error) return fileLocationInfo;
@@ -1004,8 +1012,25 @@ class Client extends EventEmitter {
     const replayData: ReplayData = replayMetadataResponse.response;
     replayData.Header = replayHeaderResponse.response;
 
+    const downloadKeys = new Set(['Events', 'DataChunks', 'Checkpoints']);
+
+    if (!downloadConfig.dataTypes.includes('EVENT')) {
+      downloadKeys.delete('Events');
+      delete replayData.Events;
+    }
+
+    if (!downloadConfig.dataTypes.includes('DATACHUNK')) {
+      downloadKeys.delete('DataChunks');
+      delete replayData.DataChunks;
+    }
+
+    if (!downloadConfig.dataTypes.includes('CHECKPOINT')) {
+      downloadKeys.delete('Checkpoints');
+      delete replayData.Checkpoints;
+    }
+
     const promises: Promise<any>[] = [];
-    for (const downloadKey of ['Events', 'DataChunks']) {
+    for (const downloadKey of downloadKeys.values()) {
       const chunks = (replayData as any)[downloadKey];
       for (const chunk of chunks) {
         promises.push(downloadReplayCDNFile(`${Endpoints.BR_REPLAY}%2F${sessionId}%2F${chunk.Id}.bin`, 'arraybuffer').then((resp) => {
@@ -1018,7 +1043,7 @@ class Client extends EventEmitter {
 
     await Promise.all(promises);
 
-    return buildReplay(replayData);
+    return buildReplay(replayData, downloadConfig.addStatsPlaceholder);
   }
 
   /**

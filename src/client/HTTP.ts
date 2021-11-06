@@ -181,7 +181,7 @@ class HTTP extends Base {
         }
       }
 
-      headers.Authorization = `Bearer ${authData?.token}`;
+      headers.Authorization = `bearer ${authData?.token}`;
     }
 
     const finalOperationName = operationName || query.match(/((?<=mutation )|(?<=query ))\w+/)?.[0];

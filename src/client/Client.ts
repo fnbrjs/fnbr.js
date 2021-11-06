@@ -970,8 +970,8 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Downloads a tournament replay by its session ID
-   * This method returns a regular Fortnite replay file, can be parsed with https://github.com/ThisNils/node-replay-reader
+   * Downloads a tournament replay by its session ID.
+   * This method returns a regular Fortnite replay file, can be parsed using https://github.com/ThisNils/node-replay-reader
    * @param sessionId The session ID
    * @throws {MatchNotFoundError} The match wasn't found
    * @throws {EpicgamesAPIError}

@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.1.0
+
+### Additions
+* Tournament replays
+  * This method returns a `Buffer` for an actual .replay file (which can be even used ingame)
+  * Config options allow you to only download specific data
+  * Added `Client#downloadTournamentReplay()`
+* Authentication
+  * Added an alternative to device auths (since they're known for causing password resets)
+  * A launcher refresh token lasts for 30 days and needs to be refreshed each time you authenticate (using the event)
+  * Click [here](https://fnbr.js.org/#/docs/main/stable/examples/refreshtoken) for an example
+  * Added the `Client#refreshtoken:created` event
+  * Added `AuthOptions#launcherRefreshToken`
+* Creative Island Lookup
+  * Added `Client#getCreativeIsland()`
+* Creative Discovery Surface
+  * Added `Client#getCreativeDiscoveryPanels()`
+
+<hr>
+
 ## 2.0.2
 
 ### Fixes

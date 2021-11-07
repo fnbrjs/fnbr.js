@@ -975,7 +975,7 @@ class Client extends EventEmitter {
    * Downloads a tournament replay by its session ID.
    * This method returns a regular Fortnite replay file, can be parsed using https://github.com/ThisNils/node-replay-reader
    * @param sessionId The session ID
-   * @param includeCheckpoints Whether to include checkpoint data. Pretty much only useful if you want to use the replay in the actual game
+   * @param options Replay download and build options
    * @throws {MatchNotFoundError} The match wasn't found
    * @throws {EpicgamesAPIError}
    * @throws {AxiosError}

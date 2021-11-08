@@ -242,8 +242,8 @@ class Auth extends Base {
       `${Endpoints.INIT_EULA}/version/${EULAdata.response.version}/account/${this.auths.get('fortnite')?.account_id}/accept?locale=${EULAdata.response.locale}`, 'fortnite');
     if (EULAaccepted.error) return EULAaccepted;
 
-    const FortniteAccess = await this.client.http.sendEpicgamesRequest(false, 'POST', `${Endpoints.INIT_GRANTACCESS}/${this.auths.get('fortnite')?.account_id}`, 'fortnite');
-    if (FortniteAccess.error) return FortniteAccess;
+    const fortniteAccess = await this.client.http.sendEpicgamesRequest(false, 'POST', `${Endpoints.INIT_GRANTACCESS}/${this.auths.get('fortnite')?.account_id}`, 'fortnite');
+    if (fortniteAccess.error) return fortniteAccess;
 
     return { response: { alreadyAccepted: false } };
   }

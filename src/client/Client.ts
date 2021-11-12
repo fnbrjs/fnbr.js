@@ -1,15 +1,19 @@
 /* eslint-disable no-restricted-syntax */
 import { EventEmitter } from 'events';
 import Collection from '@discordjs/collection';
+import { ResponseType } from 'axios';
 import Enums from '../../enums/Enums';
-import { consoleQuestion, parseBlurlStream, parseM3U8File } from '../util/Util';
+import {
+  buildReplay, consoleQuestion, parseBlurlStream, parseM3U8File,
+} from '../util/Util';
 import Auth from './Auth';
 import Http from './HTTP';
 import AsyncLock from '../util/AsyncLock';
 import {
   ClientOptions, ClientConfig, ClientEvents, StatsData, NewsMOTD, NewsMessage, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
-  TournamentWindowTemplate, UserSearchPlatform, BlurlStream,
+  TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
+  ReplayDownloadConfig,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -17,9 +21,10 @@ import XMPP from './XMPP';
 import Friend from '../structures/Friend';
 import User from '../structures/User';
 import {
-  BlurlStreamData,
-  BlurlStreamMasterPlaylistData,
-  EpicgamesAPIResponse, TournamentData, TournamentDisplayData, TournamentWindowResults, TournamentWindowTemplateData,
+  BlurlStreamData, CreativeIslandData,
+  BlurlStreamMasterPlaylistData, CreativeDiscoveryPanel,
+  EpicgamesAPIResponse, TournamentData, TournamentDisplayData,
+  TournamentWindowResults, TournamentWindowTemplateData,
 } from '../../resources/httpResponses';
 import UserNotFoundError from '../exceptions/UserNotFoundError';
 import StatsPrivacyError from '../exceptions/StatsPrivacyError';
@@ -47,6 +52,8 @@ import SentPartyJoinRequest from '../structures/SentPartyJoinRequest';
 import UserSearchResult from '../structures/UserSearchResult';
 import RadioStation from '../structures/RadioStation';
 import SentFriendMessage from '../structures/SentFriendMessage';
+import MatchNotFoundError from '../exceptions/MatchNotFoundError';
+import CreativeIslandNotFoundError from '../exceptions/CreativeIslandNotFoundError';
 
 /**
  * Represets the main client
@@ -962,6 +969,119 @@ class Client extends EventEmitter {
       languages: languageStreams,
       data: streamMetaData,
     };
+  }
+
+  /**
+   * Downloads a tournament replay by its session ID.
+   * This method returns a regular Fortnite replay file, can be parsed using https://github.com/ThisNils/node-replay-reader
+   * @param sessionId The session ID
+   * @param options Replay download and build options
+   * @throws {MatchNotFoundError} The match wasn't found
+   * @throws {EpicgamesAPIError}
+   * @throws {AxiosError}
+   */
+  public async downloadTournamentReplay(sessionId: string, options: ReplayDownloadOptions) {
+    const downloadConfig: ReplayDownloadConfig = {
+      dataTypes: ['EVENT', 'DATACHUNK'],
+      addStatsPlaceholder: false,
+      ...options,
+    };
+
+    const downloadReplayCDNFile = async (url: string, responseType: ResponseType) => {
+      const fileLocationInfo = await this.http.sendEpicgamesRequest(true, 'GET', url, 'fortnite');
+      if (fileLocationInfo.error) return fileLocationInfo;
+
+      const file = await this.http.send('GET', (Object.values(fileLocationInfo.response.files)[0] as any).readLink, undefined, undefined, undefined, responseType);
+
+      if (file.response) return { response: file.response.data };
+      return file;
+    };
+
+    const replayMetadataResponse = await downloadReplayCDNFile(`${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, 'json');
+    if (replayMetadataResponse.error) {
+      if (!(replayMetadataResponse.error instanceof EpicgamesAPIError)
+        && replayMetadataResponse.error.response?.data.includes('<Message>The specified key does not exist.</Message>')) {
+        throw new MatchNotFoundError(sessionId);
+      }
+
+      throw replayMetadataResponse.error;
+    }
+
+    const replayHeaderResponse = await downloadReplayCDNFile(`${Endpoints.BR_REPLAY}%2F${sessionId}%2Fheader.bin`, 'arraybuffer');
+    if (replayHeaderResponse.error) throw replayHeaderResponse.error;
+
+    const replayData: ReplayData = replayMetadataResponse.response;
+    replayData.Header = replayHeaderResponse.response;
+
+    const downloadKeys = new Set(['Events', 'DataChunks', 'Checkpoints']);
+
+    if (!downloadConfig.dataTypes.includes('EVENT')) {
+      downloadKeys.delete('Events');
+      delete replayData.Events;
+    }
+
+    if (!downloadConfig.dataTypes.includes('DATACHUNK')) {
+      downloadKeys.delete('DataChunks');
+      delete replayData.DataChunks;
+    }
+
+    if (!downloadConfig.dataTypes.includes('CHECKPOINT')) {
+      downloadKeys.delete('Checkpoints');
+      delete replayData.Checkpoints;
+    }
+
+    const promises: Promise<any>[] = [];
+    for (const downloadKey of downloadKeys.values()) {
+      const chunks = (replayData as any)[downloadKey];
+      for (const chunk of chunks) {
+        promises.push(downloadReplayCDNFile(`${Endpoints.BR_REPLAY}%2F${sessionId}%2F${chunk.Id}.bin`, 'arraybuffer').then((resp) => {
+          if (resp.error) throw resp.error;
+
+          chunks.find((d: any) => d.Id === chunk.Id).data = resp.response;
+        }));
+      }
+    }
+
+    await Promise.all(promises);
+
+    return buildReplay(replayData, downloadConfig.addStatsPlaceholder);
+  }
+
+  /**
+   * Fetches a creative island by its code
+   * @param code The island code
+   * @throws {CreativeIslandNotFoundError} A creative island with the provided code does not exist
+   * @throws {EpicgamesAPIError}
+   */
+  public async getCreativeIsland(code: string): Promise<CreativeIslandData> {
+    const islandInfo = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.CREATIVE_ISLAND_LOOKUP}/${code}`, 'fortnite');
+    if (islandInfo.error) {
+      if (islandInfo.error.code === 'errors.com.epicgames.links.no_active_version') throw new CreativeIslandNotFoundError(code);
+      throw islandInfo.error;
+    }
+
+    return islandInfo.response;
+  }
+
+  /**
+   * Fetches the creative discovery surface
+   * @param gameVersion The current game version (MAJOR.MINOR)
+   * @throws {EpicgamesAPIError}
+   */
+  public async getCreativeDiscoveryPanels(gameVersion = '18.30'): Promise<CreativeDiscoveryPanel[]> {
+    const creativeDiscovery = await this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.CREATIVE_DISCOVERY}/${this.user?.id}`, 'fortnite', {
+      'Content-Type': 'application/json',
+      'User-Agent': `Fortnite/++Fortnite+Release-${gameVersion}-CL-00000000 Windows/10`,
+    }, {
+      surfaceName: 'CreativeDiscoverySurface_Frontend',
+      partyMemberIds: [this.user?.id],
+    });
+
+    if (creativeDiscovery.error) {
+      throw creativeDiscovery.error;
+    }
+
+    return creativeDiscovery.response.Panels;
   }
 
   /**

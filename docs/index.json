@@ -26,6 +26,10 @@
       {
         "name": "DeviceAuth Client",
         "path": "deviceauth.js"
+      },
+      {
+        "name": "RefreshToken Client",
+        "path": "refreshtoken.js"
       }
     ]
   },

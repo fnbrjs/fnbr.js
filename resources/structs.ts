@@ -47,6 +47,15 @@ export type Platform = 'WIN' | 'MAC' | 'PSN' | 'XBL' | 'SWT' | 'IOS' | 'AND';
 export type AuthClient = 'fortnitePCGameClient' | 'fortniteIOSGameClient' | 'fortniteAndroidGameClient'
   | 'fortniteSwitchGameClient' | 'fortniteCNGameClient' | 'launcherAppClient2' | 'Diesel - Dauntless';
 
+export interface RefreshTokenData {
+  token: string;
+  expiresIn: number;
+  expiresAt: string;
+  accountId: string;
+  displayName: string;
+  clientId: string;
+}
+
 export interface CacheSetting {
   /**
    * How long the data should stay in the cache until it is considered sweepable (in seconds, 0 for no cache, Infinity for infinite)
@@ -68,6 +77,7 @@ export interface AuthOptions {
   exchangeCode?: AuthStringResolveable;
   authorizationCode?: AuthStringResolveable;
   refreshToken?: AuthStringResolveable;
+  launcherRefreshToken?: AuthStringResolveable;
   checkEULA?: boolean;
   killOtherTokens?: boolean;
   authClient?: AuthClient;
@@ -240,6 +250,12 @@ export interface ClientEvents {
   'deviceauth:created': (deviceAuth: DeviceAuth) => void;
 
   /**
+   * Emitted when a refresh token got created
+   * @param refreshTokenData The refresh token data
+   */
+  'refreshtoken:created': (refreshTokenData: RefreshTokenData) => void;
+
+  /**
    * Emitted when the client received a friend whisper message
    * @param message The received friend whipser message
    */
@@ -399,7 +415,7 @@ export interface AuthData {
   account_id?: string;
 }
 
-export type AuthType = 'fortnite' | 'fortniteClientCredentials';
+export type AuthType = 'fortnite' | 'fortniteClientCredentials' | 'launcher';
 
 export interface AuthResponse {
   response?: EpicgamesOAuthData;
@@ -839,3 +855,67 @@ export interface BlurlStream {
     duration?: number;
   };
 }
+
+export interface ReplayEvent {
+  Id: string;
+  Group: string;
+  Metadata: string;
+  Time1: number;
+  Time2: number;
+  data: Buffer;
+}
+
+export interface ReplayDataChunk {
+  Id: string;
+  Time1: number;
+  Time2: number;
+  SizeInBytes: number;
+  data: Buffer;
+}
+
+export interface ReplayCheckpoint {
+  Id: string;
+  Group: string;
+  Metadata: string;
+  Time1: number;
+  Time2: number;
+  data: Buffer;
+}
+
+export interface ReplayData {
+  ReplayName: string;
+  LengthInMS: number;
+  NetworkVersion: number;
+  Changelist: number;
+  FriendlyName: string;
+  Timestamp: Date;
+  bIsLive: boolean;
+  bCompressed: boolean;
+  DesiredDelayInSeconds: number;
+  Checkpoints?: ReplayCheckpoint[];
+  Events?: ReplayEvent[];
+  DataChunks?: ReplayDataChunk[];
+  Header: Buffer;
+}
+
+export type ReplayDataType = 'EVENT' | 'DATACHUNK' | 'CHECKPOINT';
+
+export interface ReplayDownloadConfig {
+  /**
+   * Which replay data types to download.
+   * EVENT data contains basic information like eliminations, you will only need EVENT data for ThisNils/node-replay-reader.
+   * DATACHUNK data contains information that is required for most parsing libraries.
+   * CHECKPOINT data contains information that is pretty much only useful if you want to use the replay ingame.
+   * By default, only events and data chunks are downloaded
+   */
+  dataTypes: ReplayDataType[];
+
+  /**
+   * Whether a placeholder for AthenaMatchStats and AthenaMatchTeamStats should be added.
+   * Required if you want to use the replay ingame, otherwise useless.
+   * By default, this is set to false
+   */
+  addStatsPlaceholder: boolean;
+}
+
+export interface ReplayDownloadOptions extends Partial<ReplayDownloadConfig> {}

@@ -36,6 +36,10 @@ export default Object.freeze({
   BR_REPLAY: 'https://datastorage-public-service-live.ol.epicgames.com/api/v1/access/fnreplays/public',
   BR_REPLAY_METADATA: 'https://datastorage-public-service-live.ol.epicgames.com/api/v1/access/fnreplaysmetadata/public',
 
+  // CREATIVE
+  CREATIVE_ISLAND_LOOKUP: 'https://links-public-service-live.ol.epicgames.com/links/api/fn/mnemonic',
+  CREATIVE_DISCOVERY: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/game/v2/creative/discovery/surface',
+
   // ACCOUNT
   ACCOUNT_MULTIPLE: 'https://account-public-service-prod.ol.epicgames.com/account/api/public/account',
   ACCOUNT_DISPLAYNAME: 'https://account-public-service-prod03.ol.epicgames.com/account/api/public/account/displayName',

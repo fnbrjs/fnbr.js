@@ -54,6 +54,9 @@ class Auth extends Base {
       auth = await this.exchangeCodeAuthenticate(authCreds.exchangeCode, authClient);
     } else if (authCreds.refreshToken) {
       auth = await this.refreshTokenAuthenticate(authCreds.refreshToken, authClient);
+    } else if (authCreds.launcherRefreshToken) {
+      auth = await this.launcherRefreshTokenAuthenticate(authCreds.launcherRefreshToken, authClient);
+      this.auths.delete('launcher');
     } else if (authCreds.authorizationCode) {
       auth = await this.authorizationCodeAuthenticate(authCreds.authorizationCode, authClient);
     } else {
@@ -69,6 +72,19 @@ class Auth extends Base {
       client: authClient,
       account_id: auth.response.account_id,
     });
+
+    if (!authCreds.launcherRefreshToken && this.client.listenerCount('refreshtoken:created') > 0) {
+      const launcherAuth = await this.exchangeAuth('fortnite', 'launcherAppClient2');
+
+      this.client.emit('refreshtoken:created', {
+        token: launcherAuth.response.refresh_token,
+        expiresIn: launcherAuth.response.refresh_expires,
+        expiresAt: launcherAuth.response.refresh_expires_at,
+        accountId: launcherAuth.response.account_id,
+        displayName: launcherAuth.response.displayName,
+        clientId: launcherAuth.response.client_id,
+      });
+    }
 
     if (this.client.config.auth.killOtherTokens) {
       await this.client.http.sendEpicgamesRequest(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL_MULTIPLE}?killType=OTHERS_ACCOUNT_CLIENT_SERVICE`, 'fortnite');
@@ -226,8 +242,8 @@ class Auth extends Base {
       `${Endpoints.INIT_EULA}/version/${EULAdata.response.version}/account/${this.auths.get('fortnite')?.account_id}/accept?locale=${EULAdata.response.locale}`, 'fortnite');
     if (EULAaccepted.error) return EULAaccepted;
 
-    const FortniteAccess = await this.client.http.sendEpicgamesRequest(false, 'POST', `${Endpoints.INIT_GRANTACCESS}/${this.auths.get('fortnite')?.account_id}`, 'fortnite');
-    if (FortniteAccess.error) return FortniteAccess;
+    const fortniteAccess = await this.client.http.sendEpicgamesRequest(false, 'POST', `${Endpoints.INIT_GRANTACCESS}/${this.auths.get('fortnite')?.account_id}`, 'fortnite');
+    if (fortniteAccess.error) return fortniteAccess;
 
     return { response: { alreadyAccepted: false } };
   }
@@ -237,6 +253,13 @@ class Auth extends Base {
    */
   private async createDeviceAuth() {
     return this.client.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.OAUTH_DEVICE_AUTH}/${this.auths.get('fortnite')?.account_id}/deviceAuth`, 'fortnite');
+  }
+
+  private async exchangeAuth(authType: AuthType, targetClient: AuthClient) {
+    const exchangeCode = await this.client.http.sendEpicgamesRequest(true, 'GET', Endpoints.OAUTH_EXCHANGE, authType);
+    if (exchangeCode.error || !exchangeCode.response) return exchangeCode;
+
+    return this.getOAuthToken('exchange_code', { exchange_code: exchangeCode.response.code }, targetClient);
   }
 
   /**
@@ -359,10 +382,59 @@ class Auth extends Base {
         }
         break;
       default:
-        return { error: new TypeError(`${typeof refreshTokenResolvable} is not a valid refresh code type`) };
+        return { error: new TypeError(`${typeof refreshTokenResolvable} is not a valid refresh token type`) };
     }
 
     return this.getOAuthToken('refresh_token', { refresh_token: refreshToken }, authClient);
+  }
+
+  /**
+   * Authentication via a launcher refresh token
+   * @param refreshTokenResolvable A resolvable refresh token
+   */
+  private async launcherRefreshTokenAuthenticate(refreshTokenResolvable: AuthStringResolveable, authClient: AuthClient) {
+    let refreshToken: string;
+
+    switch (typeof refreshTokenResolvable) {
+      case 'function':
+        refreshToken = await refreshTokenResolvable();
+        break;
+      case 'string':
+        if (refreshTokenResolvable.length === 32 || refreshTokenResolvable.startsWith('eg1')) {
+          refreshToken = refreshTokenResolvable;
+        } else {
+          try {
+            refreshToken = (await fs.readFile(refreshTokenResolvable)).toString();
+          } catch (err) {
+            return { error: err as Error };
+          }
+        }
+        break;
+      default:
+        return { error: new TypeError(`${typeof refreshTokenResolvable} is not a valid refresh token type`) };
+    }
+
+    const launcherAuth = await this.getOAuthToken('refresh_token', { refresh_token: refreshToken }, 'launcherAppClient2');
+    if (launcherAuth.error || !launcherAuth.response) return launcherAuth;
+
+    this.auths.set('launcher', {
+      token: launcherAuth.response.access_token,
+      refresh_token: launcherAuth.response.refresh_token,
+      expires_at: launcherAuth.response.expires_at,
+      client: 'launcherAppClient2',
+      account_id: launcherAuth.response.account_id,
+    });
+
+    this.client.emit('refreshtoken:created', {
+      token: launcherAuth.response.refresh_token,
+      expiresIn: launcherAuth.response.refresh_expires,
+      expiresAt: launcherAuth.response.refresh_expires_at,
+      accountId: launcherAuth.response.account_id,
+      displayName: launcherAuth.response.displayName,
+      clientId: launcherAuth.response.client_id,
+    });
+
+    return this.exchangeAuth('launcher', authClient);
   }
 }
 

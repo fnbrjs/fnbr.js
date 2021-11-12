@@ -1,6 +1,6 @@
 {
   "name": "fnbr",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "A library to interact with Epic Games' Fortnite HTTP and XMPP services",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -46,8 +46,8 @@
     "typescript": "^4.3.2"
   },
   "dependencies": {
-    "@discordjs/collection": "^0.2.1",
-    "axios": "^0.23.0",
+    "@discordjs/collection": "^0.3.2",
+    "axios": "^0.24.0",
     "stanza": "^12.17.2"
   },
   "optionalDependencies": {

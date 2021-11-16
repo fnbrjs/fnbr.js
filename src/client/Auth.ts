@@ -227,7 +227,7 @@ class Auth extends Base {
 
     return this.client.http.sendEpicgamesRequest(false, 'POST', Endpoints.OAUTH_TOKEN_CREATE, undefined, {
       'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: `Basic ${authClientToken}`,
+      Authorization: `basic ${authClientToken}`,
     }, null, formData, true);
   }
 

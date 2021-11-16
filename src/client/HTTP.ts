@@ -132,7 +132,7 @@ class HTTP extends Base {
         }
       }
 
-      finalHeaders.Authorization = `Bearer ${authData?.token}`;
+      finalHeaders.Authorization = `bearer ${authData?.token}`;
     }
 
     const request = await this.send(method, url, finalHeaders, data, form);

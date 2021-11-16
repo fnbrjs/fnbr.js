@@ -231,6 +231,9 @@ class Auth extends Base {
     }, null, formData, true);
   }
 
+  /**
+   * Kills all active auth sessions
+   */
   public async killAllTokens() {
     const proms = [];
     for (const [authType, auth] of this.auths.filter((a) => !!a.account_id)) {

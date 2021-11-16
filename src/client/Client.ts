@@ -744,7 +744,52 @@ class Client extends EventEmitter {
     const { messages, motds, platform_motds: platformMotds } = news.response.news;
 
     if (mode === 'savetheworld') return messages;
-    return [...motds, ...(platformMotds || []).filter((m: any) => m.platform === 'windows').map((m: any) => m.message)];
+
+    const oldNewsMessages: NewsMOTD[] = [...motds, ...(platformMotds || []).filter((m: any) => m.platform === 'windows').map((m: any) => m.message)];
+
+    const newNews = await this.http.sendEpicgamesRequest(true, 'POST', Endpoints.BR_NEWS_MOTD, 'fortnite', undefined, {
+      platform: 'Windows',
+      language: 'en',
+      country: 'US',
+      serverRegion: 'NA',
+      subscription: false,
+      battlepass: false,
+      battlepassLevel: 1,
+    });
+    if (newNews.error) throw newNews.error;
+
+    const newsMessages: NewsMOTD[] = (newNews.response?.contentItems as any[])?.map((i: any, y) => ({
+      _type: i.contentSchemaName,
+      body: i.contentFields.body,
+      entryType: i.contentFields.entryType,
+      hidden: i.contentFields.hidden,
+      id: i.contentId,
+      image: i.contentFields.image?.[0]?.url,
+      offerAction: i.contentFields.offerAction,
+      sortingPriority: 1000 - y,
+      spotlight: i.contentFields.spotlight,
+      tabTitleOverride: i.contentFields.tabTitleOverride,
+      tileImage: i.contentFields.tileImage?.[0]?.url,
+      title: i.contentFields.title,
+      videoAutoplay: i.contentFields.videoAutoplay,
+      videoFullscreen: i.contentFields.videoFullscreen,
+      videoLoop: i.contentFields.videoLoop,
+      videoMute: i.contentFields.videoMute,
+      videoStreamingEnabled: i.contentFields.videoStreamingEnabled,
+      buttonTextOverride: i.contentFields.buttonTextOverride,
+      offerId: i.contentFields.offerId,
+      playlistId: i.contentFields.playlistId,
+      videoUID: i.contentFields.videoUID,
+      videoVideoString: i.contentFields.videoVideoString,
+    })) || [];
+
+    oldNewsMessages.forEach((omsg) => {
+      if (!newsMessages.some((msg) => msg.title === omsg.title && msg.body === omsg.body)) {
+        newsMessages.push(omsg);
+      }
+    });
+
+    return newsMessages;
   }
 
   /**

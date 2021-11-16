@@ -26,6 +26,12 @@ class Auth extends Base {
   public auths: Collection<AuthType, AuthData>;
 
   /**
+   * A timeout that handles auth refreshing
+   */
+  // eslint-disable-next-line no-undef
+  private authRefreshTimeout: NodeJS.Timeout;
+
+  /**
    * @param client The main client
    */
   constructor(client: Client) {
@@ -72,6 +78,11 @@ class Auth extends Base {
       client: authClient,
       account_id: auth.response.account_id,
     });
+
+    clearTimeout(this.authRefreshTimeout);
+    this.authRefreshTimeout = this.client.setTimeout(async () => {
+      await this.reauthenticate();
+    }, (auth.response.expires_in * 1000) - 10 * 60 * 1000);
 
     if (!authCreds.launcherRefreshToken && this.client.listenerCount('refreshtoken:created') > 0) {
       const launcherAuth = await this.exchangeAuth('fortnite', 'launcherAppClient2');
@@ -120,7 +131,27 @@ class Auth extends Base {
     return auth;
   }
 
-  public async reauthenticate(authData: AuthData, authType: AuthType) {
+  /**
+   * Force refreshes a single auth session
+   * @param authData The authentication data
+   * @param authType The authentication type
+   */
+  private async refreshAuth(authData: AuthData, authType: AuthType) {
+    let reauth: EpicgamesOAuthResponse;
+
+    if (authType === 'fortniteClientCredentials') {
+      reauth = await this.getOAuthToken('client_credentials', {}, authData.client);
+    } else {
+      reauth = await this.getOAuthToken('refresh_token', { refresh_token: authData.refresh_token }, authData.client);
+    }
+
+    return reauth;
+  }
+
+  /**
+   * Force refreshes all auth sessions
+   */
+  public async reauthenticate() {
     if (this.client.reauthLock.isLocked) {
       await this.client.reauthLock.wait();
       return { response: { success: true } };
@@ -130,25 +161,51 @@ class Auth extends Base {
     this.client.debug('[AUTH] Reauthenticating...');
     const authStartTime = Date.now();
 
-    const reauth = await this.getOAuthToken('refresh_token', { refresh_token: authData.refresh_token }, authData.client);
+    const authResponses = await Promise.all(this.auths.map((authData, authType) => this.refreshAuth(authData, authType)
+      .then((auth) => ({ authData, authType, auth }))));
 
-    if (!reauth.response) {
+    const failedOAuthResponse = authResponses.find((res) => !res.auth.response);
+    if (failedOAuthResponse) {
+      if (this.client.config.restartOnInvalidRefresh) {
+        this.client.debug(`[AUTH] Reauthentification failed for session "${failedOAuthResponse.authType}" `
+          + `(${failedOAuthResponse.auth.error?.code || 'no error code'}). Attempting restart...`);
+
+        this.auths.clear(); // making sure that the client will not use the invalid refresh token
+        this.client.reauthLock.unlock();
+
+        await this.client.restart();
+
+        return { response: { success: true } };
+      }
+
+      this.client.debug(`[AUTH] Reauthentification failed for session "${failedOAuthResponse.authType}" `
+        + `(${failedOAuthResponse.auth.error?.code || 'no error code'}). The client will now shut down`);
+
+      this.auths.clear();
       this.client.reauthLock.unlock();
-      this.client.debug('[AUTH] Reauthentification failed: You logged in elsewhere');
-      this.auths.delete(authType);
-      return { error: reauth.error };
+      await this.client.logout();
+
+      return { error: failedOAuthResponse.auth.error! };
     }
 
-    this.auths.set(authType, {
-      token: reauth.response.access_token,
-      refresh_token: reauth.response.refresh_token,
-      expires_at: reauth.response.expires_at,
-      client: authData.client,
-      account_id: authData.account_id,
-    });
+    for (const authResponse of authResponses) {
+      this.auths.set(authResponse.authType, {
+        token: authResponse.auth.response!.access_token,
+        expires_at: authResponse.auth.response!.expires_at,
+        refresh_token: authResponse.auth.response!.refresh_token,
+        client: authResponse.authData.client,
+        account_id: authResponse.auth.response!.account_id,
+      });
+    }
 
-    this.client.debug(`[AUTH] Reauthentification successful (${((Date.now() - authStartTime) / 1000).toFixed(2)}s)`);
+    clearTimeout(this.authRefreshTimeout);
+    this.authRefreshTimeout = this.client.setTimeout(async () => {
+      await this.reauthenticate();
+    }, (authResponses.find((res) => res.authType === 'fortnite')!.auth.response!.expires_in * 1000) - 10 * 60 * 1000);
+
     this.client.reauthLock.unlock();
+    this.client.debug(`[AUTH] Reauthentification successful (${((Date.now() - authStartTime) / 1000).toFixed(2)}s)`);
+
     return { response: { success: true } };
   }
 
@@ -176,34 +233,12 @@ class Auth extends Base {
 
   public async killAllTokens() {
     const proms = [];
-    for (const [authType, auth] of this.auths) {
+    for (const [authType, auth] of this.auths.filter((a) => !!a.account_id)) {
       proms.push(this.client.http.sendEpicgamesRequest(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${auth.token}`, authType));
     }
 
     await Promise.all(proms);
     this.auths.clear();
-  }
-
-  public async checkAllTokens(forceVerify = true) {
-    const proms = [];
-    for (const authType of this.auths.keys()) {
-      proms.push(this.checkToken(authType, forceVerify));
-    }
-
-    const tokens = await Promise.all(proms);
-
-    let i = 0;
-    for (const token of tokens) {
-      if (!token) {
-        // eslint-disable-next-line no-await-in-loop
-        const reauth = await this.reauthenticate([...this.auths.values()][i], [...this.auths.keys()][i]);
-        if (!reauth.response?.success) {
-          // eslint-disable-next-line no-await-in-loop
-          await this.client.logout();
-        }
-      }
-      i += 1;
-    }
   }
 
   /**
@@ -218,7 +253,10 @@ class Auth extends Base {
     if (!authData) return false;
 
     if (forceVerify) {
-      const tokenCheck = await this.client.http.sendEpicgamesRequest(false, 'GET', Endpoints.OAUTH_TOKEN_VERIFY, 'fortnite');
+      const tokenCheck = await this.client.http.sendEpicgamesRequest(false, 'GET', Endpoints.OAUTH_TOKEN_VERIFY, undefined, {
+        Authorization: `bearer ${authData.token}`,
+      });
+
       if (tokenCheck.error?.code === 'errors.com.epicgames.common.oauth.invalid_token') tokenIsValid = false;
     }
 

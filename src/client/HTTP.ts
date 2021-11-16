@@ -123,12 +123,13 @@ class HTTP extends Base {
 
     const finalHeaders = headers;
     if (auth) {
-      const authData = this.client.auth.auths.get(auth);
+      let authData = this.client.auth.auths.get(auth);
       if (authData && checkToken) {
         const tokenCheck = await this.client.auth.checkToken(auth);
         if (!tokenCheck) {
-          const reauth = await this.client.auth.reauthenticate(authData, auth);
+          const reauth = await this.client.auth.reauthenticate();
           if (reauth.error) return reauth;
+          authData = this.client.auth.auths.get(auth);
         }
       }
 
@@ -140,7 +141,7 @@ class HTTP extends Base {
     if ((request.error?.response?.data as any)?.errorCode === 'errors.com.epicgames.common.oauth.invalid_token' && auth) {
       const authData = this.client.auth.auths.get(auth);
       if (authData) {
-        const reauth = await this.client.auth.reauthenticate(authData, auth);
+        const reauth = await this.client.auth.reauthenticate();
         if (reauth.error) return reauth;
         return this.sendEpicgamesRequest(checkToken, method, url, auth, headers, data, form, ignoreLocks);
       }
@@ -172,12 +173,13 @@ class HTTP extends Base {
     };
 
     if (auth) {
-      const authData = this.client.auth.auths.get(auth);
+      let authData = this.client.auth.auths.get(auth);
       if (authData && checkToken) {
         const tokenCheck = await this.client.auth.checkToken(auth);
         if (!tokenCheck) {
-          const reauth = await this.client.auth.reauthenticate(authData, auth);
+          const reauth = await this.client.auth.reauthenticate();
           if (reauth.error) return reauth;
+          authData = this.client.auth.auths.get(auth);
         }
       }
 

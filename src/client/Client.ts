@@ -160,7 +160,7 @@ class Client extends EventEmitter {
       restRetryLimit: 1,
       handleRatelimits: true,
       partyBuildId: '1:3:',
-      tokenVerifyInterval: 1200000,
+      restartOnInvalidRefresh: false,
       ...config,
       cacheSettings: {
         ...config.cacheSettings,
@@ -233,17 +233,11 @@ class Client extends EventEmitter {
     const auth = await this.auth.authenticate();
     if (!auth.response) throw auth.error || new Error('Couldn\'t authenticate the client');
 
-    this.setInterval(() => this.auth.checkAllTokens(), this.config.tokenVerifyInterval);
-
     const clientInfo = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.ACCOUNT_ID}/${auth.response.account_id}`, 'fortnite');
     if (!clientInfo.response) throw clientInfo.error || new Error('Couldn\'t fetch the client\'s account info');
 
     this.user = new ClientUser(this, clientInfo.response);
     await this.user.fetch();
-
-    if (this.config.fetchFriends) {
-      await this.updateCaches();
-    }
 
     this.initCacheSweeping();
 
@@ -251,6 +245,10 @@ class Client extends EventEmitter {
       this.xmpp.setup();
       const xmpp = await this.xmpp.connect();
       if (!xmpp.response) throw xmpp.error || new Error('Couldn\'t connect to XMPP');
+    }
+
+    if (this.config.fetchFriends) {
+      await this.updateCaches();
     }
 
     await this.initParty(this.config.createParty, this.config.forceNewParty);

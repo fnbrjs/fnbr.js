@@ -224,10 +224,11 @@ export interface ClientConfig {
   partyBuildId: string;
 
   /**
-   * Custom token verification interval.
-   * Usually, there is no need to change this
+   * Whether the client should restart if a refresh token is invalid.
+   * Refresh tokens can be invalid if you logged in with another client on the same account.
+   * By default, this is set to false because two clients attempting to log into one account could result in an endless loop
    */
-  tokenVerifyInterval: number;
+  restartOnInvalidRefresh: boolean;
 }
 
 export interface ClientOptions extends Partial<ClientConfig> {}

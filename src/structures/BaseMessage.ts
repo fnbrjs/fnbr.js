@@ -13,7 +13,7 @@ abstract class BaseMessage extends Base {
   /**
    * The message's content
    */
-   public content: string;
+  public content: string;
 
   /**
    * The message's author

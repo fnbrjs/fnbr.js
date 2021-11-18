@@ -10,11 +10,9 @@ module.exports = (results) => {
       // Different parameters GitHub can show
       const severity = data.severity === 1 ? 'warning' : 'error';
       const file = path.relative(process.cwd(), result.filePath);
-      const line = data.line;
-      const col = data.column;
-      const message = data.message;
+      const { line, column, message } = data;
 
-      console.log(`::${severity} file=${file},line=${line},col=${col}::${message}`)
+      console.log(`::${severity} file=${file},line=${line},col=${column}::${message}`);
     }
   }
 };

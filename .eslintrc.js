@@ -21,6 +21,9 @@ module.exports = {
     'max-len': 'off',
     'no-underscore-dangle': 'off',
     'no-dupe-class-members': 'off',
+    'function-paren-newline': 'off',
+    'function-call-argument-newline': 'off',
+    'default-param-last': 'off',
   },
   settings: {
     'import/resolver': {

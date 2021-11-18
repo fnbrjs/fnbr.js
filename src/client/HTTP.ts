@@ -97,7 +97,10 @@ class HTTP extends Base {
         const retryAfter = parseInt(errResponse.headers['Retry-After'] || (errResponse.data as any).messageVars[0], 10);
         if (!Number.isNaN(retryAfter)) {
           const sleepTimeout = (retryAfter * 1000) + 500;
-          await new Promise<void>((res) => setTimeout(res, sleepTimeout));
+          await new Promise((res) => {
+            setTimeout(res, sleepTimeout);
+          });
+
           return this.send(method, url, headers, body, form, responseType);
         }
       }

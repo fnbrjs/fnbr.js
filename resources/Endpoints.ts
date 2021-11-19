@@ -33,6 +33,7 @@ export default Object.freeze({
   BR_TOURNAMENTS: 'https://events-public-service-prod.ol.epicgames.com/api/v1/events/Fortnite/data',
   BR_TOURNAMENTS_DOWNLOAD: 'https://events-public-service-live.ol.epicgames.com/api/v1/events/Fortnite/download',
   BR_TOURNAMENT_WINDOW: 'https://events-public-service-live.ol.epicgames.com/api/v1/leaderboards/Fortnite',
+  BR_TOURNAMENT_TOKENS: 'https://events-public-service-live.ol.epicgames.com/api/v1/players/Fortnite/tokens',
   BR_STREAM: 'https://fortnite-vod.akamaized.net',
   BR_REPLAY: 'https://datastorage-public-service-live.ol.epicgames.com/api/v1/access/fnreplays/public',
   BR_REPLAY_METADATA: 'https://datastorage-public-service-live.ol.epicgames.com/api/v1/access/fnreplaysmetadata/public',

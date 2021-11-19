@@ -920,3 +920,8 @@ export interface ReplayDownloadConfig {
 }
 
 export interface ReplayDownloadOptions extends Partial<ReplayDownloadConfig> {}
+
+export interface EventTokensResponse {
+  user: User;
+  tokens: string[];
+}

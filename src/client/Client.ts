@@ -13,7 +13,7 @@ import {
   ClientOptions, ClientConfig, ClientEvents, StatsData, NewsMOTD, NewsMessage, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
-  ReplayDownloadConfig,
+  ReplayDownloadConfig, EventTokensResponse,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -1125,6 +1125,35 @@ class Client extends EventEmitter {
     }
 
     return creativeDiscovery.response.Panels;
+  }
+
+  /**
+   * Fetches the event tokens for an account.
+   * This can be used to check if a user is eligible to play a certain tournament window
+   * or to check a user's arena division in any season
+   * @throws {UserNotFoundError} The user wasn't found
+   * @throws {EpicgamesAPIError}
+   */
+  public async getEventTokens(user: string | string[]): Promise<EventTokensResponse[]> {
+    const users = typeof user === 'string' ? [user] : user;
+
+    const resolvedUsers = await this.getProfile(users);
+
+    const userChunks: string[][] = resolvedUsers.map((u) => u.id).reduce((resArr: any[], usr, i) => {
+      const chunkIndex = Math.floor(i / 16);
+      // eslint-disable-next-line no-param-reassign
+      if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
+      resArr[chunkIndex].push(usr);
+      return resArr;
+    }, []);
+
+    const statsResponses = await Promise.all(userChunks.map((c) => this.http.sendEpicgamesRequest(true, 'GET',
+      `${Endpoints.BR_TOURNAMENT_TOKENS}?teamAccountIds=${c.join(',')}`, 'fortnite')));
+
+    return statsResponses.map((r) => r.response.accounts).flat(1).map((r) => ({
+      user: resolvedUsers.find((u) => u.id === r.accountId) as User,
+      tokens: r.tokens,
+    }));
   }
 
   /**

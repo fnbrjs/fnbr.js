@@ -747,6 +747,8 @@ class Client extends EventEmitter {
 
     const oldNewsMessages: NewsMOTD[] = [...motds, ...(platformMotds || []).filter((m: any) => m.platform === 'windows').map((m: any) => m.message)];
 
+    if (mode === 'creative') return oldNewsMessages;
+
     const newNews = await this.http.sendEpicgamesRequest(true, 'POST', Endpoints.BR_NEWS_MOTD, 'fortnite', undefined, {
       platform: 'Windows',
       language: 'en',

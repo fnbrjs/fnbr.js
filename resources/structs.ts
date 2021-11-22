@@ -34,6 +34,11 @@ export interface DeviceAuth {
   secret: string;
 }
 
+export interface DeviceAuthWithSnakeCaseSupport extends DeviceAuth {
+  account_id?: string;
+  device_id?: string;
+}
+
 export type DeviceAuthFunction = () => DeviceAuth;
 
 export type DeviceAuthFunctionAsync = () => Promise<DeviceAuth>;

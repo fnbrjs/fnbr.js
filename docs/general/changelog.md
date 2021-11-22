@@ -18,6 +18,8 @@
 ### Fixes
 * Auth Refreshing
   * Fixed an issue that caused the client to not reauthenticate properly
+* Device Auths
+  * Readded support for device auths in snake case (was removed in 2.0.0)
 
 <hr>
 

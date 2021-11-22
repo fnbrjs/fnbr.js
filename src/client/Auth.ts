@@ -6,7 +6,8 @@ import Base from './Base';
 import Client from './Client';
 import AuthClients from '../../resources/AuthClients';
 import {
-  AuthData, AuthClient, AuthType, AuthStringResolveable, DeviceAuthResolveable, DeviceAuth, AuthResponse,
+  AuthData, AuthClient, AuthType, AuthStringResolveable, DeviceAuthResolveable,
+  AuthResponse, DeviceAuthWithSnakeCaseSupport,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import { EpicgamesOAuthResponse } from '../../resources/httpResponses';
@@ -308,11 +309,11 @@ class Auth extends Base {
    * @param deviceAuthResolvable A resolvable device auth
    */
   private async deviceAuthAuthenticate(deviceAuthResolvable: DeviceAuthResolveable, authClient: AuthClient) {
-    let deviceAuth: DeviceAuth;
+    let deviceAuth: DeviceAuthWithSnakeCaseSupport;
 
     switch (typeof deviceAuthResolvable) {
       case 'function':
-        deviceAuth = await deviceAuthResolvable();
+        deviceAuth = await deviceAuthResolvable() as DeviceAuthWithSnakeCaseSupport;
         break;
       case 'string':
         try {
@@ -322,15 +323,15 @@ class Auth extends Base {
         }
         break;
       case 'object':
-        deviceAuth = deviceAuthResolvable as DeviceAuth;
+        deviceAuth = deviceAuthResolvable as DeviceAuthWithSnakeCaseSupport;
         break;
       default:
         return { error: new TypeError(`${typeof deviceAuthResolvable} is not a valid device auth type`) };
     }
 
     return this.getOAuthToken('device_auth', {
-      account_id: deviceAuth.accountId,
-      device_id: deviceAuth.deviceId,
+      account_id: deviceAuth.accountId || deviceAuth.account_id,
+      device_id: deviceAuth.deviceId || deviceAuth.device_id,
       secret: deviceAuth.secret,
     }, authClient);
   }

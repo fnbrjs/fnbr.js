@@ -37,7 +37,7 @@ client.on('friend:message', (msg) => {
 
 client.login().then(() => {
   console.log(`Logged in as ${client.user.displayName}`);
-}); // this will be removed
+});
 ```
 
 <h2>Links</h2>

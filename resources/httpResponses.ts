@@ -350,3 +350,120 @@ export interface CreativeDiscoveryPanel {
     hasMore: boolean;
   }[];
 }
+
+export interface STWProfileItem {
+  templateId: string;
+  attributes: {
+    [key: string]: any;
+  };
+  quantity: number;
+}
+
+export interface STWProfileItemWithId extends STWProfileItem {
+  id: string;
+}
+
+export interface STWProfileStats {
+  node_costs: Partial<{
+    homebase_node_default_page: {
+      'Token:homebasepoints': number;
+    };
+    research_node_default_page: {
+      'Token:homebasepoints': number;
+    };
+  }>;
+  use_random_loadout: boolean;
+  mission_alert_redemption_record: Partial<{
+    claimData: {
+      missionAlertId: string;
+      redemptionDateUtc: string;
+      evictClaimDataAfterUtc: string;
+    }[];
+  }>;
+  rewards_claimed_post_max_level: number;
+  selected_hero_loadout: string;
+  loadouts: string[];
+  collection_book: Partial<{
+    maxBookXpLevelAchieved: number;
+  }>;
+  mfa_reward_claimed: boolean;
+  quest_manager: Partial<{
+    dailyLoginInterval: string;
+    dailyQuestRerolls: number;
+    questPoolStats: {
+      poolStats: {
+        poolName: string;
+        nextRefresh: string;
+        rerollsRemaining: number;
+        questHistory: string[];
+      }[];
+      dailyLoginInterval: string;
+      poolLockouts: {
+        poolLockouts: {
+          lockoutName: string;
+        }[];
+      };
+    };
+  }>;
+  legacy_research_points_spent: number;
+  gameplay_stats: {
+    statName: string;
+    statValue: number;
+  }[];
+  permissions: any[];
+  unslot_mtx_spend: number;
+  twitch: any;
+  client_settings: Partial<{
+    pinnedQuestInstances: any[];
+  }>;
+  research_levels: Partial<{
+    technology: number;
+    offense: number;
+    fortitude: number;
+    resistance: number;
+  }>;
+  level: number;
+  xp_overflow: number;
+  latent_xp_marker: string;
+  event_currency?: {
+    templateId: string;
+    cf: number;
+  };
+  inventory_limit_bonus: number;
+  matches_played: number;
+  xp_lost: number;
+  mode_loadouts: any[];
+  last_applied_loadout: string;
+  daily_rewards: Partial<{
+    nextDefaultReward: number;
+    totalDaysLoggedIn: number;
+    lastClaimDate: string;
+    additionalSchedules: {
+      [key: string]: {
+        rewardsClaimed: number;
+        claimedToday: boolean;
+      };
+    };
+  }>;
+  xp: number;
+  packs_granted: number;
+  active_loadout_index: number;
+}
+
+export interface STWProfileData {
+  _id: string;
+  created: string;
+  updated: string;
+  rvn: number;
+  wipeNumber: number;
+  accountId: string;
+  profileId: string;
+  version: string;
+  items: {
+    [key: string]: STWProfileItem;
+  };
+  stats: {
+    attributes: STWProfileStats;
+  };
+  commandRevision: number;
+}

@@ -178,8 +178,8 @@ class XMPP extends Base {
       this.destroy();
       this.setup();
 
-      await this.client.updateCaches();
       await this.connect();
+      await this.client.updateCaches();
       await this.client.initParty();
     });
 

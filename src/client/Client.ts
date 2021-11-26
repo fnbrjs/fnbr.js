@@ -13,7 +13,7 @@ import {
   ClientOptions, ClientConfig, ClientEvents, StatsData, NewsMOTD, NewsMessage, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
-  ReplayDownloadConfig,
+  ReplayDownloadConfig, EventTokensResponse,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -160,7 +160,7 @@ class Client extends EventEmitter {
       restRetryLimit: 1,
       handleRatelimits: true,
       partyBuildId: '1:3:',
-      tokenVerifyInterval: 1200000,
+      restartOnInvalidRefresh: false,
       ...config,
       cacheSettings: {
         ...config.cacheSettings,
@@ -233,17 +233,11 @@ class Client extends EventEmitter {
     const auth = await this.auth.authenticate();
     if (!auth.response) throw auth.error || new Error('Couldn\'t authenticate the client');
 
-    this.setInterval(() => this.auth.checkAllTokens(), this.config.tokenVerifyInterval);
-
     const clientInfo = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.ACCOUNT_ID}/${auth.response.account_id}`, 'fortnite');
     if (!clientInfo.response) throw clientInfo.error || new Error('Couldn\'t fetch the client\'s account info');
 
     this.user = new ClientUser(this, clientInfo.response);
     await this.user.fetch();
-
-    if (this.config.fetchFriends) {
-      await this.updateCaches();
-    }
 
     this.initCacheSweeping();
 
@@ -251,6 +245,10 @@ class Client extends EventEmitter {
       this.xmpp.setup();
       const xmpp = await this.xmpp.connect();
       if (!xmpp.response) throw xmpp.error || new Error('Couldn\'t connect to XMPP');
+    }
+
+    if (this.config.fetchFriends) {
+      await this.updateCaches();
     }
 
     await this.initParty(this.config.createParty, this.config.forceNewParty);
@@ -672,7 +670,7 @@ class Client extends EventEmitter {
 
   /**
    * Fetches battle royale v2 stats for one or multiple players
-   * @param user The id or display name of the user
+   * @param user The id(s) or display name(s) of the user(s)
    * @param startTime The timestamp to start fetching stats from, can be null/undefined for lifetime
    * @param endTime The timestamp to stop fetching stats from, can be undefined for lifetime
    * @param stats An array of stats keys. Required if you want to get the stats of multiple users at once (If not, ignore this)
@@ -746,7 +744,54 @@ class Client extends EventEmitter {
     const { messages, motds, platform_motds: platformMotds } = news.response.news;
 
     if (mode === 'savetheworld') return messages;
-    return [...motds, ...(platformMotds || []).filter((m: any) => m.platform === 'windows').map((m: any) => m.message)];
+
+    const oldNewsMessages: NewsMOTD[] = [...motds, ...(platformMotds || []).filter((m: any) => m.platform === 'windows').map((m: any) => m.message)];
+
+    if (mode === 'creative') return oldNewsMessages;
+
+    const newNews = await this.http.sendEpicgamesRequest(true, 'POST', Endpoints.BR_NEWS_MOTD, 'fortnite', undefined, {
+      platform: 'Windows',
+      language: 'en',
+      country: 'US',
+      serverRegion: 'NA',
+      subscription: false,
+      battlepass: false,
+      battlepassLevel: 1,
+    });
+    if (newNews.error) throw newNews.error;
+
+    const newsMessages: NewsMOTD[] = (newNews.response?.contentItems as any[])?.map((i: any, y) => ({
+      _type: i.contentSchemaName,
+      body: i.contentFields.body,
+      entryType: i.contentFields.entryType,
+      hidden: i.contentFields.hidden,
+      id: i.contentId,
+      image: i.contentFields.image?.[0]?.url,
+      offerAction: i.contentFields.offerAction,
+      sortingPriority: 1000 - y,
+      spotlight: i.contentFields.spotlight,
+      tabTitleOverride: i.contentFields.tabTitleOverride,
+      tileImage: i.contentFields.tileImage?.[0]?.url,
+      title: i.contentFields.title,
+      videoAutoplay: i.contentFields.videoAutoplay,
+      videoFullscreen: i.contentFields.videoFullscreen,
+      videoLoop: i.contentFields.videoLoop,
+      videoMute: i.contentFields.videoMute,
+      videoStreamingEnabled: i.contentFields.videoStreamingEnabled,
+      buttonTextOverride: i.contentFields.buttonTextOverride,
+      offerId: i.contentFields.offerId,
+      playlistId: i.contentFields.playlistId,
+      videoUID: i.contentFields.videoUID,
+      videoVideoString: i.contentFields.videoVideoString,
+    })) || [];
+
+    oldNewsMessages.forEach((omsg) => {
+      if (!newsMessages.some((msg) => msg.title === omsg.title && msg.body === omsg.body)) {
+        newsMessages.push(omsg);
+      }
+    });
+
+    return newsMessages;
   }
 
   /**
@@ -1082,6 +1127,36 @@ class Client extends EventEmitter {
     }
 
     return creativeDiscovery.response.Panels;
+  }
+
+  /**
+   * Fetches the event tokens for an account.
+   * This can be used to check if a user is eligible to play a certain tournament window
+   * or to check a user's arena division in any season
+   * @param user The id(s) or display name(s) of the user(s)
+   * @throws {UserNotFoundError} The user wasn't found
+   * @throws {EpicgamesAPIError}
+   */
+  public async getEventTokens(user: string | string[]): Promise<EventTokensResponse[]> {
+    const users = typeof user === 'string' ? [user] : user;
+
+    const resolvedUsers = await this.getProfile(users);
+
+    const userChunks: string[][] = resolvedUsers.map((u) => u.id).reduce((resArr: any[], usr, i) => {
+      const chunkIndex = Math.floor(i / 16);
+      // eslint-disable-next-line no-param-reassign
+      if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
+      resArr[chunkIndex].push(usr);
+      return resArr;
+    }, []);
+
+    const statsResponses = await Promise.all(userChunks.map((c) => this.http.sendEpicgamesRequest(true, 'GET',
+      `${Endpoints.BR_TOURNAMENT_TOKENS}?teamAccountIds=${c.join(',')}`, 'fortnite')));
+
+    return statsResponses.map((r) => r.response.accounts).flat(1).map((r) => ({
+      user: resolvedUsers.find((u) => u.id === r.accountId) as User,
+      tokens: r.tokens,
+    }));
   }
 
   /**

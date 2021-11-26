@@ -223,7 +223,7 @@ const buildChunks = (replay: BinaryWriter, replayData: ReplayData) => {
   }
 };
 
-export const buildReplay = (replayData: ReplayData, addStats = true) => {
+export const buildReplay = (replayData: ReplayData, addStats: boolean) => {
   if (replayData.Events && addStats) {
     replayData.Events.push({
       Id: `${replayData.ReplayName}_${crypto.randomBytes(16).toString('hex')}`,

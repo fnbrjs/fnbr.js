@@ -9,5 +9,5 @@ updates:
       include: "scope"
     schedule:
       interval: "daily"
-      time: "15:00"
+      time: "07:00"
       timezone: "Europe/Berlin"

@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.2.0
+
+### Additions
+* Tournament Tokens
+  * Added `Client#getEventTokens()`
+  * Can be used to fetch arena divisions of any season, check tournament eligiblity and more
+
+### Changes
+* Auth Refreshing
+  * Added a config option to control what the client will do in case the refresh token is invalid (`ClientOptions#restartOnInvalidRefresh`)
+  * Removed `ClientOptions#tokenVerifyInterval`
+  * Improved error messages for auth refresh errors
+* Fortnite News
+  * Added the new battle royale MOTD news endpoint to `Client#getNews()`
+
+### Fixes
+* Auth Refreshing
+  * Fixed an issue that caused the client to not reauthenticate properly
+* Device Auths
+  * Readded support for device auths in snake case (was removed in 2.0.0)
+
+<hr>
+
 ## 2.1.0
 
 ### Additions

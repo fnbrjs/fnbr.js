@@ -97,7 +97,10 @@ class HTTP extends Base {
         const retryAfter = parseInt(errResponse.headers['Retry-After'] || (errResponse.data as any).messageVars[0], 10);
         if (!Number.isNaN(retryAfter)) {
           const sleepTimeout = (retryAfter * 1000) + 500;
-          await new Promise<void>((res) => setTimeout(res, sleepTimeout));
+          await new Promise((res) => {
+            setTimeout(res, sleepTimeout);
+          });
+
           return this.send(method, url, headers, body, form, responseType);
         }
       }
@@ -123,16 +126,17 @@ class HTTP extends Base {
 
     const finalHeaders = headers;
     if (auth) {
-      const authData = this.client.auth.auths.get(auth);
+      let authData = this.client.auth.auths.get(auth);
       if (authData && checkToken) {
         const tokenCheck = await this.client.auth.checkToken(auth);
         if (!tokenCheck) {
-          const reauth = await this.client.auth.reauthenticate(authData, auth);
+          const reauth = await this.client.auth.reauthenticate();
           if (reauth.error) return reauth;
+          authData = this.client.auth.auths.get(auth);
         }
       }
 
-      finalHeaders.Authorization = `Bearer ${authData?.token}`;
+      finalHeaders.Authorization = `bearer ${authData?.token}`;
     }
 
     const request = await this.send(method, url, finalHeaders, data, form);
@@ -140,7 +144,7 @@ class HTTP extends Base {
     if ((request.error?.response?.data as any)?.errorCode === 'errors.com.epicgames.common.oauth.invalid_token' && auth) {
       const authData = this.client.auth.auths.get(auth);
       if (authData) {
-        const reauth = await this.client.auth.reauthenticate(authData, auth);
+        const reauth = await this.client.auth.reauthenticate();
         if (reauth.error) return reauth;
         return this.sendEpicgamesRequest(checkToken, method, url, auth, headers, data, form, ignoreLocks);
       }
@@ -172,12 +176,13 @@ class HTTP extends Base {
     };
 
     if (auth) {
-      const authData = this.client.auth.auths.get(auth);
+      let authData = this.client.auth.auths.get(auth);
       if (authData && checkToken) {
         const tokenCheck = await this.client.auth.checkToken(auth);
         if (!tokenCheck) {
-          const reauth = await this.client.auth.reauthenticate(authData, auth);
+          const reauth = await this.client.auth.reauthenticate();
           if (reauth.error) return reauth;
+          authData = this.client.auth.auths.get(auth);
         }
       }
 

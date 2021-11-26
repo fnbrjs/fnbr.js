@@ -1541,7 +1541,7 @@ class Client extends EventEmitter {
    * @throws {UserNotFoundError} The user wasn't found
    * @throws {EpicgamesAPIError}
    */
-  public async getSTWProfile(user: string): Promise<any> {
+  public async getSTWProfile(user: string) {
     const userID = await this.resolveUserId(user);
     if (!userID) throw new UserNotFoundError(user);
 

@@ -118,15 +118,15 @@ class STWProfile extends Base {
   }
 
   /**
-   * Returns the profile's workers
+   * Returns the profile's surivivors
    */
-  public get workers() {
-    const workers: STWWorker[] = [];
+  public get surivivors() {
+    const surivivors: STWWorker[] = [];
     for (const item of this.items) {
       if (item.templateId.startsWith('Worker:')) {
         const parsedWorker = parseSTWWorkerTemplateId(item.templateId);
 
-        workers.push({
+        surivivors.push({
           templateId: item.templateId,
           type: parsedWorker.type,
           managerSynergy: item.attributes.managerSynergy,
@@ -153,14 +153,14 @@ class STWProfile extends Base {
       }
     }
 
-    return workers;
+    return surivivors;
   }
 
   /**
    * The profile's survivor squads
    */
   public get survivorSquads() {
-    const survivors = this.workers;
+    const survivors = this.surivivors;
 
     const survivorSquads: STWSurvivorSquads = {
       trainingteam: [],

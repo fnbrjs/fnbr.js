@@ -272,7 +272,7 @@ export const parseSTWWorkerTemplateId = (templateId: string) => {
 
   const tier = parseInt(fields.pop()!.slice(1), 10);
   const rarity = (type === 'manager' ? fields.shift() : fields.pop()) as STWWorkerRarity;
-  const name = fields ? fields.join('_') : undefined;
+  const name = fields[0] ? fields.join('_') : undefined;
 
   return {
     type,

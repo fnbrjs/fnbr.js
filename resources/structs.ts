@@ -930,3 +930,50 @@ export interface EventTokensResponse {
   user: User;
   tokens: string[];
 }
+
+export interface STWFORTStats {
+  fortitude: number;
+  resistance: number;
+  offense: number;
+  tech: number;
+}
+
+export type STWWorkerType = 'special' | 'manager' | 'basic';
+
+export type STWWorkerRarity = 'c' | 'uc' | 'r' | 'vr' | 'sr' | 'ur';
+
+export interface STWWorker {
+  templateId: string;
+  type: STWWorkerType;
+  managerSynergy?: string;
+  name?: string;
+  tier: number;
+  rarity: STWWorkerRarity;
+  gender: 'male' | 'female';
+  level: number;
+  squad?: {
+    id: string;
+    slotIdx: number;
+  };
+  portrait: string;
+  maxLevelBonus: number;
+  personality: string;
+  xp: number;
+  buildingSlot?: {
+    buildingId: string;
+  };
+  setBonus: string;
+  isSeen: boolean;
+  isFavorite: boolean;
+}
+
+export interface STWSurvivorSquads {
+  trainingteam: STWWorker[];
+  fireteamalpha: STWWorker[];
+  closeassaultsquad: STWWorker[];
+  thethinktank: STWWorker[];
+  emtsquad: STWWorker[];
+  corpsofengineering: STWWorker[];
+  scoutingparty: STWWorker[];
+  gadgeteers: STWWorker[];
+}

@@ -3,7 +3,7 @@ import readline from 'readline';
 import zlib from 'zlib';
 import crypto from 'crypto';
 import {
-  Schema, ReplayData, ReplayDataChunk, ReplayEvent,
+  Schema, ReplayData, ReplayDataChunk, ReplayEvent, STWWorkerRarity,
 } from '../../resources/structs';
 import BinaryWriter from './BinaryWriter';
 
@@ -258,4 +258,64 @@ export const buildReplay = (replayData: ReplayData, addStats: boolean) => {
   buildChunks(replay, replayData);
 
   return replay.buffer;
+};
+
+export const parseSTWWorkerTemplateId = (templateId: string) => {
+  const id = templateId.split(':')[1];
+  const fields = id.split('_');
+
+  let type: 'special' | 'basic' | 'manager';
+  const rawType = fields.shift();
+  if (rawType === 'worker') type = 'special';
+  else if (rawType?.includes('manager')) type = 'manager';
+  else type = 'basic';
+
+  const tier = parseInt(fields.pop()!.slice(1), 10);
+  const rarity = (type === 'manager' ? fields.shift() : fields.pop()) as STWWorkerRarity;
+  const name = fields ? fields.join('_') : undefined;
+
+  return {
+    type,
+    tier,
+    rarity,
+    name,
+  };
+};
+
+export const calcSTWSurvivorRarity = (rarity: STWWorkerRarity, isLeader: boolean) => {
+  const rarities = {
+    c: [1, 1],
+    uc: [2, 2],
+    r: [3, 3],
+    vr: [4, 4],
+    sr: [5, 5],
+    ur: [6, 0],
+  };
+
+  return rarities[rarity][isLeader ? 1 : 0] || 0;
+};
+
+export const calcSTWEVOConstant = (rarityValue: number, isLeader: boolean) => {
+  const EVOConstant: any = {
+    1: [5, 5],
+    2: [6.35, 6.35],
+    3: [7, 7],
+    4: [8, 8],
+    5: [9, 9],
+    6: [9.85, 0],
+  };
+
+  return EVOConstant[rarityValue][isLeader ? 1 : 0];
+};
+
+export const calcSTWLevelConstant = (rarityValue: number, isLeader: boolean) => {
+  const LvlConstant: any = {
+    1: [1, 1],
+    2: [1.08, 1.08],
+    3: [1.245, 1.245],
+    4: [1.374, 1.374],
+    5: [1.5, 1.5],
+    6: [1.645, 0],
+  };
+  return LvlConstant[rarityValue][isLeader ? 1 : 0];
 };

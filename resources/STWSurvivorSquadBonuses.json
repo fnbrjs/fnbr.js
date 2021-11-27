@@ -1,0 +1,42 @@
+{
+  "Homebase.Worker.SetBonus.IsResistanceLow": {
+    "name": "Resistance",
+    "minimumSurvivors": "2",
+    "bonus": "5"
+  },
+  "Homebase.Worker.SetBonus.IsTrapDurabilityHigh": {
+    "name": "Trap Durability",
+    "minimumSurvivors": "2",
+    "bonus": "8"
+  },
+  "Homebase.Worker.SetBonus.IsAbilityDamageLow": {
+    "name": "Ability Damage",
+    "minimumSurvivors": "3",
+    "bonus": "5"
+  },
+  "Homebase.Worker.SetBonus.IsFortitudeLow": {
+    "name": "Fortitude",
+    "minimumSurvivors": "2",
+    "bonus": "5"
+  },
+  "Homebase.Worker.SetBonus.IsRangedDamageLow": {
+    "name": "Ranged Weapon Damage Bonus",
+    "minimumSurvivors": "3",
+    "bonus": "5"
+  },
+  "Homebase.Worker.SetBonus.IsMeleeDamageLow": {
+    "name": "Melee Damage Bonus",
+    "minimumSurvivors": "3",
+    "bonus": "5"
+  },
+  "Homebase.Worker.SetBonus.IsShieldRegenLow": {
+    "name": "Shield Regen Bonus",
+    "minimumSurvivors": "2",
+    "bonus": "5"
+  },
+  "Homebase.Worker.SetBonus.IsTrapDamageLow": {
+    "name": "Trap Damage Bonus",
+    "minimumSurvivors": "3",
+    "bonus": "5"
+  }
+}

@@ -19,6 +19,7 @@ import ReceivedPartyInvitation from '../src/structures/ReceivedPartyInvitation';
 import User from '../src/structures/User';
 import { EpicgamesOAuthData, TournamentWindowTemplateData } from './httpResponses';
 import ReceivedFriendMessage from '../src/structures/ReceivedFriendMessage';
+import STWSurvivor from '../src/structures/STWSurvivor';
 
 export interface Schema {
   [key: string]: any;
@@ -938,42 +939,26 @@ export interface STWFORTStats {
   tech: number;
 }
 
-export type STWWorkerType = 'special' | 'manager' | 'basic';
+export type STWSurvivorType = 'special' | 'manager' | 'basic';
 
-export type STWWorkerRarity = 'c' | 'uc' | 'r' | 'vr' | 'sr' | 'ur';
-
-export interface STWWorker {
-  templateId: string;
-  type: STWWorkerType;
-  managerSynergy?: string;
-  name?: string;
-  tier: number;
-  rarity: STWWorkerRarity;
-  gender: 'male' | 'female';
-  level: number;
-  squad?: {
-    id: string;
-    slotIdx: number;
-  };
-  portrait: string;
-  maxLevelBonus: number;
-  personality: string;
-  xp: number;
-  buildingSlot?: {
-    buildingId: string;
-  };
-  setBonus: string;
-  isSeen: boolean;
-  isFavorite: boolean;
-}
+export type STWSurvivorRarity = 'c' | 'uc' | 'r' | 'vr' | 'sr' | 'ur';
 
 export interface STWSurvivorSquads {
-  trainingteam: STWWorker[];
-  fireteamalpha: STWWorker[];
-  closeassaultsquad: STWWorker[];
-  thethinktank: STWWorker[];
-  emtsquad: STWWorker[];
-  corpsofengineering: STWWorker[];
-  scoutingparty: STWWorker[];
-  gadgeteers: STWWorker[];
+  trainingteam: STWSurvivor[];
+  fireteamalpha: STWSurvivor[];
+  closeassaultsquad: STWSurvivor[];
+  thethinktank: STWSurvivor[];
+  emtsquad: STWSurvivor[];
+  corpsofengineering: STWSurvivor[];
+  scoutingparty: STWSurvivor[];
+  gadgeteers: STWSurvivor[];
+}
+
+export type STWSurvivorSquadType = 'medicine' | 'arms' | 'synthesis' | 'scavenging';
+
+export interface STWSurvivorSquadData {
+  id: string;
+  name: keyof STWSurvivorSquads;
+  type: STWSurvivorSquadType;
+  slotIdx: number;
 }

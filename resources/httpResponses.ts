@@ -351,7 +351,7 @@ export interface CreativeDiscoveryPanel {
   }[];
 }
 
-export interface STWProfileItem {
+export interface STWProfileItemData {
   templateId: string;
   attributes: {
     [key: string]: any;
@@ -359,11 +359,26 @@ export interface STWProfileItem {
   quantity: number;
 }
 
-export interface STWProfileItemWithId extends STWProfileItem {
-  id: string;
+export interface STWProfileSurvivorData extends STWProfileItemData {
+  attributes: {
+    gender: '1' | '2';
+    level: number;
+    squad_slot_idx: number;
+    item_seen: boolean;
+    managerSynergy?: string;
+    portrait?: string;
+    max_level_bonus: number;
+    personality: string;
+    squad_id: string;
+    xp: number;
+    slotted_building_id: string;
+    building_slot_used: number;
+    favorite: boolean;
+    set_bonus: string;
+  };
 }
 
-export interface STWProfileStats {
+export interface STWProfileStatsData {
   node_costs: Partial<{
     homebase_node_default_page: {
       'Token:homebasepoints': number;
@@ -460,10 +475,10 @@ export interface STWProfileData {
   profileId: string;
   version: string;
   items: {
-    [key: string]: STWProfileItem;
+    [key: string]: STWProfileItemData;
   };
   stats: {
-    attributes: STWProfileStats;
+    attributes: STWProfileStatsData;
   };
   commandRevision: number;
 }

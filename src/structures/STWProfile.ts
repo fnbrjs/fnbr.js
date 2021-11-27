@@ -6,18 +6,20 @@ import CurveTable from '../util/CurveTable';
 import HomebaseRatingMapping from '../../resources/STWMappings.json';
 import {
   STWProfileData,
-  STWProfileItemWithId,
-  STWProfileStats,
+  STWProfileSurvivorData,
 } from '../../resources/httpResponses';
 import {
   STWFORTStats,
   STWSurvivorSquads,
-  STWWorker,
 } from '../../resources/structs';
-import { STWLeadSynergy } from '../../enums/Enums';
 import {
-  calcSTWEVOConstant, calcSTWLevelConstant, calcSTWSurvivorRarity, parseSTWWorkerTemplateId,
+  calcSTWSurvivorBonus,
+  calcSTWSurvivorPowerLevel,
+  calcSTWSurvivorLeadBonus,
 } from '../util/Util';
+import STWSurvivor from './STWSurvivor';
+import STWItem from './STWItem';
+import STWStats from './STWStats';
 
 /**
  * Represents a Save The World profile
@@ -67,12 +69,12 @@ class STWProfile extends Base {
   /**
    * The profile's items
    */
-  public items: STWProfileItemWithId[];
+  public items: (STWItem | STWSurvivor)[];
 
   /**
    * The profile's stats
    */
-  public stats: STWProfileStats;
+  public stats: STWStats;
 
   /**
    * The profile's power level curve reader
@@ -97,59 +99,34 @@ class STWProfile extends Base {
     this.version = data.version;
     this.commandRevision = data.commandRevision;
 
-    this.items = Object.keys(data.items).map((k) => ({
-      id: k,
-      ...data.items[k],
-    }));
+    this.items = [];
 
-    this.stats = data.stats.attributes;
-  }
+    for (const [itemId, item] of Object.entries(data.items)) {
+      const itemType = item.templateId.split(':')[0];
 
-  /**
-   * Returns the profile's workers
-   */
-  public get workers() {
-    const workers: STWWorker[] = [];
-    for (const item of this.items) {
-      if (item.templateId.startsWith('Worker:')) {
-        const parsedWorker = parseSTWWorkerTemplateId(item.templateId);
-
-        workers.push({
-          templateId: item.templateId,
-          type: parsedWorker.type,
-          managerSynergy: item.attributes.managerSynergy,
-          name: parsedWorker.name,
-          tier: parsedWorker.tier,
-          rarity: parsedWorker.rarity,
-          gender: item.attributes.gender === '1' ? 'male' : 'female',
-          level: item.attributes.level,
-          squad: item.attributes.squad_id ? {
-            id: item.attributes.squad_id,
-            slotIdx: item.attributes.squad_slot_idx,
-          } : undefined,
-          portrait: item.attributes.portrait,
-          maxLevelBonus: item.attributes.max_level_bonus,
-          personality: item.attributes.personality,
-          xp: item.attributes.xp,
-          buildingSlot: item.attributes.building_slot_used !== -1 ? {
-            buildingId: item.attributes.slotted_building_id,
-          } : undefined,
-          setBonus: item.attributes.set_bonus,
-          isSeen: item.attributes.item_seen,
-          isFavorite: item.attributes.favorite,
-        });
+      switch (itemType) {
+        case 'Worker':
+          this.items.push(new STWSurvivor(this.client, itemId, item as STWProfileSurvivorData));
+          break;
+        default:
+          this.items.push(new STWItem(this.client, itemId, item));
       }
     }
 
-    return workers;
+    this.stats = new STWStats(this.client, data.stats.attributes);
+  }
+
+  /**
+   * Returns the profile's survivors
+   */
+  public get survivors() {
+    return this.items.filter((i) => i instanceof STWSurvivor) as STWSurvivor[];
   }
 
   /**
    * The profile's survivor squads
    */
   public get survivorSquads() {
-    const survivors = this.workers;
-
     const survivorSquads: STWSurvivorSquads = {
       trainingteam: [],
       fireteamalpha: [],
@@ -161,9 +138,8 @@ class STWProfile extends Base {
       gadgeteers: [],
     };
 
-    for (const survivor of survivors.filter((s) => !!s.squad)) {
-      const squad = survivor.squad!.id;
-      survivorSquads[squad.split('_')[3] as keyof STWSurvivorSquads].push(survivor);
+    for (const survivor of this.survivors.filter((s) => !!s.squad)) {
+      survivorSquads[survivor.squad!.name].push(survivor);
     }
 
     return survivorSquads;
@@ -209,83 +185,27 @@ class STWProfile extends Base {
       tech: 0,
     };
 
-    for (const survivorSquad of Object.values(this.survivorSquads) as STWWorker[][]) {
-      let squadHasLeader = false;
-      let leadSurvivor: any;
+    for (const survivorSquad of Object.values(this.survivorSquads) as STWSurvivor[][]) {
+      const leadSurvivor = survivorSquad.find((s) => s.squad!.slotIdx === 0);
 
       for (const survivor of survivorSquad) {
-        if (survivor.squad?.slotIdx === 0) {
-          leadSurvivor = survivor;
-          squadHasLeader = true;
+        let totalBonus = calcSTWSurvivorPowerLevel(survivor);
+        if (survivor.squad!.slotIdx === 0) totalBonus += calcSTWSurvivorLeadBonus(survivor);
+        else if (leadSurvivor) totalBonus += calcSTWSurvivorBonus(leadSurvivor, survivor);
 
-          const totalBonus = this.calcSurvivorLeadBonus(survivor) + this.calcSurvivorPowerLevel(survivor);
-
-          switch (survivor.squad.id) {
-            case 'squad_attribute_medicine_trainingteam':
-              survivorFORTStats.fortitude += totalBonus;
-              break;
-            case 'squad_attribute_medicine_emtsquad':
-              survivorFORTStats.fortitude += totalBonus;
-              break;
-
-            case 'squad_attribute_arms_closeassaultsquad':
-              survivorFORTStats.offense += totalBonus;
-              break;
-            case 'squad_attribute_arms_fireteamalpha':
-              survivorFORTStats.offense += totalBonus;
-              break;
-
-            case 'squad_attribute_synthesis_corpsofengineering':
-              survivorFORTStats.tech += totalBonus;
-              break;
-            case 'squad_attribute_synthesis_thethinktank':
-              survivorFORTStats.tech += totalBonus;
-              break;
-
-            case 'squad_attribute_scavenging_scoutingparty':
-              survivorFORTStats.resistance += totalBonus;
-              break;
-            case 'squad_attribute_scavenging_gadgeteers':
-              survivorFORTStats.resistance += totalBonus;
-              break;
-          }
-        }
-      }
-
-      for (const survivor of survivorSquad) {
-        if (survivor.squad?.slotIdx !== 0) {
-          let totalSrvBonus = this.calcSurvivorPowerLevel(survivor);
-          if (squadHasLeader) totalSrvBonus += this.calcSurvivorBonus(leadSurvivor, survivor);
-
-          switch (survivor.squad?.id) {
-            case 'squad_attribute_medicine_trainingteam':
-              survivorFORTStats.fortitude += totalSrvBonus;
-              break;
-            case 'squad_attribute_medicine_emtsquad':
-              survivorFORTStats.fortitude += totalSrvBonus;
-              break;
-
-            case 'squad_attribute_arms_closeassaultsquad':
-              survivorFORTStats.offense += totalSrvBonus;
-              break;
-            case 'squad_attribute_arms_fireteamalpha':
-              survivorFORTStats.offense += totalSrvBonus;
-              break;
-
-            case 'squad_attribute_synthesis_corpsofengineering':
-              survivorFORTStats.tech += totalSrvBonus;
-              break;
-            case 'squad_attribute_synthesis_thethinktank':
-              survivorFORTStats.tech += totalSrvBonus;
-              break;
-
-            case 'squad_attribute_scavenging_scoutingparty':
-              survivorFORTStats.resistance += totalSrvBonus;
-              break;
-            case 'squad_attribute_scavenging_gadgeteers':
-              survivorFORTStats.resistance += totalSrvBonus;
-              break;
-          }
+        switch (survivor.squad!.type) {
+          case 'medicine':
+            survivorFORTStats.fortitude += totalBonus;
+            break;
+          case 'arms':
+            survivorFORTStats.offense += totalBonus;
+            break;
+          case 'synthesis':
+            survivorFORTStats.tech += totalBonus;
+            break;
+          case 'scavenging':
+            survivorFORTStats.resistance += totalBonus;
+            break;
         }
       }
     }
@@ -314,57 +234,6 @@ class STWProfile extends Base {
     }
 
     return survivorFORTStats;
-  }
-
-  /**
-   * Calculate a survivor's lead bonus
-   * @param survivor The survivor
-   */
-  public calcSurvivorLeadBonus(survivor: STWWorker) {
-    const leaderMatch = survivor.managerSynergy!.split('.')[2];
-
-    if (STWLeadSynergy[survivor.squad!.id.split('_')[3] as keyof STWSurvivorSquads] === leaderMatch) {
-      return this.calcSurvivorPowerLevel(survivor);
-    }
-
-    return 0;
-  }
-
-  /**
-   * Calculate a survivor's bonus
-   * @param lead The lead survivor
-   * @param survivor The survivor
-   */
-  public calcSurvivorBonus(lead: STWWorker, survivor: STWWorker): number {
-    const leadPersonality = lead.personality.split('.')[3];
-    const survivorPersonality = survivor.personality.split('.')[3];
-    const leadRarity = lead.templateId.split(':')[1].split('_')[1];
-
-    if (survivorPersonality === leadPersonality) {
-      if (leadRarity === 'sr') return 8;
-      if (leadRarity === 'vr') return 5;
-      if (leadRarity === 'r') return 4;
-      if (leadRarity === 'uc') return 3;
-      if (leadRarity === 'c') return 2;
-    } else if (leadRarity === 'sr') {
-      if (this.calcSurvivorPowerLevel(survivor) <= 2) return 0;
-      return -2;
-    }
-
-    return 0;
-  }
-
-  /**
-   * Calculate a survivor's power level
-   * @param survivor The survivor
-   */
-  public calcSurvivorPowerLevel(survivor: STWWorker) {
-    const rarityValue = calcSTWSurvivorRarity(survivor.rarity, survivor.squad?.slotIdx === 0);
-
-    return Math.round(
-      (5 * rarityValue) - (survivor.squad?.slotIdx === 0 ? 0 : 5)
-      + (survivor.level - 1) * calcSTWLevelConstant(rarityValue, survivor.squad?.slotIdx === 0)
-      + (survivor.tier - 1) * calcSTWEVOConstant(rarityValue, survivor.squad?.slotIdx === 0));
   }
 }
 

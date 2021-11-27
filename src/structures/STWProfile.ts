@@ -19,18 +19,6 @@ import {
   calcSTWEVOConstant, calcSTWLevelConstant, calcSTWSurvivorRarity, parseSTWWorkerTemplateId,
 } from '../util/Util';
 
-export const STWWorkerTemplateIdStart = Object.freeze([
-  'Worker:worker_halloween_troll_',
-  'Worker:worker_halloween_lobber_',
-  'Worker:worker_leprechaun_',
-  'Worker:worker_halloween_smasher_',
-  'Worker:worker_karolina_',
-  'Worker:worker_joel',
-  'Worker:worker_halloween_husky_',
-  'Worker:worker_halloween_husk_',
-  'Worker:worker_halloween_husky_',
-]);
-
 /**
  * Represents a Save The World profile
  */

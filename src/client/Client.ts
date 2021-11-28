@@ -54,7 +54,6 @@ import RadioStation from '../structures/RadioStation';
 import SentFriendMessage from '../structures/SentFriendMessage';
 import MatchNotFoundError from '../exceptions/MatchNotFoundError';
 import CreativeIslandNotFoundError from '../exceptions/CreativeIslandNotFoundError';
-import STWProfile from '../structures/STWProfile';
 
 /**
  * Represets the main client
@@ -1581,34 +1580,6 @@ class Client extends EventEmitter {
     }
 
     return creativeDiscovery.response.Panels;
-  }
-
-  /* -------------------------------------------------------------------------- */
-  /*                           FORTNITE SAVE THE WORLD                          */
-  /* -------------------------------------------------------------------------- */
-
-  /**
-   * Fetches the save the world profile for a players
-   * @param user The id or display name of the user
-   * @throws {UserNotFoundError} The user wasn't found
-   * @throws {EpicgamesAPIError}
-   */
-  public async getSTWProfile(user: string) {
-    const resolvedUser = await this.getProfile(user);
-    if (!resolvedUser) throw new UserNotFoundError(user);
-
-    const queryProfileResponse = await this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.MCP}/${resolvedUser.id}/public/QueryPublicProfile?profileId=campaign`, 'fortnite', {
-      'Content-Type': 'application/json',
-    }, {});
-    if (queryProfileResponse.error) {
-      if (queryProfileResponse.error.code === 'errors.com.epicgames.modules.profiles.profile_not_found') {
-        throw new UserNotFoundError(user);
-      }
-
-      throw queryProfileResponse.error;
-    }
-
-    return new STWProfile(this, queryProfileResponse.response.profileChanges[0].profile, resolvedUser);
   }
 }
 

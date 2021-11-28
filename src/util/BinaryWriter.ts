@@ -1,21 +1,6 @@
-/**
- * Represents a writer for binary data used for tournament replays
- * @private
- */
 class BinaryWriter {
-  /**
-   * The buffer
-   */
   public buffer: Buffer;
-
-  /**
-   * The current byte offset
-   */
   public offset: number;
-
-  /**
-   * @param buffer The buffer
-   */
   constructor(buffer: Buffer) {
     this.buffer = buffer;
     this.offset = 0;

@@ -943,6 +943,8 @@ export type STWSurvivorType = 'special' | 'manager' | 'basic';
 
 export type STWSurvivorRarity = 'c' | 'uc' | 'r' | 'vr' | 'sr' | 'ur';
 
+export type STWSurvivorGender = 'male' | 'female';
+
 export interface STWSurvivorSquads {
   trainingteam: STWSurvivor[];
   fireteamalpha: STWSurvivor[];

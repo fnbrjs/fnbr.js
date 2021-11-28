@@ -7,7 +7,7 @@ import {
 } from '../util/Util';
 import {
   STWSurvivorSquadData, STWSurvivorType, STWSurvivorRarity,
-  STWSurvivorSquads, STWSurvivorSquadType,
+  STWSurvivorSquads, STWSurvivorSquadType, STWSurvivorGender,
 } from '../../resources/structs';
 import { STWProfileSurvivorData } from '../../resources/httpResponses';
 
@@ -45,7 +45,7 @@ class STWSurvivor extends STWItem {
   /**
    * The survivor's gender
    */
-  public gender: 'male' | 'female';
+  public gender: STWSurvivorGender;
 
   /**
    * The survivor's level

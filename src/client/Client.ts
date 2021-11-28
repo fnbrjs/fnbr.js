@@ -13,7 +13,7 @@ import {
   ClientOptions, ClientConfig, ClientEvents, StatsData, NewsMOTD, NewsMessage, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
-  ReplayDownloadConfig, EventTokensResponse, BRAccountLevel,
+  ReplayDownloadConfig, EventTokensResponse, BRAccountLevel, TournamentSessionMetadata,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -1447,17 +1447,7 @@ class Client extends EventEmitter {
       ...options,
     };
 
-    const downloadReplayCDNFile = async (url: string, responseType: ResponseType) => {
-      const fileLocationInfo = await this.http.sendEpicgamesRequest(true, 'GET', url, 'fortnite');
-      if (fileLocationInfo.error) return fileLocationInfo;
-
-      const file = await this.http.send('GET', (Object.values(fileLocationInfo.response.files)[0] as any).readLink, undefined, undefined, undefined, responseType);
-
-      if (file.response) return { response: file.response.data };
-      return file;
-    };
-
-    const replayMetadataResponse = await downloadReplayCDNFile(`${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, 'json');
+    const replayMetadataResponse = await this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, 'json');
     if (replayMetadataResponse.error) {
       if (!(replayMetadataResponse.error instanceof EpicgamesAPIError)
         && replayMetadataResponse.error.response?.data.includes('<Message>The specified key does not exist.</Message>')) {
@@ -1467,7 +1457,7 @@ class Client extends EventEmitter {
       throw replayMetadataResponse.error;
     }
 
-    const replayHeaderResponse = await downloadReplayCDNFile(`${Endpoints.BR_REPLAY}%2F${sessionId}%2Fheader.bin`, 'arraybuffer');
+    const replayHeaderResponse = await this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY}%2F${sessionId}%2Fheader.bin`, 'arraybuffer');
     if (replayHeaderResponse.error) throw replayHeaderResponse.error;
 
     const replayData: ReplayData = replayMetadataResponse.response;
@@ -1494,7 +1484,7 @@ class Client extends EventEmitter {
     for (const downloadKey of downloadKeys.values()) {
       const chunks = (replayData as any)[downloadKey];
       for (const chunk of chunks) {
-        promises.push(downloadReplayCDNFile(`${Endpoints.BR_REPLAY}%2F${sessionId}%2F${chunk.Id}.bin`, 'arraybuffer').then((resp) => {
+        promises.push(this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY}%2F${sessionId}%2F${chunk.Id}.bin`, 'arraybuffer').then((resp) => {
           if (resp.error) throw resp.error;
 
           chunks.find((d: any) => d.Id === chunk.Id).data = resp.response;
@@ -1505,6 +1495,50 @@ class Client extends EventEmitter {
     await Promise.all(promises);
 
     return buildReplay(replayData, downloadConfig.addStatsPlaceholder);
+  }
+
+  /**
+   * Fetches a tournament session's metadata
+   * @param sessionId The session ID
+   * @throws {MatchNotFoundError} The match wasn't found
+   * @throws {EpicgamesAPIError}
+   * @throws {AxiosError}
+   */
+  public async getTournamentSessionMetadata(sessionId: string): Promise<TournamentSessionMetadata> {
+    const replayMetadataResponse = await this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, 'json');
+    if (replayMetadataResponse.error) {
+      if (!(replayMetadataResponse.error instanceof EpicgamesAPIError)
+        && replayMetadataResponse.error.response?.data.includes('<Message>The specified key does not exist.</Message>')) {
+        throw new MatchNotFoundError(sessionId);
+      }
+
+      throw replayMetadataResponse.error;
+    }
+
+    return {
+      changelist: replayMetadataResponse.response.Changelist,
+      checkpoints: replayMetadataResponse.response.Checkpoints,
+      dataChunks: replayMetadataResponse.response.DataChunks,
+      desiredDelayInSeconds: replayMetadataResponse.response.DesiredDelayInSeconds,
+      events: replayMetadataResponse.response.Events,
+      friendlyName: replayMetadataResponse.response.FriendlyName,
+      lengthInMS: replayMetadataResponse.response.LengthInMS,
+      networkVersion: replayMetadataResponse.response.NetworkVersion,
+      replayName: replayMetadataResponse.response.ReplayName,
+      timestamp: new Date(replayMetadataResponse.response.Timestamp),
+      isCompressed: replayMetadataResponse.response.bCompressed,
+      isLive: replayMetadataResponse.response.bIsLive,
+    };
+  }
+
+  private async downloadReplayCDNFile(url: string, responseType: ResponseType) {
+    const fileLocationInfo = await this.http.sendEpicgamesRequest(true, 'GET', url, 'fortnite');
+    if (fileLocationInfo.error) return fileLocationInfo;
+
+    const file = await this.http.send('GET', (Object.values(fileLocationInfo.response.files)[0] as any).readLink, undefined, undefined, undefined, responseType);
+
+    if (file.response) return { response: file.response.data };
+    return file;
   }
 
   /* -------------------------------------------------------------------------- */

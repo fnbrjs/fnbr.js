@@ -935,3 +935,18 @@ export interface BRAccountLevel {
   query: string;
   level?: number;
 }
+
+export interface TournamentSessionMetadata {
+  changelist: number;
+  checkpoints: ReplayCheckpoint[];
+  dataChunks: ReplayDataChunk[];
+  desiredDelayInSeconds: number;
+  events: ReplayEvent[];
+  friendlyName: string;
+  lengthInMS: number;
+  networkVersion: number;
+  replayName: string;
+  timestamp: Date;
+  isCompressed: boolean;
+  isLive: boolean;
+}

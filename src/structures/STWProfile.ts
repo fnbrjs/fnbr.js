@@ -18,6 +18,7 @@ import STWItem from './STWItem';
 import STWStats from './STWStats';
 import STWLocker from './STWLocker';
 import User from './User';
+import STWResource from './STWResource';
 
 /**
  * Represents a Save The World profile
@@ -61,7 +62,7 @@ class STWProfile extends User {
   /**
    * The profile's items
    */
-  public items: (STWItem | STWSurvivor | STWLocker)[];
+  public items: (STWItem | STWSurvivor | STWLocker | STWResource)[];
 
   /**
    * The profile's stats
@@ -69,7 +70,7 @@ class STWProfile extends User {
   public stats: STWStats;
 
   /**
-   * The profile's power level curve reader
+   * The profile's power level curve calculator
    */
   private powerLevelCurve: CurveTable;
 
@@ -148,7 +149,14 @@ class STWProfile extends User {
   }
 
   /**
-   * Calculate Power Level
+   * The profile's resources
+   */
+  public get resources() {
+    return this.items.filter((i) => i instanceof STWResource) as STWResource[];
+  }
+
+  /**
+   * The profile's power level
    */
   public get powerLevel(): number {
     const totalFORTStats = Object.values(this.FORTStats).reduce((prev, cur) => prev + cur);

@@ -405,6 +405,16 @@ export interface STWProfileLockerData extends STWProfileItemData {
   };
 }
 
+export interface STWProfileResourceData extends STWProfileItemData {
+  attributes: {
+    max_level_bonus: number;
+    level: number;
+    item_seen: boolean;
+    xp: number;
+    favorite: boolean;
+  };
+}
+
 export interface STWProfileStatsData {
   node_costs: Partial<{
     homebase_node_default_page: {

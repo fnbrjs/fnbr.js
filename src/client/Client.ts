@@ -13,7 +13,7 @@ import {
   ClientOptions, ClientConfig, ClientEvents, StatsData, NewsMOTD, NewsMessage, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
-  ReplayDownloadConfig, EventTokensResponse,
+  ReplayDownloadConfig, EventTokensResponse, BRAccountLevel,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -1203,6 +1203,8 @@ class Client extends EventEmitter {
       stats,
     })));
 
+    if (statsResponses.some((r) => r.error)) throw statsResponses.find((r) => r.error)?.error;
+
     return statsResponses.map((r) => r.response).flat(1).map((r) => ({
       ...r,
       query: ids.find((id) => id.id === r.accountId)?.query,
@@ -1318,6 +1320,22 @@ class Client extends EventEmitter {
     if (eventFlags.error) throw eventFlags.error;
 
     return eventFlags.response;
+  }
+
+  /**
+   * Fetches the battle royale account level for one or multiple users
+   * @param user The id(s) and/or display name(s) of the user(s) to fetch the account level for
+   * @param seasonNumber The season number (eg. 16, 17, 18)
+   */
+  public async getBRAccountLevel(user: string | string[], seasonNumber: number): Promise<BRAccountLevel[]> {
+    const users = Array.isArray(user) ? user : [user];
+
+    const accountLevels = await this.getBRStats(users, undefined, undefined, [`s${seasonNumber}_social_bp_level`]);
+
+    return accountLevels.map((al) => ({
+      query: al.query,
+      level: al.stats[`s${seasonNumber}_social_bp_level`] as number,
+    }));
   }
 
   /* -------------------------------------------------------------------------- */

@@ -457,7 +457,7 @@ export interface StatsData {
   startTime: number;
   endTime: number;
   stats: {
-    [key: string]: string;
+    [key: string]: string | number;
   };
   accountId: string;
   query: string;
@@ -929,4 +929,9 @@ export interface ReplayDownloadOptions extends Partial<ReplayDownloadConfig> {}
 export interface EventTokensResponse {
   user: User;
   tokens: string[];
+}
+
+export interface BRAccountLevel {
+  query: string;
+  level?: number;
 }

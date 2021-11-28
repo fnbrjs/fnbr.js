@@ -962,3 +962,83 @@ export interface STWSurvivorSquadData {
   type: STWSurvivorSquadType;
   slotIdx: number;
 }
+
+export interface STWStatsNodeCostsData {
+  [key: string]: {
+    [key: string]: number;
+  };
+}
+
+export interface STWStatsSTWLoadoutData {
+  selectedHeroLoadout: string;
+  modeLoadouts: string[];
+  activeLoadoutIndex: number;
+}
+
+export interface STWStatsBRLoadoutData {
+  loadouts: string[];
+  lastAppliedLoadout: string;
+  useRandomLoadout: boolean;
+}
+
+export interface STWStatsMissionAlertRedemtionData {
+  missionAlertId: string;
+  redemptionDateUtc: Date;
+  evictClaimDataAfterUtc: Date;
+}
+
+export interface STWStatsQuestData {
+  dailyLoginInterval: Date;
+  dailyQuestRerolls?: number;
+  poolStats: {
+    stats: {
+      poolName: string;
+      nextRefresh: Date;
+      rerollsRemaining: number;
+      questHistory: string[];
+    }[];
+    dailyLoginInterval: Date;
+    lockouts: {
+      lockoutName: string;
+    }[];
+  };
+}
+
+export interface STWStatsGameplayStatData {
+  statName: string;
+  statValue: number;
+}
+
+export interface STWStatsClientSettingsData {
+  pinnedQuestInstances?: any[];
+}
+
+export interface STWStatsResearchLevelsData {
+  technology: number;
+  offense: number;
+  fortitude: number;
+  resistance: number;
+}
+
+export interface STWStatsEventCurrencyData {
+  templateId: string;
+  cf: number;
+}
+
+export interface STWStatsXPData {
+  total: number;
+  overflow: number;
+  lost: number;
+}
+
+export interface STWStatsDailyRewardsData {
+  nextDefaultReward: number;
+  totalDaysLoggedIn: number;
+  lastClaimDate: Date;
+  additionalSchedules?: {
+    [key: string]: {
+      rewardsClaimed: number;
+      claimedToday: boolean;
+    };
+  };
+}

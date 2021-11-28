@@ -12,11 +12,6 @@ import {
   STWFORTStats,
   STWSurvivorSquads,
 } from '../../resources/structs';
-import {
-  calcSTWSurvivorBonus,
-  calcSTWSurvivorPowerLevel,
-  calcSTWSurvivorLeadBonus,
-} from '../util/Util';
 import STWSurvivor from './STWSurvivor';
 import STWItem from './STWItem';
 import STWStats from './STWStats';
@@ -189,9 +184,9 @@ class STWProfile extends Base {
       const leadSurvivor = survivorSquad.find((s) => s.squad!.slotIdx === 0);
 
       for (const survivor of survivorSquad) {
-        let totalBonus = calcSTWSurvivorPowerLevel(survivor);
-        if (survivor.squad!.slotIdx === 0) totalBonus += calcSTWSurvivorLeadBonus(survivor);
-        else if (leadSurvivor) totalBonus += calcSTWSurvivorBonus(leadSurvivor, survivor);
+        let totalBonus = survivor.powerLevel;
+        if (survivor.squad!.slotIdx === 0) totalBonus += survivor.leadBonus;
+        else if (leadSurvivor) totalBonus += survivor.calcSurvivorBonus(leadSurvivor);
 
         switch (survivor.squad!.type) {
           case 'medicine':

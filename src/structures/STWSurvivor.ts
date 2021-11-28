@@ -1,6 +1,10 @@
 import Client from '../client/Client';
 import STWItem from './STWItem';
-import { parseSTWSurvivorTemplateId } from '../util/Util';
+import {
+  parseSTWSurvivorTemplateId, calcSTWSurvivorRarity, calcSTWEVOConstant,
+  calcSTWLevelConstant, calcSTWSurvivorPowerLevel, calcSTWSurvivorLeadBonus,
+  calcSTWSurvivorBonus,
+} from '../util/Util';
 import {
   STWSurvivorSquadData, STWSurvivorType, STWSurvivorRarity,
   STWSurvivorSquads, STWSurvivorSquadType,
@@ -11,21 +15,88 @@ import { STWProfileSurvivorData } from '../../resources/httpResponses';
  * Represents a Save The World profile's survivor
  */
 class STWSurvivor extends STWItem {
+  /**
+   * The survivor's type.
+   * Special means it's from an event (eg. halloween).
+   * Manager means it's a lead survivor
+   */
   public type: STWSurvivorType;
+
+  /**
+   * The survivor's name (will be undefined for basic survivors)
+   */
   public name?: string;
+
+  /**
+   * The survivor's tier
+   */
   public tier: number;
+
+  /**
+   * The survivor's rarity
+   */
   public rarity: STWSurvivorRarity;
+
+  /**
+   * The survivor's manager synergy
+   */
   public managerSynergy?: string;
-  public gender: string;
+
+  /**
+   * The survivor's gender
+   */
+  public gender: 'male' | 'female';
+
+  /**
+   * The survivor's level
+   */
   public level: number;
+
+  /**
+   * The survivor's squad information.
+   * Will be undefined if the survivor is not part of a squad
+   */
   public squad?: STWSurvivorSquadData;
+
+  /**
+   * The survivor's portrait ID
+   */
   public portrait?: string;
+
+  /**
+   * The survivor's max level bonus
+   */
   public maxLevelBonus: number;
+
+  /**
+   * The survivor's personality
+   */
   public personality: string;
+
+  /**
+   * The survivor's XP
+   */
   public xp: number;
+
+  /**
+   * The survivor's equipped building's ID.
+   * Seems to be unused by the game
+   */
   public buildingSlotBuildingId?: string;
+
+  /**
+   * The survivor's set bonus
+   */
   public setBonus: string;
+
+  /**
+   * Whether the survivor is marked as seen
+   */
   public isSeen: boolean;
+
+  /**
+   * Whether the survivor is marked as favorite
+   */
   public isFavorite: boolean;
 
   /**
@@ -65,6 +136,67 @@ class STWSurvivor extends STWItem {
     this.setBonus = data.attributes.set_bonus;
     this.isSeen = data.attributes.item_seen;
     this.isFavorite = data.attributes.favorite;
+  }
+
+  /**
+   * Whether the survivor is a leader
+   */
+  public get isLeader() {
+    return this.type === 'manager';
+  }
+
+  /**
+   * The survivor's rarity value (number from 0-6).
+   * Depends on the actual rarity and whether the survivor is a leader
+   */
+  public get rarityValue() {
+    return calcSTWSurvivorRarity(this.rarity, this.isLeader);
+  }
+
+  /**
+   * The survivor's EVO constant (number from 0-9.85).
+   * Depends on the rarity and whether the survivor is a leader
+   */
+  public get EVOConstant() {
+    return calcSTWEVOConstant(this.rarityValue, this.isLeader);
+  }
+
+  /**
+   * The survivor's level constant (number from 0-1.645).
+   * Depends on the rarity and whether the survivor is a leader
+   */
+  public get levelConstant() {
+    return calcSTWLevelConstant(this.rarityValue, this.isLeader);
+  }
+
+  /**
+   * The survivor's power level.
+   * Depends on the tier, level, rarity value and whether the survivor is a leader
+   */
+  public get powerLevel() {
+    return calcSTWSurvivorPowerLevel(this.rarityValue, this.isLeader, this.level, this.tier);
+  }
+
+  /**
+   * The survivor's lead bonus.
+   * Will return 0 if the survivor is not a leader or not part of a squad
+   */
+  public get leadBonus() {
+    if (!this.managerSynergy || !this.squad) return 0;
+
+    return calcSTWSurvivorLeadBonus(this.managerSynergy, this.squad.name, this.powerLevel);
+  }
+
+  /**
+   * Calculates the survivor's bonus.
+   * Depends on the leader's rarity and personality.
+   * Returns 0 if the survivor is a leader
+   */
+  public calcSurvivorBonus(leader: STWSurvivor) {
+    if (this.isLeader) return 0;
+    if (!leader.isLeader) throw new Error('The leader survivor must be a leader');
+
+    return calcSTWSurvivorBonus(leader.personality, leader.rarity, this.personality, this.powerLevel);
   }
 }
 

@@ -4,10 +4,9 @@ import zlib from 'zlib';
 import crypto from 'crypto';
 import {
   Schema, ReplayData, ReplayDataChunk, ReplayEvent,
-  STWSurvivorRarity, STWSurvivorType,
+  STWSurvivorRarity, STWSurvivorType, STWSurvivorSquads,
 } from '../../resources/structs';
 import { STWLeadSynergy } from '../../enums/Enums';
-import STWSurvivor from '../structures/STWSurvivor';
 import BinaryWriter from './BinaryWriter';
 
 const defaultCharacters = [
@@ -298,7 +297,7 @@ export const calcSTWSurvivorRarity = (rarity: STWSurvivorRarity, isLeader: boole
   return rarities[rarity][isLeader ? 1 : 0] || 0;
 };
 
-export const calcSTWEVOConstant = (rarityValue: number, isLeader: boolean) => {
+export const calcSTWEVOConstant = (rarityValue: number, isLeader: boolean): number => {
   const EVOConstant: any = {
     1: [5, 5],
     2: [6.35, 6.35],
@@ -311,7 +310,7 @@ export const calcSTWEVOConstant = (rarityValue: number, isLeader: boolean) => {
   return EVOConstant[rarityValue][isLeader ? 1 : 0];
 };
 
-export const calcSTWLevelConstant = (rarityValue: number, isLeader: boolean) => {
+export const calcSTWLevelConstant = (rarityValue: number, isLeader: boolean): number => {
   const LvlConstant: any = {
     1: [1, 1],
     2: [1.08, 1.08],
@@ -323,39 +322,31 @@ export const calcSTWLevelConstant = (rarityValue: number, isLeader: boolean) => 
   return LvlConstant[rarityValue][isLeader ? 1 : 0];
 };
 
-export const calcSTWSurvivorPowerLevel = (survivor: STWSurvivor) => {
-  const rarityValue = calcSTWSurvivorRarity(survivor.rarity, survivor.squad?.slotIdx === 0);
+export const calcSTWSurvivorPowerLevel = (rarityValue: number, isLeader: boolean, level: number, tier: number) => Math.round(
+  (5 * rarityValue) - (isLeader ? 0 : 5)
+  + (level - 1) * calcSTWLevelConstant(rarityValue, isLeader)
+  + (tier - 1) * calcSTWEVOConstant(rarityValue, isLeader));
 
-  return Math.round(
-    (5 * rarityValue) - (survivor.squad?.slotIdx === 0 ? 0 : 5)
-    + (survivor.level - 1) * calcSTWLevelConstant(rarityValue, survivor.squad?.slotIdx === 0)
-    + (survivor.tier - 1) * calcSTWEVOConstant(rarityValue, survivor.squad?.slotIdx === 0));
-};
-
-export const calcSTWSurvivorBonus = (leader: STWSurvivor, survivor: STWSurvivor) => {
-  const leadPersonality = leader.personality.split('.')[3];
-  const survivorPersonality = survivor.personality.split('.')[3];
-  const leadRarity = leader.templateId.split(':')[1].split('_')[1];
-
-  if (survivorPersonality === leadPersonality) {
-    if (leadRarity === 'sr') return 8;
-    if (leadRarity === 'vr') return 5;
-    if (leadRarity === 'r') return 4;
-    if (leadRarity === 'uc') return 3;
-    if (leadRarity === 'c') return 2;
-  } else if (leadRarity === 'sr') {
-    if (calcSTWSurvivorPowerLevel(survivor) <= 2) return 0;
+export const calcSTWSurvivorBonus = (leaderPersonality: string, leaderRarity: string, survivorPersonality: string, survivorPowerLevel: number) => {
+  if (survivorPersonality === leaderPersonality) {
+    if (leaderRarity === 'sr') return 8;
+    if (leaderRarity === 'vr') return 5;
+    if (leaderRarity === 'r') return 4;
+    if (leaderRarity === 'uc') return 3;
+    if (leaderRarity === 'c') return 2;
+  } else if (leaderRarity === 'sr') {
+    if (survivorPowerLevel <= 2) return 0;
     return -2;
   }
 
   return 0;
 };
 
-export const calcSTWSurvivorLeadBonus = (survivor: STWSurvivor) => {
-  const leaderMatch = survivor.managerSynergy!.split('.')[2];
+export const calcSTWSurvivorLeadBonus = (managerSynergy: string, squadName: keyof STWSurvivorSquads, powerLevel: number) => {
+  const leaderMatch = managerSynergy!.split('.')[2];
 
-  if (STWLeadSynergy[survivor.squad!.name] === leaderMatch) {
-    return calcSTWSurvivorPowerLevel(survivor);
+  if (STWLeadSynergy[squadName] === leaderMatch) {
+    return powerLevel;
   }
 
   return 0;

@@ -13,7 +13,7 @@ import {
   ClientOptions, ClientConfig, ClientEvents, StatsData, NewsMOTD, NewsMessage, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
-  ReplayDownloadConfig, EventTokensResponse,
+  ReplayDownloadConfig, EventTokensResponse, BRAccountLevel, TournamentSessionMetadata,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -54,7 +54,6 @@ import RadioStation from '../structures/RadioStation';
 import SentFriendMessage from '../structures/SentFriendMessage';
 import MatchNotFoundError from '../exceptions/MatchNotFoundError';
 import CreativeIslandNotFoundError from '../exceptions/CreativeIslandNotFoundError';
-import STWProfile from '../structures/STWProfile';
 
 /**
  * Represets the main client
@@ -1204,6 +1203,8 @@ class Client extends EventEmitter {
       stats,
     })));
 
+    if (statsResponses.some((r) => r.error)) throw statsResponses.find((r) => r.error)?.error;
+
     return statsResponses.map((r) => r.response).flat(1).map((r) => ({
       ...r,
       query: ids.find((id) => id.id === r.accountId)?.query,
@@ -1321,6 +1322,22 @@ class Client extends EventEmitter {
     return eventFlags.response;
   }
 
+  /**
+   * Fetches the battle royale account level for one or multiple users
+   * @param user The id(s) and/or display name(s) of the user(s) to fetch the account level for
+   * @param seasonNumber The season number (eg. 16, 17, 18)
+   */
+  public async getBRAccountLevel(user: string | string[], seasonNumber: number): Promise<BRAccountLevel[]> {
+    const users = Array.isArray(user) ? user : [user];
+
+    const accountLevels = await this.getBRStats(users, undefined, undefined, [`s${seasonNumber}_social_bp_level`]);
+
+    return accountLevels.map((al) => ({
+      query: al.query,
+      level: al.stats[`s${seasonNumber}_social_bp_level`] as number,
+    }));
+  }
+
   /* -------------------------------------------------------------------------- */
   /*                     FORTNITE BATTLE ROYALE TOURNAMENTS                     */
   /* -------------------------------------------------------------------------- */
@@ -1430,17 +1447,7 @@ class Client extends EventEmitter {
       ...options,
     };
 
-    const downloadReplayCDNFile = async (url: string, responseType: ResponseType) => {
-      const fileLocationInfo = await this.http.sendEpicgamesRequest(true, 'GET', url, 'fortnite');
-      if (fileLocationInfo.error) return fileLocationInfo;
-
-      const file = await this.http.send('GET', (Object.values(fileLocationInfo.response.files)[0] as any).readLink, undefined, undefined, undefined, responseType);
-
-      if (file.response) return { response: file.response.data };
-      return file;
-    };
-
-    const replayMetadataResponse = await downloadReplayCDNFile(`${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, 'json');
+    const replayMetadataResponse = await this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, 'json');
     if (replayMetadataResponse.error) {
       if (!(replayMetadataResponse.error instanceof EpicgamesAPIError)
         && replayMetadataResponse.error.response?.data.includes('<Message>The specified key does not exist.</Message>')) {
@@ -1450,7 +1457,7 @@ class Client extends EventEmitter {
       throw replayMetadataResponse.error;
     }
 
-    const replayHeaderResponse = await downloadReplayCDNFile(`${Endpoints.BR_REPLAY}%2F${sessionId}%2Fheader.bin`, 'arraybuffer');
+    const replayHeaderResponse = await this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY}%2F${sessionId}%2Fheader.bin`, 'arraybuffer');
     if (replayHeaderResponse.error) throw replayHeaderResponse.error;
 
     const replayData: ReplayData = replayMetadataResponse.response;
@@ -1477,7 +1484,7 @@ class Client extends EventEmitter {
     for (const downloadKey of downloadKeys.values()) {
       const chunks = (replayData as any)[downloadKey];
       for (const chunk of chunks) {
-        promises.push(downloadReplayCDNFile(`${Endpoints.BR_REPLAY}%2F${sessionId}%2F${chunk.Id}.bin`, 'arraybuffer').then((resp) => {
+        promises.push(this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY}%2F${sessionId}%2F${chunk.Id}.bin`, 'arraybuffer').then((resp) => {
           if (resp.error) throw resp.error;
 
           chunks.find((d: any) => d.Id === chunk.Id).data = resp.response;
@@ -1488,6 +1495,50 @@ class Client extends EventEmitter {
     await Promise.all(promises);
 
     return buildReplay(replayData, downloadConfig.addStatsPlaceholder);
+  }
+
+  /**
+   * Fetches a tournament session's metadata
+   * @param sessionId The session ID
+   * @throws {MatchNotFoundError} The match wasn't found
+   * @throws {EpicgamesAPIError}
+   * @throws {AxiosError}
+   */
+  public async getTournamentSessionMetadata(sessionId: string): Promise<TournamentSessionMetadata> {
+    const replayMetadataResponse = await this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, 'json');
+    if (replayMetadataResponse.error) {
+      if (!(replayMetadataResponse.error instanceof EpicgamesAPIError)
+        && replayMetadataResponse.error.response?.data.includes('<Message>The specified key does not exist.</Message>')) {
+        throw new MatchNotFoundError(sessionId);
+      }
+
+      throw replayMetadataResponse.error;
+    }
+
+    return {
+      changelist: replayMetadataResponse.response.Changelist,
+      checkpoints: replayMetadataResponse.response.Checkpoints,
+      dataChunks: replayMetadataResponse.response.DataChunks,
+      desiredDelayInSeconds: replayMetadataResponse.response.DesiredDelayInSeconds,
+      events: replayMetadataResponse.response.Events,
+      friendlyName: replayMetadataResponse.response.FriendlyName,
+      lengthInMS: replayMetadataResponse.response.LengthInMS,
+      networkVersion: replayMetadataResponse.response.NetworkVersion,
+      replayName: replayMetadataResponse.response.ReplayName,
+      timestamp: new Date(replayMetadataResponse.response.Timestamp),
+      isCompressed: replayMetadataResponse.response.bCompressed,
+      isLive: replayMetadataResponse.response.bIsLive,
+    };
+  }
+
+  private async downloadReplayCDNFile(url: string, responseType: ResponseType) {
+    const fileLocationInfo = await this.http.sendEpicgamesRequest(true, 'GET', url, 'fortnite');
+    if (fileLocationInfo.error) return fileLocationInfo;
+
+    const file = await this.http.send('GET', (Object.values(fileLocationInfo.response.files)[0] as any).readLink, undefined, undefined, undefined, responseType);
+
+    if (file.response) return { response: file.response.data };
+    return file;
   }
 
   /* -------------------------------------------------------------------------- */
@@ -1529,34 +1580,6 @@ class Client extends EventEmitter {
     }
 
     return creativeDiscovery.response.Panels;
-  }
-
-  /* -------------------------------------------------------------------------- */
-  /*                           FORTNITE SAVE THE WORLD                          */
-  /* -------------------------------------------------------------------------- */
-
-  /**
-   * Fetches the save the world profile for a players
-   * @param user The id or display name of the user
-   * @throws {UserNotFoundError} The user wasn't found
-   * @throws {EpicgamesAPIError}
-   */
-  public async getSTWProfile(user: string) {
-    const resolvedUser = await this.getProfile(user);
-    if (!resolvedUser) throw new UserNotFoundError(user);
-
-    const queryProfileResponse = await this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.MCP}/${resolvedUser.id}/public/QueryPublicProfile?profileId=campaign`, 'fortnite', {
-      'Content-Type': 'application/json',
-    }, {});
-    if (queryProfileResponse.error) {
-      if (queryProfileResponse.error.code === 'errors.com.epicgames.modules.profiles.profile_not_found') {
-        throw new UserNotFoundError(user);
-      }
-
-      throw queryProfileResponse.error;
-    }
-
-    return new STWProfile(this, queryProfileResponse.response.profileChanges[0].profile, resolvedUser);
   }
 }
 

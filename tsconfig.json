@@ -22,7 +22,6 @@
     "importHelpers": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "strictPropertyInitialization": false,
-    "resolveJsonModule": true
+    "strictPropertyInitialization": false
   }
 }

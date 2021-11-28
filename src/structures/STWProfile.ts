@@ -1,7 +1,6 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
 import Client from '../client/Client';
-import Base from '../client/Base';
 import CurveTable from '../util/CurveTable';
 import HomebaseRatingMapping from '../../resources/STWMappings.json';
 import {
@@ -12,21 +11,22 @@ import {
 import {
   STWFORTStats,
   STWSurvivorSquads,
+  UserData,
 } from '../../resources/structs';
 import STWSurvivor from './STWSurvivor';
 import STWItem from './STWItem';
 import STWStats from './STWStats';
 import STWLocker from './STWLocker';
+import User from './User';
 
 /**
  * Represents a Save The World profile
  */
-class STWProfile extends Base {
+class STWProfile extends User {
   /**
-   * The profile ID.
-   * NOTE: THIS IS NOT THE ACCOUNT ID
+   * The profile ID
    */
-  public id: string;
+  public profileId: string;
 
   /**
    * The profile's creation date
@@ -47,11 +47,6 @@ class STWProfile extends Base {
    * The profile's wipe number
    */
   public wipeNumber: number;
-
-  /**
-   * The ID of the account this profile belongs to
-   */
-  public accountId: string;
 
   /**
    * The profile version
@@ -81,18 +76,18 @@ class STWProfile extends Base {
   /**
    * @param client The main client
    * @param data The profile data
+   * @param userData The user data
    */
-  constructor(client: Client, data: STWProfileData) {
-    super(client);
+  constructor(client: Client, data: STWProfileData, userData: UserData) {
+    super(client, userData);
 
     this.powerLevelCurve = new CurveTable(HomebaseRatingMapping[0].ExportValue.UIMonsterRating.Keys);
 
-    this.id = data._id;
+    this.profileId = data._id;
     this.createdAt = new Date(data.created);
     this.updatedAt = new Date(data.updated);
     this.revision = data.rvn;
     this.wipeNumber = data.wipeNumber;
-    this.accountId = data.accountId;
     this.version = data.version;
     this.commandRevision = data.commandRevision;
 
@@ -241,6 +236,14 @@ class STWProfile extends Base {
     }
 
     return survivorFORTStats;
+  }
+
+  /**
+   * Whether the profile is a founder
+   * (Whether it can receive vbucks rewards)
+   */
+  public get isFounder() {
+    return this.items.some((i) => i.templateId === 'Token:receivemtxcurrency');
   }
 }
 

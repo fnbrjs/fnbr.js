@@ -1542,10 +1542,10 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async getSTWProfile(user: string) {
-    const userID = await this.resolveUserId(user);
-    if (!userID) throw new UserNotFoundError(user);
+    const resolvedUser = await this.getProfile(user);
+    if (!resolvedUser) throw new UserNotFoundError(user);
 
-    const queryProfileResponse = await this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.MCP}/${userID}/public/QueryPublicProfile?profileId=campaign`, 'fortnite', {
+    const queryProfileResponse = await this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.MCP}/${resolvedUser.id}/public/QueryPublicProfile?profileId=campaign`, 'fortnite', {
       'Content-Type': 'application/json',
     }, {});
     if (queryProfileResponse.error) {
@@ -1556,7 +1556,7 @@ class Client extends EventEmitter {
       throw queryProfileResponse.error;
     }
 
-    return new STWProfile(this, queryProfileResponse.response.profileChanges[0].profile);
+    return new STWProfile(this, queryProfileResponse.response.profileChanges[0].profile, resolvedUser);
   }
 }
 

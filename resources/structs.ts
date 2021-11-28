@@ -17,7 +17,7 @@ import PartyMemberConfirmation from '../src/structures/PartyMemberConfirmation';
 import PartyMessage from '../src/structures/PartyMessage';
 import ReceivedPartyInvitation from '../src/structures/ReceivedPartyInvitation';
 import User from '../src/structures/User';
-import { EpicgamesOAuthData, TournamentWindowTemplateData } from './httpResponses';
+import { EpicgamesOAuthData, STWProfileLockerSlotData, TournamentWindowTemplateData } from './httpResponses';
 import ReceivedFriendMessage from '../src/structures/ReceivedFriendMessage';
 import STWSurvivor from '../src/structures/STWSurvivor';
 
@@ -1041,4 +1041,19 @@ export interface STWStatsDailyRewardsData {
       claimedToday: boolean;
     };
   };
+}
+
+export interface STWLockerSlotsData {
+  Pickaxe: STWProfileLockerSlotData;
+  MusicPack?: STWProfileLockerSlotData;
+  Character?: STWProfileLockerSlotData;
+  ItemWrap: STWProfileLockerSlotData;
+  Backpack: STWProfileLockerSlotData;
+  Dance: STWProfileLockerSlotData;
+  LoadingScreen: STWProfileLockerSlotData;
+}
+
+export interface STWLockerBannerData {
+  icon: string;
+  color: string;
 }

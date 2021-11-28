@@ -6,6 +6,7 @@ import CurveTable from '../util/CurveTable';
 import HomebaseRatingMapping from '../../resources/STWMappings.json';
 import {
   STWProfileData,
+  STWProfileLockerData,
   STWProfileSurvivorData,
 } from '../../resources/httpResponses';
 import {
@@ -15,6 +16,7 @@ import {
 import STWSurvivor from './STWSurvivor';
 import STWItem from './STWItem';
 import STWStats from './STWStats';
+import STWLocker from './STWLocker';
 
 /**
  * Represents a Save The World profile
@@ -103,6 +105,9 @@ class STWProfile extends Base {
         case 'Worker':
           this.items.push(new STWSurvivor(this.client, itemId, item as STWProfileSurvivorData));
           break;
+        case 'CosmeticLocker':
+          this.items.push(new STWLocker(this.client, itemId, item as STWProfileLockerData));
+          break;
         default:
           this.items.push(new STWItem(this.client, itemId, item));
       }
@@ -138,6 +143,13 @@ class STWProfile extends Base {
     }
 
     return survivorSquads;
+  }
+
+  /**
+   * The profile's locker
+   */
+  public get locker() {
+    return this.items.find((i) => i instanceof STWLocker) as STWLocker;
   }
 
   /**

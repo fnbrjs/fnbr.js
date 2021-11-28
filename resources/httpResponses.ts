@@ -378,6 +378,33 @@ export interface STWProfileSurvivorData extends STWProfileItemData {
   };
 }
 
+export interface STWProfileLockerSlotData {
+  items: string[];
+  activeVariants: string[];
+}
+
+export interface STWProfileLockerData extends STWProfileItemData {
+  attributes: {
+    locker_slots_data: {
+      slots: {
+        Pickaxe: STWProfileLockerSlotData;
+        MusicPack?: STWProfileLockerSlotData;
+        Character?: STWProfileLockerSlotData;
+        ItemWrap: STWProfileLockerSlotData;
+        Backpack: STWProfileLockerSlotData;
+        Dance: STWProfileLockerSlotData;
+        LoadingScreen: STWProfileLockerSlotData;
+      };
+    };
+    use_count: number;
+    banner_icon_template: string;
+    banner_color_template: string;
+    locker_name: string;
+    item_seen: boolean;
+    favorite: boolean;
+  };
+}
+
 export interface STWProfileStatsData {
   node_costs: Partial<{
     homebase_node_default_page: {

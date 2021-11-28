@@ -9,7 +9,7 @@ import {
 } from '../../resources/structs';
 
 /**
- * Represents a Save The World profile's item
+ * Represents a Save The World profile's stats
  */
 class STWStats extends Base {
   /**

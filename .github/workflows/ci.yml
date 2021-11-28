@@ -24,7 +24,7 @@ jobs:
 
       - name: "Lint Code"
         if: ${{ matrix.node == '16' }}
-        run: "npx eslint -f .github/workflows/formatter.js src/**/*.ts"
+        run: "npx eslint -f .github/workflows/formatter.js src/**/*.ts || :"
 
       - name: "Compile Code"
         run: "npx tsc"

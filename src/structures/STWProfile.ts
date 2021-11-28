@@ -6,6 +6,7 @@ import HomebaseRatingMapping from '../../resources/STWMappings.json';
 import {
   STWProfileData,
   STWProfileLockerData,
+  STWProfileResourceData,
   STWProfileSurvivorData,
 } from '../../resources/httpResponses';
 import {
@@ -103,6 +104,9 @@ class STWProfile extends User {
           break;
         case 'CosmeticLocker':
           this.items.push(new STWLocker(this.client, itemId, item as STWProfileLockerData));
+          break;
+        case 'AccountResource':
+          this.items.push(new STWResource(this.client, itemId, item as STWProfileResourceData));
           break;
         default:
           this.items.push(new STWItem(this.client, itemId, item));

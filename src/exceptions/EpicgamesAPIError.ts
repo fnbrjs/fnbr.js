@@ -28,7 +28,7 @@ class EpicgamesAPIError extends Error {
   /**
    * The request data sent by the client
    */
-  public requestData: any;
+  public requestData?: any;
 
   /**
    * The variables contained in {@link EpicgamesAPIError#message}
@@ -48,7 +48,7 @@ class EpicgamesAPIError extends Error {
     this.method = request.method?.toUpperCase() || 'GET';
     this.url = request.url || '';
     this.code = error.errorCode;
-    this.messageVars = error.messageVars;
+    this.messageVars = error.messageVars || [];
     this.httpStatus = status;
     this.requestData = request.data;
   }

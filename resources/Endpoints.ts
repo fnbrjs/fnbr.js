@@ -24,6 +24,7 @@ export default Object.freeze({
   BR_STATS_V2: 'https://statsproxy-public-service-live.ol.epicgames.com/statsproxy/api/statsv2',
   BR_SERVER_STATUS: 'https://lightswitch-public-service-prod06.ol.epicgames.com/lightswitch/api/service/bulk/status?serviceId=Fortnite',
   BR_STORE: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/storefront/v2/catalog',
+  BR_STORE_KEYCHAIN: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/storefront/v2/keychain?numKeysDownloaded=0',
   BR_NEWS: 'https://fortnitecontent-website-prod07.ol.epicgames.com/content/api/pages/fortnite-game',
   BR_NEWS_MOTD: 'https://prm-dialogue-public-api-prod.edea.live.use1a.on.epicgames.com/api/v1/fortnite-br/surfaces/motd/target',
   BR_EVENT_FLAGS: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/calendar/v1/timeline',

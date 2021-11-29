@@ -1326,16 +1326,32 @@ class Client extends EventEmitter {
    * Fetches the battle royale account level for one or multiple users
    * @param user The id(s) and/or display name(s) of the user(s) to fetch the account level for
    * @param seasonNumber The season number (eg. 16, 17, 18)
+   * @throws {UserNotFoundError} The user wasn't found
+   * @throws {StatsPrivacyError} The user set their stats to private
+   * @throws {EpicgamesAPIError}
    */
   public async getBRAccountLevel(user: string | string[], seasonNumber: number): Promise<BRAccountLevel[]> {
+    if (seasonNumber < 11) throw new RangeError('The season number must be at least 11');
+
     const users = Array.isArray(user) ? user : [user];
 
     const accountLevels = await this.getBRStats(users, undefined, undefined, [`s${seasonNumber}_social_bp_level`]);
 
     return accountLevels.map((al) => ({
       query: al.query,
-      level: al.stats[`s${seasonNumber}_social_bp_level`] as number,
+      level: al.stats[`s${seasonNumber}_social_bp_level`] as number || 0,
     }));
+  }
+
+  /**
+   * Fetches the storefront keychain
+   * @throws {EpicgamesAPIError}
+   */
+  public async getStorefrontKeychain(): Promise<string[]> {
+    const keychain = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.BR_STORE_KEYCHAIN, 'fortnite');
+    if (keychain.error) throw keychain.error;
+
+    return keychain.response;
   }
 
   /* -------------------------------------------------------------------------- */
@@ -1531,6 +1547,11 @@ class Client extends EventEmitter {
     };
   }
 
+  /**
+   * Downloads a file from the CDN (used for replays)
+   * @param url The URL of the file to download
+   * @param responseType The response type
+   */
   private async downloadReplayCDNFile(url: string, responseType: ResponseType) {
     const fileLocationInfo = await this.http.sendEpicgamesRequest(true, 'GET', url, 'fortnite');
     if (fileLocationInfo.error) return fileLocationInfo;

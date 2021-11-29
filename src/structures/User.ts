@@ -90,6 +90,14 @@ class User extends Base {
   }
 
   /**
+   * Fetches the battle royale account level for this user
+   * @param seasonNumber The season number (eg. 16, 17, 18)
+   */
+  public async getBRAccountLevel(seasonNumber: number) {
+    return this.client.getBRAccountLevel(this.id, seasonNumber);
+  }
+
+  /**
    * Updates this user with the given data
    * @param data The updated user data
    */

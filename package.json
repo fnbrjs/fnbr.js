@@ -6,7 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "jest ./tests/"
+    "test": "jest ./tests/",
+    "prepare": "npm run build"
   },
   "files": [
     "dist/**/*"

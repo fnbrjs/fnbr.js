@@ -14,6 +14,7 @@ import {
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
   ReplayDownloadConfig, EventTokensResponse, BRAccountLevel, TournamentSessionMetadata,
+  Language,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -1066,7 +1067,7 @@ class Client extends EventEmitter {
    * @param language The language
    * @throws {EpicgamesAPIError}
    */
-  public async getStorefronts(language = Enums.Language.ENGLISH) {
+  public async getStorefronts(language: Language = 'en') {
     const store = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_STORE}?lang=${language}`, 'fortnite');
     if (store.error) throw store.error;
 
@@ -1212,9 +1213,9 @@ class Client extends EventEmitter {
   }
 
   // eslint-disable-next-line no-unused-vars
-  public async getNews(mode: 'battleroyale' | 'creative', language: string): Promise<NewsMOTD[]>;
+  public async getNews(mode: 'battleroyale' | 'creative', language: Language): Promise<NewsMOTD[]>;
   // eslint-disable-next-line no-unused-vars
-  public async getNews(mode: 'savetheworld', language: string): Promise<NewsMessage[]>;
+  public async getNews(mode: 'savetheworld', language: Language): Promise<NewsMessage[]>;
 
   /**
    * Fetches the current news for a specific gamemode
@@ -1222,7 +1223,7 @@ class Client extends EventEmitter {
    * @param language The language of the news
    * @throws {EpicgamesAPIError}
    */
-  public async getNews(mode: 'battleroyale' | 'creative' | 'savetheworld' = 'battleroyale', language = Enums.Language.ENGLISH): Promise<NewsMOTD[] | NewsMessage[]> {
+  public async getNews(mode: 'battleroyale' | 'creative' | 'savetheworld' = 'battleroyale', language: Language = 'en'): Promise<NewsMOTD[] | NewsMessage[]> {
     const news = await this.http.sendEpicgamesRequest(false, 'GET', `${Endpoints.BR_NEWS}/${mode}news${mode === 'savetheworld' ? '' : 'v2'}?lang=${language}`);
     if (news.error) throw news.error;
 
@@ -1315,7 +1316,7 @@ class Client extends EventEmitter {
    * @param language The language
    * @throws {EpicgamesAPIError}
    */
-  public async getBREventFlags(language = Enums.Language.ENGLISH) {
+  public async getBREventFlags(language: Language = 'en') {
     const eventFlags = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_EVENT_FLAGS}?lang=${language}`, 'fortnite');
     if (eventFlags.error) throw eventFlags.error;
 

@@ -950,3 +950,5 @@ export interface TournamentSessionMetadata {
   isCompressed: boolean;
   isLive: boolean;
 }
+
+export type Language = 'ar' | 'en' | 'de' | 'es' | 'fr' | 'it' | 'ja' | 'pl' | 'ru' | 'tr';

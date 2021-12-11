@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import {
   Schema, ReplayData, ReplayDataChunk, ReplayEvent,
   STWSurvivorRarity, STWSurvivorType, STWSurvivorSquads,
+  StatsPlaylistTypeData,
 } from '../../resources/structs';
 import { STWLeadSynergy } from '../../enums/Enums';
 import BinaryWriter from './BinaryWriter';
@@ -350,4 +351,64 @@ export const calcSTWSurvivorLeadBonus = (managerSynergy: string, squadName: keyo
   }
 
   return 0;
+};
+
+const defaultStats = {
+  score: 0,
+  scorePerMin: 0,
+  scorePerMatch: 0,
+  wins: 0,
+  top3: 0,
+  top5: 0,
+  top6: 0,
+  top10: 0,
+  top12: 0,
+  top25: 0,
+  kills: 0,
+  killsPerMin: 0,
+  killsPerMatch: 0,
+  deaths: 0,
+  kd: 0,
+  matches: 0,
+  winRate: 0,
+  minutesPlayed: 0,
+  playersOutlived: 0,
+  lastModified: undefined,
+};
+
+export const createDefaultInputTypeStats = () => ({
+  overall: { ...defaultStats },
+  solo: { ...defaultStats },
+  duo: { ...defaultStats },
+  squad: { ...defaultStats },
+  ltm: { ...defaultStats },
+});
+
+export const parseStatKey = (key: string, value: number): [keyof StatsPlaylistTypeData, (number | Date)] => {
+  switch (key) {
+    case 'lastmodified':
+      return ['lastModified', new Date(value * 1000)];
+    case 'placetop25':
+      return ['top25', value];
+    case 'placetop12':
+      return ['top12', value];
+    case 'placetop10':
+      return ['top10', value];
+    case 'placetop6':
+      return ['top6', value];
+    case 'placetop5':
+      return ['top5', value];
+    case 'placetop3':
+      return ['top3', value];
+    case 'placetop1':
+      return ['wins', value];
+    case 'playersoutlived':
+      return ['playersOutlived', value];
+    case 'minutesplayed':
+      return ['minutesPlayed', value];
+    case 'matchesplayed':
+      return ['matches', value];
+    default:
+      return [key as keyof StatsPlaylistTypeData, value];
+  }
 };

@@ -123,6 +123,8 @@ export interface PartyConfig {
 
 export type PresenceOnlineType = 'away' | 'chat' | 'dnd' | 'xa' | 'online';
 
+export type StatsPlaylistType = 'other' | 'solo' | 'duo' | 'squad' | 'ltm';
+
 export interface ClientConfig {
   /**
    * Whether the party member meta (outfit, emote, etc) should be saved so they are kept when joining a new party
@@ -235,6 +237,12 @@ export interface ClientConfig {
    * By default, this is set to false because two clients attempting to log into one account could result in an endless loop
    */
   restartOnInvalidRefresh: boolean;
+
+  /**
+   * A custom parser for resolving the stats playlist type (ie. "solo", "duo", "ltm").
+   * Can be useful if you want to use data in the game files to determine the stats playlist type
+   */
+  statsPlaylistTypeParser?: (playlistId: string) => StatsPlaylistType;
 }
 
 export interface ClientOptions extends Partial<ClientConfig> {}
@@ -454,14 +462,42 @@ export interface PresenceGameplayStats {
 
 export type PendingFriendDirection = 'INCOMING' | 'OUTGOING';
 
+export interface StatsPlaylistTypeData {
+  score: number;
+  scorePerMin: number;
+  scorePerMatch: number;
+  wins: number;
+  top3: number;
+  top5: number;
+  top6: number;
+  top10: number;
+  top12: number;
+  top25: number;
+  kills: number;
+  killsPerMin: number;
+  killsPerMatch: number;
+  deaths: number;
+  kd: number;
+  matches: number;
+  winRate: number;
+  minutesPlayed: number;
+  playersOutlived: number;
+  lastModified?: Date;
+}
+
+export interface StatsInputTypeData {
+  overall: StatsPlaylistTypeData;
+  solo: StatsPlaylistTypeData;
+  duo: StatsPlaylistTypeData;
+  squad: StatsPlaylistTypeData;
+  ltm: StatsPlaylistTypeData;
+}
+
 export interface StatsData {
-  startTime: number;
-  endTime: number;
-  stats: {
-    [key: string]: string | number;
-  };
-  accountId: string;
-  query: string;
+  all: StatsInputTypeData;
+  keyboardmouse: StatsInputTypeData;
+  gamepad: StatsInputTypeData;
+  touch: StatsInputTypeData;
 }
 
 export interface NewsMOTD {
@@ -933,8 +969,13 @@ export interface EventTokensResponse {
 }
 
 export interface BRAccountLevel {
-  query: string;
-  level?: number;
+  level: number;
+  progress: number;
+}
+
+export interface BRAccountLevelData {
+  user: User;
+  level?: BRAccountLevel;
 }
 
 export interface TournamentSessionMetadata {
@@ -1078,4 +1119,11 @@ export interface STWLockerSlotsData {
 export interface STWLockerBannerData {
   icon: string;
   color: string;
+}
+
+export interface StatsLevelData {
+  [key: string]: {
+    level: number;
+    progress: number;
+  };
 }

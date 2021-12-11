@@ -10,10 +10,10 @@ import Auth from './Auth';
 import Http from './HTTP';
 import AsyncLock from '../util/AsyncLock';
 import {
-  ClientOptions, ClientConfig, ClientEvents, StatsData, NewsMOTD, NewsMessage, LightswitchData,
+  ClientOptions, ClientConfig, ClientEvents, NewsMOTD, NewsMessage, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
-  ReplayDownloadConfig, EventTokensResponse, BRAccountLevel, TournamentSessionMetadata,
+  ReplayDownloadConfig, EventTokensResponse, TournamentSessionMetadata, BRAccountLevelData,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -55,6 +55,7 @@ import SentFriendMessage from '../structures/SentFriendMessage';
 import MatchNotFoundError from '../exceptions/MatchNotFoundError';
 import CreativeIslandNotFoundError from '../exceptions/CreativeIslandNotFoundError';
 import STWProfile from '../structures/STWProfile';
+import Stats from '../structures/Stats';
 
 /**
  * Represets the main client
@@ -1148,9 +1149,9 @@ class Client extends EventEmitter {
   /* -------------------------------------------------------------------------- */
 
   // eslint-disable-next-line no-unused-vars
-  public async getBRStats(user: string, startTime?: number, endTime?: number): Promise<StatsData>;
+  public async getBRStats(user: string, startTime?: number, endTime?: number): Promise<Stats>;
   // eslint-disable-next-line no-unused-vars
-  public async getBRStats(user: string[], startTime?: number, endTime?: number, stats?: string[]): Promise<StatsData[]>;
+  public async getBRStats(user: string[], startTime?: number, endTime?: number, stats?: string[]): Promise<Stats[]>;
 
   /**
    * Fetches battle royale v2 stats for one or multiple players
@@ -1163,32 +1164,29 @@ class Client extends EventEmitter {
    * @throws {TypeError} You must provide an array of stats keys for multiple user lookup
    * @throws {EpicgamesAPIError}
    */
-  public async getBRStats(user: string | string[], startTime?: number, endTime?: number, stats: string[] = []): Promise<StatsData | StatsData[] | undefined> {
+  public async getBRStats(user: string | string[], startTime?: number, endTime?: number, stats: string[] = []): Promise<Stats | Stats[] | undefined> {
     const params = [];
     if (startTime) params.push(`startTime=${startTime}`);
     if (endTime) params.push(`endTime=${endTime}`);
     const query = params[0] ? `?${params.join('&')}` : '';
 
     if (typeof user === 'string') {
-      const userID = await this.resolveUserId(user);
-      if (!userID) throw new UserNotFoundError(user);
+      const resolvedUser = await this.getProfile(user);
+      if (!resolvedUser) throw new UserNotFoundError(user);
 
-      const statsResponse = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_STATS_V2}/account/${userID}${query}`, 'fortnite');
+      const statsResponse = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_STATS_V2}/account/${resolvedUser.id}${query}`, 'fortnite');
 
       if (!statsResponse.error && !statsResponse.response) throw new StatsPrivacyError(user);
       if (statsResponse.error) throw statsResponse.error;
 
-      return {
-        ...statsResponse.response,
-        query: user,
-      };
+      return new Stats(this, statsResponse.response, resolvedUser);
     }
 
     if (!stats[0]) throw new TypeError('You need to provide an array of stats keys to fetch multiple user\'s stats');
 
-    const ids = await this.resolveUserIds(user);
+    const resolvedUsers = await this.getProfile(user);
 
-    const idChunks: { id: string, query: string }[][] = ids.reduce((resArr: any[], id, i) => {
+    const idChunks: { id: string, query: string }[][] = resolvedUsers.map((u) => u.id).reduce((resArr: any[], id, i) => {
       const chunkIndex = Math.floor(i / 100);
       // eslint-disable-next-line no-param-reassign
       if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
@@ -1206,10 +1204,7 @@ class Client extends EventEmitter {
 
     if (statsResponses.some((r) => r.error)) throw statsResponses.find((r) => r.error)?.error;
 
-    return statsResponses.map((r) => r.response).flat(1).map((r) => ({
-      ...r,
-      query: ids.find((id) => id.id === r.accountId)?.query,
-    }));
+    return statsResponses.map((r) => r.response).flat(1).map((r) => new Stats(this, r, resolvedUsers.find((u) => u.id === r.accountId)!));
   }
 
   // eslint-disable-next-line no-unused-vars
@@ -1328,14 +1323,14 @@ class Client extends EventEmitter {
    * @param user The id(s) and/or display name(s) of the user(s) to fetch the account level for
    * @param seasonNumber The season number (eg. 16, 17, 18)
    */
-  public async getBRAccountLevel(user: string | string[], seasonNumber: number): Promise<BRAccountLevel[]> {
+  public async getBRAccountLevel(user: string | string[], seasonNumber: number): Promise<BRAccountLevelData[]> {
     const users = Array.isArray(user) ? user : [user];
 
     const accountLevels = await this.getBRStats(users, undefined, undefined, [`s${seasonNumber}_social_bp_level`]);
 
     return accountLevels.map((al) => ({
-      query: al.query,
-      level: al.stats[`s${seasonNumber}_social_bp_level`] as number,
+      user: al.user,
+      level: al.levelData[`s${seasonNumber}`] || 0,
     }));
   }
 

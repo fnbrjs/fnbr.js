@@ -519,3 +519,11 @@ export interface STWProfileData {
   };
   commandRevision: number;
 }
+
+export interface RawStatsData {
+  startTime: number;
+  endTime: number;
+  stats: {
+    [key: string]: number;
+  };
+}

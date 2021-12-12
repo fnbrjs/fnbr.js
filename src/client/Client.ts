@@ -347,7 +347,7 @@ class Client extends EventEmitter {
    * Updates the client's caches
    */
   public async updateCaches() {
-    const friendsSummary = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.FRIENDS}/v1/${this.user?.id}/summary`, 'fortnite');
+    const friendsSummary = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.FRIENDS}/${this.user?.id}/summary`, 'fortnite');
 
     if (friendsSummary.error) throw friendsSummary.error;
 
@@ -737,8 +737,7 @@ class Client extends EventEmitter {
   /**
    * Removes a friend from the client's friend list or declines / aborts a pending friendship request
    * @param friend The id or display name of the friend
-   * @throws {UserNotFoundError} The user wasn't found
-   * @throws {FriendNotFoundError} The user is not friends with the client
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {EpicgamesAPIError}
    */
   public async removeFriend(friend: string) {
@@ -750,6 +749,22 @@ class Client extends EventEmitter {
 
     const removeFriend = await this.http.sendEpicgamesRequest(true, 'DELETE', `${Endpoints.FRIEND_DELETE}/${this.user?.id}/friends/${resolvedFriend.id}`, 'fortnite');
     if (removeFriend.error) throw removeFriend.error;
+  }
+
+  /**
+   * Fetches the friends the client shares with a friend
+   * @param friend The id or display name of the friend
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
+   * @throws {EpicgamesAPIError}
+   */
+  public async getMutualFriends(friend: string): Promise<Friend[]> {
+    const resolvedFriend = this.friends.find((f) => f.displayName === friend || f.id === friend);
+    if (!resolvedFriend) throw new FriendNotFoundError(friend);
+
+    const mutualFriends = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.FRIENDS}/${this.user?.id}/friends/${resolvedFriend.id}/mutual`, 'fortnite');
+    if (mutualFriends.error) throw mutualFriends.error;
+
+    return mutualFriends.response.map((f: string) => this.friends.get(f)).filter((f: Friend | undefined) => !!f);
   }
 
   /**

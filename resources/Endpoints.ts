@@ -52,7 +52,7 @@ export default Object.freeze({
   MCP: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/game/v2/profile',
 
   // FRIENDS
-  FRIENDS: 'https://friends-public-service-prod.ol.epicgames.com/friends/api',
+  FRIENDS: 'https://friends-public-service-prod.ol.epicgames.com/friends/api/v1',
   FRIEND_ADD: 'https://friends-public-service-prod06.ol.epicgames.com/friends/api/public/friends',
   FRIEND_DELETE: 'https://friends-public-service-prod06.ol.epicgames.com/friends/api/v1',
   FRIEND_BLOCK: 'https://friends-public-service-prod06.ol.epicgames.com/friends/api/public/blocklist',

@@ -60,6 +60,13 @@ export { default as ReceivedPartyJoinRequest } from './src/structures/ReceivedPa
 export { default as SentFriendMessage } from './src/structures/SentFriendMessage';
 export { default as SentPartyInvitation } from './src/structures/SentPartyInvitation';
 export { default as SentPartyJoinRequest } from './src/structures/SentPartyJoinRequest';
+export { default as Stats } from './src/structures/Stats';
+export { default as STWItem } from './src/structures/STWItem';
+export { default as STWLocker } from './src/structures/STWLocker';
+export { default as STWProfile } from './src/structures/STWProfile';
+export { default as STWResource } from './src/structures/STWResource';
+export { default as STWStats } from './src/structures/STWStats';
+export { default as STWSurvivor } from './src/structures/STWSurvivor';
 export { default as Tournament } from './src/structures/Tournament';
 export { default as TournamentWindow } from './src/structures/TournamentWindow';
 export { default as User } from './src/structures/User';

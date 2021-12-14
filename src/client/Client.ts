@@ -13,7 +13,8 @@ import {
   ClientOptions, ClientConfig, ClientEvents, StatsData, NewsMOTD, NewsMessage, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
-  ReplayDownloadConfig, EventTokensResponse,
+  ReplayDownloadConfig, EventTokensResponse, BRAccountLevel, TournamentSessionMetadata,
+  Language,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -222,6 +223,10 @@ class Client extends EventEmitter {
     return super.emit(event, ...args);
   }
 
+  /* -------------------------------------------------------------------------- */
+  /*                           CLIENT LOGIN AND LOGOUT                          */
+  /* -------------------------------------------------------------------------- */
+
   /**
    * Logs the client in.
    * A valid authentication method must be provided in the client's config.
@@ -326,6 +331,80 @@ class Client extends EventEmitter {
   }
 
   /**
+   * Initializes the sweeping of cached objects
+   */
+  private initCacheSweeping() {
+    const { cacheSettings } = this.config;
+
+    const presenceCacheSettings = cacheSettings.presences;
+    if (presenceCacheSettings && presenceCacheSettings.sweepInterval && presenceCacheSettings.sweepInterval > 0
+      && presenceCacheSettings.maxLifetime > 0 && presenceCacheSettings.maxLifetime !== Infinity) {
+      this.setInterval(this.sweepPresences.bind(this), presenceCacheSettings.sweepInterval);
+    }
+  }
+
+  /**
+   * Updates the client's caches
+   */
+  public async updateCaches() {
+    const friendsSummary = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.FRIENDS}/${this.user?.id}/summary`, 'fortnite');
+
+    if (friendsSummary.error) throw friendsSummary.error;
+
+    this.friends.clear();
+    this.pendingFriends.clear();
+    this.blockedUsers.clear();
+
+    friendsSummary.response.friends.forEach((f: any) => {
+      this.friends.set(f.accountId, new Friend(this, { ...f, id: f.accountId }));
+    });
+
+    friendsSummary.response.incoming.forEach((f: any) => {
+      this.pendingFriends.set(f.accountId, new IncomingPendingFriend(this, { ...f, id: f.accountId }));
+    });
+
+    friendsSummary.response.outgoing.forEach((f: any) => {
+      this.pendingFriends.set(f.accountId, new OutgoingPendingFriend(this, { ...f, id: f.accountId }));
+    });
+
+    friendsSummary.response.blocklist.forEach((u: any) => {
+      this.blockedUsers.set(u.accountId, new BlockedUser(this, { ...u, id: u.accountId }));
+    });
+
+    const users = await this.getProfile([...this.friends.values(), ...this.pendingFriends.values(), ...this.blockedUsers.values()]
+      .filter((u) => !!u.id).map((u) => u.id));
+
+    users.forEach((u) => {
+      this.friends.get(u.id)?.update(u);
+      this.pendingFriends.get(u.id)?.update(u);
+      this.blockedUsers.get(u.id)?.update(u);
+    });
+  }
+
+  /**
+   * Removes presences from the clients cache that are older than the max lifetime
+   * @param maxLifetime How old a presence must be before it can be sweeped (in ms)
+   * @returns The amount of presences sweeped
+   */
+  public sweepPresences(maxLifetime = this.config.cacheSettings.presences?.maxLifetime) {
+    if (typeof maxLifetime !== 'number') throw new TypeError('maxLifetime must be typeof number');
+
+    let presences = 0;
+    for (const friend of this.friends.values()) {
+      if (typeof friend.presence?.receivedAt !== 'undefined' && Date.now() - friend.presence.receivedAt.getTime() > maxLifetime) {
+        delete friend.presence;
+        presences += 1;
+      }
+    }
+
+    return presences;
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                                    UTIL                                    */
+  /* -------------------------------------------------------------------------- */
+
+  /**
    * Wait until an event is emitted
    * @param event The event that will be waited for
    * @param timeout The timeout (in milliseconds)
@@ -417,75 +496,9 @@ class Client extends EventEmitter {
     }
   }
 
-  /**
-   * Initializes the sweeping of cached objects
-   */
-  private initCacheSweeping() {
-    const { cacheSettings } = this.config;
-
-    const presenceCacheSettings = cacheSettings.presences;
-    if (presenceCacheSettings && presenceCacheSettings.sweepInterval && presenceCacheSettings.sweepInterval > 0
-      && presenceCacheSettings.maxLifetime > 0 && presenceCacheSettings.maxLifetime !== Infinity) {
-      this.setInterval(this.sweepPresences.bind(this), presenceCacheSettings.sweepInterval);
-    }
-  }
-
-  /**
-   * Updates the client's caches
-   */
-  public async updateCaches() {
-    const friendsSummary = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.FRIENDS}/v1/${this.user?.id}/summary`, 'fortnite');
-
-    if (friendsSummary.error) throw friendsSummary.error;
-
-    this.friends.clear();
-    this.pendingFriends.clear();
-    this.blockedUsers.clear();
-
-    friendsSummary.response.friends.forEach((f: any) => {
-      this.friends.set(f.accountId, new Friend(this, { ...f, id: f.accountId }));
-    });
-
-    friendsSummary.response.incoming.forEach((f: any) => {
-      this.pendingFriends.set(f.accountId, new IncomingPendingFriend(this, { ...f, id: f.accountId }));
-    });
-
-    friendsSummary.response.outgoing.forEach((f: any) => {
-      this.pendingFriends.set(f.accountId, new OutgoingPendingFriend(this, { ...f, id: f.accountId }));
-    });
-
-    friendsSummary.response.blocklist.forEach((u: any) => {
-      this.blockedUsers.set(u.accountId, new BlockedUser(this, { ...u, id: u.accountId }));
-    });
-
-    const users = await this.getProfile([...this.friends.values(), ...this.pendingFriends.values(), ...this.blockedUsers.values()]
-      .filter((u) => !!u.id).map((u) => u.id));
-
-    users.forEach((u) => {
-      this.friends.get(u.id)?.update(u);
-      this.pendingFriends.get(u.id)?.update(u);
-      this.blockedUsers.get(u.id)?.update(u);
-    });
-  }
-
-  /**
-   * Removes presences from the clients cache that are older than the max lifetime
-   * @param maxLifetime How old a presence must be before it can be sweeped (in ms)
-   * @returns The amount of presences sweeped
-   */
-  public sweepPresences(maxLifetime = this.config.cacheSettings.presences?.maxLifetime) {
-    if (typeof maxLifetime !== 'number') throw new TypeError('maxLifetime must be typeof number');
-
-    let presences = 0;
-    for (const friend of this.friends.values()) {
-      if (typeof friend.presence?.receivedAt !== 'undefined' && Date.now() - friend.presence.receivedAt.getTime() > maxLifetime) {
-        delete friend.presence;
-        presences += 1;
-      }
-    }
-
-    return presences;
-  }
+  /* -------------------------------------------------------------------------- */
+  /*                                  ACCOUNTS                                  */
+  /* -------------------------------------------------------------------------- */
 
   // eslint-disable-next-line no-unused-vars
   public async getProfile(query: string): Promise<User|undefined>;
@@ -553,6 +566,20 @@ class Client extends EventEmitter {
   }
 
   /**
+   * Fetches users that match a prefix
+   * @param prefix The prefix (a string that the user's display names start with)
+   * @param platform The search platform. Other platform's accounts will still be searched with a lower priority
+   */
+  public async searchProfiles(prefix: string, platform: UserSearchPlatform = 'epic'): Promise<UserSearchResult[]> {
+    const results = await this.http.sendEpicgamesRequest(true, 'GET',
+      `${Endpoints.ACCOUNT_SEARCH}/${this.user?.id}?prefix=${encodeURIComponent(prefix)}&platform=${platform}`, 'fortnite');
+
+    const users = await this.getProfile(results.response.map((r: any) => r.accountId) as string[]);
+
+    return results.response.map((r: any) => new UserSearchResult(this, users.find((u) => u.id === r.accountId) as User, r));
+  }
+
+  /**
    * Resolves a single user id
    * @param query Display name or id of the account's id to resolve
    */
@@ -578,6 +605,10 @@ class Client extends EventEmitter {
 
     return [...ids.map((id) => ({ id, query: id })), ...users.filter((u) => !!u).map((u) => ({ id: u?.id as string, query: u?.displayName as string }))];
   }
+
+  /* -------------------------------------------------------------------------- */
+  /*                                   FRIENDS                                  */
+  /* -------------------------------------------------------------------------- */
 
   /**
    * Sets the clients XMPP status
@@ -663,502 +694,6 @@ class Client extends EventEmitter {
     return this.setStatus();
   }
 
-  // eslint-disable-next-line no-unused-vars
-  public async getBRStats(user: string, startTime?: number, endTime?: number): Promise<StatsData>;
-  // eslint-disable-next-line no-unused-vars
-  public async getBRStats(user: string[], startTime?: number, endTime?: number, stats?: string[]): Promise<StatsData[]>;
-
-  /**
-   * Fetches battle royale v2 stats for one or multiple players
-   * @param user The id(s) or display name(s) of the user(s)
-   * @param startTime The timestamp to start fetching stats from, can be null/undefined for lifetime
-   * @param endTime The timestamp to stop fetching stats from, can be undefined for lifetime
-   * @param stats An array of stats keys. Required if you want to get the stats of multiple users at once (If not, ignore this)
-   * @throws {UserNotFoundError} The user wasn't found
-   * @throws {StatsPrivacyError} The user set their stats to private
-   * @throws {TypeError} You must provide an array of stats keys for multiple user lookup
-   * @throws {EpicgamesAPIError}
-   */
-  public async getBRStats(user: string | string[], startTime?: number, endTime?: number, stats: string[] = []): Promise<StatsData | StatsData[] | undefined> {
-    const params = [];
-    if (startTime) params.push(`startTime=${startTime}`);
-    if (endTime) params.push(`endTime=${endTime}`);
-    const query = params[0] ? `?${params.join('&')}` : '';
-
-    if (typeof user === 'string') {
-      const userID = await this.resolveUserId(user);
-      if (!userID) throw new UserNotFoundError(user);
-
-      const statsResponse = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_STATS_V2}/account/${userID}${query}`, 'fortnite');
-
-      if (!statsResponse.error && !statsResponse.response) throw new StatsPrivacyError(user);
-      if (statsResponse.error) throw statsResponse.error;
-
-      return {
-        ...statsResponse.response,
-        query: user,
-      };
-    }
-
-    if (!stats[0]) throw new TypeError('You need to provide an array of stats keys to fetch multiple user\'s stats');
-
-    const ids = await this.resolveUserIds(user);
-
-    const idChunks: { id: string, query: string }[][] = ids.reduce((resArr: any[], id, i) => {
-      const chunkIndex = Math.floor(i / 100);
-      // eslint-disable-next-line no-param-reassign
-      if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
-      resArr[chunkIndex].push(id);
-      return resArr;
-    }, []);
-
-    const statsResponses = await Promise.all(idChunks.map((c) => this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.BR_STATS_V2}/query${query}`, 'fortnite', {
-      'Content-Type': 'application/json',
-    }, {
-      appId: 'fortnite',
-      owners: c.map((o) => o.id),
-      stats,
-    })));
-
-    return statsResponses.map((r) => r.response).flat(1).map((r) => ({
-      ...r,
-      query: ids.find((id) => id.id === r.accountId)?.query,
-    }));
-  }
-
-  // eslint-disable-next-line no-unused-vars
-  public async getNews(mode: 'battleroyale' | 'creative', language: string): Promise<NewsMOTD[]>;
-  // eslint-disable-next-line no-unused-vars
-  public async getNews(mode: 'savetheworld', language: string): Promise<NewsMessage[]>;
-
-  /**
-   * Fetches the current news for a specific gamemode
-   * @param mode The gamemode to fetch the news for
-   * @param language The language of the news
-   * @throws {EpicgamesAPIError}
-   */
-  public async getNews(mode: 'battleroyale' | 'creative' | 'savetheworld' = 'battleroyale', language = Enums.Language.ENGLISH): Promise<NewsMOTD[] | NewsMessage[]> {
-    const news = await this.http.sendEpicgamesRequest(false, 'GET', `${Endpoints.BR_NEWS}/${mode}news${mode === 'savetheworld' ? '' : 'v2'}?lang=${language}`);
-    if (news.error) throw news.error;
-
-    const { messages, motds, platform_motds: platformMotds } = news.response.news;
-
-    if (mode === 'savetheworld') return messages;
-
-    const oldNewsMessages: NewsMOTD[] = [...motds, ...(platformMotds || []).filter((m: any) => m.platform === 'windows').map((m: any) => m.message)];
-
-    if (mode === 'creative') return oldNewsMessages;
-
-    const newNews = await this.http.sendEpicgamesRequest(true, 'POST', Endpoints.BR_NEWS_MOTD, 'fortnite', undefined, {
-      platform: 'Windows',
-      language: 'en',
-      country: 'US',
-      serverRegion: 'NA',
-      subscription: false,
-      battlepass: false,
-      battlepassLevel: 1,
-    });
-    if (newNews.error) throw newNews.error;
-
-    const newsMessages: NewsMOTD[] = (newNews.response?.contentItems as any[])?.map((i: any, y) => ({
-      _type: i.contentSchemaName,
-      body: i.contentFields.body,
-      entryType: i.contentFields.entryType,
-      hidden: i.contentFields.hidden,
-      id: i.contentId,
-      image: i.contentFields.image?.[0]?.url,
-      offerAction: i.contentFields.offerAction,
-      sortingPriority: 1000 - y,
-      spotlight: i.contentFields.spotlight,
-      tabTitleOverride: i.contentFields.tabTitleOverride,
-      tileImage: i.contentFields.tileImage?.[0]?.url,
-      title: i.contentFields.title,
-      videoAutoplay: i.contentFields.videoAutoplay,
-      videoFullscreen: i.contentFields.videoFullscreen,
-      videoLoop: i.contentFields.videoLoop,
-      videoMute: i.contentFields.videoMute,
-      videoStreamingEnabled: i.contentFields.videoStreamingEnabled,
-      buttonTextOverride: i.contentFields.buttonTextOverride,
-      offerId: i.contentFields.offerId,
-      playlistId: i.contentFields.playlistId,
-      videoUID: i.contentFields.videoUID,
-      videoVideoString: i.contentFields.videoVideoString,
-    })) || [];
-
-    oldNewsMessages.forEach((omsg) => {
-      if (!newsMessages.some((msg) => msg.title === omsg.title && msg.body === omsg.body)) {
-        newsMessages.push(omsg);
-      }
-    });
-
-    return newsMessages;
-  }
-
-  /**
-   * Fetches data for a Support-A-Creator code
-   * @param code The Support-A-Creator code (slug)
-   * @throws {CreatorCodeNotFoundError} The Support-A-Creator code wasnt found
-   * @throws {EpicgamesAPIError}
-   */
-  public async getCreatorCode(code: string): Promise<CreatorCode> {
-    const codeResponse = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_SAC}/${encodeURIComponent(code)}`, 'fortniteClientCredentials');
-
-    if (codeResponse.error) {
-      if (codeResponse.error.code === 'errors.com.epicgames.ecommerce.affiliate.not_found') throw new CreatorCodeNotFoundError(code);
-      throw codeResponse.error;
-    }
-
-    const owner = await this.getProfile(codeResponse.response.id);
-    return new CreatorCode(this, { ...codeResponse.response, owner });
-  }
-
-  /**
-   * Fetches the current Fortnite server status (lightswitch)
-   * @throws {EpicgamesAPIError}
-   */
-  public async getFortniteServerStatus(): Promise<LightswitchData> {
-    const fortniteServerStatus = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.BR_SERVER_STATUS, 'fortnite');
-
-    if (fortniteServerStatus.error) throw fortniteServerStatus.error;
-
-    return fortniteServerStatus.response[0];
-  }
-
-  /**
-   * Fetches the current epicgames server status (https://status.epicgames.com/)
-   * @throws {AxiosError}
-   */
-  public async getEpicgamesServerStatus(): Promise<EpicgamesServerStatusData> {
-    const epicgamesServerStatus = await this.http.send('GET', Endpoints.SERVER_STATUS_SUMMARY);
-
-    if (epicgamesServerStatus.error) throw epicgamesServerStatus.error;
-    if (!epicgamesServerStatus.response) throw new Error('Request returned an empty body');
-
-    return epicgamesServerStatus.response.data;
-  }
-
-  /**
-   * Fetches the current Fortnite storefronts
-   * @param language The language
-   * @throws {EpicgamesAPIError}
-   */
-  public async getStorefronts(language = Enums.Language.ENGLISH) {
-    const store = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_STORE}?lang=${language}`, 'fortnite');
-    if (store.error) throw store.error;
-
-    return store.response.storefronts;
-  }
-
-  /**
-   * Fetches the current battle royale event flags
-   * @param language The language
-   * @throws {EpicgamesAPIError}
-   */
-  public async getBREventFlags(language = Enums.Language.ENGLISH) {
-    const eventFlags = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_EVENT_FLAGS}?lang=${language}`, 'fortnite');
-    if (eventFlags.error) throw eventFlags.error;
-
-    return eventFlags.response;
-  }
-
-  /**
-   * Fetches the current and past battle royale tournaments
-   * @param region The region
-   * @param platform The platform
-   * @throws {EpicgamesAPIError}
-   */
-  public async getTournaments(region: Region = 'EU', platform: FullPlatform = 'Windows') {
-    const [tournaments, tournamentsInfo] = await Promise.all([
-      this.http.sendEpicgamesRequest(true, 'GET',
-        `${Endpoints.BR_TOURNAMENTS_DOWNLOAD}/${this.user?.id}?region=${region}&platform=${platform}&teamAccountIds=${this.user?.id}`, 'fortnite'),
-      this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_NEWS}/tournamentinformation`, 'fortnite'),
-    ]);
-
-    if (tournaments.error) throw tournaments.error;
-    if (tournamentsInfo.error) throw tournamentsInfo.error;
-
-    const constuctedTournaments: Tournament[] = [];
-
-    tournaments.response.events.forEach((t: TournamentData) => {
-      let tournamentDisplayData = tournamentsInfo.response?.tournament_info?.tournaments
-        ?.find((td: TournamentDisplayData) => td.tournament_display_id === t.displayDataId);
-
-      if (!tournamentDisplayData) {
-        tournamentDisplayData = tournamentsInfo.response?.
-          [t.displayDataId.split('_').map((s, i) => (i > 0 ? `${s.charAt(0).toUpperCase()}${s.slice(1)}` : s)).join('')]?.tournament_info;
-      }
-
-      if (!tournamentDisplayData) return;
-
-      const templates: TournamentWindowTemplate[] = [];
-
-      t.eventWindows.forEach((w) => {
-        const template = tournaments.response.templates.find((tt: TournamentWindowTemplateData) => tt.eventTemplateId === w.eventTemplateId);
-        if (template) templates.push({ windowId: w.eventWindowId, templateData: template });
-      });
-
-      constuctedTournaments.push(new Tournament(this, t, tournamentDisplayData, templates));
-    });
-
-    return constuctedTournaments;
-  }
-
-  /**
-   * Fetches the results for a tournament window
-   * @param eventId The tournament's ID
-   * @param eventWindowId The tournament window's ID
-   * @param showLiveSessions Whether to show live sessions
-   * @param page The results page index
-   * @throws {EpicgamesAPIError}
-   */
-  public async getTournamentWindowResults(eventId: string, eventWindowId: string, showLiveSessions = false, page = 0): Promise<TournamentWindowResults> {
-    const window = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_TOURNAMENT_WINDOW}/${eventId}/${eventWindowId}/`
-      + `${this.user?.id}?page=${page}&rank=0&teamAccountIds=&appId=Fortnite&showLiveSessions=${showLiveSessions}`,
-    'fortnite');
-    if (window.error) throw window.error;
-
-    return window.response;
-  }
-
-  /**
-   * Fetches users that match a prefix
-   * @param prefix The prefix (a string that the user's display names start with)
-   * @param platform The search platform. Other platform's accounts will still be searched with a lower priority
-   */
-  public async searchProfiles(prefix: string, platform: UserSearchPlatform = 'epic'): Promise<UserSearchResult[]> {
-    const results = await this.http.sendEpicgamesRequest(true, 'GET',
-      `${Endpoints.ACCOUNT_SEARCH}/${this.user?.id}?prefix=${encodeURIComponent(prefix)}&platform=${platform}`, 'fortnite');
-
-    const users = await this.getProfile(results.response.map((r: any) => r.accountId) as string[]);
-
-    return results.response.map((r: any) => new UserSearchResult(this, users.find((u) => u.id === r.accountId) as User, r));
-  }
-
-  /**
-   * Fetches the current Fortnite battle royale radio stations
-   * @throws {EpicgamesAPIError}
-   */
-  public async getRadioStations(): Promise<RadioStation[]> {
-    const fortniteContent = await this.http.sendEpicgamesRequest(false, 'GET', Endpoints.BR_NEWS);
-    if (fortniteContent.error) throw fortniteContent.error;
-
-    const radioStations = fortniteContent.response.radioStations.radioStationList.stations;
-
-    return radioStations.map((s: any) => new RadioStation(this, s));
-  }
-
-  /**
-   * Downloads a blurl stream (eg a radio station stream or a news video)
-   * @param id The stream ID
-   * @throws {AxiosError}
-   */
-  public async downloadBlurlStream(id: string): Promise<BlurlStream> {
-    const blurlFile = await this.http.send('GET', `${Endpoints.BR_STREAM}/${id}/master.blurl`,
-      undefined, undefined, undefined, 'arraybuffer');
-    if (blurlFile.error) throw blurlFile.error;
-
-    const streamData: BlurlStreamData = await parseBlurlStream(blurlFile.response?.data);
-
-    const streamMetaData = {
-      subtitles: streamData.subtitles ? JSON.parse(streamData.subtitles) : {},
-      ucp: streamData.ucp,
-      audioonly: !!streamData.audioonly,
-      aspectratio: streamData.aspectratio,
-      partysync: !!streamData.partysync,
-      lrcs: streamData.lrcs ? JSON.parse(streamData.lrcs) : {},
-      duration: streamData.duration,
-    };
-
-    const languageStreams = (streamData.playlists.filter((p) => p.type === 'master') as BlurlStreamMasterPlaylistData[]).map((s) => {
-      let baseURL = s.url.match(/.+\//)?.[0];
-      if (baseURL && !baseURL.endsWith('/')) baseURL += '/';
-
-      const data = parseM3U8File(s.data);
-
-      let variants = data.streams.map((ss: any) => ({
-        data: {
-          codecs: ss.data.CODECS?.split(',') || [],
-          bandwidth: parseInt(ss.data.BANDWIDTH, 10),
-          resolution: ss.data.RESOLUTION,
-        },
-        type: ss.data.AUDIO ? 'video' : 'audio',
-        url: `${baseURL || ''}${ss.url}`,
-        stream: streamData.playlists
-          .find((p) => p.type === 'variant' && p.rel_url === ss.url)?.data
-          .split(/\n/)
-          .map((l) => (!l.startsWith('#') && l.length > 0 ? `${baseURL || ''}${l}` : l))
-          .join('\n')
-          .replace(/init_/g, `${baseURL || ''}init_`),
-      }));
-
-      if (!streamMetaData.audioonly) {
-        const audioStreamUrl = variants.find((v: any) => v.type === 'audio')?.url;
-
-        if (audioStreamUrl) {
-          variants = variants.map((v: any) => ({
-            ...v,
-            stream: Buffer.from(v.type !== 'video' ? v.stream : v.stream.replace('#EXTINF:', '#EXT-X-STREAM-INF:AUDIO="group_audio"\n'
-              + `#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="group_audio",NAME="audio",DEFAULT=YES,URI="${audioStreamUrl}"\n#EXTINF:`), 'utf8'),
-          }));
-        }
-      }
-
-      return {
-        language: s.language,
-        url: s.url,
-        variants,
-      };
-    });
-
-    return {
-      languages: languageStreams,
-      data: streamMetaData,
-    };
-  }
-
-  /**
-   * Downloads a tournament replay by its session ID.
-   * This method returns a regular Fortnite replay file, can be parsed using https://github.com/ThisNils/node-replay-reader
-   * @param sessionId The session ID
-   * @param options Replay download and build options
-   * @throws {MatchNotFoundError} The match wasn't found
-   * @throws {EpicgamesAPIError}
-   * @throws {AxiosError}
-   */
-  public async downloadTournamentReplay(sessionId: string, options: ReplayDownloadOptions) {
-    const downloadConfig: ReplayDownloadConfig = {
-      dataTypes: ['EVENT', 'DATACHUNK'],
-      addStatsPlaceholder: false,
-      ...options,
-    };
-
-    const downloadReplayCDNFile = async (url: string, responseType: ResponseType) => {
-      const fileLocationInfo = await this.http.sendEpicgamesRequest(true, 'GET', url, 'fortnite');
-      if (fileLocationInfo.error) return fileLocationInfo;
-
-      const file = await this.http.send('GET', (Object.values(fileLocationInfo.response.files)[0] as any).readLink, undefined, undefined, undefined, responseType);
-
-      if (file.response) return { response: file.response.data };
-      return file;
-    };
-
-    const replayMetadataResponse = await downloadReplayCDNFile(`${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, 'json');
-    if (replayMetadataResponse.error) {
-      if (!(replayMetadataResponse.error instanceof EpicgamesAPIError)
-        && replayMetadataResponse.error.response?.data.includes('<Message>The specified key does not exist.</Message>')) {
-        throw new MatchNotFoundError(sessionId);
-      }
-
-      throw replayMetadataResponse.error;
-    }
-
-    const replayHeaderResponse = await downloadReplayCDNFile(`${Endpoints.BR_REPLAY}%2F${sessionId}%2Fheader.bin`, 'arraybuffer');
-    if (replayHeaderResponse.error) throw replayHeaderResponse.error;
-
-    const replayData: ReplayData = replayMetadataResponse.response;
-    replayData.Header = replayHeaderResponse.response;
-
-    const downloadKeys = new Set(['Events', 'DataChunks', 'Checkpoints']);
-
-    if (!downloadConfig.dataTypes.includes('EVENT')) {
-      downloadKeys.delete('Events');
-      delete replayData.Events;
-    }
-
-    if (!downloadConfig.dataTypes.includes('DATACHUNK')) {
-      downloadKeys.delete('DataChunks');
-      delete replayData.DataChunks;
-    }
-
-    if (!downloadConfig.dataTypes.includes('CHECKPOINT')) {
-      downloadKeys.delete('Checkpoints');
-      delete replayData.Checkpoints;
-    }
-
-    const promises: Promise<any>[] = [];
-    for (const downloadKey of downloadKeys.values()) {
-      const chunks = (replayData as any)[downloadKey];
-      for (const chunk of chunks) {
-        promises.push(downloadReplayCDNFile(`${Endpoints.BR_REPLAY}%2F${sessionId}%2F${chunk.Id}.bin`, 'arraybuffer').then((resp) => {
-          if (resp.error) throw resp.error;
-
-          chunks.find((d: any) => d.Id === chunk.Id).data = resp.response;
-        }));
-      }
-    }
-
-    await Promise.all(promises);
-
-    return buildReplay(replayData, downloadConfig.addStatsPlaceholder);
-  }
-
-  /**
-   * Fetches a creative island by its code
-   * @param code The island code
-   * @throws {CreativeIslandNotFoundError} A creative island with the provided code does not exist
-   * @throws {EpicgamesAPIError}
-   */
-  public async getCreativeIsland(code: string): Promise<CreativeIslandData> {
-    const islandInfo = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.CREATIVE_ISLAND_LOOKUP}/${code}`, 'fortnite');
-    if (islandInfo.error) {
-      if (islandInfo.error.code === 'errors.com.epicgames.links.no_active_version') throw new CreativeIslandNotFoundError(code);
-      throw islandInfo.error;
-    }
-
-    return islandInfo.response;
-  }
-
-  /**
-   * Fetches the creative discovery surface
-   * @param gameVersion The current game version (MAJOR.MINOR)
-   * @throws {EpicgamesAPIError}
-   */
-  public async getCreativeDiscoveryPanels(gameVersion = '18.30'): Promise<CreativeDiscoveryPanel[]> {
-    const creativeDiscovery = await this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.CREATIVE_DISCOVERY}/${this.user?.id}`, 'fortnite', {
-      'Content-Type': 'application/json',
-      'User-Agent': `Fortnite/++Fortnite+Release-${gameVersion}-CL-00000000 Windows/10`,
-    }, {
-      surfaceName: 'CreativeDiscoverySurface_Frontend',
-      partyMemberIds: [this.user?.id],
-    });
-
-    if (creativeDiscovery.error) {
-      throw creativeDiscovery.error;
-    }
-
-    return creativeDiscovery.response.Panels;
-  }
-
-  /**
-   * Fetches the event tokens for an account.
-   * This can be used to check if a user is eligible to play a certain tournament window
-   * or to check a user's arena division in any season
-   * @param user The id(s) or display name(s) of the user(s)
-   * @throws {UserNotFoundError} The user wasn't found
-   * @throws {EpicgamesAPIError}
-   */
-  public async getEventTokens(user: string | string[]): Promise<EventTokensResponse[]> {
-    const users = typeof user === 'string' ? [user] : user;
-
-    const resolvedUsers = await this.getProfile(users);
-
-    const userChunks: string[][] = resolvedUsers.map((u) => u.id).reduce((resArr: any[], usr, i) => {
-      const chunkIndex = Math.floor(i / 16);
-      // eslint-disable-next-line no-param-reassign
-      if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
-      resArr[chunkIndex].push(usr);
-      return resArr;
-    }, []);
-
-    const statsResponses = await Promise.all(userChunks.map((c) => this.http.sendEpicgamesRequest(true, 'GET',
-      `${Endpoints.BR_TOURNAMENT_TOKENS}?teamAccountIds=${c.join(',')}`, 'fortnite')));
-
-    return statsResponses.map((r) => r.response.accounts).flat(1).map((r) => ({
-      user: resolvedUsers.find((u) => u.id === r.accountId) as User,
-      tokens: r.tokens,
-    }));
-  }
-
   /**
    * Sends a friendship request to a user or accepts an existing request
    * @param friend The id or display name of the user to add
@@ -1202,8 +737,7 @@ class Client extends EventEmitter {
   /**
    * Removes a friend from the client's friend list or declines / aborts a pending friendship request
    * @param friend The id or display name of the friend
-   * @throws {UserNotFoundError} The user wasn't found
-   * @throws {FriendNotFoundError} The user is not friends with the client
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {EpicgamesAPIError}
    */
   public async removeFriend(friend: string) {
@@ -1215,6 +749,22 @@ class Client extends EventEmitter {
 
     const removeFriend = await this.http.sendEpicgamesRequest(true, 'DELETE', `${Endpoints.FRIEND_DELETE}/${this.user?.id}/friends/${resolvedFriend.id}`, 'fortnite');
     if (removeFriend.error) throw removeFriend.error;
+  }
+
+  /**
+   * Fetches the friends the client shares with a friend
+   * @param friend The id or display name of the friend
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
+   * @throws {EpicgamesAPIError}
+   */
+  public async getMutualFriends(friend: string): Promise<Friend[]> {
+    const resolvedFriend = this.friends.find((f) => f.displayName === friend || f.id === friend);
+    if (!resolvedFriend) throw new FriendNotFoundError(friend);
+
+    const mutualFriends = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.FRIENDS}/${this.user?.id}/friends/${resolvedFriend.id}/mutual`, 'fortnite');
+    if (mutualFriends.error) throw mutualFriends.error;
+
+    return mutualFriends.response.map((f: string) => this.friends.get(f)).filter((f: Friend | undefined) => !!f);
   }
 
   /**
@@ -1265,6 +815,10 @@ class Client extends EventEmitter {
       author: this.user as ClientUser, content, id: message.id as string, sentAt: new Date(),
     });
   }
+
+  /* -------------------------------------------------------------------------- */
+  /*                                   PARTIES                                  */
+  /* -------------------------------------------------------------------------- */
 
   /**
    * Sends a party invitation to a friend
@@ -1492,6 +1046,577 @@ class Client extends EventEmitter {
     await constuctedParty.updateMemberBasicInfo();
 
     return constuctedParty;
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                                  FORTNITE                                  */
+  /* -------------------------------------------------------------------------- */
+
+  /**
+   * Fetches the current Fortnite server status (lightswitch)
+   * @throws {EpicgamesAPIError}
+   */
+  public async getFortniteServerStatus(): Promise<LightswitchData> {
+    const fortniteServerStatus = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.BR_SERVER_STATUS, 'fortnite');
+
+    if (fortniteServerStatus.error) throw fortniteServerStatus.error;
+
+    return fortniteServerStatus.response[0];
+  }
+
+  /**
+   * Fetches the current epicgames server status (https://status.epicgames.com/)
+   * @throws {AxiosError}
+   */
+  public async getEpicgamesServerStatus(): Promise<EpicgamesServerStatusData> {
+    const epicgamesServerStatus = await this.http.send('GET', Endpoints.SERVER_STATUS_SUMMARY);
+
+    if (epicgamesServerStatus.error) throw epicgamesServerStatus.error;
+    if (!epicgamesServerStatus.response) throw new Error('Request returned an empty body');
+
+    return epicgamesServerStatus.response.data;
+  }
+
+  /**
+   * Fetches the current Fortnite storefronts
+   * @param language The language
+   * @throws {EpicgamesAPIError}
+   */
+  public async getStorefronts(language: Language = 'en') {
+    const store = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_STORE}?lang=${language}`, 'fortnite');
+    if (store.error) throw store.error;
+
+    return store.response.storefronts;
+  }
+
+  /**
+   * Downloads a blurl stream (eg a radio station stream or a news video)
+   * @param id The stream ID
+   * @throws {AxiosError}
+   */
+  public async downloadBlurlStream(id: string): Promise<BlurlStream> {
+    const blurlFile = await this.http.send('GET', `${Endpoints.BR_STREAM}/${id}/master.blurl`,
+      undefined, undefined, undefined, 'arraybuffer');
+    if (blurlFile.error) throw blurlFile.error;
+
+    const streamData: BlurlStreamData = await parseBlurlStream(blurlFile.response?.data);
+
+    const streamMetaData = {
+      subtitles: streamData.subtitles ? JSON.parse(streamData.subtitles) : {},
+      ucp: streamData.ucp,
+      audioonly: !!streamData.audioonly,
+      aspectratio: streamData.aspectratio,
+      partysync: !!streamData.partysync,
+      lrcs: streamData.lrcs ? JSON.parse(streamData.lrcs) : {},
+      duration: streamData.duration,
+    };
+
+    const languageStreams = (streamData.playlists.filter((p) => p.type === 'master') as BlurlStreamMasterPlaylistData[]).map((s) => {
+      let baseURL = s.url.match(/.+\//)?.[0];
+      if (baseURL && !baseURL.endsWith('/')) baseURL += '/';
+
+      const data = parseM3U8File(s.data);
+
+      let variants = data.streams.map((ss: any) => ({
+        data: {
+          codecs: ss.data.CODECS?.split(',') || [],
+          bandwidth: parseInt(ss.data.BANDWIDTH, 10),
+          resolution: ss.data.RESOLUTION,
+        },
+        type: ss.data.AUDIO ? 'video' : 'audio',
+        url: `${baseURL || ''}${ss.url}`,
+        stream: streamData.playlists
+          .find((p) => p.type === 'variant' && p.rel_url === ss.url)?.data
+          .split(/\n/)
+          .map((l) => (!l.startsWith('#') && l.length > 0 ? `${baseURL || ''}${l}` : l))
+          .join('\n')
+          .replace(/init_/g, `${baseURL || ''}init_`),
+      }));
+
+      if (!streamMetaData.audioonly) {
+        const audioStreamUrl = variants.find((v: any) => v.type === 'audio')?.url;
+
+        if (audioStreamUrl) {
+          variants = variants.map((v: any) => ({
+            ...v,
+            stream: Buffer.from(v.type !== 'video' ? v.stream : v.stream.replace('#EXTINF:', '#EXT-X-STREAM-INF:AUDIO="group_audio"\n'
+              + `#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="group_audio",NAME="audio",DEFAULT=YES,URI="${audioStreamUrl}"\n#EXTINF:`), 'utf8'),
+          }));
+        }
+      }
+
+      return {
+        language: s.language,
+        url: s.url,
+        variants,
+      };
+    });
+
+    return {
+      languages: languageStreams,
+      data: streamMetaData,
+    };
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                           FORTNITE BATTLE ROYALE                           */
+  /* -------------------------------------------------------------------------- */
+
+  // eslint-disable-next-line no-unused-vars
+  public async getBRStats(user: string, startTime?: number, endTime?: number): Promise<StatsData>;
+  // eslint-disable-next-line no-unused-vars
+  public async getBRStats(user: string[], startTime?: number, endTime?: number, stats?: string[]): Promise<StatsData[]>;
+
+  /**
+   * Fetches battle royale v2 stats for one or multiple players
+   * @param user The id(s) or display name(s) of the user(s)
+   * @param startTime The timestamp to start fetching stats from, can be null/undefined for lifetime
+   * @param endTime The timestamp to stop fetching stats from, can be undefined for lifetime
+   * @param stats An array of stats keys. Required if you want to get the stats of multiple users at once (If not, ignore this)
+   * @throws {UserNotFoundError} The user wasn't found
+   * @throws {StatsPrivacyError} The user set their stats to private
+   * @throws {TypeError} You must provide an array of stats keys for multiple user lookup
+   * @throws {EpicgamesAPIError}
+   */
+  public async getBRStats(user: string | string[], startTime?: number, endTime?: number, stats: string[] = []): Promise<StatsData | StatsData[] | undefined> {
+    const params = [];
+    if (startTime) params.push(`startTime=${startTime}`);
+    if (endTime) params.push(`endTime=${endTime}`);
+    const query = params[0] ? `?${params.join('&')}` : '';
+
+    if (typeof user === 'string') {
+      const userID = await this.resolveUserId(user);
+      if (!userID) throw new UserNotFoundError(user);
+
+      const statsResponse = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_STATS_V2}/account/${userID}${query}`, 'fortnite');
+
+      if (!statsResponse.error && !statsResponse.response) throw new StatsPrivacyError(user);
+      if (statsResponse.error) throw statsResponse.error;
+
+      return {
+        ...statsResponse.response,
+        query: user,
+      };
+    }
+
+    if (!stats[0]) throw new TypeError('You need to provide an array of stats keys to fetch multiple user\'s stats');
+
+    const ids = await this.resolveUserIds(user);
+
+    const idChunks: { id: string, query: string }[][] = ids.reduce((resArr: any[], id, i) => {
+      const chunkIndex = Math.floor(i / 100);
+      // eslint-disable-next-line no-param-reassign
+      if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
+      resArr[chunkIndex].push(id);
+      return resArr;
+    }, []);
+
+    const statsResponses = await Promise.all(idChunks.map((c) => this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.BR_STATS_V2}/query${query}`, 'fortnite', {
+      'Content-Type': 'application/json',
+    }, {
+      appId: 'fortnite',
+      owners: c.map((o) => o.id),
+      stats,
+    })));
+
+    if (statsResponses.some((r) => r.error)) throw statsResponses.find((r) => r.error)?.error;
+
+    return statsResponses.map((r) => r.response).flat(1).map((r) => ({
+      ...r,
+      query: ids.find((id) => id.id === r.accountId)?.query,
+    }));
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  public async getNews(mode: 'battleroyale' | 'creative', language: Language): Promise<NewsMOTD[]>;
+  // eslint-disable-next-line no-unused-vars
+  public async getNews(mode: 'savetheworld', language: Language): Promise<NewsMessage[]>;
+
+  /**
+   * Fetches the current news for a specific gamemode
+   * @param mode The gamemode to fetch the news for
+   * @param language The language of the news
+   * @throws {EpicgamesAPIError}
+   */
+  public async getNews(mode: 'battleroyale' | 'creative' | 'savetheworld' = 'battleroyale', language: Language = 'en'): Promise<NewsMOTD[] | NewsMessage[]> {
+    const news = await this.http.sendEpicgamesRequest(false, 'GET', `${Endpoints.BR_NEWS}/${mode}news${mode === 'savetheworld' ? '' : 'v2'}?lang=${language}`);
+    if (news.error) throw news.error;
+
+    const { messages, motds, platform_motds: platformMotds } = news.response.news;
+
+    if (mode === 'savetheworld') return messages;
+
+    const oldNewsMessages: NewsMOTD[] = [...motds, ...(platformMotds || []).filter((m: any) => m.platform === 'windows').map((m: any) => m.message)];
+
+    if (mode === 'creative') return oldNewsMessages;
+
+    const newNews = await this.http.sendEpicgamesRequest(true, 'POST', Endpoints.BR_NEWS_MOTD, 'fortnite', undefined, {
+      platform: 'Windows',
+      language: 'en',
+      country: 'US',
+      serverRegion: 'NA',
+      subscription: false,
+      battlepass: false,
+      battlepassLevel: 1,
+    });
+    if (newNews.error) throw newNews.error;
+
+    const newsMessages: NewsMOTD[] = (newNews.response?.contentItems as any[])?.map((i: any, y) => ({
+      _type: i.contentSchemaName,
+      body: i.contentFields.body,
+      entryType: i.contentFields.entryType,
+      hidden: i.contentFields.hidden,
+      id: i.contentId,
+      image: i.contentFields.image?.[0]?.url,
+      offerAction: i.contentFields.offerAction,
+      sortingPriority: 1000 - y,
+      spotlight: i.contentFields.spotlight,
+      tabTitleOverride: i.contentFields.tabTitleOverride,
+      tileImage: i.contentFields.tileImage?.[0]?.url,
+      title: i.contentFields.title,
+      videoAutoplay: i.contentFields.videoAutoplay,
+      videoFullscreen: i.contentFields.videoFullscreen,
+      videoLoop: i.contentFields.videoLoop,
+      videoMute: i.contentFields.videoMute,
+      videoStreamingEnabled: i.contentFields.videoStreamingEnabled,
+      buttonTextOverride: i.contentFields.buttonTextOverride,
+      offerId: i.contentFields.offerId,
+      playlistId: i.contentFields.playlistId,
+      videoUID: i.contentFields.videoUID,
+      videoVideoString: i.contentFields.videoVideoString,
+    })) || [];
+
+    oldNewsMessages.forEach((omsg) => {
+      if (!newsMessages.some((msg) => msg.title === omsg.title && msg.body === omsg.body)) {
+        newsMessages.push(omsg);
+      }
+    });
+
+    return newsMessages;
+  }
+
+  /**
+   * Fetches data for a Support-A-Creator code
+   * @param code The Support-A-Creator code (slug)
+   * @throws {CreatorCodeNotFoundError} The Support-A-Creator code wasnt found
+   * @throws {EpicgamesAPIError}
+   */
+  public async getCreatorCode(code: string): Promise<CreatorCode> {
+    const codeResponse = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_SAC}/${encodeURIComponent(code)}`, 'fortniteClientCredentials');
+
+    if (codeResponse.error) {
+      if (codeResponse.error.code === 'errors.com.epicgames.ecommerce.affiliate.not_found') throw new CreatorCodeNotFoundError(code);
+      throw codeResponse.error;
+    }
+
+    const owner = await this.getProfile(codeResponse.response.id);
+    return new CreatorCode(this, { ...codeResponse.response, owner });
+  }
+
+  /**
+   * Fetches the current Fortnite battle royale radio stations
+   * @throws {EpicgamesAPIError}
+   */
+  public async getRadioStations(): Promise<RadioStation[]> {
+    const fortniteContent = await this.http.sendEpicgamesRequest(false, 'GET', Endpoints.BR_NEWS);
+    if (fortniteContent.error) throw fortniteContent.error;
+
+    const radioStations = fortniteContent.response.radioStations.radioStationList.stations;
+
+    return radioStations.map((s: any) => new RadioStation(this, s));
+  }
+
+  /**
+   * Fetches the current battle royale event flags
+   * @param language The language
+   * @throws {EpicgamesAPIError}
+   */
+  public async getBREventFlags(language: Language = 'en') {
+    const eventFlags = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_EVENT_FLAGS}?lang=${language}`, 'fortnite');
+    if (eventFlags.error) throw eventFlags.error;
+
+    return eventFlags.response;
+  }
+
+  /**
+   * Fetches the battle royale account level for one or multiple users
+   * @param user The id(s) and/or display name(s) of the user(s) to fetch the account level for
+   * @param seasonNumber The season number (eg. 16, 17, 18)
+   * @throws {UserNotFoundError} The user wasn't found
+   * @throws {StatsPrivacyError} The user set their stats to private
+   * @throws {EpicgamesAPIError}
+   */
+  public async getBRAccountLevel(user: string | string[], seasonNumber: number): Promise<BRAccountLevel[]> {
+    if (seasonNumber < 11) throw new RangeError('The season number must be at least 11');
+
+    const users = Array.isArray(user) ? user : [user];
+
+    const accountLevels = await this.getBRStats(users, undefined, undefined, [`s${seasonNumber}_social_bp_level`]);
+
+    return accountLevels.map((al) => ({
+      query: al.query,
+      level: al.stats[`s${seasonNumber}_social_bp_level`] as number || 0,
+    }));
+  }
+
+  /**
+   * Fetches the storefront keychain
+   * @throws {EpicgamesAPIError}
+   */
+  public async getStorefrontKeychain(): Promise<string[]> {
+    const keychain = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.BR_STORE_KEYCHAIN, 'fortnite');
+    if (keychain.error) throw keychain.error;
+
+    return keychain.response;
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                     FORTNITE BATTLE ROYALE TOURNAMENTS                     */
+  /* -------------------------------------------------------------------------- */
+
+  /**
+   * Fetches the event tokens for an account.
+   * This can be used to check if a user is eligible to play a certain tournament window
+   * or to check a user's arena division in any season
+   * @param user The id(s) or display name(s) of the user(s)
+   * @throws {UserNotFoundError} The user wasn't found
+   * @throws {EpicgamesAPIError}
+   */
+  public async getEventTokens(user: string | string[]): Promise<EventTokensResponse[]> {
+    const users = typeof user === 'string' ? [user] : user;
+
+    const resolvedUsers = await this.getProfile(users);
+
+    const userChunks: string[][] = resolvedUsers.map((u) => u.id).reduce((resArr: any[], usr, i) => {
+      const chunkIndex = Math.floor(i / 16);
+      // eslint-disable-next-line no-param-reassign
+      if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
+      resArr[chunkIndex].push(usr);
+      return resArr;
+    }, []);
+
+    const statsResponses = await Promise.all(userChunks.map((c) => this.http.sendEpicgamesRequest(true, 'GET',
+      `${Endpoints.BR_TOURNAMENT_TOKENS}?teamAccountIds=${c.join(',')}`, 'fortnite')));
+
+    return statsResponses.map((r) => r.response.accounts).flat(1).map((r) => ({
+      user: resolvedUsers.find((u) => u.id === r.accountId) as User,
+      tokens: r.tokens,
+    }));
+  }
+
+  /**
+   * Fetches the current and past battle royale tournaments
+   * @param region The region
+   * @param platform The platform
+   * @throws {EpicgamesAPIError}
+   */
+  public async getTournaments(region: Region = 'EU', platform: FullPlatform = 'Windows') {
+    const [tournaments, tournamentsInfo] = await Promise.all([
+      this.http.sendEpicgamesRequest(true, 'GET',
+        `${Endpoints.BR_TOURNAMENTS_DOWNLOAD}/${this.user?.id}?region=${region}&platform=${platform}&teamAccountIds=${this.user?.id}`, 'fortnite'),
+      this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_NEWS}/tournamentinformation`, 'fortnite'),
+    ]);
+
+    if (tournaments.error) throw tournaments.error;
+    if (tournamentsInfo.error) throw tournamentsInfo.error;
+
+    const constuctedTournaments: Tournament[] = [];
+
+    tournaments.response.events.forEach((t: TournamentData) => {
+      let tournamentDisplayData = tournamentsInfo.response?.tournament_info?.tournaments
+        ?.find((td: TournamentDisplayData) => td.tournament_display_id === t.displayDataId);
+
+      if (!tournamentDisplayData) {
+        tournamentDisplayData = tournamentsInfo.response?.
+          [t.displayDataId.split('_').map((s, i) => (i > 0 ? `${s.charAt(0).toUpperCase()}${s.slice(1)}` : s)).join('')]?.tournament_info;
+      }
+
+      if (!tournamentDisplayData) return;
+
+      const templates: TournamentWindowTemplate[] = [];
+
+      t.eventWindows.forEach((w) => {
+        const template = tournaments.response.templates.find((tt: TournamentWindowTemplateData) => tt.eventTemplateId === w.eventTemplateId);
+        if (template) templates.push({ windowId: w.eventWindowId, templateData: template });
+      });
+
+      constuctedTournaments.push(new Tournament(this, t, tournamentDisplayData, templates));
+    });
+
+    return constuctedTournaments;
+  }
+
+  /**
+   * Fetches the results for a tournament window
+   * @param eventId The tournament's ID
+   * @param eventWindowId The tournament window's ID
+   * @param showLiveSessions Whether to show live sessions
+   * @param page The results page index
+   * @throws {EpicgamesAPIError}
+   */
+  public async getTournamentWindowResults(eventId: string, eventWindowId: string, showLiveSessions = false, page = 0): Promise<TournamentWindowResults> {
+    const window = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_TOURNAMENT_WINDOW}/${eventId}/${eventWindowId}/`
+      + `${this.user?.id}?page=${page}&rank=0&teamAccountIds=&appId=Fortnite&showLiveSessions=${showLiveSessions}`,
+    'fortnite');
+    if (window.error) throw window.error;
+
+    return window.response;
+  }
+
+  /**
+   * Downloads a tournament replay by its session ID.
+   * This method returns a regular Fortnite replay file, can be parsed using https://github.com/ThisNils/node-replay-reader
+   * @param sessionId The session ID
+   * @param options Replay download and build options
+   * @throws {MatchNotFoundError} The match wasn't found
+   * @throws {EpicgamesAPIError}
+   * @throws {AxiosError}
+   */
+  public async downloadTournamentReplay(sessionId: string, options: ReplayDownloadOptions) {
+    const downloadConfig: ReplayDownloadConfig = {
+      dataTypes: ['EVENT', 'DATACHUNK'],
+      addStatsPlaceholder: false,
+      ...options,
+    };
+
+    const replayMetadataResponse = await this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, 'json');
+    if (replayMetadataResponse.error) {
+      if (!(replayMetadataResponse.error instanceof EpicgamesAPIError)
+        && replayMetadataResponse.error.response?.data.includes('<Message>The specified key does not exist.</Message>')) {
+        throw new MatchNotFoundError(sessionId);
+      }
+
+      throw replayMetadataResponse.error;
+    }
+
+    const replayHeaderResponse = await this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY}%2F${sessionId}%2Fheader.bin`, 'arraybuffer');
+    if (replayHeaderResponse.error) throw replayHeaderResponse.error;
+
+    const replayData: ReplayData = replayMetadataResponse.response;
+    replayData.Header = replayHeaderResponse.response;
+
+    const downloadKeys = new Set(['Events', 'DataChunks', 'Checkpoints']);
+
+    if (!downloadConfig.dataTypes.includes('EVENT')) {
+      downloadKeys.delete('Events');
+      delete replayData.Events;
+    }
+
+    if (!downloadConfig.dataTypes.includes('DATACHUNK')) {
+      downloadKeys.delete('DataChunks');
+      delete replayData.DataChunks;
+    }
+
+    if (!downloadConfig.dataTypes.includes('CHECKPOINT')) {
+      downloadKeys.delete('Checkpoints');
+      delete replayData.Checkpoints;
+    }
+
+    const promises: Promise<any>[] = [];
+    for (const downloadKey of downloadKeys.values()) {
+      const chunks = (replayData as any)[downloadKey];
+      for (const chunk of chunks) {
+        promises.push(this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY}%2F${sessionId}%2F${chunk.Id}.bin`, 'arraybuffer').then((resp) => {
+          if (resp.error) throw resp.error;
+
+          chunks.find((d: any) => d.Id === chunk.Id).data = resp.response;
+        }));
+      }
+    }
+
+    await Promise.all(promises);
+
+    return buildReplay(replayData, downloadConfig.addStatsPlaceholder);
+  }
+
+  /**
+   * Fetches a tournament session's metadata
+   * @param sessionId The session ID
+   * @throws {MatchNotFoundError} The match wasn't found
+   * @throws {EpicgamesAPIError}
+   * @throws {AxiosError}
+   */
+  public async getTournamentSessionMetadata(sessionId: string): Promise<TournamentSessionMetadata> {
+    const replayMetadataResponse = await this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, 'json');
+    if (replayMetadataResponse.error) {
+      if (!(replayMetadataResponse.error instanceof EpicgamesAPIError)
+        && replayMetadataResponse.error.response?.data.includes('<Message>The specified key does not exist.</Message>')) {
+        throw new MatchNotFoundError(sessionId);
+      }
+
+      throw replayMetadataResponse.error;
+    }
+
+    return {
+      changelist: replayMetadataResponse.response.Changelist,
+      checkpoints: replayMetadataResponse.response.Checkpoints,
+      dataChunks: replayMetadataResponse.response.DataChunks,
+      desiredDelayInSeconds: replayMetadataResponse.response.DesiredDelayInSeconds,
+      events: replayMetadataResponse.response.Events,
+      friendlyName: replayMetadataResponse.response.FriendlyName,
+      lengthInMS: replayMetadataResponse.response.LengthInMS,
+      networkVersion: replayMetadataResponse.response.NetworkVersion,
+      replayName: replayMetadataResponse.response.ReplayName,
+      timestamp: new Date(replayMetadataResponse.response.Timestamp),
+      isCompressed: replayMetadataResponse.response.bCompressed,
+      isLive: replayMetadataResponse.response.bIsLive,
+    };
+  }
+
+  /**
+   * Downloads a file from the CDN (used for replays)
+   * @param url The URL of the file to download
+   * @param responseType The response type
+   */
+  private async downloadReplayCDNFile(url: string, responseType: ResponseType) {
+    const fileLocationInfo = await this.http.sendEpicgamesRequest(true, 'GET', url, 'fortnite');
+    if (fileLocationInfo.error) return fileLocationInfo;
+
+    const file = await this.http.send('GET', (Object.values(fileLocationInfo.response.files)[0] as any).readLink, undefined, undefined, undefined, responseType);
+
+    if (file.response) return { response: file.response.data };
+    return file;
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                              FORTNITE CREATIVE                             */
+  /* -------------------------------------------------------------------------- */
+
+  /**
+   * Fetches a creative island by its code
+   * @param code The island code
+   * @throws {CreativeIslandNotFoundError} A creative island with the provided code does not exist
+   * @throws {EpicgamesAPIError}
+   */
+  public async getCreativeIsland(code: string): Promise<CreativeIslandData> {
+    const islandInfo = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.CREATIVE_ISLAND_LOOKUP}/${code}`, 'fortnite');
+    if (islandInfo.error) {
+      if (islandInfo.error.code === 'errors.com.epicgames.links.no_active_version') throw new CreativeIslandNotFoundError(code);
+      throw islandInfo.error;
+    }
+
+    return islandInfo.response;
+  }
+
+  /**
+   * Fetches the creative discovery surface
+   * @param gameVersion The current game version (MAJOR.MINOR)
+   * @throws {EpicgamesAPIError}
+   */
+  public async getCreativeDiscoveryPanels(gameVersion = '18.30'): Promise<CreativeDiscoveryPanel[]> {
+    const creativeDiscovery = await this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.CREATIVE_DISCOVERY}/${this.user?.id}`, 'fortnite', {
+      'Content-Type': 'application/json',
+      'User-Agent': `Fortnite/++Fortnite+Release-${gameVersion}-CL-00000000 Windows/10`,
+    }, {
+      surfaceName: 'CreativeDiscoverySurface_Frontend',
+      partyMemberIds: [this.user?.id],
+    });
+
+    if (creativeDiscovery.error) {
+      throw creativeDiscovery.error;
+    }
+
+    return creativeDiscovery.response.Panels;
   }
 }
 

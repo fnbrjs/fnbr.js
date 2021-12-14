@@ -17,3 +17,4 @@ docs.json
 
 # Testing scripts
 test.js
+generateExports.js

@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.3.0
+
+### Additions
+* Battle Royale Account Level
+  * Added `Client#getBRAccountLevel()` and `User#getBRAccountLevel()`
+* Storefront Keychain
+  * Added `Client#getStorefrontKeychain()`
+* Mutual Friends
+  * Added `Client#getMutualFriends()` and `Friend#getMutualFriends()`
+* Tournament Session Metadata
+  * Added `Client#getTournamentSessionMetadata()`
+* Season Timestamps
+  * Added season end timestamp for CH2_S8
+  * Added season start timestamp for CH3_S1
+* Class exports
+  * Added exports for all classes and exceptions
+
+<hr>
+
 ## 2.2.0
 
 ### Additions

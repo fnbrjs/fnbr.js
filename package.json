@@ -1,12 +1,13 @@
 {
   "name": "fnbr",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "A library to interact with Epic Games' Fortnite HTTP and XMPP services",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "jest ./tests/"
+    "test": "jest ./tests/",
+    "prepare": "npm run build"
   },
   "files": [
     "dist/**/*"

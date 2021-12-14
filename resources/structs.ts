@@ -457,7 +457,7 @@ export interface StatsData {
   startTime: number;
   endTime: number;
   stats: {
-    [key: string]: string;
+    [key: string]: string | number;
   };
   accountId: string;
   query: string;
@@ -930,3 +930,25 @@ export interface EventTokensResponse {
   user: User;
   tokens: string[];
 }
+
+export interface BRAccountLevel {
+  query: string;
+  level?: number;
+}
+
+export interface TournamentSessionMetadata {
+  changelist: number;
+  checkpoints: ReplayCheckpoint[];
+  dataChunks: ReplayDataChunk[];
+  desiredDelayInSeconds: number;
+  events: ReplayEvent[];
+  friendlyName: string;
+  lengthInMS: number;
+  networkVersion: number;
+  replayName: string;
+  timestamp: Date;
+  isCompressed: boolean;
+  isLive: boolean;
+}
+
+export type Language = 'ar' | 'en' | 'de' | 'es' | 'fr' | 'it' | 'ja' | 'pl' | 'ru' | 'tr';

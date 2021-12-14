@@ -14,7 +14,7 @@ jobs:
       - name: Setup git
         run: |
           git config --global user.name "FNBR Bot"
-          git config --global user.email fnbrjs@fortnite.ro
+          git config --global user.email fnbr@tusinean.ro
 
       - name: Set Up NodeJS
         uses: actions/setup-node@v2

@@ -55,6 +55,7 @@ import RadioStation from '../structures/RadioStation';
 import SentFriendMessage from '../structures/SentFriendMessage';
 import MatchNotFoundError from '../exceptions/MatchNotFoundError';
 import CreativeIslandNotFoundError from '../exceptions/CreativeIslandNotFoundError';
+import Avatar from '../structures/Avatar';
 
 /**
  * Represets the main client
@@ -1156,6 +1157,32 @@ class Client extends EventEmitter {
       languages: languageStreams,
       data: streamMetaData,
     };
+  }
+
+  /**
+   * Fetches the avatar for one or more users
+   * @param user The id(s) or display name(s) of the user(s)
+   * @throws {EpicgamesAPIError}
+   */
+  public async getUserAvatar(user: string | string[]): Promise<Avatar[]> {
+    const users = await this.getProfile(Array.isArray(user) ? user : [user]);
+
+    const userChunks: User[][] = users.reduce((resArr: any[], u, i) => {
+      const chunkIndex = Math.floor(i / 100);
+      // eslint-disable-next-line no-param-reassign
+      if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
+      resArr[chunkIndex].push(u);
+      return resArr;
+    }, []);
+
+    const avatars = await Promise.all(userChunks
+      .map((uc) => this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.ACCOUNT_AVATAR}/fortnite/ids?accountIds=${uc.map((u) => u.id).join(',')}`, 'fortnite')));
+
+    return avatars.map((a) => {
+      if (a.error && a.error.code !== 'errors.com.epicgames.account.account_not_found') throw a.error;
+
+      return a.response.map((ar: any) => new Avatar(this, ar, users.find((u) => u.id === ar.accountId)!));
+    }).flat(1);
   }
 
   /* -------------------------------------------------------------------------- */

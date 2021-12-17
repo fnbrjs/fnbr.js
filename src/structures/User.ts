@@ -2,6 +2,7 @@ import Client from '../client/Client';
 import Base from '../client/Base';
 import UserNotFoundError from '../exceptions/UserNotFoundError';
 import { ExternalAuths, UserData } from '../../resources/structs';
+import Avatar from './Avatar';
 
 /**
  * Represents a user
@@ -101,8 +102,8 @@ class User extends Base {
    * Fetches the avatar for one or more users
    * @throws {EpicgamesAPIError}
    */
-  public async getAvatar() {
-    return this.client.getUserAvatar(this.id);
+  public async getAvatar(): Promise<Avatar | undefined> {
+    return (await this.client.getUserAvatar(this.id))[0];
   }
 
   /**

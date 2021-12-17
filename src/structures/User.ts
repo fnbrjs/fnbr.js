@@ -98,6 +98,14 @@ class User extends Base {
   }
 
   /**
+   * Fetches the avatar for one or more users
+   * @throws {EpicgamesAPIError}
+   */
+  public async getAvatar() {
+    return this.client.getUserAvatar(this.id);
+  }
+
+  /**
    * Updates this user with the given data
    * @param data The updated user data
    */

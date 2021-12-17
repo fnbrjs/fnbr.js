@@ -29,6 +29,7 @@ export { default as StatsPrivacyError } from './src/exceptions/StatsPrivacyError
 export { default as UserNotFoundError } from './src/exceptions/UserNotFoundError';
 
 // structures
+export { default as Avatar } from './src/structures/Avatar';
 export { default as BaseFriendMessage } from './src/structures/BaseFriendMessage';
 export { default as BaseMessage } from './src/structures/BaseMessage';
 export { default as BasePartyInvitation } from './src/structures/BasePartyInvitation';

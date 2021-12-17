@@ -1,7 +1,7 @@
 import Client from '../client/Client';
 import Base from '../client/Base';
 import UserNotFoundError from '../exceptions/UserNotFoundError';
-import { ExternalAuths, UserData } from '../../resources/structs';
+import { BRAccountLevel, ExternalAuths, UserData } from '../../resources/structs';
 import Avatar from './Avatar';
 
 /**
@@ -94,12 +94,12 @@ class User extends Base {
    * Fetches the battle royale account level for this user
    * @param seasonNumber The season number (eg. 16, 17, 18)
    */
-  public async getBRAccountLevel(seasonNumber: number) {
-    return this.client.getBRAccountLevel(this.id, seasonNumber);
+  public async getBRAccountLevel(seasonNumber: number): Promise<BRAccountLevel | undefined> {
+    return (await this.client.getBRAccountLevel(this.id, seasonNumber))[0];
   }
 
   /**
-   * Fetches the avatar for one or more users
+   * Fetches the avatar for this user
    * @throws {EpicgamesAPIError}
    */
   public async getAvatar(): Promise<Avatar | undefined> {

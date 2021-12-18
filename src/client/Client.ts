@@ -56,6 +56,7 @@ import SentFriendMessage from '../structures/SentFriendMessage';
 import MatchNotFoundError from '../exceptions/MatchNotFoundError';
 import CreativeIslandNotFoundError from '../exceptions/CreativeIslandNotFoundError';
 import Avatar from '../structures/Avatar';
+import GlobalProfile from '../structures/GlobalProfile';
 
 /**
  * Represets the main client
@@ -1182,6 +1183,37 @@ class Client extends EventEmitter {
       if (a.error && a.error.code !== 'errors.com.epicgames.account.account_not_found') throw a.error;
 
       return a.response.map((ar: any) => new Avatar(this, ar, users.find((u) => u.id === ar.accountId)!));
+    }).flat(1);
+  }
+
+  /**
+   * Fetches the global profile for one or more users
+   * @param user The id(s) or display name(s) of the user(s)
+   * @throws {EpicgamesAPIError}
+   */
+  public async getGlobalProfile(user: string | string[]): Promise<GlobalProfile[]> {
+    const users = await this.getProfile(Array.isArray(user) ? user : [user]);
+
+    const userChunks: User[][] = users.reduce((resArr: any[], u, i) => {
+      const chunkIndex = Math.floor(i / 100);
+      // eslint-disable-next-line no-param-reassign
+      if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
+      resArr[chunkIndex].push(u);
+      return resArr;
+    }, []);
+
+    const globalProfiles = await Promise.all(userChunks
+      .map((uc) => this.http.sendEpicgamesRequest(true, 'PUT', `${Endpoints.ACCOUNT_GLOBAL_PROFILE}`, 'fortnite', {
+        'Content-Type': 'application/json',
+      }, {
+        namespace: 'Fortnite',
+        accountIds: uc.map((u) => u.id),
+      })));
+
+    return globalProfiles.map((a) => {
+      if (a.error) throw a.error;
+
+      return a.response.profiles.map((ar: any) => new GlobalProfile(this, ar, users.find((u) => u.id === ar.accountId)!));
     }).flat(1);
   }
 

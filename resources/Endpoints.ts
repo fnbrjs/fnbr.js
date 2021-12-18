@@ -50,6 +50,7 @@ export default Object.freeze({
   ACCOUNT_EMAIL: 'https://account-public-service-prod03.ol.epicgames.com/account/api/public/account/email',
   ACCOUNT_SEARCH: 'https://user-search-service-prod.ol.epicgames.com/api/v1/search',
   ACCOUNT_AVATAR: 'https://avatar-service-prod.identity.live.on.epicgames.com/v1/avatar',
+  ACCOUNT_GLOBAL_PROFILE: 'https://global-profile-service.game-social.epicgames.com/profiles',
   MCP: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/game/v2/profile',
 
   // FRIENDS

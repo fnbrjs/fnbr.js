@@ -3,6 +3,7 @@ import Base from '../client/Base';
 import UserNotFoundError from '../exceptions/UserNotFoundError';
 import { BRAccountLevel, ExternalAuths, UserData } from '../../resources/structs';
 import Avatar from './Avatar';
+import GlobalProfile from './GlobalProfile';
 
 /**
  * Represents a user
@@ -104,6 +105,14 @@ class User extends Base {
    */
   public async getAvatar(): Promise<Avatar | undefined> {
     return (await this.client.getUserAvatar(this.id))[0];
+  }
+
+  /**
+   * Fetches the global profile for this user
+   * @throws {EpicgamesAPIError}
+   */
+  public async getGlobalProfile(): Promise<GlobalProfile | undefined> {
+    return (await this.client.getGlobalProfile(this.id))[0];
   }
 
   /**

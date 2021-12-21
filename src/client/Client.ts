@@ -384,7 +384,7 @@ class Client extends EventEmitter {
 
   /**
    * Removes presences from the clients cache that are older than the max lifetime
-   * @param maxLifetime How old a presence must be before it can be sweeped (in ms)
+   * @param maxLifetime How old a presence must be before it can be sweeped (in seconds)
    * @returns The amount of presences sweeped
    */
   public sweepPresences(maxLifetime = this.config.cacheSettings.presences?.maxLifetime) {
@@ -392,7 +392,7 @@ class Client extends EventEmitter {
 
     let presences = 0;
     for (const friend of this.friends.values()) {
-      if (typeof friend.presence?.receivedAt !== 'undefined' && Date.now() - friend.presence.receivedAt.getTime() > maxLifetime) {
+      if (typeof friend.presence?.receivedAt !== 'undefined' && Date.now() - friend.presence.receivedAt.getTime() > (maxLifetime * 1000)) {
         delete friend.presence;
         presences += 1;
       }

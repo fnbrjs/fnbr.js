@@ -27,21 +27,21 @@ class PartyMemberMeta extends Meta {
   /**
    * The currently equipped outfit CID
    */
-  get outfit(): string | undefined {
+  public get outfit(): string | undefined {
     return (this.get('Default:AthenaCosmeticLoadout_j')?.AthenaCosmeticLoadout?.characterDef as string)?.match(/(?<=\w*\.)\w*/)?.shift();
   }
 
   /**
    * The currently equipped pickaxe ID
    */
-  get pickaxe(): string | undefined {
+  public get pickaxe(): string | undefined {
     return (this.get('Default:AthenaCosmeticLoadout_j')?.AthenaCosmeticLoadout?.pickaxeDef as string)?.match(/(?<=\w*\.)\w*/)?.shift();
   }
 
   /**
    * The current emote EID
    */
-  get emote(): string | undefined {
+  public get emote(): string | undefined {
     const emoteAsset: string = this.get('Default:FrontendEmote_j')?.FrontendEmote?.emoteItemDef;
     if (emoteAsset === 'None') return undefined;
     return emoteAsset.match(/(?<=\w*\.)\w*/)?.shift();
@@ -50,28 +50,28 @@ class PartyMemberMeta extends Meta {
   /**
    * The currently equipped backpack BID
    */
-  get backpack(): string | undefined {
+  public get backpack(): string | undefined {
     return (this.get('Default:AthenaCosmeticLoadout_j')?.AthenaCosmeticLoadout?.backpackDef as string)?.match(/(?<=\w*\.)\w*/)?.shift();
   }
 
   /**
    * Whether the member is ready
    */
-  get isReady() {
+  public get isReady() {
     return this.get('Default:LobbyState_j')?.LobbyState?.gameReadiness === 'Ready';
   }
 
   /**
    * The current input method
    */
-  get input(): string | undefined {
-    return this.get('Default:CurrentInputType_s');
+  public get input(): string | undefined {
+    return this.get('Default:LobbyState_j')?.LobbyState?.currentInputType;
   }
 
   /**
    * The cosmetic variants
    */
-  get variants(): CosmeticsVariantMeta {
+  public get variants(): CosmeticsVariantMeta {
     const variants = this.get('Default:AthenaCosmeticLoadoutVariants_j')?.vL;
     if (!variants) return {};
 
@@ -86,35 +86,35 @@ class PartyMemberMeta extends Meta {
   /**
    * The custom data store
    */
-  get customDataStore(): string[] {
+  public get customDataStore(): string[] {
     return this.get('Default:ArbitraryCustomDataStore_j')?.ArbitraryCustomDataStore || [];
   }
 
   /**
    * The banner info
    */
-  get banner(): BannerMeta | undefined {
+  public get banner(): BannerMeta | undefined {
     return this.get('Default:AthenaBannerInfo_j')?.AthenaBannerInfo;
   }
 
   /**
    * The battle pass info
    */
-  get battlepass(): BattlePassMeta | undefined {
+  public get battlepass(): BattlePassMeta | undefined {
     return this.get('Default:BattlePassInfo_j')?.BattlePassInfo;
   }
 
   /**
    * The platform
    */
-  get platform(): Platform | undefined {
+  public get platform(): Platform | undefined {
     return this.get('Default:PlatformData_j')?.PlatformData?.platform?.platformDescription?.name;
   }
 
   /**
    * The match info
    */
-  get match(): MatchMeta {
+  public get match(): MatchMeta {
     const location = this.get('Default:Location_s');
     const hasPreloadedAthena = this.get('Default:HasPreloadedAthena_b');
     const isSpectatable = this.get('Default:SpectateAPartyMemberAvailable_b');
@@ -133,14 +133,14 @@ class PartyMemberMeta extends Meta {
   /**
    * Whether a marker has been set
    */
-  get isMarkerSet(): boolean {
+  public get isMarkerSet(): boolean {
     return !!this.get('Default:FrontEndMapMarker_j')?.FrontEndMapMarker?.bIsSet;
   }
 
   /**
    * The marker location [x, y] tuple. [0, 0] if there is no marker set
    */
-  get markerLocation(): [number, number] {
+  public get markerLocation(): [number, number] {
     const marker = this.get('Default:FrontEndMapMarker_j')?.FrontEndMapMarker?.markerLocation;
     if (!marker) return [0, 0];
 
@@ -150,7 +150,7 @@ class PartyMemberMeta extends Meta {
   /**
    * The assisted challenge
    */
-  get assistedChallenge(): AssistedChallengeMeta | undefined {
+  public get assistedChallenge(): AssistedChallengeMeta | undefined {
     const challenge = this.get('Default:AssistedChallengeInfo_j')?.AssistedChallengeInfo;
     if (!challenge) return undefined;
 
@@ -158,6 +158,13 @@ class PartyMemberMeta extends Meta {
       questItemDef: challenge.questItemDef,
       objectivesCompleted: challenge.objectivesCompleted,
     };
+  }
+
+  /**
+   * Whether the member owns Save The World
+   */
+  public get hasPurchasedSTW() {
+    return !!this.get('Default:HasPurchasedSTW_b');
   }
 }
 

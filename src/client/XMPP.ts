@@ -426,6 +426,12 @@ class XMPP extends Base {
             this.client.setStatus();
             if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
 
+            try {
+              await this.client.waitForEvent('party:member:updated', 2000, (um) => um.id === member.id);
+            } catch (err) {
+              // ignore. meta will be partly undefined, but usually, if this takes longer than 2 seconds, something else went wrong
+            }
+
             this.client.emit('party:member:joined', member);
           } break;
 

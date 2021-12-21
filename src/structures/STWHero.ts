@@ -1,9 +1,8 @@
 import { STWProfileHeroData } from '../../resources/httpResponses';
-import { STWHeroRarity, STWHeroType } from '../../resources/structs';
+import { STWItemRarity, STWHeroType, STWItemTier } from '../../resources/structs';
 import Client from '../client/Client';
 import {
-    calcSTWEVOConstant,
-    calcSTWLevelConstant, calcSTWNonSurvivorPowerLevel, calcSTWSurvivorRarity, parseSTWHeroTemplateId
+    calcSTWNonSurvivorPowerLevel, calcSTWItemRarity, parseSTWHeroTemplateId
 } from '../util/Util';
 import STWItem from './STWItem';
 
@@ -24,12 +23,12 @@ class STWHero extends STWItem {
     /**
      * The hero's tier
      */
-    public tier: number;
+    public tier: STWItemTier;
 
     /**
      * The hero's rarity
      */
-    public rarity: STWHeroRarity;
+    public rarity: STWItemRarity;
 
     /**
      * The hero's level
@@ -89,23 +88,7 @@ class STWHero extends STWItem {
      * The hero's rarity value (number from 0-6).
      */
     public get rarityValue() {
-        return calcSTWSurvivorRarity(this.rarity, false);
-    }
-
-    /**
-     * The hero's EVO constant (number from 0-9.85).
-     * Depends on the rarity
-     */
-    public get EVOConstant() {
-        return calcSTWEVOConstant(this.rarityValue, false);
-    }
-
-    /**
-     * The hero's level constant (number from 0-1.645).
-     * Depends on the rarity
-     */
-    public get levelConstant() {
-        return calcSTWLevelConstant(this.rarityValue, false);
+        return calcSTWItemRarity(this.rarity);
     }
 
     /**
@@ -113,7 +96,7 @@ class STWHero extends STWItem {
      * Depends on the tier, level, and rarity value
      */
     public get powerLevel() {
-        return calcSTWNonSurvivorPowerLevel(this.rarityValue, this.level, this.tier);
+        return calcSTWNonSurvivorPowerLevel(this.rarity, this.level, this.tier);
     }
 }
 

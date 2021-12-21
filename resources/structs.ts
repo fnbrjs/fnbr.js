@@ -1012,7 +1012,9 @@ export interface STWFORTStats {
 
 export type STWSurvivorType = 'special' | 'manager' | 'basic';
 
-export type STWSurvivorRarity = 'c' | 'uc' | 'r' | 'vr' | 'sr' | 'ur';
+export type STWItemRarity = 'c' | 'uc' | 'r' | 'vr' | 'sr' | 'ur';
+
+export type STWItemTier = 1 | 2 | 3 | 4 | 5 | 6;
 
 export type STWSurvivorGender = 'male' | 'female';
 
@@ -1132,8 +1134,6 @@ export interface STWLockerBannerData {
 }
 
 export type STWHeroType = 'commando' | 'constructor' | 'outlander' | 'ninja';
-
-export type STWHeroRarity = 'c' | 'uc' | 'r' | 'vr' | 'sr' | 'ur';
 
 export interface StatsLevelData {
   [key: string]: {

@@ -1,29 +1,28 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
-import Client from '../client/Client';
-import CurveTable from '../util/CurveTable';
-import HomebaseRatingMapping from '../../resources/STWMappings.json';
 import {
   STWProfileData,
   STWProfileHeroData,
   STWProfileHeroLoadoutData,
   STWProfileLockerData,
   STWProfileResourceData,
-  STWProfileSurvivorData,
+  STWProfileSurvivorData
 } from '../../resources/httpResponses';
+import PowerLevelCurves from '../../resources/PowerLevelCurves';
 import {
   STWFORTStats,
   STWSurvivorSquads,
-  UserData,
+  UserData
 } from '../../resources/structs';
-import STWSurvivor from './STWSurvivor';
-import STWItem from './STWItem';
-import STWStats from './STWStats';
-import STWLocker from './STWLocker';
-import User from './User';
-import STWResource from './STWResource';
+import Client from '../client/Client';
 import STWHero from './STWHero';
 import STWHeroLoadout from './STWHeroLoadout';
+import STWItem from './STWItem';
+import STWLocker from './STWLocker';
+import STWResource from './STWResource';
+import STWStats from './STWStats';
+import STWSurvivor from './STWSurvivor';
+import User from './User';
 
 /**
  * Represents a Save The World profile
@@ -75,19 +74,12 @@ class STWProfile extends User {
   public stats: STWStats;
 
   /**
-   * The profile's power level curve calculator
-   */
-  private powerLevelCurve: CurveTable;
-
-  /**
    * @param client The main client
    * @param data The profile data
    * @param userData The user data
    */
   constructor(client: Client, data: STWProfileData, userData: UserData) {
     super(client, userData);
-
-    this.powerLevelCurve = new CurveTable(HomebaseRatingMapping[0].ExportValue.UIMonsterRating.Keys);
 
     this.profileId = data._id;
     this.createdAt = new Date(data.created);
@@ -190,7 +182,7 @@ class STWProfile extends User {
   public get powerLevel(): number {
     const totalFORTStats = Object.values(this.FORTStats).reduce((prev, cur) => prev + cur);
 
-    return this.powerLevelCurve.eval(totalFORTStats * 4);
+    return PowerLevelCurves.homebaseRating.eval(totalFORTStats * 4);
   }
 
   /**
@@ -199,7 +191,7 @@ class STWProfile extends User {
   public get venturesPowerLevel(): number {
     const totalFORTStats = Object.values(this.venturesFORTStats).reduce((prev, cur) => prev + cur);
 
-    return this.powerLevelCurve.eval(totalFORTStats * 4);
+    return PowerLevelCurves.homebaseRating.eval(totalFORTStats * 4);
   }
 
   /**

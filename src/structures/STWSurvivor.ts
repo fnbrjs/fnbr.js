@@ -1,13 +1,13 @@
 import Client from '../client/Client';
 import STWItem from './STWItem';
 import {
-  parseSTWSurvivorTemplateId, calcSTWSurvivorRarity, calcSTWEVOConstant,
-  calcSTWLevelConstant, calcSTWSurvivorPowerLevel, calcSTWSurvivorLeadBonus,
+  parseSTWSurvivorTemplateId, calcSTWItemRarity,
+  calcSTWSurvivorPowerLevel, calcSTWSurvivorLeadBonus,
   calcSTWSurvivorBonus,
 } from '../util/Util';
 import {
-  STWSurvivorSquadData, STWSurvivorType, STWSurvivorRarity,
-  STWSurvivorSquads, STWSurvivorSquadType, STWSurvivorGender,
+  STWSurvivorSquadData, STWSurvivorType, STWItemRarity,
+  STWSurvivorSquads, STWSurvivorSquadType, STWSurvivorGender, STWItemTier,
 } from '../../resources/structs';
 import { STWProfileSurvivorData } from '../../resources/httpResponses';
 
@@ -30,12 +30,12 @@ class STWSurvivor extends STWItem {
   /**
    * The survivor's tier
    */
-  public tier: number;
+  public tier: STWItemTier;
 
   /**
    * The survivor's rarity
    */
-  public rarity: STWSurvivorRarity;
+  public rarity: STWItemRarity;
 
   /**
    * The survivor's manager synergy
@@ -146,35 +146,11 @@ class STWSurvivor extends STWItem {
   }
 
   /**
-   * The survivor's rarity value (number from 0-6).
-   * Depends on the actual rarity and whether the survivor is a leader
-   */
-  public get rarityValue() {
-    return calcSTWSurvivorRarity(this.rarity, this.isLeader);
-  }
-
-  /**
-   * The survivor's EVO constant (number from 0-9.85).
-   * Depends on the rarity and whether the survivor is a leader
-   */
-  public get EVOConstant() {
-    return calcSTWEVOConstant(this.rarityValue, this.isLeader);
-  }
-
-  /**
-   * The survivor's level constant (number from 0-1.645).
-   * Depends on the rarity and whether the survivor is a leader
-   */
-  public get levelConstant() {
-    return calcSTWLevelConstant(this.rarityValue, this.isLeader);
-  }
-
-  /**
    * The survivor's power level.
    * Depends on the tier, level, rarity value and whether the survivor is a leader
    */
   public get powerLevel() {
-    return calcSTWSurvivorPowerLevel(this.rarityValue, this.isLeader, this.level, this.tier);
+    return calcSTWSurvivorPowerLevel(this.rarity, this.isLeader, this.level, this.tier);
   }
 
   /**

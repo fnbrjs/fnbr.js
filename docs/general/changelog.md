@@ -188,7 +188,7 @@
 
 ### Fixes
 * Parties
-  * Fixed "outdated version" bug that occured when a user tried to join the client's party
+  * Fixed "outdated version" bug that occurred when a user tried to join the client's party
 
 <hr>
 
@@ -232,7 +232,7 @@
   * Fixed XMPP reconnection error (Thanks to [Théo](https://discord.com/users/448882532830674948) for reporting it)
   * The XMPP client will now use a new resource string each time you restart the client
 * Presences
-  * Fixed issue that occured when sending a status (presence) to a single friend
+  * Fixed issue that occurred when sending a status (presence) to a single friend
 * Client Methods
   * Fixed `Client#getNews()` returning an empty array sometimes
   * The client will now ignore errors on shutdown
@@ -258,7 +258,7 @@
 
 ### Fixes
 * Parties
-  * Fixed error that occured when the client accepted another bot's invites
+  * Fixed error that occurred when the client accepted another bot's invites
   * Trying to join a party which the client previously got kicked from now throws an error
   * The client now handles user_has_party when trying to join a party
   * Fixed some bugs related to party invites
@@ -288,7 +288,7 @@
 
 ### Fixes
 * Parties
-  * Fixed error that occured when the client got kicked from its party
+  * Fixed error that occurred when the client got kicked from its party
   * Fixed accepting party invites & joining parties
 
 <hr>

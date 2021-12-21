@@ -169,7 +169,7 @@ class STWProfile extends User {
   }
 
   /**
-   * The profile's Ventures power level
+   * The profile's ventures power level
    */
   public get venturesPowerLevel(): number {
     const totalFORTStats = Object.values(this.venturesFORTStats).reduce((prev, cur) => prev + cur);
@@ -260,7 +260,7 @@ class STWProfile extends User {
   }
 
   /**
-   * The profile's Ventures FORT stats
+   * The profile's ventures FORT stats
    */
   public get venturesFORTStats() {
     const venturesFORTStats: STWFORTStats = {

@@ -566,7 +566,7 @@ class Client extends EventEmitter {
       }
       if (Array.isArray(u.response)) return u.response.map((ur) => new User(this, ur));
       return new User(this, u.response);
-    }).filter(u => !!u).flat(1) as User[];
+    }).filter((u) => !!u).flat(1) as User[];
   }
 
   /**

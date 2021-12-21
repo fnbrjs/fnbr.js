@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import {
   Schema, ReplayData, ReplayDataChunk, ReplayEvent,
   STWSurvivorRarity, STWSurvivorType, STWSurvivorSquads,
+  STWHeroType, STWHeroRarity,
   StatsPlaylistTypeData,
 } from '../../resources/structs';
 import { STWLeadSynergy } from '../../enums/Enums';
@@ -351,6 +352,31 @@ export const calcSTWSurvivorLeadBonus = (managerSynergy: string, squadName: keyo
   }
 
   return 0;
+};
+
+export const parseSTWHeroTemplateId = (templateId: string) => {
+  const id = templateId.split(':')[1];
+  const fields = id.split('_');
+
+  let type: STWHeroType;
+  fields.shift();
+  type = fields.shift() as STWHeroType;
+
+  const tier = parseInt(fields.pop()!.slice(1), 10);
+  const rarity = fields.pop() as STWHeroRarity;
+  const name = fields[0] ? fields.join('_') : undefined;
+
+  return {
+    type,
+    tier,
+    rarity,
+    name,
+  };
+};
+
+export const calcSTWNonSurvivorPowerLevel = (rarityValue: number, level: number, tier: number) => {
+  const survivorPowerLevel = calcSTWSurvivorPowerLevel(rarityValue, false, level, tier);
+  return survivorPowerLevel === 145 ? 144 : survivorPowerLevel;
 };
 
 const defaultStats = {

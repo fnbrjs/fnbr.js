@@ -5,6 +5,8 @@ import CurveTable from '../util/CurveTable';
 import HomebaseRatingMapping from '../../resources/STWMappings.json';
 import {
   STWProfileData,
+  STWProfileHeroData,
+  STWProfileHeroLoadoutData,
   STWProfileLockerData,
   STWProfileResourceData,
   STWProfileSurvivorData,
@@ -20,6 +22,8 @@ import STWStats from './STWStats';
 import STWLocker from './STWLocker';
 import User from './User';
 import STWResource from './STWResource';
+import STWHero from './STWHero';
+import STWHeroLoadout from './STWHeroLoadout';
 
 /**
  * Represents a Save The World profile
@@ -108,6 +112,12 @@ class STWProfile extends User {
         case 'AccountResource':
           this.items.push(new STWResource(this.client, itemId, item as STWProfileResourceData));
           break;
+        case 'Hero':
+          this.items.push(new STWHero(this.client, itemId, item as STWProfileHeroData));
+          break;
+        case 'CampaignHeroLoadout':
+          this.items.push(new STWHeroLoadout(this.client, itemId, item as STWProfileHeroLoadoutData));
+          break;
         default:
           this.items.push(new STWItem(this.client, itemId, item));
       }
@@ -157,6 +167,21 @@ class STWProfile extends User {
    */
   public get resources() {
     return this.items.filter((i) => i instanceof STWResource) as STWResource[];
+  }
+
+  /**
+   * The profile's heroes
+   */
+  public get heroes() {
+    return this.items.filter((i) => i instanceof STWHero) as STWHero[];
+  }
+
+  /**
+   * The profile's hero loadouts
+   */
+  public get heroLoadouts() {
+    return (this.items.filter((i) => i instanceof STWHeroLoadout) as STWHeroLoadout[])
+      .sort((a, b) => a.loadoutIndex - b.loadoutIndex);
   }
 
   /**

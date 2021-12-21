@@ -1131,6 +1131,10 @@ export interface STWLockerBannerData {
   color: string;
 }
 
+export type STWHeroType = 'commando' | 'constructor' | 'outlander' | 'ninja';
+
+export type STWHeroRarity = 'c' | 'uc' | 'r' | 'vr' | 'sr' | 'ur';
+
 export interface StatsLevelData {
   [key: string]: {
     level: number;

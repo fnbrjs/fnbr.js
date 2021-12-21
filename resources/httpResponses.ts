@@ -415,6 +415,53 @@ export interface STWProfileResourceData extends STWProfileItemData {
   };
 }
 
+export interface STWProfileHeroVariantData {
+  channel: string;
+  active: string;
+}
+
+export interface STWProfileHeroData extends STWProfileItemData {
+  attributes: {
+    outfitvariants: STWProfileHeroVariantData[];
+    backblingvariants: STWProfileHeroVariantData[];
+    gender: 0;
+    level: number;
+    item_seen: boolean;
+    squad_slot_idx: number;
+    portrait: string;
+    hero_name: string;
+    max_level_bonus: number;
+    squad_id: string;
+    mode_loadouts: [];
+    xp: number;
+    slotted_building_id: string;
+    refundable: boolean;
+    favorite: boolean;
+    building_slot_used: number;
+  }
+}
+
+export interface STWProfileHeroLoadoutData extends STWProfileItemData {
+  attributes: {
+    team_perk?: string;
+    loadout_name: string;
+    crew_members: {
+      commanderslot: string;
+      followerslot1?: string;
+      followerslot2?: string;
+      followerslot3?: string;
+      followerslot4?: string;
+      followerslot5?: string;
+      leaderslot?: string;
+    };
+    loadout_index: number;
+    gadgets: {
+      gadget: string;
+      slot_index: number;
+    }[];
+  }
+}
+
 export interface STWProfileStatsData {
   node_costs: Partial<{
     homebase_node_default_page: {

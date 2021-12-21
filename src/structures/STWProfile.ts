@@ -169,6 +169,15 @@ class STWProfile extends User {
   }
 
   /**
+   * The profile's Ventures power level
+   */
+  public get venturesPowerLevel(): number {
+    const totalFORTStats = Object.values(this.venturesFORTStats).reduce((prev, cur) => prev + cur);
+
+    return this.powerLevelCurve.eval(totalFORTStats * 4);
+  }
+
+  /**
    * The profile's FORT stats
    */
   public get FORTStats() {
@@ -248,6 +257,29 @@ class STWProfile extends User {
     }
 
     return survivorFORTStats;
+  }
+
+  /**
+   * The profile's Ventures FORT stats
+   */
+  public get venturesFORTStats() {
+    const venturesFORTStats: STWFORTStats = {
+      fortitude: 0,
+      offense: 0,
+      resistance: 0,
+      tech: 0,
+    };
+
+    for (const value of this.items) {
+      if (value.templateId.startsWith('Stat:') && value.templateId.includes('phoenix')) {
+        if (value.templateId.includes('fortitude')) venturesFORTStats.fortitude += value.quantity;
+        else if (value.templateId.includes('resistance')) venturesFORTStats.resistance += value.quantity;
+        else if (value.templateId.includes('technology')) venturesFORTStats.tech += value.quantity;
+        else if (value.templateId.includes('offense')) venturesFORTStats.offense += value.quantity;
+      }
+    }
+
+    return venturesFORTStats;
   }
 
   /**

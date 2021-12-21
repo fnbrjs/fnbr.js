@@ -560,11 +560,13 @@ class Client extends EventEmitter {
     const users = await Promise.all(proms);
 
     return users.map((u) => {
-      if (u.error && u.error.code !== 'errors.com.epicgames.account.account_not_found') throw u.error;
-
+      if (u?.error) {
+        if (u.error.code === 'errors.com.epicgames.account.account_not_found') return undefined;
+        throw u.error;
+      }
       if (Array.isArray(u.response)) return u.response.map((ur) => new User(this, ur));
       return new User(this, u.response);
-    }).flat(1);
+    }).filter((u) => !!u).flat(1) as User[];
   }
 
   /**

@@ -10,7 +10,7 @@ import Auth from './Auth';
 import Http from './HTTP';
 import AsyncLock from '../util/AsyncLock';
 import {
-  ClientOptions, ClientConfig, ClientEvents, NewsMOTD, NewsMessage, LightswitchData,
+  ClientOptions, ClientConfig, ClientEvents, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
   ReplayDownloadConfig, EventTokensResponse, TournamentSessionMetadata, BRAccountLevelData,
@@ -56,6 +56,8 @@ import MatchNotFoundError from '../exceptions/MatchNotFoundError';
 import CreativeIslandNotFoundError from '../exceptions/CreativeIslandNotFoundError';
 import STWProfile from '../structures/STWProfile';
 import Stats from '../structures/Stats';
+import NewsMessage from '../structures/NewsMessage';
+import STWNewsMessage from '../structures/STWNewsMessage';
 
 /**
  * Represets the main client
@@ -163,6 +165,7 @@ class Client extends EventEmitter {
       handleRatelimits: true,
       partyBuildId: '1:3:',
       restartOnInvalidRefresh: false,
+      language: 'en',
       ...config,
       cacheSettings: {
         ...config.cacheSettings,
@@ -1207,72 +1210,29 @@ class Client extends EventEmitter {
     return statsResponses.map((r) => r.response).flat(1).map((r) => new Stats(this, r, resolvedUsers.find((u) => u.id === r.accountId)!));
   }
 
-  // eslint-disable-next-line no-unused-vars
-  public async getNews(mode: 'battleroyale' | 'creative', language: string): Promise<NewsMOTD[]>;
-  // eslint-disable-next-line no-unused-vars
-  public async getNews(mode: 'savetheworld', language: string): Promise<NewsMessage[]>;
-
   /**
-   * Fetches the current news for a specific gamemode
-   * @param mode The gamemode to fetch the news for
+   * Fetches the current battle royale news
    * @param language The language of the news
+   * @param customPayload Extra data to send in the request body for a personalized news response (battle pass level, country, etc)
    * @throws {EpicgamesAPIError}
    */
-  public async getNews(mode: 'battleroyale' | 'creative' | 'savetheworld' = 'battleroyale', language = Enums.Language.ENGLISH): Promise<NewsMOTD[] | NewsMessage[]> {
-    const news = await this.http.sendEpicgamesRequest(false, 'GET', `${Endpoints.BR_NEWS}/${mode}news${mode === 'savetheworld' ? '' : 'v2'}?lang=${language}`);
-    if (news.error) throw news.error;
-
-    const { messages, motds, platform_motds: platformMotds } = news.response.news;
-
-    if (mode === 'savetheworld') return messages;
-
-    const oldNewsMessages: NewsMOTD[] = [...motds, ...(platformMotds || []).filter((m: any) => m.platform === 'windows').map((m: any) => m.message)];
-
-    if (mode === 'creative') return oldNewsMessages;
-
-    const newNews = await this.http.sendEpicgamesRequest(true, 'POST', Endpoints.BR_NEWS_MOTD, 'fortnite', undefined, {
+  public async getBRNews(language = Enums.Language.ENGLISH, customPayload: any): Promise<NewsMessage[]> {
+    const news = await this.http.sendEpicgamesRequest(true, 'POST', Endpoints.BR_NEWS_MOTD, 'fortnite', {
+      'Content-Type': 'application/json',
+      'Accept-Language': language,
+    }, {
       platform: 'Windows',
-      language: 'en',
+      language,
       country: 'US',
       serverRegion: 'NA',
       subscription: false,
       battlepass: false,
       battlepassLevel: 1,
+      ...customPayload,
     });
-    if (newNews.error) throw newNews.error;
+    if (news.error) throw news.error;
 
-    const newsMessages: NewsMOTD[] = (newNews.response?.contentItems as any[])?.map((i: any, y) => ({
-      _type: i.contentSchemaName,
-      body: i.contentFields.body,
-      entryType: i.contentFields.entryType,
-      hidden: i.contentFields.hidden,
-      id: i.contentId,
-      image: i.contentFields.image?.[0]?.url,
-      offerAction: i.contentFields.offerAction,
-      sortingPriority: 1000 - y,
-      spotlight: i.contentFields.spotlight,
-      tabTitleOverride: i.contentFields.tabTitleOverride,
-      tileImage: i.contentFields.tileImage?.[0]?.url,
-      title: i.contentFields.title,
-      videoAutoplay: i.contentFields.videoAutoplay,
-      videoFullscreen: i.contentFields.videoFullscreen,
-      videoLoop: i.contentFields.videoLoop,
-      videoMute: i.contentFields.videoMute,
-      videoStreamingEnabled: i.contentFields.videoStreamingEnabled,
-      buttonTextOverride: i.contentFields.buttonTextOverride,
-      offerId: i.contentFields.offerId,
-      playlistId: i.contentFields.playlistId,
-      videoUID: i.contentFields.videoUID,
-      videoVideoString: i.contentFields.videoVideoString,
-    })) || [];
-
-    oldNewsMessages.forEach((omsg) => {
-      if (!newsMessages.some((msg) => msg.title === omsg.title && msg.body === omsg.body)) {
-        newsMessages.push(omsg);
-      }
-    });
-
-    return newsMessages;
+    return news.response.contentItems.map((i: any) => new NewsMessage(this, i));
   }
 
   /**
@@ -1604,6 +1564,20 @@ class Client extends EventEmitter {
     }
 
     return new STWProfile(this, queryProfileResponse.response.profileChanges[0].profile, resolvedUser);
+  }
+
+  /**
+   * Fetches the current save the world news
+   * @param language The language of the news
+   * @throws {EpicgamesAPIError}
+   */
+  public async getSTWNews(language = Enums.Language.ENGLISH): Promise<STWNewsMessage[]> {
+    const newsResponse = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_NEWS}/savetheworldnews?lang=${language}`, 'fortnite', {
+      'Accept-Language': language,
+    });
+    if (newsResponse.error) throw newsResponse.error;
+
+    return newsResponse.response.news.messages.map((m: any) => new STWNewsMessage(this, m));
   }
 }
 

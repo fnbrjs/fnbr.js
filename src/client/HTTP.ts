@@ -71,12 +71,16 @@ class HTTP extends Base {
       data = urlSearchParams;
     }
 
+    const finalHeaders = headers;
+
+    if (!finalHeaders['Accept-Language']) finalHeaders['Accept-Language'] = this.client.config.language;
+
     const reqStartTime = Date.now();
     try {
       const response = await this.axios.request({
         method,
         url,
-        headers,
+        headers: finalHeaders,
         data,
         responseType,
       });

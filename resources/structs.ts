@@ -25,6 +25,8 @@ export interface Schema {
   [key: string]: any;
 }
 
+export type Language = 'ar' | 'en' | 'de' | 'es' | 'fr' | 'it' | 'ja' | 'pl' | 'ru' | 'tr';
+
 export type StringFunction = () => string;
 
 export type StringFunctionAsync = () => Promise<string>;
@@ -237,6 +239,12 @@ export interface ClientConfig {
    * By default, this is set to false because two clients attempting to log into one account could result in an endless loop
    */
   restartOnInvalidRefresh: boolean;
+
+  /**
+   * The default language for all http requests.
+   * Will be overwritten by a method's language parameter
+   */
+  language: Language;
 
   /**
    * A custom parser for resolving the stats playlist type (ie. "solo", "duo", "ltm").
@@ -1126,4 +1134,29 @@ export interface StatsLevelData {
     level: number;
     progress: number;
   };
+}
+
+export interface NewsMessageVideoData {
+  videoAutoplay: boolean;
+  videoFullscreen: boolean;
+  videoLoop: boolean;
+  videoMute: boolean;
+  videoStreamingEnabled: boolean;
+  videoVideoString: string;
+  videoUID: string;
+}
+
+export interface NewsMessagePlaylist {
+  id: string;
+}
+
+export interface NewsMessageOffer {
+  id: string;
+  action: string;
+}
+
+export interface ImageData {
+  url: string;
+  width?: number;
+  height?: number;
 }

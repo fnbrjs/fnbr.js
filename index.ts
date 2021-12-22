@@ -44,6 +44,7 @@ export { default as ClientUser } from './src/structures/ClientUser';
 export { default as CreatorCode } from './src/structures/CreatorCode';
 export { default as Friend } from './src/structures/Friend';
 export { default as FriendPresence } from './src/structures/FriendPresence';
+export { default as GlobalProfile } from './src/structures/GlobalProfile';
 export { default as IncomingPendingFriend } from './src/structures/IncomingPendingFriend';
 export { default as OutgoingPendingFriend } from './src/structures/OutgoingPendingFriend';
 export { default as Party } from './src/structures/Party';

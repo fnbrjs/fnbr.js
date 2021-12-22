@@ -1265,7 +1265,7 @@ class Client extends EventEmitter {
     const ids = await this.resolveUserIds(user);
 
     const idChunks: { id: string, query: string }[][] = ids.reduce((resArr: any[], id, i) => {
-      const chunkIndex = Math.floor(i / 100);
+      const chunkIndex = Math.floor(i / 51);
       // eslint-disable-next-line no-param-reassign
       if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
       resArr[chunkIndex].push(id);

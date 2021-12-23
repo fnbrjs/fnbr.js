@@ -1293,7 +1293,7 @@ class Client extends EventEmitter {
 
     const resolvedUsers = await this.getProfile(user);
 
-    const idChunks: { id: string, query: string }[][] = resolvedUsers.map((u) => u.id).reduce((resArr: any[], id, i) => {
+    const idChunks: string[][] = resolvedUsers.map((u) => u.id).reduce((resArr: any[], id, i) => {
       const chunkIndex = Math.floor(i / 51);
       // eslint-disable-next-line no-param-reassign
       if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
@@ -1305,7 +1305,7 @@ class Client extends EventEmitter {
       'Content-Type': 'application/json',
     }, {
       appId: 'fortnite',
-      owners: c.map((o) => o.id),
+      owners: c,
       stats,
     })));
 
@@ -1397,7 +1397,7 @@ class Client extends EventEmitter {
 
     return accountLevels.map((al) => ({
       user: al.user,
-      level: al.levelData[`s${seasonNumber}`] || 0,
+      level: al.levelData[`s${seasonNumber}`] || { level: 0, progress: 0 },
     }));
   }
 

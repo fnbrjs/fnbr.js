@@ -983,7 +983,7 @@ export interface BRAccountLevel {
 
 export interface BRAccountLevelData {
   user: User;
-  level?: BRAccountLevel;
+  level: BRAccountLevel;
 }
 
 export interface TournamentSessionMetadata {

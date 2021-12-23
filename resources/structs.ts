@@ -803,7 +803,7 @@ export interface BattlePassMeta {
 }
 
 export interface MatchMeta {
-  location?: 'PreLobby' | 'InGame';
+  location?: 'PreLobby' | 'InGame' | 'ReturningToFrontEnd';
   hasPreloadedAthena?: boolean;
   isSpectatable?: boolean;
   playerCount?: number;

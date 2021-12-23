@@ -1,5 +1,48 @@
 # Changelog
 
+## 2.4.0
+
+### Additions
+* Global Profile
+  * Added `Client#getGlobalProfile()` and `User#getGlobalProfile()`
+* Avatars
+  * Added `Client#getUserAvatar()` and `User#getAvatar()`
+* Friend Offer Ownership
+  * Added `Client#checkFriendOfferOwnership()` and `Friend#checkOfferOwnership()`
+
+### Changes
+* Party Member Properties
+  * The client will now wait for a member update message before `Client#party:member:joined` is being emitted
+* Battle Royale Account Level
+  * **(Breaking)** `User#getBRAccountLevel()` will now return the account level data directly, instead of an array with one entry
+
+### Fixes
+* Multiple Display Name Lookups
+  * `Client#getProfile()` will no longer throw an error if one of the user display name lookups fail
+* Party Member Emote
+  * Trying to access `PartyMember#emote` will no longer throw an error if an emote is not set
+
+<hr>
+
+## 2.3.0
+
+### Additions
+* Battle Royale Account Level
+  * Added `Client#getBRAccountLevel()` and `User#getBRAccountLevel()`
+* Storefront Keychain
+  * Added `Client#getStorefrontKeychain()`
+* Mutual Friends
+  * Added `Client#getMutualFriends()` and `Friend#getMutualFriends()`
+* Tournament Session Metadata
+  * Added `Client#getTournamentSessionMetadata()`
+* Season Timestamps
+  * Added season end timestamp for CH2_S8
+  * Added season start timestamp for CH3_S1
+* Class exports
+  * Added exports for all classes and exceptions
+
+<hr>
+
 ## 2.2.0
 
 ### Additions
@@ -169,7 +212,7 @@
 
 ### Fixes
 * Parties
-  * Fixed "outdated version" bug that occured when a user tried to join the client's party
+  * Fixed "outdated version" bug that occurred when a user tried to join the client's party
 
 <hr>
 
@@ -213,7 +256,7 @@
   * Fixed XMPP reconnection error (Thanks to [Théo](https://discord.com/users/448882532830674948) for reporting it)
   * The XMPP client will now use a new resource string each time you restart the client
 * Presences
-  * Fixed issue that occured when sending a status (presence) to a single friend
+  * Fixed issue that occurred when sending a status (presence) to a single friend
 * Client Methods
   * Fixed `Client#getNews()` returning an empty array sometimes
   * The client will now ignore errors on shutdown
@@ -239,7 +282,7 @@
 
 ### Fixes
 * Parties
-  * Fixed error that occured when the client accepted another bot's invites
+  * Fixed error that occurred when the client accepted another bot's invites
   * Trying to join a party which the client previously got kicked from now throws an error
   * The client now handles user_has_party when trying to join a party
   * Fixed some bugs related to party invites
@@ -269,7 +312,7 @@
 
 ### Fixes
 * Parties
-  * Fixed error that occured when the client got kicked from its party
+  * Fixed error that occurred when the client got kicked from its party
   * Fixed accepting party invites & joining parties
 
 <hr>

@@ -347,19 +347,19 @@ export interface ClientEvents {
 
   /**
    * Emitted when an error occures while processing an incoming xmpp message
-   * @param error The error that occured
+   * @param error The error that occurred
    */
   'xmpp:message:error': (error: Error) => void;
 
   /**
    * Emitted when an error occures while processing an incoming xmpp presence
-   * @param error The error that occured
+   * @param error The error that occurred
    */
   'xmpp:presence:error': (error: Error) => void;
 
   /**
    * Emitted when an error occures while processing an incoming xmpp chat message (either a friend or party message)
-   * @param error The error that occured
+   * @param error The error that occurred
    */
   'xmpp:chat:error': (error: Error) => void;
 

@@ -24,6 +24,7 @@ export default Object.freeze({
   BR_STATS_V2: 'https://statsproxy-public-service-live.ol.epicgames.com/statsproxy/api/statsv2',
   BR_SERVER_STATUS: 'https://lightswitch-public-service-prod06.ol.epicgames.com/lightswitch/api/service/bulk/status?serviceId=Fortnite',
   BR_STORE: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/storefront/v2/catalog',
+  BR_STORE_KEYCHAIN: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/storefront/v2/keychain?numKeysDownloaded=0',
   BR_NEWS: 'https://fortnitecontent-website-prod07.ol.epicgames.com/content/api/pages/fortnite-game',
   BR_NEWS_MOTD: 'https://prm-dialogue-public-api-prod.edea.live.use1a.on.epicgames.com/api/v1/fortnite-br/surfaces/motd/target',
   BR_EVENT_FLAGS: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/calendar/v1/timeline',
@@ -37,6 +38,7 @@ export default Object.freeze({
   BR_STREAM: 'https://fortnite-vod.akamaized.net',
   BR_REPLAY: 'https://datastorage-public-service-live.ol.epicgames.com/api/v1/access/fnreplays/public',
   BR_REPLAY_METADATA: 'https://datastorage-public-service-live.ol.epicgames.com/api/v1/access/fnreplaysmetadata/public',
+  BR_GIFT_ELIGIBILITY: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/storefront/v2/gift/check_eligibility',
 
   // CREATIVE
   CREATIVE_ISLAND_LOOKUP: 'https://links-public-service-live.ol.epicgames.com/links/api/fn/mnemonic',
@@ -48,10 +50,12 @@ export default Object.freeze({
   ACCOUNT_ID: 'https://account-public-service-prod03.ol.epicgames.com/account/api/public/account',
   ACCOUNT_EMAIL: 'https://account-public-service-prod03.ol.epicgames.com/account/api/public/account/email',
   ACCOUNT_SEARCH: 'https://user-search-service-prod.ol.epicgames.com/api/v1/search',
+  ACCOUNT_AVATAR: 'https://avatar-service-prod.identity.live.on.epicgames.com/v1/avatar',
+  ACCOUNT_GLOBAL_PROFILE: 'https://global-profile-service.game-social.epicgames.com/profiles',
   MCP: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/game/v2/profile',
 
   // FRIENDS
-  FRIENDS: 'https://friends-public-service-prod.ol.epicgames.com/friends/api',
+  FRIENDS: 'https://friends-public-service-prod.ol.epicgames.com/friends/api/v1',
   FRIEND_ADD: 'https://friends-public-service-prod06.ol.epicgames.com/friends/api/public/friends',
   FRIEND_DELETE: 'https://friends-public-service-prod06.ol.epicgames.com/friends/api/v1',
   FRIEND_BLOCK: 'https://friends-public-service-prod06.ol.epicgames.com/friends/api/public/blocklist',

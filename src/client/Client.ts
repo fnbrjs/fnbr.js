@@ -13,7 +13,8 @@ import {
   ClientOptions, ClientConfig, ClientEvents, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
-  ReplayDownloadConfig, EventTokensResponse, TournamentSessionMetadata, BRAccountLevelData,
+  ReplayDownloadConfig, EventTokensResponse, TournamentSessionMetadata,
+  BRAccountLevelData, Language,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -54,6 +55,9 @@ import RadioStation from '../structures/RadioStation';
 import SentFriendMessage from '../structures/SentFriendMessage';
 import MatchNotFoundError from '../exceptions/MatchNotFoundError';
 import CreativeIslandNotFoundError from '../exceptions/CreativeIslandNotFoundError';
+import Avatar from '../structures/Avatar';
+import GlobalProfile from '../structures/GlobalProfile';
+import OfferNotFoundError from '../exceptions/OfferNotFoundError';
 import STWProfile from '../structures/STWProfile';
 import Stats from '../structures/Stats';
 import NewsMessage from '../structures/NewsMessage';
@@ -351,7 +355,7 @@ class Client extends EventEmitter {
    * Updates the client's caches
    */
   public async updateCaches() {
-    const friendsSummary = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.FRIENDS}/v1/${this.user?.id}/summary`, 'fortnite');
+    const friendsSummary = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.FRIENDS}/${this.user?.id}/summary`, 'fortnite');
 
     if (friendsSummary.error) throw friendsSummary.error;
 
@@ -562,11 +566,13 @@ class Client extends EventEmitter {
     const users = await Promise.all(proms);
 
     return users.map((u) => {
-      if (u.error && u.error.code !== 'errors.com.epicgames.account.account_not_found') throw u.error;
-
+      if (u?.error) {
+        if (u.error.code === 'errors.com.epicgames.account.account_not_found') return undefined;
+        throw u.error;
+      }
       if (Array.isArray(u.response)) return u.response.map((ur) => new User(this, ur));
       return new User(this, u.response);
-    }).flat(1);
+    }).filter((u) => !!u).flat(1) as User[];
   }
 
   /**
@@ -619,7 +625,7 @@ class Client extends EventEmitter {
    * @param status The status
    * @param onlineType The presence's online type (eg "away")
    * @param friend A specific friend you want to send this status to
-   * @throws {FriendNotFoundError} The friend wasn't found
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    */
   public setStatus(status?: string, onlineType?: PresenceOnlineType, friend?: string) {
     // eslint-disable-next-line no-undef-init
@@ -741,8 +747,7 @@ class Client extends EventEmitter {
   /**
    * Removes a friend from the client's friend list or declines / aborts a pending friendship request
    * @param friend The id or display name of the friend
-   * @throws {UserNotFoundError} The user wasn't found
-   * @throws {FriendNotFoundError} The user is not friends with the client
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {EpicgamesAPIError}
    */
   public async removeFriend(friend: string) {
@@ -754,6 +759,47 @@ class Client extends EventEmitter {
 
     const removeFriend = await this.http.sendEpicgamesRequest(true, 'DELETE', `${Endpoints.FRIEND_DELETE}/${this.user?.id}/friends/${resolvedFriend.id}`, 'fortnite');
     if (removeFriend.error) throw removeFriend.error;
+  }
+
+  /**
+   * Fetches the friends the client shares with a friend
+   * @param friend The id or display name of the friend
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
+   * @throws {EpicgamesAPIError}
+   */
+  public async getMutualFriends(friend: string): Promise<Friend[]> {
+    const resolvedFriend = this.friends.find((f) => f.displayName === friend || f.id === friend);
+    if (!resolvedFriend) throw new FriendNotFoundError(friend);
+
+    const mutualFriends = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.FRIENDS}/${this.user?.id}/friends/${resolvedFriend.id}/mutual`, 'fortnite');
+    if (mutualFriends.error) throw mutualFriends.error;
+
+    return mutualFriends.response.map((f: string) => this.friends.get(f)).filter((f: Friend | undefined) => !!f);
+  }
+
+  /**
+   * Checks whether a friend owns a specific offer
+   * @param friend The id or display name of the friend
+   * @param offerId The offer id
+   * @throws {OfferNotFoundError} The offer does not exist or is not in the current storefront catalog
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
+   * @throws {EpicgamesAPIError}
+   */
+  public async checkFriendOfferOwnership(friend: string, offerId: string) {
+    const resolvedFriend = this.friends.find((f) => f.displayName === friend || f.id === friend);
+    if (!resolvedFriend) throw new FriendNotFoundError(friend);
+
+    const giftData = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_GIFT_ELIGIBILITY}/recipient/${resolvedFriend.id}`
+      + `/offer/${encodeURIComponent(offerId)}`, 'fortnite');
+
+    if (giftData.error) {
+      if (giftData.error.code === 'errors.com.epicgames.modules.gamesubcatalog.catalog_out_of_date') throw new OfferNotFoundError(offerId);
+      if (giftData.error.code === 'errors.com.epicgames.modules.gamesubcatalog.purchase_not_allowed') return true;
+
+      throw giftData.error;
+    }
+
+    return false;
   }
 
   /**
@@ -788,7 +834,8 @@ class Client extends EventEmitter {
    * Sends a message to a friend
    * @param friend The id or display name of the friend
    * @param content The message that will be sent
-   * @throws {FriendNotFoundError|SendMessageError} The user is not friends with the client
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
+   * @throws {SendMessageError} The messant could not be sent
    */
   public async sendFriendMessage(friend: string, content: string) {
     const resolvedFriend = this.friends.find((f) => f.displayName === friend || f.id === friend);
@@ -812,7 +859,7 @@ class Client extends EventEmitter {
   /**
    * Sends a party invitation to a friend
    * @param friend The friend that will receive the invitation
-   * @throws {FriendNotFoundError} The user is not friends with the client
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {PartyAlreadyJoinedError} The user is already a member of this party
    * @throws {PartyMaxSizeReachedError} The party reached its max size
    * @throws {EpicgamesAPIError}
@@ -987,7 +1034,7 @@ class Client extends EventEmitter {
    * Sends a party join request to a friend.
    * When the friend confirms this, a party invite will be sent to the client
    * @param friend The friend
-   * @throws {FriendNotFoundError} The friend wasn't found
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {PartyNotFoundError} The friend is not in a party
    * @throws {EpicgamesAPIError}
    */
@@ -1071,7 +1118,7 @@ class Client extends EventEmitter {
    * @param language The language
    * @throws {EpicgamesAPIError}
    */
-  public async getStorefronts(language = Enums.Language.ENGLISH) {
+  public async getStorefronts(language: Language = 'en') {
     const store = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_STORE}?lang=${language}`, 'fortnite');
     if (store.error) throw store.error;
 
@@ -1145,6 +1192,63 @@ class Client extends EventEmitter {
       languages: languageStreams,
       data: streamMetaData,
     };
+  }
+
+  /**
+   * Fetches the avatar for one or more users
+   * @param user The id(s) or display name(s) of the user(s)
+   * @throws {EpicgamesAPIError}
+   */
+  public async getUserAvatar(user: string | string[]): Promise<Avatar[]> {
+    const users = await this.getProfile(Array.isArray(user) ? user : [user]);
+
+    const userChunks: User[][] = users.reduce((resArr: any[], u, i) => {
+      const chunkIndex = Math.floor(i / 100);
+      // eslint-disable-next-line no-param-reassign
+      if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
+      resArr[chunkIndex].push(u);
+      return resArr;
+    }, []);
+
+    const avatars = await Promise.all(userChunks
+      .map((uc) => this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.ACCOUNT_AVATAR}/fortnite/ids?accountIds=${uc.map((u) => u.id).join(',')}`, 'fortnite')));
+
+    return avatars.map((a) => {
+      if (a.error && a.error.code !== 'errors.com.epicgames.account.account_not_found') throw a.error;
+
+      return a.response.map((ar: any) => new Avatar(this, ar, users.find((u) => u.id === ar.accountId)!));
+    }).flat(1);
+  }
+
+  /**
+   * Fetches the global profile for one or more users
+   * @param user The id(s) or display name(s) of the user(s)
+   * @throws {EpicgamesAPIError}
+   */
+  public async getGlobalProfile(user: string | string[]): Promise<GlobalProfile[]> {
+    const users = await this.getProfile(Array.isArray(user) ? user : [user]);
+
+    const userChunks: User[][] = users.reduce((resArr: any[], u, i) => {
+      const chunkIndex = Math.floor(i / 100);
+      // eslint-disable-next-line no-param-reassign
+      if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
+      resArr[chunkIndex].push(u);
+      return resArr;
+    }, []);
+
+    const globalProfiles = await Promise.all(userChunks
+      .map((uc) => this.http.sendEpicgamesRequest(true, 'PUT', `${Endpoints.ACCOUNT_GLOBAL_PROFILE}`, 'fortnite', {
+        'Content-Type': 'application/json',
+      }, {
+        namespace: 'Fortnite',
+        accountIds: uc.map((u) => u.id),
+      })));
+
+    return globalProfiles.map((a) => {
+      if (a.error) throw a.error;
+
+      return a.response.profiles.map((ar: any) => new GlobalProfile(this, ar, users.find((u) => u.id === ar.accountId)!));
+    }).flat(1);
   }
 
   /* -------------------------------------------------------------------------- */
@@ -1271,7 +1375,7 @@ class Client extends EventEmitter {
    * @param language The language
    * @throws {EpicgamesAPIError}
    */
-  public async getBREventFlags(language = Enums.Language.ENGLISH) {
+  public async getBREventFlags(language: Language = 'en') {
     const eventFlags = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_EVENT_FLAGS}?lang=${language}`, 'fortnite');
     if (eventFlags.error) throw eventFlags.error;
 
@@ -1282,6 +1386,9 @@ class Client extends EventEmitter {
    * Fetches the battle royale account level for one or multiple users
    * @param user The id(s) and/or display name(s) of the user(s) to fetch the account level for
    * @param seasonNumber The season number (eg. 16, 17, 18)
+   * @throws {UserNotFoundError} The user wasn't found
+   * @throws {StatsPrivacyError} The user set their stats to private
+   * @throws {EpicgamesAPIError}
    */
   public async getBRAccountLevel(user: string | string[], seasonNumber: number): Promise<BRAccountLevelData[]> {
     const users = Array.isArray(user) ? user : [user];
@@ -1292,6 +1399,17 @@ class Client extends EventEmitter {
       user: al.user,
       level: al.levelData[`s${seasonNumber}`] || 0,
     }));
+  }
+
+  /**
+   * Fetches the storefront keychain
+   * @throws {EpicgamesAPIError}
+   */
+  public async getStorefrontKeychain(): Promise<string[]> {
+    const keychain = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.BR_STORE_KEYCHAIN, 'fortnite');
+    if (keychain.error) throw keychain.error;
+
+    return keychain.response;
   }
 
   /* -------------------------------------------------------------------------- */
@@ -1487,6 +1605,11 @@ class Client extends EventEmitter {
     };
   }
 
+  /**
+   * Downloads a file from the CDN (used for replays)
+   * @param url The URL of the file to download
+   * @param responseType The response type
+   */
   private async downloadReplayCDNFile(url: string, responseType: ResponseType) {
     const fileLocationInfo = await this.http.sendEpicgamesRequest(true, 'GET', url, 'fortnite');
     if (fileLocationInfo.error) return fileLocationInfo;

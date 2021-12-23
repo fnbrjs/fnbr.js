@@ -94,7 +94,6 @@ class Friend extends User {
 
   /**
    * Removes this friend
-   * @throws {UserNotFoundError} The user wasn't found
    * @throws {FriendNotFoundError} The user is not friends with the client
    * @throws {EpicgamesAPIError}
    */
@@ -129,6 +128,28 @@ class Friend extends User {
    */
   public async invite() {
     return this.client.invite(this.id);
+  }
+
+  /**
+   * Fetches the friends the client shares with this friend
+   * @param friend The id or display name of the friend
+   * @throws {FriendNotFoundError} The user is not friends with the client
+   * @throws {EpicgamesAPIError}
+   */
+  public async getMutualFriends() {
+    return this.client.getMutualFriends(this.id);
+  }
+
+  /**
+   * Checks whether this friend owns a specific offer
+   * @param friend The id or display name of the friend
+   * @param offerId The offer id
+   * @throws {OfferNotFoundError} The offer does not exist or is not in the current storefront catalog
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
+   * @throws {EpicgamesAPIError}
+   */
+  public async checkOfferOwnership(offerId: string) {
+    return this.client.checkFriendOfferOwnership(this.id, offerId);
   }
 }
 

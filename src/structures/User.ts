@@ -1,7 +1,9 @@
 import Client from '../client/Client';
 import Base from '../client/Base';
 import UserNotFoundError from '../exceptions/UserNotFoundError';
-import { ExternalAuths, UserData } from '../../resources/structs';
+import { BRAccountLevel, ExternalAuths, UserData } from '../../resources/structs';
+import Avatar from './Avatar';
+import GlobalProfile from './GlobalProfile';
 
 /**
  * Represents a user
@@ -87,6 +89,30 @@ class User extends Base {
    */
   public async getBRStats(startTime?: number, endTime?: number) {
     return this.client.getBRStats(this.id, startTime, endTime);
+  }
+
+  /**
+   * Fetches the battle royale account level for this user
+   * @param seasonNumber The season number (eg. 16, 17, 18)
+   */
+  public async getBRAccountLevel(seasonNumber: number): Promise<BRAccountLevel | undefined> {
+    return (await this.client.getBRAccountLevel(this.id, seasonNumber))[0];
+  }
+
+  /**
+   * Fetches the avatar for this user
+   * @throws {EpicgamesAPIError}
+   */
+  public async getAvatar(): Promise<Avatar | undefined> {
+    return (await this.client.getUserAvatar(this.id))[0];
+  }
+
+  /**
+   * Fetches the global profile for this user
+   * @throws {EpicgamesAPIError}
+   */
+  public async getGlobalProfile(): Promise<GlobalProfile | undefined> {
+    return (await this.client.getGlobalProfile(this.id))[0];
   }
 
   /**

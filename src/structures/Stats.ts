@@ -37,11 +37,18 @@ class Stats extends Base {
   public levelData: StatsLevelData;
 
   /**
+   * The raw stats data
+   */
+  public data: RawStatsData;
+
+  /**
    * @param client The main client
    * @param data The stats' data
    */
   constructor(client: Client, data: RawStatsData, user: User) {
     super(client);
+
+    this.data = data;
 
     this.user = user;
     this.startTime = new Date(data.startTime / 1000);

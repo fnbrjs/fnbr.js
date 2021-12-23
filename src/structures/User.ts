@@ -96,7 +96,7 @@ class User extends Base {
    * @param seasonNumber The season number (eg. 16, 17, 18)
    */
   public async getBRAccountLevel(seasonNumber: number): Promise<BRAccountLevel | undefined> {
-    return (await this.client.getBRAccountLevel(this.id, seasonNumber))[0];
+    return (await this.client.getBRAccountLevel(this.id, seasonNumber))[0].level;
   }
 
   /**

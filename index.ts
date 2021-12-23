@@ -46,7 +46,10 @@ export { default as CreatorCode } from './src/structures/CreatorCode';
 export { default as Friend } from './src/structures/Friend';
 export { default as FriendPresence } from './src/structures/FriendPresence';
 export { default as GlobalProfile } from './src/structures/GlobalProfile';
+export { default as Image } from './src/structures/Image';
 export { default as IncomingPendingFriend } from './src/structures/IncomingPendingFriend';
+export { default as NewsMessage } from './src/structures/NewsMessage';
+export { default as NewsMessageVideo } from './src/structures/NewsMessageVideo';
 export { default as OutgoingPendingFriend } from './src/structures/OutgoingPendingFriend';
 export { default as Party } from './src/structures/Party';
 export { default as PartyChat } from './src/structures/PartyChat';
@@ -66,6 +69,7 @@ export { default as SentPartyJoinRequest } from './src/structures/SentPartyJoinR
 export { default as Stats } from './src/structures/Stats';
 export { default as STWItem } from './src/structures/STWItem';
 export { default as STWLocker } from './src/structures/STWLocker';
+export { default as STWNewsMessage } from './src/structures/STWNewsMessage';
 export { default as STWProfile } from './src/structures/STWProfile';
 export { default as STWResource } from './src/structures/STWResource';
 export { default as STWStats } from './src/structures/STWStats';

@@ -57,6 +57,7 @@ import MatchNotFoundError from '../exceptions/MatchNotFoundError';
 import CreativeIslandNotFoundError from '../exceptions/CreativeIslandNotFoundError';
 import Avatar from '../structures/Avatar';
 import GlobalProfile from '../structures/GlobalProfile';
+import OfferNotFoundError from '../exceptions/OfferNotFoundError';
 
 /**
  * Represets the main client
@@ -619,7 +620,7 @@ class Client extends EventEmitter {
    * @param status The status
    * @param onlineType The presence's online type (eg "away")
    * @param friend A specific friend you want to send this status to
-   * @throws {FriendNotFoundError} The friend wasn't found
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    */
   public setStatus(status?: string, onlineType?: PresenceOnlineType, friend?: string) {
     // eslint-disable-next-line no-undef-init
@@ -772,6 +773,31 @@ class Client extends EventEmitter {
   }
 
   /**
+   * Checks whether a friend owns a specific offer
+   * @param friend The id or display name of the friend
+   * @param offerId The offer id
+   * @throws {OfferNotFoundError} The offer does not exist or is not in the current storefront catalog
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
+   * @throws {EpicgamesAPIError}
+   */
+  public async checkFriendOfferOwnership(friend: string, offerId: string) {
+    const resolvedFriend = this.friends.find((f) => f.displayName === friend || f.id === friend);
+    if (!resolvedFriend) throw new FriendNotFoundError(friend);
+
+    const giftData = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_GIFT_ELIGIBILITY}/recipient/${resolvedFriend.id}`
+      + `/offer/${encodeURIComponent(offerId)}`, 'fortnite');
+
+    if (giftData.error) {
+      if (giftData.error.code === 'errors.com.epicgames.modules.gamesubcatalog.catalog_out_of_date') throw new OfferNotFoundError(offerId);
+      if (giftData.error.code === 'errors.com.epicgames.modules.gamesubcatalog.purchase_not_allowed') return true;
+
+      throw giftData.error;
+    }
+
+    return false;
+  }
+
+  /**
    * Blocks a user
    * @param user The id or display name of the user
    * @throws {UserNotFoundError} The user wasn't found
@@ -803,7 +829,8 @@ class Client extends EventEmitter {
    * Sends a message to a friend
    * @param friend The id or display name of the friend
    * @param content The message that will be sent
-   * @throws {FriendNotFoundError|SendMessageError} The user is not friends with the client
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
+   * @throws {SendMessageError} The messant could not be sent
    */
   public async sendFriendMessage(friend: string, content: string) {
     const resolvedFriend = this.friends.find((f) => f.displayName === friend || f.id === friend);
@@ -827,7 +854,7 @@ class Client extends EventEmitter {
   /**
    * Sends a party invitation to a friend
    * @param friend The friend that will receive the invitation
-   * @throws {FriendNotFoundError} The user is not friends with the client
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {PartyAlreadyJoinedError} The user is already a member of this party
    * @throws {PartyMaxSizeReachedError} The party reached its max size
    * @throws {EpicgamesAPIError}
@@ -1002,7 +1029,7 @@ class Client extends EventEmitter {
    * Sends a party join request to a friend.
    * When the friend confirms this, a party invite will be sent to the client
    * @param friend The friend
-   * @throws {FriendNotFoundError} The friend wasn't found
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {PartyNotFoundError} The friend is not in a party
    * @throws {EpicgamesAPIError}
    */

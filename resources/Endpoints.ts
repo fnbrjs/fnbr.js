@@ -38,6 +38,7 @@ export default Object.freeze({
   BR_STREAM: 'https://fortnite-vod.akamaized.net',
   BR_REPLAY: 'https://datastorage-public-service-live.ol.epicgames.com/api/v1/access/fnreplays/public',
   BR_REPLAY_METADATA: 'https://datastorage-public-service-live.ol.epicgames.com/api/v1/access/fnreplaysmetadata/public',
+  BR_GIFT_ELIGIBILITY: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/storefront/v2/gift/check_eligibility',
 
   // CREATIVE
   CREATIVE_ISLAND_LOOKUP: 'https://links-public-service-live.ol.epicgames.com/links/api/fn/mnemonic',

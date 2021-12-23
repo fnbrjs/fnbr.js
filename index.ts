@@ -18,6 +18,7 @@ export { default as InviteeFriendshipSettingsError } from './src/exceptions/Invi
 export { default as InviteeFriendshipsLimitExceededError } from './src/exceptions/InviteeFriendshipsLimitExceededError';
 export { default as InviterFriendshipsLimitExceededError } from './src/exceptions/InviterFriendshipsLimitExceededError';
 export { default as MatchNotFoundError } from './src/exceptions/MatchNotFoundError';
+export { default as OfferNotFoundError } from './src/exceptions/OfferNotFoundError';
 export { default as PartyAlreadyJoinedError } from './src/exceptions/PartyAlreadyJoinedError';
 export { default as PartyInvitationExpiredError } from './src/exceptions/PartyInvitationExpiredError';
 export { default as PartyMaxSizeReachedError } from './src/exceptions/PartyMaxSizeReachedError';
@@ -29,6 +30,7 @@ export { default as StatsPrivacyError } from './src/exceptions/StatsPrivacyError
 export { default as UserNotFoundError } from './src/exceptions/UserNotFoundError';
 
 // structures
+export { default as Avatar } from './src/structures/Avatar';
 export { default as BaseFriendMessage } from './src/structures/BaseFriendMessage';
 export { default as BaseMessage } from './src/structures/BaseMessage';
 export { default as BasePartyInvitation } from './src/structures/BasePartyInvitation';
@@ -43,6 +45,7 @@ export { default as ClientUser } from './src/structures/ClientUser';
 export { default as CreatorCode } from './src/structures/CreatorCode';
 export { default as Friend } from './src/structures/Friend';
 export { default as FriendPresence } from './src/structures/FriendPresence';
+export { default as GlobalProfile } from './src/structures/GlobalProfile';
 export { default as IncomingPendingFriend } from './src/structures/IncomingPendingFriend';
 export { default as OutgoingPendingFriend } from './src/structures/OutgoingPendingFriend';
 export { default as Party } from './src/structures/Party';

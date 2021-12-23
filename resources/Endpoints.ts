@@ -38,6 +38,7 @@ export default Object.freeze({
   BR_STREAM: 'https://fortnite-vod.akamaized.net',
   BR_REPLAY: 'https://datastorage-public-service-live.ol.epicgames.com/api/v1/access/fnreplays/public',
   BR_REPLAY_METADATA: 'https://datastorage-public-service-live.ol.epicgames.com/api/v1/access/fnreplaysmetadata/public',
+  BR_GIFT_ELIGIBILITY: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/storefront/v2/gift/check_eligibility',
 
   // CREATIVE
   CREATIVE_ISLAND_LOOKUP: 'https://links-public-service-live.ol.epicgames.com/links/api/fn/mnemonic',
@@ -49,6 +50,8 @@ export default Object.freeze({
   ACCOUNT_ID: 'https://account-public-service-prod03.ol.epicgames.com/account/api/public/account',
   ACCOUNT_EMAIL: 'https://account-public-service-prod03.ol.epicgames.com/account/api/public/account/email',
   ACCOUNT_SEARCH: 'https://user-search-service-prod.ol.epicgames.com/api/v1/search',
+  ACCOUNT_AVATAR: 'https://avatar-service-prod.identity.live.on.epicgames.com/v1/avatar',
+  ACCOUNT_GLOBAL_PROFILE: 'https://global-profile-service.game-social.epicgames.com/profiles',
   MCP: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/game/v2/profile',
 
   // FRIENDS

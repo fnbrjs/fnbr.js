@@ -55,6 +55,9 @@ import RadioStation from '../structures/RadioStation';
 import SentFriendMessage from '../structures/SentFriendMessage';
 import MatchNotFoundError from '../exceptions/MatchNotFoundError';
 import CreativeIslandNotFoundError from '../exceptions/CreativeIslandNotFoundError';
+import Avatar from '../structures/Avatar';
+import GlobalProfile from '../structures/GlobalProfile';
+import OfferNotFoundError from '../exceptions/OfferNotFoundError';
 
 /**
  * Represets the main client
@@ -558,11 +561,13 @@ class Client extends EventEmitter {
     const users = await Promise.all(proms);
 
     return users.map((u) => {
-      if (u.error && u.error.code !== 'errors.com.epicgames.account.account_not_found') throw u.error;
-
+      if (u?.error) {
+        if (u.error.code === 'errors.com.epicgames.account.account_not_found') return undefined;
+        throw u.error;
+      }
       if (Array.isArray(u.response)) return u.response.map((ur) => new User(this, ur));
       return new User(this, u.response);
-    }).flat(1);
+    }).filter((u) => !!u).flat(1) as User[];
   }
 
   /**
@@ -615,7 +620,7 @@ class Client extends EventEmitter {
    * @param status The status
    * @param onlineType The presence's online type (eg "away")
    * @param friend A specific friend you want to send this status to
-   * @throws {FriendNotFoundError} The friend wasn't found
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    */
   public setStatus(status?: string, onlineType?: PresenceOnlineType, friend?: string) {
     // eslint-disable-next-line no-undef-init
@@ -768,6 +773,31 @@ class Client extends EventEmitter {
   }
 
   /**
+   * Checks whether a friend owns a specific offer
+   * @param friend The id or display name of the friend
+   * @param offerId The offer id
+   * @throws {OfferNotFoundError} The offer does not exist or is not in the current storefront catalog
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
+   * @throws {EpicgamesAPIError}
+   */
+  public async checkFriendOfferOwnership(friend: string, offerId: string) {
+    const resolvedFriend = this.friends.find((f) => f.displayName === friend || f.id === friend);
+    if (!resolvedFriend) throw new FriendNotFoundError(friend);
+
+    const giftData = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_GIFT_ELIGIBILITY}/recipient/${resolvedFriend.id}`
+      + `/offer/${encodeURIComponent(offerId)}`, 'fortnite');
+
+    if (giftData.error) {
+      if (giftData.error.code === 'errors.com.epicgames.modules.gamesubcatalog.catalog_out_of_date') throw new OfferNotFoundError(offerId);
+      if (giftData.error.code === 'errors.com.epicgames.modules.gamesubcatalog.purchase_not_allowed') return true;
+
+      throw giftData.error;
+    }
+
+    return false;
+  }
+
+  /**
    * Blocks a user
    * @param user The id or display name of the user
    * @throws {UserNotFoundError} The user wasn't found
@@ -799,7 +829,8 @@ class Client extends EventEmitter {
    * Sends a message to a friend
    * @param friend The id or display name of the friend
    * @param content The message that will be sent
-   * @throws {FriendNotFoundError|SendMessageError} The user is not friends with the client
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
+   * @throws {SendMessageError} The messant could not be sent
    */
   public async sendFriendMessage(friend: string, content: string) {
     const resolvedFriend = this.friends.find((f) => f.displayName === friend || f.id === friend);
@@ -823,7 +854,7 @@ class Client extends EventEmitter {
   /**
    * Sends a party invitation to a friend
    * @param friend The friend that will receive the invitation
-   * @throws {FriendNotFoundError} The user is not friends with the client
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {PartyAlreadyJoinedError} The user is already a member of this party
    * @throws {PartyMaxSizeReachedError} The party reached its max size
    * @throws {EpicgamesAPIError}
@@ -998,7 +1029,7 @@ class Client extends EventEmitter {
    * Sends a party join request to a friend.
    * When the friend confirms this, a party invite will be sent to the client
    * @param friend The friend
-   * @throws {FriendNotFoundError} The friend wasn't found
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {PartyNotFoundError} The friend is not in a party
    * @throws {EpicgamesAPIError}
    */
@@ -1158,6 +1189,63 @@ class Client extends EventEmitter {
     };
   }
 
+  /**
+   * Fetches the avatar for one or more users
+   * @param user The id(s) or display name(s) of the user(s)
+   * @throws {EpicgamesAPIError}
+   */
+  public async getUserAvatar(user: string | string[]): Promise<Avatar[]> {
+    const users = await this.getProfile(Array.isArray(user) ? user : [user]);
+
+    const userChunks: User[][] = users.reduce((resArr: any[], u, i) => {
+      const chunkIndex = Math.floor(i / 100);
+      // eslint-disable-next-line no-param-reassign
+      if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
+      resArr[chunkIndex].push(u);
+      return resArr;
+    }, []);
+
+    const avatars = await Promise.all(userChunks
+      .map((uc) => this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.ACCOUNT_AVATAR}/fortnite/ids?accountIds=${uc.map((u) => u.id).join(',')}`, 'fortnite')));
+
+    return avatars.map((a) => {
+      if (a.error && a.error.code !== 'errors.com.epicgames.account.account_not_found') throw a.error;
+
+      return a.response.map((ar: any) => new Avatar(this, ar, users.find((u) => u.id === ar.accountId)!));
+    }).flat(1);
+  }
+
+  /**
+   * Fetches the global profile for one or more users
+   * @param user The id(s) or display name(s) of the user(s)
+   * @throws {EpicgamesAPIError}
+   */
+  public async getGlobalProfile(user: string | string[]): Promise<GlobalProfile[]> {
+    const users = await this.getProfile(Array.isArray(user) ? user : [user]);
+
+    const userChunks: User[][] = users.reduce((resArr: any[], u, i) => {
+      const chunkIndex = Math.floor(i / 100);
+      // eslint-disable-next-line no-param-reassign
+      if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
+      resArr[chunkIndex].push(u);
+      return resArr;
+    }, []);
+
+    const globalProfiles = await Promise.all(userChunks
+      .map((uc) => this.http.sendEpicgamesRequest(true, 'PUT', `${Endpoints.ACCOUNT_GLOBAL_PROFILE}`, 'fortnite', {
+        'Content-Type': 'application/json',
+      }, {
+        namespace: 'Fortnite',
+        accountIds: uc.map((u) => u.id),
+      })));
+
+    return globalProfiles.map((a) => {
+      if (a.error) throw a.error;
+
+      return a.response.profiles.map((ar: any) => new GlobalProfile(this, ar, users.find((u) => u.id === ar.accountId)!));
+    }).flat(1);
+  }
+
   /* -------------------------------------------------------------------------- */
   /*                           FORTNITE BATTLE ROYALE                           */
   /* -------------------------------------------------------------------------- */
@@ -1204,7 +1292,7 @@ class Client extends EventEmitter {
     const ids = await this.resolveUserIds(user);
 
     const idChunks: { id: string, query: string }[][] = ids.reduce((resArr: any[], id, i) => {
-      const chunkIndex = Math.floor(i / 100);
+      const chunkIndex = Math.floor(i / 51);
       // eslint-disable-next-line no-param-reassign
       if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
       resArr[chunkIndex].push(id);

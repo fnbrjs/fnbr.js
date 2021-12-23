@@ -43,7 +43,7 @@ class PartyMemberMeta extends Meta {
    */
   get emote(): string | undefined {
     const emoteAsset: string = this.get('Default:FrontendEmote_j')?.FrontendEmote?.emoteItemDef;
-    if (emoteAsset === 'None') return undefined;
+    if (emoteAsset === 'None' || !emoteAsset) return undefined;
     return emoteAsset.match(/(?<=\w*\.)\w*/)?.shift();
   }
 

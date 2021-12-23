@@ -7,7 +7,7 @@ abstract class Base {
   /**
    * The main client
    */
-  public readonly client: Client;
+  public readonly client!: Client;
 
   /**
    * @param client The main client

@@ -17,12 +17,15 @@ import PartyMemberConfirmation from '../src/structures/PartyMemberConfirmation';
 import PartyMessage from '../src/structures/PartyMessage';
 import ReceivedPartyInvitation from '../src/structures/ReceivedPartyInvitation';
 import User from '../src/structures/User';
-import { EpicgamesOAuthData, TournamentWindowTemplateData } from './httpResponses';
+import { EpicgamesOAuthData, STWProfileLockerSlotData, TournamentWindowTemplateData } from './httpResponses';
 import ReceivedFriendMessage from '../src/structures/ReceivedFriendMessage';
+import STWSurvivor from '../src/structures/STWSurvivor';
 
 export interface Schema {
   [key: string]: any;
 }
+
+export type Language = 'ar' | 'en' | 'de' | 'es' | 'fr' | 'it' | 'ja' | 'pl' | 'ru' | 'tr';
 
 export type StringFunction = () => string;
 
@@ -121,6 +124,8 @@ export interface PartyConfig {
 }
 
 export type PresenceOnlineType = 'away' | 'chat' | 'dnd' | 'xa' | 'online';
+
+export type StatsPlaylistType = 'other' | 'solo' | 'duo' | 'squad' | 'ltm';
 
 export interface ClientConfig {
   /**
@@ -234,6 +239,18 @@ export interface ClientConfig {
    * By default, this is set to false because two clients attempting to log into one account could result in an endless loop
    */
   restartOnInvalidRefresh: boolean;
+
+  /**
+   * The default language for all http requests.
+   * Will be overwritten by a method's language parameter
+   */
+  language: Language;
+
+  /**
+   * A custom parser for resolving the stats playlist type (ie. "solo", "duo", "ltm").
+   * Can be useful if you want to use data in the game files to determine the stats playlist type
+   */
+  statsPlaylistTypeParser?: (playlistId: string) => StatsPlaylistType;
 }
 
 export interface ClientOptions extends Partial<ClientConfig> {}
@@ -453,14 +470,42 @@ export interface PresenceGameplayStats {
 
 export type PendingFriendDirection = 'INCOMING' | 'OUTGOING';
 
+export interface StatsPlaylistTypeData {
+  score: number;
+  scorePerMin: number;
+  scorePerMatch: number;
+  wins: number;
+  top3: number;
+  top5: number;
+  top6: number;
+  top10: number;
+  top12: number;
+  top25: number;
+  kills: number;
+  killsPerMin: number;
+  killsPerMatch: number;
+  deaths: number;
+  kd: number;
+  matches: number;
+  winRate: number;
+  minutesPlayed: number;
+  playersOutlived: number;
+  lastModified?: Date;
+}
+
+export interface StatsInputTypeData {
+  overall: StatsPlaylistTypeData;
+  solo: StatsPlaylistTypeData;
+  duo: StatsPlaylistTypeData;
+  squad: StatsPlaylistTypeData;
+  ltm: StatsPlaylistTypeData;
+}
+
 export interface StatsData {
-  startTime: number;
-  endTime: number;
-  stats: {
-    [key: string]: string | number;
-  };
-  accountId: string;
-  query: string;
+  all: StatsInputTypeData;
+  keyboardmouse: StatsInputTypeData;
+  gamepad: StatsInputTypeData;
+  touch: StatsInputTypeData;
 }
 
 export interface NewsMOTD {
@@ -758,7 +803,7 @@ export interface BattlePassMeta {
 }
 
 export interface MatchMeta {
-  location?: 'PreLobby' | 'InGame';
+  location?: 'PreLobby' | 'InGame' | 'ReturningToFrontEnd';
   hasPreloadedAthena?: boolean;
   isSpectatable?: boolean;
   playerCount?: number;
@@ -932,8 +977,13 @@ export interface EventTokensResponse {
 }
 
 export interface BRAccountLevel {
-  query: string;
-  level?: number;
+  level: number;
+  progress: number;
+}
+
+export interface BRAccountLevelData {
+  user: User;
+  level?: BRAccountLevel;
 }
 
 export interface TournamentSessionMetadata {
@@ -951,4 +1001,162 @@ export interface TournamentSessionMetadata {
   isLive: boolean;
 }
 
-export type Language = 'ar' | 'en' | 'de' | 'es' | 'fr' | 'it' | 'ja' | 'pl' | 'ru' | 'tr';
+export interface STWFORTStats {
+  fortitude: number;
+  resistance: number;
+  offense: number;
+  tech: number;
+}
+
+export type STWSurvivorType = 'special' | 'manager' | 'basic';
+
+export type STWSurvivorRarity = 'c' | 'uc' | 'r' | 'vr' | 'sr' | 'ur';
+
+export type STWSurvivorGender = 'male' | 'female';
+
+export interface STWSurvivorSquads {
+  trainingteam: STWSurvivor[];
+  fireteamalpha: STWSurvivor[];
+  closeassaultsquad: STWSurvivor[];
+  thethinktank: STWSurvivor[];
+  emtsquad: STWSurvivor[];
+  corpsofengineering: STWSurvivor[];
+  scoutingparty: STWSurvivor[];
+  gadgeteers: STWSurvivor[];
+}
+
+export type STWSurvivorSquadType = 'medicine' | 'arms' | 'synthesis' | 'scavenging';
+
+export interface STWSurvivorSquadData {
+  id: string;
+  name: keyof STWSurvivorSquads;
+  type: STWSurvivorSquadType;
+  slotIdx: number;
+}
+
+export interface STWStatsNodeCostsData {
+  [key: string]: {
+    [key: string]: number;
+  };
+}
+
+export interface STWStatsSTWLoadoutData {
+  selectedHeroLoadout: string;
+  modeLoadouts: string[];
+  activeLoadoutIndex: number;
+}
+
+export interface STWStatsBRLoadoutData {
+  loadouts: string[];
+  lastAppliedLoadout: string;
+  useRandomLoadout: boolean;
+}
+
+export interface STWStatsMissionAlertRedemtionData {
+  missionAlertId: string;
+  redemptionDateUtc: Date;
+  evictClaimDataAfterUtc: Date;
+}
+
+export interface STWStatsQuestData {
+  dailyLoginInterval: Date;
+  dailyQuestRerolls?: number;
+  poolStats: {
+    stats: {
+      poolName: string;
+      nextRefresh: Date;
+      rerollsRemaining: number;
+      questHistory: string[];
+    }[];
+    dailyLoginInterval: Date;
+    lockouts: {
+      lockoutName: string;
+    }[];
+  };
+}
+
+export interface STWStatsGameplayStatData {
+  statName: string;
+  statValue: number;
+}
+
+export interface STWStatsClientSettingsData {
+  pinnedQuestInstances?: any[];
+}
+
+export interface STWStatsResearchLevelsData {
+  technology: number;
+  offense: number;
+  fortitude: number;
+  resistance: number;
+}
+
+export interface STWStatsEventCurrencyData {
+  templateId: string;
+  cf: number;
+}
+
+export interface STWStatsXPData {
+  total: number;
+  overflow: number;
+  lost: number;
+}
+
+export interface STWStatsDailyRewardsData {
+  nextDefaultReward: number;
+  totalDaysLoggedIn: number;
+  lastClaimDate: Date;
+  additionalSchedules?: {
+    [key: string]: {
+      rewardsClaimed: number;
+      claimedToday: boolean;
+    };
+  };
+}
+
+export interface STWLockerSlotsData {
+  Pickaxe: STWProfileLockerSlotData;
+  MusicPack?: STWProfileLockerSlotData;
+  Character?: STWProfileLockerSlotData;
+  ItemWrap: STWProfileLockerSlotData;
+  Backpack: STWProfileLockerSlotData;
+  Dance: STWProfileLockerSlotData;
+  LoadingScreen: STWProfileLockerSlotData;
+}
+
+export interface STWLockerBannerData {
+  icon: string;
+  color: string;
+}
+
+export interface StatsLevelData {
+  [key: string]: {
+    level: number;
+    progress: number;
+  };
+}
+
+export interface NewsMessageVideoData {
+  videoAutoplay: boolean;
+  videoFullscreen: boolean;
+  videoLoop: boolean;
+  videoMute: boolean;
+  videoStreamingEnabled: boolean;
+  videoVideoString: string;
+  videoUID: string;
+}
+
+export interface NewsMessagePlaylist {
+  id: string;
+}
+
+export interface NewsMessageOffer {
+  id: string;
+  action: string;
+}
+
+export interface ImageData {
+  url: string;
+  width?: number;
+  height?: number;
+}

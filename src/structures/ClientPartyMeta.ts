@@ -9,7 +9,7 @@ class ClientPartyMeta extends PartyMeta {
   /**
    * The party
    */
-  public party: ClientParty;
+  public party!: ClientParty;
 
   /**
    * @param party The party

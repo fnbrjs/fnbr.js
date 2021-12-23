@@ -172,6 +172,17 @@ export const SeasonEnd = Object.freeze({
   CH2_S8: 1638662400,
 });
 
+export const STWLeadSynergy = Object.freeze({
+  trainingteam: 'IsTrainer',
+  fireteamalpha: 'IsSoldier',
+  closeassaultsquad: 'IsMartialArtist',
+  thethinktank: 'IsInventor',
+  emtsquad: 'IsDoctor',
+  corpsofengineering: 'IsEngineer',
+  scoutingparty: 'IsExplorer',
+  gadgeteers: 'IsGadgeteer',
+});
+
 export default Object.freeze({
   PartyPrivacy,
   Platform,
@@ -181,4 +192,5 @@ export default Object.freeze({
   DefaultSkin,
   SeasonStart,
   SeasonEnd,
+  STWLeadSynergy,
 });

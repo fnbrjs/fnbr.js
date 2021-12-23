@@ -30,7 +30,7 @@ class Auth extends Base {
    * A timeout that handles auth refreshing
    */
   // eslint-disable-next-line no-undef
-  private authRefreshTimeout: NodeJS.Timeout;
+  private authRefreshTimeout?: NodeJS.Timeout;
 
   /**
    * @param client The main client
@@ -80,7 +80,7 @@ class Auth extends Base {
       account_id: auth.response.account_id,
     });
 
-    clearTimeout(this.authRefreshTimeout);
+    if (this.authRefreshTimeout) clearTimeout(this.authRefreshTimeout);
     this.authRefreshTimeout = this.client.setTimeout(async () => {
       await this.reauthenticate();
     }, (auth.response.expires_in * 1000) - 10 * 60 * 1000);
@@ -199,7 +199,7 @@ class Auth extends Base {
       });
     }
 
-    clearTimeout(this.authRefreshTimeout);
+    if (this.authRefreshTimeout) clearTimeout(this.authRefreshTimeout);
     this.authRefreshTimeout = this.client.setTimeout(async () => {
       await this.reauthenticate();
     }, (authResponses.find((res) => res.authType === 'fortnite')!.auth.response!.expires_in * 1000) - 10 * 60 * 1000);

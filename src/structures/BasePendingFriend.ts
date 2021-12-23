@@ -9,7 +9,7 @@ abstract class BasePendingFriend extends User {
   /**
    * The direction of the friend request
    */
-  public direction: PendingFriendDirection;
+  public direction!: PendingFriendDirection;
 
   /**
    * The Date when the friend request was created

@@ -11,7 +11,7 @@ class PartyMessage extends BaseMessage {
   /**
    * The message's author
    */
-  public author: PartyMember;
+  public author!: PartyMember;
 
   /**
    * The message's party

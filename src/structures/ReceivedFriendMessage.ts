@@ -8,7 +8,7 @@ class ReceivedFriendMessage extends BaseFriendMessage {
   /**
    * The message's author
    */
-  public author: Friend;
+  public author!: Friend;
 
   /**
    * Replies to this whisper message

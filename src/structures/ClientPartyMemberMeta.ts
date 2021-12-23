@@ -10,7 +10,7 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
   /**
    * The party member
    */
-  public member: PartyMember;
+  public member!: PartyMember;
 
   /**
    * @param member The party member
@@ -20,40 +20,8 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
     const defaultCharacter = getRandomDefaultCharacter();
 
     super(member, {
-      'Default:CrossplayPreference_s': 'OptedIn',
-      'Default:Location_s': 'PreLobby',
-      'Default:CampaignHero_j': JSON.stringify({
-        CampaignHero: {
-          heroItemInstanceId: '',
-          heroType: `FortHeroType'/Game/Athena/Heroes/${defaultCharacter}.${defaultCharacter}'`,
-        },
-      }),
-      'Default:CampaignInfo_j': JSON.stringify({
-        CampaignInfo: {
-          matchmakingLevel: 0,
-          zoneInstanceId: '',
-          homeBaseVersion: 1,
-        },
-      }),
-      'Default:FrontendEmote_j': JSON.stringify({
-        FrontendEmote: {
-          emoteItemDef: 'None',
-          emoteEKey: '',
-          emoteSection: -1,
-        },
-      }),
-      'Default:NumAthenaPlayersLeft_U': '0',
-      'Default:SpectateAPartyMemberAvailable_b': false,
-      'Default:UtcTimeStartedMatchAthena_s': '0001-01-01T00:00:00.000Z',
-      'Default:LobbyState_j': JSON.stringify({
-        LobbyState: {
-          inGameReadyCheckStatus: 'None',
-          gameReadiness: 'NotReady',
-          readyInputType: 'Count',
-          currentInputType: 'MouseAndKeyboard',
-          hiddenMatchmakingDelayMax: 0,
-          hasPreloadedAthena: true,
-        },
+      'Default:ArbitraryCustomDataStore_j': JSON.stringify({
+        ArbitraryCustomDataStore: [],
       }),
       'Default:AssistedChallengeInfo_j': JSON.stringify({
         AssistedChallengeInfo: {
@@ -61,24 +29,17 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
           objectivesCompleted: 0,
         },
       }),
-      'Default:FeatDefinition_s': 'None',
-      'Default:MemberSquadAssignmentRequest_j': JSON.stringify({
-        MemberSquadAssignmentRequest: {
-          startingAbsoluteIdx: -1,
-          targetAbsoluteIdx: -1,
-          swapTargetMemberId: 'INVALID',
-          version: 0,
+      'Default:AthenaBannerInfo_j': JSON.stringify({
+        AthenaBannerInfo: {
+          bannerIconId: 'standardbanner15',
+          bannerColorId: 'defaultcolor15',
+          seasonLevel: 1,
         },
       }),
-      'Default:VoiceChatStatus_s': 'Enabled',
-      'Default:SidekickStatus_s': 'None',
-      'Default:FrontEndMapMarker_j': JSON.stringify({
-        FrontEndMapMarker: {
-          markerLocation: {
-            x: 0,
-            y: 0,
-          },
-          bIsSet: false,
+      'Default:AthenaCosmeticLoadoutVariants_j': JSON.stringify({
+        AthenaCosmeticLoadoutVariants: {
+          vL: {},
+          fT: false,
         },
       }),
       'Default:AthenaCosmeticLoadout_j': JSON.stringify({
@@ -92,21 +53,13 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
           contrailDef: 'None',
           contrailEKey: '',
           scratchpad: [],
-        },
-      }),
-      'Default:AthenaCosmeticLoadoutVariants_j': JSON.stringify({
-        AthenaCosmeticLoadoutVariants: {
-          vL: {},
-        },
-      }),
-      'Default:ArbitraryCustomDataStore_j': JSON.stringify({
-        ArbitraryCustomDataStore: [],
-      }),
-      'Default:AthenaBannerInfo_j': JSON.stringify({
-        AthenaBannerInfo: {
-          bannerIconId: 'standardbanner15',
-          bannerColorId: 'defaultcolor15',
-          seasonLevel: 1,
+          cosmeticStats: [{
+            statName: 'TotalVictoryCrowns',
+            statValue: 0,
+          }, {
+            statName: 'TotalRoyalRoyales',
+            statValue: 0,
+          }],
         },
       }),
       'Default:BattlePassInfo_j': JSON.stringify({
@@ -117,6 +70,59 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
           friendBoostXp: 0,
         },
       }),
+      'Default:CampaignHero_j': JSON.stringify({
+        CampaignHero: {
+          heroItemInstanceId: '',
+          heroType: `/Game/Athena/Heroes/${defaultCharacter.replace('CID', 'HID')}.${defaultCharacter.replace('CID', 'HID')}`,
+        },
+      }),
+      'Default:CampaignInfo_j': JSON.stringify({
+        CampaignInfo: {
+          matchmakingLevel: 0,
+          zoneInstanceId: '',
+          homeBaseVersion: 1,
+        },
+      }),
+      'Default:CrossplayPreference_s': 'OptedIn',
+      'Default:FeatDefinition_s': 'None',
+      'Default:FrontEndMapMarker_j': JSON.stringify({
+        FrontEndMapMarker: {
+          markerLocation: {
+            x: 0,
+            y: 0,
+          },
+          bIsSet: false,
+        },
+      }),
+      'Default:FrontendEmote_j': JSON.stringify({
+        FrontendEmote: {
+          emoteItemDef: 'None',
+          emoteEKey: '',
+          emoteSection: -1,
+        },
+      }),
+      'Default:HasCompletedSTWTutorial_b': false,
+      'Default:HasPurchasedSTW_b': false,
+      'Default:LobbyState_j': JSON.stringify({
+        LobbyState: {
+          inGameReadyCheckStatus: 'None',
+          gameReadiness: 'NotReady',
+          readyInputType: 'Count',
+          currentInputType: 'MouseAndKeyboard',
+          hiddenMatchmakingDelayMax: 0,
+          hasPreloadedAthena: false,
+        },
+      }),
+      'Default:Location_s': 'PreLobby',
+      'Default:MemberSquadAssignmentRequest_j': JSON.stringify({
+        MemberSquadAssignmentRequest: {
+          startingAbsoluteIdx: -1,
+          targetAbsoluteIdx: -1,
+          swapTargetMemberId: 'INVALID',
+          version: 0,
+        },
+      }),
+      'Default:NumAthenaPlayersLeft_U': '0',
       'Default:PlatformData_j': JSON.stringify({
         PlatformData: {
           platform: {
@@ -133,6 +139,23 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
           sessionId: '',
         },
       }),
+      'Default:PlatformSupportsSTW_b': true,
+      'Default:SharedQuests_j': JSON.stringify({
+        SharedQuests: {
+          bcktMap: {
+            BR: {
+              qsts: [],
+            },
+          },
+          pndQst: '',
+        },
+      }),
+      'Default:SidekickStatus_s': 'None',
+      'Default:SpectateAPartyMemberAvailable_b': false,
+      'Default:SubGame_s': 'Athena',
+      'Default:UtcTimeStartedMatchAthena_s': '0001-01-01T00:00:00.000Z',
+      'Default:VoiceChatStatus_s': 'PartyVoice',
+      'internal:voicechatmuted_b': false,
     });
 
     if (schema) this.update(schema, true);

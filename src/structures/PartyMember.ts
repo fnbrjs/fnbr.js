@@ -31,6 +31,11 @@ class PartyMember extends User {
    * The member's revision
    */
   public revision: number;
+
+  /**
+   * @param party The party this member belongs to
+   * @param data The member's data
+   */
   constructor(party: import('./Party').default | import('./ClientParty').default, data: PartyMemberData) {
     super(party.client, {
       ...data,

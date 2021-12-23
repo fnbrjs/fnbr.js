@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.4.0
+
+### Additions
+* Global Profile
+  * Added `Client#getGlobalProfile()` and `User#getGlobalProfile()`
+* Avatars
+  * Added `Client#getUserAvatar()` and `User#getAvatar()`
+* Friend Offer Ownership
+  * Added `Client#checkFriendOfferOwnership()` and `Friend#checkOfferOwnership()`
+
+### Changes
+* Party Member Properties
+  * The client will now wait for a member update message before `Client#party:member:joined` is being emitted
+* Battle Royale Account Level
+  * **(Breaking)** `User#getBRAccountLevel()` will now return the account level data directly, instead of an array with one entry
+
+### Fixes
+* Multiple Display Name Lookups
+  * `Client#getProfile()` will no longer throw an error if one of the user display name lookups fail
+* Party Member Emote
+  * Trying to access `PartyMember#emote` will no longer throw an error if an emote is not set
+
+<hr>
+
 ## 2.3.0
 
 ### Additions

@@ -18,6 +18,7 @@ export { default as InviteeFriendshipSettingsError } from './src/exceptions/Invi
 export { default as InviteeFriendshipsLimitExceededError } from './src/exceptions/InviteeFriendshipsLimitExceededError';
 export { default as InviterFriendshipsLimitExceededError } from './src/exceptions/InviterFriendshipsLimitExceededError';
 export { default as MatchNotFoundError } from './src/exceptions/MatchNotFoundError';
+export { default as OfferNotFoundError } from './src/exceptions/OfferNotFoundError';
 export { default as PartyAlreadyJoinedError } from './src/exceptions/PartyAlreadyJoinedError';
 export { default as PartyInvitationExpiredError } from './src/exceptions/PartyInvitationExpiredError';
 export { default as PartyMaxSizeReachedError } from './src/exceptions/PartyMaxSizeReachedError';

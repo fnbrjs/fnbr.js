@@ -89,6 +89,7 @@ export interface AuthOptions {
   launcherRefreshToken?: AuthStringResolveable;
   checkEULA?: boolean;
   killOtherTokens?: boolean;
+  createLauncherSession?: boolean;
   authClient?: AuthClient;
 }
 

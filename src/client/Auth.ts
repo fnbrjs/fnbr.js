@@ -63,7 +63,6 @@ class Auth extends Base {
       auth = await this.refreshTokenAuthenticate(authCreds.refreshToken, authClient);
     } else if (authCreds.launcherRefreshToken) {
       auth = await this.launcherRefreshTokenAuthenticate(authCreds.launcherRefreshToken, authClient);
-      this.auths.delete('launcher');
     } else if (authCreds.authorizationCode) {
       auth = await this.authorizationCodeAuthenticate(authCreds.authorizationCode, authClient);
     } else {
@@ -95,6 +94,26 @@ class Auth extends Base {
         accountId: launcherAuth.response.account_id,
         displayName: launcherAuth.response.displayName,
         clientId: launcherAuth.response.client_id,
+      });
+
+      this.auths.set('launcher', {
+        token: launcherAuth.response.access_token,
+        refresh_token: launcherAuth.response.refresh_token,
+        expires_at: launcherAuth.response.expires_at,
+        client: 'launcherAppClient2',
+        account_id: launcherAuth.response.account_id,
+      });
+    }
+
+    if (authCreds.createLauncherSession && !this.auths.has('launcher')) {
+      const launcherAuth = await this.exchangeAuth('fortnite', 'launcherAppClient2');
+
+      this.auths.set('launcher', {
+        token: launcherAuth.response.access_token,
+        refresh_token: launcherAuth.response.refresh_token,
+        expires_at: launcherAuth.response.expires_at,
+        client: 'launcherAppClient2',
+        account_id: launcherAuth.response.account_id,
       });
     }
 
@@ -197,6 +216,17 @@ class Auth extends Base {
         client: authResponse.authData.client,
         account_id: authResponse.auth.response!.account_id,
       });
+
+      if (authResponse.authType === 'launcher' && this.client.listenerCount('refreshtoken:created') > 0) {
+        this.client.emit('refreshtoken:created', {
+          token: authResponse.auth.response!.refresh_token,
+          expiresIn: authResponse.auth.response!.refresh_expires,
+          expiresAt: authResponse.auth.response!.refresh_expires_at,
+          accountId: authResponse.auth.response!.account_id,
+          displayName: authResponse.auth.response!.displayName,
+          clientId: authResponse.auth.response!.client_id,
+        });
+      }
     }
 
     if (this.authRefreshTimeout) clearTimeout(this.authRefreshTimeout);

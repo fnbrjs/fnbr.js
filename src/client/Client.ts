@@ -185,6 +185,7 @@ class Client extends EventEmitter {
         authorizationCode: async () => consoleQuestion('Please enter an authorization code: '),
         checkEULA: true,
         killOtherTokens: true,
+        createLauncherSession: false,
         authClient: 'fortniteIOSGameClient',
         ...config.auth,
       },

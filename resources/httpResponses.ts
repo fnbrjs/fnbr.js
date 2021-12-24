@@ -527,3 +527,206 @@ export interface RawStatsData {
     [key: string]: number;
   };
 }
+
+export interface STWTheaterLocaleData {
+  de: string;
+  ru: string;
+  ko: string;
+  'zh-hant': string;
+  'pt-br': string;
+  en: string;
+  it: string;
+  fr: string;
+  'zh-cn': string;
+  es: string;
+  ar: string;
+  ja: string;
+  pl: string;
+  'es-419': string;
+  tr: string;
+}
+
+export interface STWTheaterDataRequirements {
+  commanderLevel: number;
+  personalPowerRating: number;
+  maxPersonalPowerRating: number;
+  partyPowerRating: number;
+  maxPartyPowerRating: number;
+  activeQuestDefinitions: string[];
+  questDefinition: string;
+  objectiveStatHandle: {
+    dataTable: string;
+    rowName: string;
+  };
+  uncompletedQuestDefinition: string;
+  itemDefinition: string;
+  eventFlag: string;
+}
+
+export interface STWTheaterColorData {
+  specifiedColor: {
+    r: number;
+    g: number;
+    b: number;
+    a: number;
+  };
+  colorUseRule: string;
+}
+
+export interface STWTheaterBrushData {
+  imageSize: {
+    x: number;
+    y: number;
+  };
+  margin: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  };
+  tintColor: STWTheaterColorData;
+  outlineSettings: {
+    cornerRadii: {
+      x: number;
+      y: number;
+      z: number;
+      w: number;
+    };
+    color: STWTheaterColorData;
+    width: number;
+    roundingType: string;
+  };
+  resourceObject: string;
+  resourceName: string;
+  uVRegion: {
+    min: {
+      x: number;
+      y: number;
+    };
+    max: {
+      x: number;
+      y: number;
+    };
+    bIsValid: number;
+  };
+  drawAs: string;
+  tiling: string;
+  mirroring: string;
+  imageType: string;
+  bIsDynamicallyLoaded: boolean;
+}
+
+export interface STWTheaterData {
+  displayName: STWTheaterLocaleData;
+  uniqueId: string;
+  theaterSlot: number;
+  bIsTestTheater: boolean;
+  bHideLikeTestTheater: boolean;
+  requiredEventFlag: string;
+  missionRewardNamedWeightsRowName: string;
+  description: STWTheaterLocaleData;
+  runtimeInfo: {
+    theaterType: string;
+    theaterTags: {
+      gameplayTags: {
+        tagName: string;
+      }[];
+    };
+    eventDependentTheaterTags: {
+      requiredEventFlag: string;
+      relatedTag: {
+        tagName: string;
+      };
+    }[];
+    theaterVisibilityRequirements: STWTheaterDataRequirements;
+    requirements: STWTheaterDataRequirements;
+    requiredSubGameForVisibility: string;
+    bOnlyMatchLinkedQuestsToTiles: boolean;
+    worldMapPinClass: string;
+    theaterImage: string;
+    theaterImages: {
+      brush_XXS: STWTheaterBrushData;
+      brush_XS: STWTheaterBrushData;
+      brush_S: STWTheaterBrushData;
+      brush_M: STWTheaterBrushData;
+      brush_L: STWTheaterBrushData;
+      brush_XL: STWTheaterBrushData;
+    };
+    theaterColorInfo: {
+      bUseDifficultyToDetermineColor: boolean;
+      color: STWTheaterColorData;
+    };
+    socket: string;
+    missionAlertRequirements: STWTheaterDataRequirements;
+    missionAlertCategoryRequirements: {
+      missionAlertCategoryName: string;
+      bRespectTileRequirements: boolean;
+      bAllowQuickplay: boolean;
+    }[];
+    gameplayModifierList: any[];
+  };
+  tiles: {
+    tileType: string;
+    zoneTheme: string;
+    requirements: STWTheaterDataRequirements;
+    linkedQuests: {
+      questDefinition: string;
+      objectiveStatHandle: {
+        dataTable: string;
+        rowName: string;
+      };
+    }[];
+    xCoordinate: number;
+    yCoordinate: number;
+    missionWeightOverrides: {
+      weight: number;
+      missionGenerator: string;
+    }[];
+    difficultyWeightOverrides: {
+      weight: number;
+      difficultyInfo: {
+        dataTable: string;
+        rowName: string;
+      };
+    }[];
+    canBeMissionAlert: boolean;
+    tileTags: {
+      gameplayTags: {
+        tagName: string;
+      }[];
+    };
+    bDisallowQuickplay: boolean;
+  }[];
+  regions: {
+    displayName: STWTheaterLocaleData;
+    uniqueId: string;
+    regionTags: {
+      gameplayTags: {
+        tagName: string;
+      }[];
+    };
+    tileIndices: number[];
+    regionThemeIcon: string;
+    missionData: {
+      missionWeights: {
+        weight: number;
+        missionGenerator: string;
+      }[];
+      difficultyWeights: {
+        weight: number;
+        difficultyInfo: {
+          dataTable: string;
+          rowName: string;
+        };
+      }[];
+      numMissionsAvailable: number;
+      numMissionsToChange: number;
+      missionChangeFrequency: number;
+    };
+    requirements: STWTheaterDataRequirements;
+    missionAlertRequirements: {
+      categoryName: string;
+      requirements: STWTheaterDataRequirements;
+    }[];
+  }[];
+}

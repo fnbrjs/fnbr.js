@@ -13,7 +13,7 @@ import {
   ClientOptions, ClientConfig, ClientEvents, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
-  ReplayDownloadConfig, TournamentSessionMetadata,
+  ReplayDownloadConfig, TournamentSessionMetadata, STWWorldInfo,
   BRAccountLevelData, Language,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
@@ -25,7 +25,7 @@ import {
   BlurlStreamData, CreativeIslandData,
   BlurlStreamMasterPlaylistData, CreativeDiscoveryPanel,
   EpicgamesAPIResponse, TournamentData, TournamentDisplayData,
-  TournamentWindowResults, TournamentWindowTemplateData,
+  TournamentWindowResults, TournamentWindowTemplateData, STWTheaterLocaleData,
 } from '../../resources/httpResponses';
 import UserNotFoundError from '../exceptions/UserNotFoundError';
 import StatsPrivacyError from '../exceptions/StatsPrivacyError';
@@ -63,6 +63,7 @@ import Stats from '../structures/Stats';
 import NewsMessage from '../structures/NewsMessage';
 import STWNewsMessage from '../structures/STWNewsMessage';
 import EventTokens from '../structures/EventTokens';
+import STWTheater from '../structures/STWTheater';
 
 /**
  * Represets the main client
@@ -1262,7 +1263,7 @@ class Client extends EventEmitter {
   public async getBRStats(user: string[], startTime?: number, endTime?: number, stats?: string[]): Promise<Stats[]>;
 
   /**
-   * Fetches battle royale v2 stats for one or multiple players
+   * Fetches Battle Royale v2 stats for one or multiple players
    * @param user The id(s) or display name(s) of the user(s)
    * @param startTime The timestamp to start fetching stats from, can be null/undefined for lifetime
    * @param endTime The timestamp to stop fetching stats from, can be undefined for lifetime
@@ -1316,7 +1317,7 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Fetches the current battle royale news
+   * Fetches the current Battle Royale news
    * @param language The language of the news
    * @param customPayload Extra data to send in the request body for a personalized news response (battle pass level, country, etc)
    * @throws {EpicgamesAPIError}
@@ -1359,7 +1360,7 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Fetches the current Fortnite battle royale radio stations
+   * Fetches the current Fortnite Battle Royale radio stations
    * @throws {EpicgamesAPIError}
    */
   public async getRadioStations(): Promise<RadioStation[]> {
@@ -1372,7 +1373,7 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Fetches the current battle royale event flags
+   * Fetches the current Battle Royale event flags
    * @param language The language
    * @throws {EpicgamesAPIError}
    */
@@ -1384,7 +1385,7 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Fetches the battle royale account level for one or multiple users
+   * Fetches the Battle Royale account level for one or multiple users
    * @param user The id(s) and/or display name(s) of the user(s) to fetch the account level for
    * @param seasonNumber The season number (eg. 16, 17, 18)
    * @throws {UserNotFoundError} The user wasn't found
@@ -1446,7 +1447,7 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Fetches the current and past battle royale tournaments
+   * Fetches the current and past Battle Royale tournaments
    * @param region The region
    * @param platform The platform
    * @throws {EpicgamesAPIError}
@@ -1661,11 +1662,11 @@ class Client extends EventEmitter {
   }
 
   /* -------------------------------------------------------------------------- */
-  /*                           FORTNITE SAVE THE WORLD                          */
+  /*                           FORTNITE Save The World                          */
   /* -------------------------------------------------------------------------- */
 
   /**
-   * Fetches the save the world profile for a players
+   * Fetches the Save The World profile for a players
    * @param user The id or display name of the user
    * @throws {UserNotFoundError} The user wasn't found
    * @throws {EpicgamesAPIError}
@@ -1689,7 +1690,7 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Fetches the current save the world news
+   * Fetches the current Save The World news
    * @param language The language of the news
    * @throws {EpicgamesAPIError}
    */
@@ -1700,6 +1701,34 @@ class Client extends EventEmitter {
     if (newsResponse.error) throw newsResponse.error;
 
     return newsResponse.response.news.messages.map((m: any) => new STWNewsMessage(this, m));
+  }
+
+  /**
+   * Fetches the current Save The World world info
+   * @param language The language of the world info
+   * @throws {EpicgamesAPIError}
+   */
+  public async getSTWWorldInfo(language: keyof STWTheaterLocaleData): Promise<STWWorldInfo> {
+    const worldInfoResponse = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.STW_WORLD_INFO, 'fortnite');
+    if (worldInfoResponse.error) throw worldInfoResponse.error;
+
+    return {
+      theaters: worldInfoResponse.response.theaters.map((t: any) => new STWTheater(this, t, language)),
+      // missions: worldInfoResponse.response.missions.map((t: any) => new STWMission(this, t)),
+      // missionAlerts: worldInfoResponse.response.theaters.map((t: any) => new STWMissionAlert(this, t)),
+    };
+  }
+
+  /**
+   * Fetches the current Save The World theaters
+   * @param language The language of the theaters
+   * @throws {EpicgamesAPIError}
+   */
+  public async getSTWTheaters(language: keyof STWTheaterLocaleData): Promise<STWTheater> {
+    const worldInfoResponse = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.STW_WORLD_INFO, 'fortnite');
+    if (worldInfoResponse.error) throw worldInfoResponse.error;
+
+    return worldInfoResponse.response.theaters.map((t: any) => new STWTheater(this, t, language));
   }
 }
 

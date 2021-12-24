@@ -20,6 +20,7 @@ import User from '../src/structures/User';
 import { EpicgamesOAuthData, STWProfileLockerSlotData, TournamentWindowTemplateData } from './httpResponses';
 import ReceivedFriendMessage from '../src/structures/ReceivedFriendMessage';
 import STWSurvivor from '../src/structures/STWSurvivor';
+import STWTheater from '../src/structures/STWTheater';
 
 export interface Schema {
   [key: string]: any;
@@ -1163,4 +1164,10 @@ export interface ImageData {
   url: string;
   width?: number;
   height?: number;
+}
+
+export interface STWWorldInfo {
+  theaters: STWTheater[];
+  // missions: STWMission[];
+  // missionAlerts: STWMissionAlert[];
 }

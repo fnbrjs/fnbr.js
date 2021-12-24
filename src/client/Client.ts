@@ -13,7 +13,7 @@ import {
   ClientOptions, ClientConfig, ClientEvents, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
-  ReplayDownloadConfig, EventTokensResponse, TournamentSessionMetadata,
+  ReplayDownloadConfig, TournamentSessionMetadata,
   BRAccountLevelData, Language,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
@@ -62,6 +62,7 @@ import STWProfile from '../structures/STWProfile';
 import Stats from '../structures/Stats';
 import NewsMessage from '../structures/NewsMessage';
 import STWNewsMessage from '../structures/STWNewsMessage';
+import EventTokens from '../structures/EventTokens';
 
 /**
  * Represets the main client
@@ -1424,7 +1425,7 @@ class Client extends EventEmitter {
    * @throws {UserNotFoundError} The user wasn't found
    * @throws {EpicgamesAPIError}
    */
-  public async getEventTokens(user: string | string[]): Promise<EventTokensResponse[]> {
+  public async getEventTokens(user: string | string[]): Promise<EventTokens[]> {
     const users = typeof user === 'string' ? [user] : user;
 
     const resolvedUsers = await this.getProfile(users);
@@ -1440,10 +1441,8 @@ class Client extends EventEmitter {
     const statsResponses = await Promise.all(userChunks.map((c) => this.http.sendEpicgamesRequest(true, 'GET',
       `${Endpoints.BR_TOURNAMENT_TOKENS}?teamAccountIds=${c.join(',')}`, 'fortnite')));
 
-    return statsResponses.map((r) => r.response.accounts).flat(1).map((r) => ({
-      user: resolvedUsers.find((u) => u.id === r.accountId) as User,
-      tokens: r.tokens,
-    }));
+    return statsResponses.map((r) => r.response.accounts).flat(1)
+      .map((r) => new EventTokens(this, r.tokens, resolvedUsers.find((u) => u.id === r.accountId)!));
   }
 
   /**

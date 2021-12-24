@@ -1136,6 +1136,10 @@ export interface StatsLevelData {
   };
 }
 
+export interface ArenaDivisionData {
+  [key: string]: number;
+}
+
 export interface NewsMessageVideoData {
   videoAutoplay: boolean;
   videoFullscreen: boolean;

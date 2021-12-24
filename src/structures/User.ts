@@ -4,6 +4,7 @@ import UserNotFoundError from '../exceptions/UserNotFoundError';
 import { BRAccountLevel, ExternalAuths, UserData } from '../../resources/structs';
 import Avatar from './Avatar';
 import GlobalProfile from './GlobalProfile';
+import EventTokens from './EventTokens';
 
 /**
  * Represents a user
@@ -113,6 +114,16 @@ class User extends Base {
    */
   public async getGlobalProfile(): Promise<GlobalProfile | undefined> {
     return (await this.client.getGlobalProfile(this.id))[0];
+  }
+
+  /**
+   * Fetches the event tokens for an account.
+   * This can be used to check if a user is eligible to play a certain tournament window
+   * or to check a user's arena division in any season
+   * @throws {EpicgamesAPIError}
+   */
+  public async getEventTokens(): Promise<EventTokens | undefined> {
+    return (await this.client.getEventTokens(this.id))[0];
   }
 
   /**

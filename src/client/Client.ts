@@ -1694,7 +1694,7 @@ class Client extends EventEmitter {
    * @param language The language of the news
    * @throws {EpicgamesAPIError}
    */
-  public async getSTWNews(language = Enums.Language.ENGLISH): Promise<STWNewsMessage[]> {
+  public async getSTWNews(language = this.config.language): Promise<STWNewsMessage[]> {
     const newsResponse = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_NEWS}/savetheworldnews?lang=${language}`, 'fortnite', {
       'Accept-Language': language,
     });
@@ -1708,7 +1708,7 @@ class Client extends EventEmitter {
    * @param language The language of the world info
    * @throws {EpicgamesAPIError}
    */
-  public async getSTWWorldInfo(language: keyof STWTheaterLocaleData): Promise<STWWorldInfo> {
+  public async getSTWWorldInfo(language: keyof STWTheaterLocaleData = this.config.language): Promise<STWWorldInfo> {
     const worldInfoResponse = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.STW_WORLD_INFO, 'fortnite');
     if (worldInfoResponse.error) throw worldInfoResponse.error;
 
@@ -1724,7 +1724,7 @@ class Client extends EventEmitter {
    * @param language The language of the theaters
    * @throws {EpicgamesAPIError}
    */
-  public async getSTWTheaters(language: keyof STWTheaterLocaleData): Promise<STWTheater> {
+  public async getSTWTheaters(language: keyof STWTheaterLocaleData = this.config.language): Promise<STWTheater> {
     const worldInfoResponse = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.STW_WORLD_INFO, 'fortnite');
     if (worldInfoResponse.error) throw worldInfoResponse.error;
 

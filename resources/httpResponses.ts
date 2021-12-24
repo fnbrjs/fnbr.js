@@ -528,23 +528,7 @@ export interface RawStatsData {
   };
 }
 
-export interface STWTheaterLocaleData {
-  de: string;
-  ru: string;
-  ko: string;
-  'zh-hant': string;
-  'pt-br': string;
-  en: string;
-  it: string;
-  fr: string;
-  'zh-cn': string;
-  es: string;
-  ar: string;
-  ja: string;
-  pl: string;
-  'es-419': string;
-  tr: string;
-}
+export type STWTheaterLocaleData = string;
 
 export interface STWTheaterDataRequirements {
   commanderLevel: number;

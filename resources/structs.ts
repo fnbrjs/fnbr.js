@@ -26,7 +26,7 @@ export interface Schema {
   [key: string]: any;
 }
 
-export type Language = 'ar' | 'en' | 'de' | 'es' | 'fr' | 'it' | 'ja' | 'pl' | 'ru' | 'tr';
+export type Language = 'de' | 'ru' | 'ko' |'zh-hant' | 'pt-br' | 'en' | 'it' | 'fr' | 'zh-cn' | 'es' | 'ar' | 'ja' | 'pl' | 'es-419' | 'tr';
 
 export type StringFunction = () => string;
 

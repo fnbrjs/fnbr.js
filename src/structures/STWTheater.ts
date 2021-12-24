@@ -1,5 +1,5 @@
 import Client from '../client/Client';
-import { STWTheaterData, STWTheaterLocaleData } from '../../resources/httpResponses';
+import { STWTheaterData } from '../../resources/httpResponses';
 import Base from '../client/Base';
 
 /**
@@ -51,12 +51,12 @@ class STWTheater extends Base {
    * @param data The profile data
    * @param userData The user data
    */
-  constructor(client: Client, data: STWTheaterData, language: keyof STWTheaterLocaleData) {
+  constructor(client: Client, data: STWTheaterData) {
     super(client);
 
     this.id = data.uniqueId;
-    this.displayName = data.displayName[language];
-    this.description = data.description[language];
+    this.displayName = data.displayName;
+    this.description = data.description;
     this.slot = data.theaterSlot;
     this.isTestTheater = data.bIsTestTheater;
     this.hideLikeTestTheater = data.bHideLikeTestTheater;

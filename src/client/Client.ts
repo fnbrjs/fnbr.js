@@ -25,7 +25,7 @@ import {
   BlurlStreamData, CreativeIslandData,
   BlurlStreamMasterPlaylistData, CreativeDiscoveryPanel,
   EpicgamesAPIResponse, TournamentData, TournamentDisplayData,
-  TournamentWindowResults, TournamentWindowTemplateData, STWTheaterLocaleData,
+  TournamentWindowResults, TournamentWindowTemplateData,
 } from '../../resources/httpResponses';
 import UserNotFoundError from '../exceptions/UserNotFoundError';
 import StatsPrivacyError from '../exceptions/StatsPrivacyError';
@@ -1708,12 +1708,14 @@ class Client extends EventEmitter {
    * @param language The language of the world info
    * @throws {EpicgamesAPIError}
    */
-  public async getSTWWorldInfo(language: keyof STWTheaterLocaleData = this.config.language): Promise<STWWorldInfo> {
-    const worldInfoResponse = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.STW_WORLD_INFO, 'fortnite');
+  public async getSTWWorldInfo(language = this.config.language): Promise<STWWorldInfo> {
+    const worldInfoResponse = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.STW_WORLD_INFO, 'fortnite', {
+      'Accept-Language': language,
+    });
     if (worldInfoResponse.error) throw worldInfoResponse.error;
 
     return {
-      theaters: worldInfoResponse.response.theaters.map((t: any) => new STWTheater(this, t, language)),
+      theaters: worldInfoResponse.response.theaters.map((t: any) => new STWTheater(this, t)),
       // missions: worldInfoResponse.response.missions.map((t: any) => new STWMission(this, t)),
       // missionAlerts: worldInfoResponse.response.theaters.map((t: any) => new STWMissionAlert(this, t)),
     };
@@ -1724,11 +1726,13 @@ class Client extends EventEmitter {
    * @param language The language of the theaters
    * @throws {EpicgamesAPIError}
    */
-  public async getSTWTheaters(language: keyof STWTheaterLocaleData = this.config.language): Promise<STWTheater> {
-    const worldInfoResponse = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.STW_WORLD_INFO, 'fortnite');
+  public async getSTWTheaters(language = this.config.language): Promise<STWTheater> {
+    const worldInfoResponse = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.STW_WORLD_INFO, 'fortnite', {
+      'Accept-Language': language,
+    });
     if (worldInfoResponse.error) throw worldInfoResponse.error;
 
-    return worldInfoResponse.response.theaters.map((t: any) => new STWTheater(this, t, language));
+    return worldInfoResponse.response.theaters.map((t: any) => new STWTheater(this, t));
   }
 }
 

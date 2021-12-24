@@ -55,14 +55,14 @@ class Auth extends Base {
     let auth: AuthResponse;
     const authCreds = this.client.config.auth;
 
-    if (authCreds.deviceAuth) {
+    if (authCreds.launcherRefreshToken) {
+      auth = await this.launcherRefreshTokenAuthenticate(authCreds.launcherRefreshToken, authClient);
+    } else if (authCreds.deviceAuth) {
       auth = await this.deviceAuthAuthenticate(authCreds.deviceAuth, authClient);
-    } else if (authCreds.exchangeCode) {
-      auth = await this.exchangeCodeAuthenticate(authCreds.exchangeCode, authClient);
     } else if (authCreds.refreshToken) {
       auth = await this.refreshTokenAuthenticate(authCreds.refreshToken, authClient);
-    } else if (authCreds.launcherRefreshToken) {
-      auth = await this.launcherRefreshTokenAuthenticate(authCreds.launcherRefreshToken, authClient);
+    } else if (authCreds.exchangeCode) {
+      auth = await this.exchangeCodeAuthenticate(authCreds.exchangeCode, authClient);
     } else if (authCreds.authorizationCode) {
       auth = await this.authorizationCodeAuthenticate(authCreds.authorizationCode, authClient);
     } else {
@@ -217,7 +217,7 @@ class Auth extends Base {
         account_id: authResponse.auth.response!.account_id,
       });
 
-      if (authResponse.authType === 'launcher' && this.client.listenerCount('refreshtoken:created') > 0) {
+      if (authResponse.authType === 'launcher') {
         this.client.emit('refreshtoken:created', {
           token: authResponse.auth.response!.refresh_token,
           expiresIn: authResponse.auth.response!.refresh_expires,
@@ -267,7 +267,7 @@ class Auth extends Base {
    */
   public async killAllTokens() {
     const proms = [];
-    for (const [authType, auth] of this.auths.filter((a) => !!a.account_id)) {
+    for (const [authType, auth] of this.auths.filter((a) => !!a.account_id && a.client !== 'launcherAppClient2')) {
       proms.push(this.client.http.sendEpicgamesRequest(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${auth.token}`, authType));
     }
 

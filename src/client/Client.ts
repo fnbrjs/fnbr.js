@@ -295,6 +295,7 @@ class Client extends EventEmitter {
 
     this.config.auth.refreshToken = refreshToken;
     await this.login();
+    this.config.auth.refreshToken = undefined;
   }
 
   /**

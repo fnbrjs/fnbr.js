@@ -64,6 +64,7 @@ import NewsMessage from '../structures/NewsMessage';
 import STWNewsMessage from '../structures/STWNewsMessage';
 import EventTokens from '../structures/EventTokens';
 import STWTheater from '../structures/STWTheater';
+import { PresenceShow } from 'stanza/Constants';
 
 /**
  * Represets the main client
@@ -665,11 +666,11 @@ class Client extends EventEmitter {
       }
     }
 
-    if (status) this.config.defaultStatus = status;
-    if (onlineType) this.config.defaultOnlineType = onlineType;
+    if (status && !toJID) this.config.defaultStatus = status;
+    if (onlineType && !toJID) this.config.defaultOnlineType = onlineType;
 
     const rawStatus = {
-      Status: this.config.defaultStatus
+      Status: status || this.config.defaultStatus
         || (this.party && `Battle Royale Lobby - ${this.party.size} / ${this.party.maxSize}`) || 'Playing Battle Royale',
       bIsPlaying: false,
       bIsJoinable: false,
@@ -693,9 +694,9 @@ class Client extends EventEmitter {
       },
     };
 
-    const rawOnlineType = this.config.defaultOnlineType === 'online' ? undefined : this.config.defaultOnlineType;
+    const rawOnlineType = (onlineType || this.config.defaultOnlineType) === 'online' ? undefined : (onlineType || this.config.defaultOnlineType);
 
-    return this.xmpp.sendStatus(rawStatus, rawOnlineType, toJID);
+    return this.xmpp.sendStatus(rawStatus, rawOnlineType as PresenceShow, toJID);
   }
 
   /**

@@ -2,6 +2,7 @@
 import { EventEmitter } from 'events';
 import Collection from '@discordjs/collection';
 import { ResponseType } from 'axios';
+import { PresenceShow } from 'stanza/Constants';
 import Enums from '../../enums/Enums';
 import {
   buildReplay, consoleQuestion, parseBlurlStream, parseM3U8File,
@@ -64,7 +65,6 @@ import NewsMessage from '../structures/NewsMessage';
 import STWNewsMessage from '../structures/STWNewsMessage';
 import EventTokens from '../structures/EventTokens';
 import STWTheater from '../structures/STWTheater';
-import { PresenceShow } from 'stanza/Constants';
 
 /**
  * Represets the main client

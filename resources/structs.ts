@@ -632,6 +632,7 @@ export interface ExternalAuths {
   twitch?: ExternalAuth;
   steam?: ExternalAuth;
   psn?: ExternalAuth;
+  xbl?: ExternalAuth;
   nintendo?: ExternalAuth;
 }
 

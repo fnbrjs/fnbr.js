@@ -1,25 +1,28 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
-import Client from '../client/Client';
-import CurveTable from '../util/CurveTable';
-import HomebaseRatingMapping from '../../resources/STWMappings.json';
 import {
   STWProfileData,
+  STWProfileHeroData,
+  STWProfileHeroLoadoutData,
   STWProfileLockerData,
   STWProfileResourceData,
   STWProfileSurvivorData,
 } from '../../resources/httpResponses';
+import PowerLevelCurves from '../../resources/PowerLevelCurves';
 import {
   STWFORTStats,
   STWSurvivorSquads,
   UserData,
 } from '../../resources/structs';
-import STWSurvivor from './STWSurvivor';
+import Client from '../client/Client';
+import STWHero from './STWHero';
+import STWHeroLoadout from './STWHeroLoadout';
 import STWItem from './STWItem';
-import STWStats from './STWStats';
 import STWLocker from './STWLocker';
-import User from './User';
 import STWResource from './STWResource';
+import STWStats from './STWStats';
+import STWSurvivor from './STWSurvivor';
+import User from './User';
 
 /**
  * Represents a Save The World profile
@@ -71,19 +74,12 @@ class STWProfile extends User {
   public stats: STWStats;
 
   /**
-   * The profile's power level curve calculator
-   */
-  private powerLevelCurve: CurveTable;
-
-  /**
    * @param client The main client
    * @param data The profile data
    * @param userData The user data
    */
   constructor(client: Client, data: STWProfileData, userData: UserData) {
     super(client, userData);
-
-    this.powerLevelCurve = new CurveTable(HomebaseRatingMapping[0].ExportValue.UIMonsterRating.Keys);
 
     this.profileId = data._id;
     this.createdAt = new Date(data.created);
@@ -107,6 +103,12 @@ class STWProfile extends User {
           break;
         case 'AccountResource':
           this.items.push(new STWResource(this.client, itemId, item as STWProfileResourceData));
+          break;
+        case 'Hero':
+          this.items.push(new STWHero(this.client, itemId, item as STWProfileHeroData));
+          break;
+        case 'CampaignHeroLoadout':
+          this.items.push(new STWHeroLoadout(this.client, itemId, item as STWProfileHeroLoadoutData));
           break;
         default:
           this.items.push(new STWItem(this.client, itemId, item));
@@ -160,12 +162,27 @@ class STWProfile extends User {
   }
 
   /**
+   * The profile's heroes
+   */
+  public get heroes() {
+    return this.items.filter((i) => i instanceof STWHero) as STWHero[];
+  }
+
+  /**
+   * The profile's hero loadouts
+   */
+  public get heroLoadouts() {
+    return (this.items.filter((i) => i instanceof STWHeroLoadout) as STWHeroLoadout[])
+      .sort((a, b) => a.loadoutIndex - b.loadoutIndex);
+  }
+
+  /**
    * The profile's power level
    */
   public get powerLevel(): number {
     const totalFORTStats = Object.values(this.FORTStats).reduce((prev, cur) => prev + cur);
 
-    return this.powerLevelCurve.eval(totalFORTStats * 4);
+    return PowerLevelCurves.homebaseRating.eval(totalFORTStats * 4);
   }
 
   /**
@@ -174,7 +191,7 @@ class STWProfile extends User {
   public get venturesPowerLevel(): number {
     const totalFORTStats = Object.values(this.venturesFORTStats).reduce((prev, cur) => prev + cur);
 
-    return this.powerLevelCurve.eval(totalFORTStats * 4);
+    return PowerLevelCurves.homebaseRating.eval(totalFORTStats * 4);
   }
 
   /**

@@ -67,6 +67,8 @@ export { default as SentFriendMessage } from './src/structures/SentFriendMessage
 export { default as SentPartyInvitation } from './src/structures/SentPartyInvitation';
 export { default as SentPartyJoinRequest } from './src/structures/SentPartyJoinRequest';
 export { default as Stats } from './src/structures/Stats';
+export { default as STWHero } from './src/structures/STWHero';
+export { default as STWHeroLoadout } from './src/structures/STWHeroLoadout';
 export { default as STWItem } from './src/structures/STWItem';
 export { default as STWLocker } from './src/structures/STWLocker';
 export { default as STWNewsMessage } from './src/structures/STWNewsMessage';

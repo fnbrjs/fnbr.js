@@ -30,6 +30,14 @@ class CurveTable {
    * @param key The key
    */
   public eval(key: number) {
+    if (key < this.keys[0][0]) {
+      return this.keys[0][1];
+    }
+
+    if (key >= this.keys[this.keys.length - 1][0]) {
+      return this.keys[this.keys.length - 1][1];
+    }
+
     const index = this.keys.findIndex((k) => k[0] > key);
 
     const prev = this.keys[index - 1];

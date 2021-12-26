@@ -4,11 +4,14 @@ import zlib from 'zlib';
 import crypto from 'crypto';
 import {
   Schema, ReplayData, ReplayDataChunk, ReplayEvent,
-  STWSurvivorRarity, STWSurvivorType, STWSurvivorSquads,
+  STWItemRarity, STWSurvivorType, STWSurvivorSquads,
+  STWHeroType,
   StatsPlaylistTypeData,
+  STWItemTier,
 } from '../../resources/structs';
 import { STWLeadSynergy } from '../../enums/Enums';
 import BinaryWriter from './BinaryWriter';
+import PowerLevelCurves from '../../resources/PowerLevelCurves';
 
 const defaultCharacters = [
   'CID_556_Athena_Commando_F_RebirthDefaultA',
@@ -273,8 +276,8 @@ export const parseSTWSurvivorTemplateId = (templateId: string) => {
   else if (rawType?.includes('manager')) type = 'manager';
   else type = 'basic';
 
-  const tier = parseInt(fields.pop()!.slice(1), 10);
-  const rarity = (type === 'manager' ? fields.shift() : fields.pop()) as STWSurvivorRarity;
+  const tier = parseInt(fields.pop()!.slice(1), 10) as STWItemTier;
+  const rarity = (type === 'manager' ? fields.shift() : fields.pop()) as STWItemRarity;
   const name = fields[0] ? fields.join('_') : undefined;
 
   return {
@@ -285,48 +288,29 @@ export const parseSTWSurvivorTemplateId = (templateId: string) => {
   };
 };
 
-export const calcSTWSurvivorRarity = (rarity: STWSurvivorRarity, isLeader: boolean) => {
+export const calcSTWItemRarity = (rarity: STWItemRarity) => {
   const rarities = {
-    c: [1, 1],
-    uc: [2, 2],
-    r: [3, 3],
-    vr: [4, 4],
-    sr: [5, 5],
-    ur: [6, 0],
+    c: 1,
+    uc: 2,
+    r: 3,
+    vr: 4,
+    sr: 5,
+    ur: 6,
   };
 
-  return rarities[rarity][isLeader ? 1 : 0] || 0;
+  return rarities[rarity] || 0;
 };
 
-export const calcSTWEVOConstant = (rarityValue: number, isLeader: boolean): number => {
-  const EVOConstant: any = {
-    1: [5, 5],
-    2: [6.35, 6.35],
-    3: [7, 7],
-    4: [8, 8],
-    5: [9, 9],
-    6: [9.85, 0],
-  };
-
-  return EVOConstant[rarityValue][isLeader ? 1 : 0];
+export const calcSTWSurvivorPowerLevel = (rarity: STWItemRarity, isLeader: boolean, level: number, tier: STWItemTier) => {
+  /**
+   * We use Exclude<> here because mythic lead survivors actually have SR (legendary) rarity,
+   * and thus there are no rating curves for UR managers.
+   */
+  const key = isLeader
+    ? `manager_${rarity as Exclude<STWItemRarity, 'ur'>}_t0${tier}` as const
+    : `default_${rarity}_t0${tier}` as const;
+  return PowerLevelCurves.survivorItemRating[key].eval(level);
 };
-
-export const calcSTWLevelConstant = (rarityValue: number, isLeader: boolean): number => {
-  const LvlConstant: any = {
-    1: [1, 1],
-    2: [1.08, 1.08],
-    3: [1.245, 1.245],
-    4: [1.374, 1.374],
-    5: [1.5, 1.5],
-    6: [1.645, 0],
-  };
-  return LvlConstant[rarityValue][isLeader ? 1 : 0];
-};
-
-export const calcSTWSurvivorPowerLevel = (rarityValue: number, isLeader: boolean, level: number, tier: number) => Math.round(
-  (5 * rarityValue) - (isLeader ? 0 : 5)
-  + (level - 1) * calcSTWLevelConstant(rarityValue, isLeader)
-  + (tier - 1) * calcSTWEVOConstant(rarityValue, isLeader));
 
 export const calcSTWSurvivorBonus = (leaderPersonality: string, leaderRarity: string, survivorPersonality: string, survivorPowerLevel: number) => {
   if (survivorPersonality === leaderPersonality) {
@@ -352,6 +336,29 @@ export const calcSTWSurvivorLeadBonus = (managerSynergy: string, squadName: keyo
 
   return 0;
 };
+
+export const parseSTWHeroTemplateId = (templateId: string) => {
+  const id = templateId.split(':')[1];
+  const fields = id.split('_');
+
+  fields.shift();
+  const type = fields.shift() as STWHeroType;
+
+  const tier = parseInt(fields.pop()!.slice(1), 10) as STWItemTier;
+  const rarity = fields.pop() as STWItemRarity;
+  const name = fields[0] ? fields.join('_') : undefined;
+
+  return {
+    type,
+    tier,
+    rarity,
+    name,
+  };
+};
+
+export const calcSTWNonSurvivorPowerLevel = (rarity: STWItemRarity, level: number, tier: STWItemTier) => (
+  PowerLevelCurves.baseItemRating[`default_${rarity}_t0${tier}`].eval(level)
+);
 
 const defaultStats = {
   score: 0,

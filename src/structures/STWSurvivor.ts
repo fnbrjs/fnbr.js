@@ -1,7 +1,7 @@
 import Client from '../client/Client';
 import STWItem from './STWItem';
 import {
-  parseSTWSurvivorTemplateId, calcSTWItemRarity,
+  parseSTWSurvivorTemplateId,
   calcSTWSurvivorPowerLevel, calcSTWSurvivorLeadBonus,
   calcSTWSurvivorBonus,
 } from '../util/Util';

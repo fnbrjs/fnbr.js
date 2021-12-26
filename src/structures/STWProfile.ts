@@ -6,13 +6,13 @@ import {
   STWProfileHeroLoadoutData,
   STWProfileLockerData,
   STWProfileResourceData,
-  STWProfileSurvivorData
+  STWProfileSurvivorData,
 } from '../../resources/httpResponses';
 import PowerLevelCurves from '../../resources/PowerLevelCurves';
 import {
   STWFORTStats,
   STWSurvivorSquads,
-  UserData
+  UserData,
 } from '../../resources/structs';
 import Client from '../client/Client';
 import STWHero from './STWHero';

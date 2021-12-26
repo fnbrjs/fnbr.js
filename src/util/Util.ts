@@ -341,9 +341,8 @@ export const parseSTWHeroTemplateId = (templateId: string) => {
   const id = templateId.split(':')[1];
   const fields = id.split('_');
 
-  let type: STWHeroType;
   fields.shift();
-  type = fields.shift() as STWHeroType;
+  const type = fields.shift() as STWHeroType;
 
   const tier = parseInt(fields.pop()!.slice(1), 10) as STWItemTier;
   const rarity = fields.pop() as STWItemRarity;
@@ -357,9 +356,9 @@ export const parseSTWHeroTemplateId = (templateId: string) => {
   };
 };
 
-export const calcSTWNonSurvivorPowerLevel = (rarity: STWItemRarity, level: number, tier: STWItemTier) => {
-  return PowerLevelCurves.baseItemRating[`default_${rarity}_t0${tier}`].eval(level);
-};
+export const calcSTWNonSurvivorPowerLevel = (rarity: STWItemRarity, level: number, tier: STWItemTier) => (
+  PowerLevelCurves.baseItemRating[`default_${rarity}_t0${tier}`].eval(level)
+);
 
 const defaultStats = {
   score: 0,

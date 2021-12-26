@@ -43,6 +43,7 @@ export { default as ClientPartyMemberMeta } from './src/structures/ClientPartyMe
 export { default as ClientPartyMeta } from './src/structures/ClientPartyMeta';
 export { default as ClientUser } from './src/structures/ClientUser';
 export { default as CreatorCode } from './src/structures/CreatorCode';
+export { default as EventTokens } from './src/structures/EventTokens';
 export { default as Friend } from './src/structures/Friend';
 export { default as FriendPresence } from './src/structures/FriendPresence';
 export { default as GlobalProfile } from './src/structures/GlobalProfile';
@@ -76,6 +77,7 @@ export { default as STWProfile } from './src/structures/STWProfile';
 export { default as STWResource } from './src/structures/STWResource';
 export { default as STWStats } from './src/structures/STWStats';
 export { default as STWSurvivor } from './src/structures/STWSurvivor';
+export { default as STWTheater } from './src/structures/STWTheater';
 export { default as Tournament } from './src/structures/Tournament';
 export { default as TournamentWindow } from './src/structures/TournamentWindow';
 export { default as User } from './src/structures/User';

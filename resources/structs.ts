@@ -33,13 +33,31 @@ export type StringFunction = () => string;
 export type StringFunctionAsync = () => Promise<string>;
 
 export interface DeviceAuth {
+  /**
+   * The device auth's account ID
+   */
   accountId: string;
+
+  /**
+   * The device auth's device ID (that does not mean it can only be used on a single device)
+   */
   deviceId: string;
+
+  /**
+   * The device auth's secret
+   */
   secret: string;
 }
 
 export interface DeviceAuthWithSnakeCaseSupport extends DeviceAuth {
+  /**
+   * The device auth's account ID
+   */
   account_id?: string;
+
+  /**
+   * The device auth's device ID (that does not mean it can only be used on a single device)
+   */
   device_id?: string;
 }
 
@@ -57,11 +75,34 @@ export type AuthClient = 'fortnitePCGameClient' | 'fortniteIOSGameClient' | 'for
   | 'fortniteSwitchGameClient' | 'fortniteCNGameClient' | 'launcherAppClient2' | 'Diesel - Dauntless';
 
 export interface RefreshTokenData {
+  /**
+   * The refresh token
+   */
   token: string;
+
+  /**
+   * The refresh token's expiration time in seconds
+   */
   expiresIn: number;
+
+  /**
+   * The refresh token's expiration date
+   */
   expiresAt: string;
+
+  /**
+   * The ID of the account the refresh token belongs to
+   */
   accountId: string;
+
+  /**
+   * The display name of the account the refresh token belongs to
+   */
   displayName: string;
+
+  /**
+   * The refresh token's client ID (will always be the ID of launcherAppClient2)
+   */
   clientId: string;
 }
 
@@ -78,18 +119,58 @@ export interface CacheSetting {
 }
 
 export interface CacheSettings {
+  /**
+   * The presence cache settings
+   */
   presences?: CacheSetting;
 }
 
 export interface AuthOptions {
+  /**
+   * A device auth object, a function that returns a device auth object or a path to a file containing a device auth object
+   */
   deviceAuth?: DeviceAuthResolveable;
+
+  /**
+   * An exchange code, a function that returns an exchange code or a path to a file containing an exchange code
+   */
   exchangeCode?: AuthStringResolveable;
+
+  /**
+   * An authorization code, a function that returns an authorization code or a path to a file containing an authorization code
+   */
   authorizationCode?: AuthStringResolveable;
+
+  /**
+   * A refresh token, a function that returns a refresh token or a path to a file containing a refresh token
+   */
   refreshToken?: AuthStringResolveable;
+
+  /**
+   * A launcher refresh token, a function that returns a launcher refresh token or a path to a file containing a launcher refresh token
+   */
   launcherRefreshToken?: AuthStringResolveable;
+
+  /**
+   * Whether the client should check whether the EULA has been accepted.
+   * Do not modify this unless you know what you're doing
+   */
   checkEULA?: boolean;
+
+  /**
+   * Whether the client should kill other active Fortnite auth sessions on startup
+   */
   killOtherTokens?: boolean;
+
+  /**
+   * Whether the client should create a launcher auth session and keep it alive.
+   * The launcher auth session can be accessed via `client.auth.auths.get('launcher')`
+   */
   createLauncherSession?: boolean;
+
+  /**
+   * The Fortnite auth client (eg. 'fortnitePCGameClient' or 'fortniteAndroidGameClient')
+   */
   authClient?: AuthClient;
 }
 

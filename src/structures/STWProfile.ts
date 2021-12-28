@@ -66,7 +66,7 @@ class STWProfile extends User {
   /**
    * The profile's items
    */
-  public items: (STWItem | STWSurvivor | STWLocker | STWResource)[];
+  public items: (STWItem | STWSurvivor | STWLocker | STWResource | STWHero | STWHeroLoadout)[];
 
   /**
    * The profile's stats

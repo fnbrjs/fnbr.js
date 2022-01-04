@@ -212,6 +212,7 @@ class PartyMember extends User {
    */
   public toObject(): PartyMemberData {
     return {
+      id: this.id,
       account_id: this.id,
       joined_at: this.joinedAt.toISOString(),
       updated_at: new Date().toISOString(),

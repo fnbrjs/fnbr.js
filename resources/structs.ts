@@ -795,6 +795,7 @@ export interface FriendPresenceData {
 }
 
 export interface PartyMemberData {
+  id: string;
   account_id: string;
   account_dn?: string;
   meta: Schema;

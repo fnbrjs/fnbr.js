@@ -48,6 +48,13 @@ class User extends Base {
   }
 
   /**
+   * Whether the user is headless (the account is not actually an epicgames account)
+   */
+  public get isHeadless() {
+    return !this._displayName;
+  }
+
+  /**
    * Sends a friendship request to this user or accepts an existing one
    * @throws {UserNotFoundError} The user wasn't found
    * @throws {DuplicateFriendshipError} The user is already friends with the client
@@ -133,6 +140,7 @@ class User extends Base {
   public update(data: UserData) {
     this._displayName = data.displayName;
     this.externalAuths = data.externalAuths || {};
+    if (Array.isArray(this.externalAuths)) this.externalAuths = {};
   }
 
   /**

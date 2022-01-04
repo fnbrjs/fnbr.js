@@ -134,6 +134,17 @@ class User extends Base {
     this._displayName = data.displayName;
     this.externalAuths = data.externalAuths || {};
   }
+
+  /**
+   * The raw user data
+   */
+  public toObject(): UserData {
+    return {
+      id: this.id,
+      displayName: this._displayName,
+      externalAuths: this.externalAuths,
+    };
+  }
 }
 
 export default User;

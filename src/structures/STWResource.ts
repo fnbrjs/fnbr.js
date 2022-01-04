@@ -9,7 +9,7 @@ class STWResource extends STWItem {
   /**
    * The resource's ID
    */
-  public resouceId: string;
+  public resourceId: string;
 
   /**
    * Whether the resource is marked as favorite
@@ -29,7 +29,7 @@ class STWResource extends STWItem {
   constructor(client: Client, id: string, data: STWProfileResourceData) {
     super(client, id, data);
 
-    [, this.resouceId] = data.templateId.split(':');
+    [, this.resourceId] = data.templateId.split(':');
 
     this.isSeen = data.attributes.item_seen;
     this.isFavorite = data.attributes.favorite;

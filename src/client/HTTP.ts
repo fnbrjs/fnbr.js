@@ -145,7 +145,8 @@ class HTTP extends Base {
 
     const request = await this.send(method, url, finalHeaders, data, form);
 
-    if ((request.error?.response?.data as any)?.errorCode === 'errors.com.epicgames.common.oauth.invalid_token' && auth) {
+    if (['errors.com.epicgames.common.oauth.invalid_token', 'errors.com.epicgames.common.authentication.token_verification_failed']
+      .includes((request.error?.response?.data as any)?.errorCode) && auth) {
       const authData = this.client.auth.auths.get(auth);
       if (authData) {
         const reauth = await this.client.auth.reauthenticate();

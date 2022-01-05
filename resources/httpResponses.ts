@@ -568,6 +568,7 @@ export interface STWProfileData {
 }
 
 export interface RawStatsData {
+  accountId: string;
   startTime: number;
   endTime: number;
   stats: {

@@ -5,6 +5,9 @@ export { default as Enums } from './enums/Enums';
 // types and interfaces
 export * from './resources/structs';
 
+// endpoints
+export { default as Endpoints } from './resources/Endpoints';
+
 // exceptions
 export { default as CreativeIslandNotFoundError } from './src/exceptions/CreativeIslandNotFoundError';
 export { default as CreatorCodeNotFoundError } from './src/exceptions/CreatorCodeNotFoundError';

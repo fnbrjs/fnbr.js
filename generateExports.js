@@ -4,7 +4,8 @@ const fs = require('fs').promises;
   let output = '';
 
   output += '// main exports\nexport { default as Client } from \'./src/client/Client\';\n'
-  + 'export { default as Enums } from \'./enums/Enums\';\n\n// types and interfaces\nexport * from \'./resources/structs\';\n';
+  + 'export { default as Enums } from \'./enums/Enums\';\n\n// types and interfaces\nexport * from \'./resources/structs\';\n'
+  + '\n// endpoints\nexport { default as Endpoints } from \'./resources/Endpoints\';\n';
 
   output += '\n// exceptions\n';
   const exceptions = await fs.readdir('./src/exceptions');

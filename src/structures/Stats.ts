@@ -69,43 +69,46 @@ class Stats extends Base {
         fields.shift();
 
         const statKey = fields.shift()!;
-        const inputType = fields.shift() as 'keyboardmouse' | 'gamepad' | 'touch';
-        fields.shift();
-        const playlistId = fields.join('_');
 
-        const playlistType = typeof this.client.config.statsPlaylistTypeParser === 'function'
-          ? this.client.config.statsPlaylistTypeParser(playlistId)
-          : this.getPlaylistStatsType(playlistId);
+        if (statKey !== 'collection') {
+          const inputType = fields.shift() as 'keyboardmouse' | 'gamepad' | 'touch';
+          fields.shift();
+          const playlistId = fields.join('_');
 
-        if (playlistType !== 'other') {
-          const [parsedKey, parsedValue] = parseStatKey(statKey, data.stats[key]);
+          const playlistType = typeof this.client.config.statsPlaylistTypeParser === 'function'
+            ? this.client.config.statsPlaylistTypeParser(playlistId)
+            : this.getPlaylistStatsType(playlistId);
 
-          const inputTypePlaylistStats = this.stats[inputType][playlistType];
-          const inputTypeAllStats = this.stats[inputType].overall;
-          const allPlaylistStats = this.stats.all[playlistType];
-          const allAllStats = this.stats.all.overall;
+          if (playlistType !== 'other') {
+            const [parsedKey, parsedValue] = parseStatKey(statKey, data.stats[key]);
 
-          if (parsedKey === 'lastModified') {
-            if (!inputTypePlaylistStats.lastModified || (parsedValue as Date).getTime() > inputTypePlaylistStats.lastModified.getTime()) {
-              inputTypePlaylistStats.lastModified = (parsedValue as Date);
+            const inputTypePlaylistStats = this.stats[inputType][playlistType];
+            const inputTypeAllStats = this.stats[inputType].overall;
+            const allPlaylistStats = this.stats.all[playlistType];
+            const allAllStats = this.stats.all.overall;
+
+            if (parsedKey === 'lastModified') {
+              if (!inputTypePlaylistStats.lastModified || (parsedValue as Date).getTime() > inputTypePlaylistStats.lastModified.getTime()) {
+                inputTypePlaylistStats.lastModified = (parsedValue as Date);
+              }
+
+              if (!inputTypeAllStats.lastModified || (parsedValue as Date).getTime() > inputTypeAllStats.lastModified.getTime()) {
+                inputTypeAllStats.lastModified = (parsedValue as Date);
+              }
+
+              if (!allPlaylistStats.lastModified || (parsedValue as Date).getTime() > allPlaylistStats.lastModified.getTime()) {
+                allPlaylistStats.lastModified = (parsedValue as Date);
+              }
+
+              if (!allAllStats.lastModified || (parsedValue as Date).getTime() > allAllStats.lastModified.getTime()) {
+                allAllStats.lastModified = (parsedValue as Date);
+              }
+            } else {
+              inputTypePlaylistStats[parsedKey] += parsedValue as number;
+              if (playlistType !== 'ltm') inputTypeAllStats[parsedKey] += parsedValue as number;
+              allPlaylistStats[parsedKey] += parsedValue as number;
+              if (playlistType !== 'ltm') allAllStats[parsedKey] += parsedValue as number;
             }
-
-            if (!inputTypeAllStats.lastModified || (parsedValue as Date).getTime() > inputTypeAllStats.lastModified.getTime()) {
-              inputTypeAllStats.lastModified = (parsedValue as Date);
-            }
-
-            if (!allPlaylistStats.lastModified || (parsedValue as Date).getTime() > allPlaylistStats.lastModified.getTime()) {
-              allPlaylistStats.lastModified = (parsedValue as Date);
-            }
-
-            if (!allAllStats.lastModified || (parsedValue as Date).getTime() > allAllStats.lastModified.getTime()) {
-              allAllStats.lastModified = (parsedValue as Date);
-            }
-          } else {
-            inputTypePlaylistStats[parsedKey] += parsedValue as number;
-            if (playlistType !== 'ltm') inputTypeAllStats[parsedKey] += parsedValue as number;
-            allPlaylistStats[parsedKey] += parsedValue as number;
-            if (playlistType !== 'ltm') allAllStats[parsedKey] += parsedValue as number;
           }
         }
       } else if (key.includes('social_bp_level')) {

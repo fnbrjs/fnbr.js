@@ -850,6 +850,7 @@ export interface Playlist {
   tournamentId?: string;
   eventWindowId?: string;
   regionId?: string;
+  mnemonic?: string;
 }
 
 export interface CosmeticVariant {

@@ -50,7 +50,8 @@
   "dependencies": {
     "@discordjs/collection": "^0.3.2",
     "axios": "^0.24.0",
-    "stanza": "^12.17.2"
+    "stanza": "^12.17.2",
+    "tslib": "^2.3.1"
   },
   "optionalDependencies": {
     "fsevents": "^2.3.2"

@@ -1,3 +1,4 @@
+// MIT License | Copyright © `2020` `The Sapphire Community and its contributors`
 interface Task {
   resolve: () => void;
   promise: Promise<void>;

@@ -573,7 +573,7 @@ class XMPP extends Base {
             const friend = await this.waitForFriend(body.requester_id);
             if (!friend) throw new FriendNotFoundError(body.requester_id);
 
-            const request = new ReceivedPartyJoinRequest(this.client, this.client.user as ClientUser, friend, body);
+            const request = new ReceivedPartyJoinRequest(this.client, friend, this.client.user as ClientUser, body);
 
             this.client.emit('party:joinrequest', request);
           } break;

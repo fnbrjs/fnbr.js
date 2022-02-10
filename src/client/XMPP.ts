@@ -40,6 +40,11 @@ class XMPP extends Base {
   private isDisconnecting: boolean;
 
   /**
+   * Timestamp of the last XMPP connection
+   */
+  private connectedTimestamp?: number;
+
+  /**
    * @param client The main client
    */
   constructor(client: Client) {
@@ -47,6 +52,7 @@ class XMPP extends Base {
 
     this.stream = undefined;
     this.isDisconnecting = false;
+    this.connectedTimestamp = undefined;
   }
 
   /**
@@ -113,6 +119,7 @@ class XMPP extends Base {
 
       this.stream?.once('session:started', () => {
         clearTimeout(timeout);
+        this.connectedTimestamp = Date.now();
         this.client.debug(`[XMPP] Successfully connected (${((Date.now() - connectionStartTime) / 1000).toFixed(2)}s)`);
 
         this.client.setStatus();
@@ -147,6 +154,7 @@ class XMPP extends Base {
 
       this.stream?.once('disconnected', () => {
         clearTimeout(timeout);
+        this.connectedTimestamp = undefined;
         this.destroy();
         res({ response: true });
         this.client.debug(`[XMPP] Successfully disconnected (${((Date.now() - disconnectionStartTime) / 1000).toFixed(2)}s)`);
@@ -239,9 +247,12 @@ class XMPP extends Base {
         if (p.type === 'unavailable') {
           friend.lastAvailableTimestamp = undefined;
           friend.party = undefined;
+
+          this.client.emit('friend:offline', friend);
           return;
         }
 
+        const wasUnavailable = !friend.lastAvailableTimestamp;
         friend.lastAvailableTimestamp = Date.now();
 
         const presence = JSON.parse(p.status);
@@ -254,6 +265,10 @@ class XMPP extends Base {
 
         if (presence.Properties?.['party.joininfodata.286331153_j']) {
           friend.party = new PresenceParty(this.client, presence.Properties['party.joininfodata.286331153_j']);
+        }
+
+        if (wasUnavailable && this.connectedTimestamp && this.connectedTimestamp > this.client.config.friendOnlineConnectionTimeout) {
+          this.client.emit('friend:online', friend);
         }
 
         this.client.emit('friend:presence', before, after);

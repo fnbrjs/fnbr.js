@@ -330,6 +330,11 @@ export interface ClientConfig {
   language: Language;
 
   /**
+   * Amount of time (in ms) to wait after the initial xmpp connection before emitting friend:online events
+   */
+  friendOnlineConnectionTimeout: number;
+
+  /**
    * A custom parser for resolving the stats playlist type (ie. "solo", "duo", "ltm").
    * Can be useful if you want to use data in the game files to determine the stats playlist type
    */
@@ -373,6 +378,18 @@ export interface ClientEvents {
    * @param after The friend's current presence
    */
   'friend:presence': (before: FriendPresence | undefined, after: FriendPresence) => void;
+
+  /**
+   * Emitted when a friend becomes online
+   * @param friend The friend that became online
+   */
+  'friend:online': (friend: Friend) => void;
+
+  /**
+   * Emitted when a friend goes offline
+   * @param friend The friend that went offline
+   */
+  'friend:offline': (friend: Friend) => void;
 
   /**
    * Emitted when a member in the client's party sent a message in the party chat

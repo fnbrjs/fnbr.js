@@ -172,6 +172,7 @@ class Client extends EventEmitter {
       partyBuildId: '1:3:',
       restartOnInvalidRefresh: false,
       language: 'en',
+      friendOnlineConnectionTimeout: 30000,
       ...config,
       cacheSettings: {
         ...config.cacheSettings,

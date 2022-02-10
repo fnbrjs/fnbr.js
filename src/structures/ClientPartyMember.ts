@@ -1,8 +1,8 @@
+import { AsyncQueue } from '@sapphire/async-queue';
 import Endpoints from '../../resources/Endpoints';
 import {
   CosmeticEnlightment, CosmeticsVariantMeta, CosmeticVariant, PartyMemberData, Schema,
 } from '../../resources/structs';
-import AsyncQueue from '../util/AsyncQueue';
 import ClientPartyMemberMeta from './ClientPartyMemberMeta';
 import Party from './Party';
 import PartyMember from './PartyMember';

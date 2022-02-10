@@ -15,7 +15,7 @@ import {
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
   ReplayDownloadConfig, TournamentSessionMetadata, STWWorldInfo,
-  BRAccountLevelData, Language,
+  BRAccountLevelData, Language, PartyData,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -48,7 +48,6 @@ import Party from '../structures/Party';
 import PartyNotFoundError from '../exceptions/PartyNotFoundError';
 import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
 import PartyPermissionError from '../exceptions/PartyPermissionError';
-import PartyMaxSizeReachedError from '../exceptions/PartyMaxSizeReachedError';
 import Tournament from '../structures/Tournament';
 import SentPartyJoinRequest from '../structures/SentPartyJoinRequest';
 import UserSearchResult from '../structures/UserSearchResult';
@@ -311,6 +310,15 @@ class Client extends EventEmitter {
       await this.leaveParty(false);
       await this.createParty();
     }
+  }
+
+  /**
+   * Internal method that sets a {@link ClientParty} to the value of {@link Client#party}
+   * @param party The party
+   * @private
+   */
+  public setClientParty(party: Party) {
+    this.party = new ClientParty(this, party);
   }
 
   /**
@@ -867,6 +875,7 @@ class Client extends EventEmitter {
    * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {PartyAlreadyJoinedError} The user is already a member of this party
    * @throws {PartyMaxSizeReachedError} The party reached its max size
+   * @throws {PartyNotFoundError} The client is not in party
    * @throws {EpicgamesAPIError}
    */
   public async invite(friend: string) {
@@ -884,66 +893,9 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async joinParty(id: string) {
-    this.partyLock.lock();
+    const party = await this.getParty(id) as Party;
 
-    // eslint-disable-next-line no-undef-init
-    let party: Party | undefined = undefined;
-
-    try {
-      party = await this.getParty(id);
-    } catch (e) {
-      if (e instanceof EpicgamesAPIError) {
-        if (e.code === 'errors.com.epicgames.social.party.party_not_found') throw new PartyNotFoundError();
-        if (e.code === 'errors.com.epicgames.social.party.party_query_forbidden') throw new PartyPermissionError();
-        if (e.code === 'errors.com.epicgames.social.party.party_is_full') throw new PartyMaxSizeReachedError();
-        throw e;
-      } else {
-        throw e;
-      }
-    }
-
-    if (this.party) await this.party.leave(false);
-
-    const joinParty = await this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.BR_PARTY}/parties/${party.id}/members/${this.user?.id}/join`, 'fortnite', {
-      'Content-Type': 'application/json',
-    }, {
-      connection: {
-        id: this.xmpp.JID,
-        meta: {
-          'urn:epic:conn:platform_s': this.config.platform,
-          'urn:epic:conn:type_s': 'game',
-        },
-        yield_leadership: false,
-      },
-      meta: {
-        'urn:epic:member:dn_s': this.user?.displayName,
-        'urn:epic:member:joinrequestusers_j': JSON.stringify({
-          users: [
-            {
-              id: this.user?.id,
-              dn: this.user?.displayName,
-              plat: this.config.platform,
-              data: JSON.stringify({
-                CrossplayPreference: '1',
-                SubGame_u: '1',
-              }),
-            },
-          ],
-        }),
-      },
-    });
-
-    if (joinParty.error) {
-      this.partyLock.unlock();
-      await this.initParty(true, false);
-      if (joinParty.error.code === 'errors.com.epicgames.social.party.user_has_party') {
-        throw joinParty.error;
-      } else throw joinParty.error;
-    }
-
-    this.party = new ClientParty(this, party.toObject());
-    await this.party.chat.join();
-    this.partyLock.unlock();
+    return party.join(true);
   }
 
   /**
@@ -1016,23 +968,9 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async leaveParty(createNew = true) {
-    if (!this.party) return;
-    this.partyLock.lock();
+    if (!this.party) return undefined;
 
-    if (this.party.chat.isConnected) await this.party.chat.leave();
-
-    const partyLeave = await this.http.sendEpicgamesRequest(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.user?.id}`, 'fortnite');
-
-    if (partyLeave.error && partyLeave.error?.code !== 'errors.com.epicgames.social.party.party_not_found') {
-      this.partyLock.unlock();
-      throw partyLeave.error;
-    }
-
-    this.party = undefined;
-
-    this.partyLock.unlock();
-    if (createNew) await this.createParty();
+    return this.party.leave(createNew);
   }
 
   /**
@@ -1077,11 +1015,23 @@ class Client extends EventEmitter {
   /**
    * Fetches a party by its id
    * @param id The party's id
+   * @param raw Whether to return the raw party data
+   * @throws {PartyNotFoundError} The party wasn't found
+   * @throws {PartyPermissionError} The party cannot be fetched due to a permission error
    * @throws {EpicgamesAPIError}
    */
-  public async getParty(id: string) {
+  public async getParty(id: string, raw = false): Promise<Party | PartyData> {
     const party = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_PARTY}/parties/${id}`, 'fortnite');
-    if (party.error) throw party.error;
+    if (party.error) {
+      if (party.error instanceof EpicgamesAPIError) {
+        if (party.error.code === 'errors.com.epicgames.social.party.party_not_found') throw new PartyNotFoundError();
+        if (party.error.code === 'errors.com.epicgames.social.party.party_query_forbidden') throw new PartyPermissionError();
+      } else {
+        throw party.error;
+      }
+    }
+
+    if (raw) return party.response;
 
     const constuctedParty = new Party(this, party.response);
     await constuctedParty.updateMemberBasicInfo();

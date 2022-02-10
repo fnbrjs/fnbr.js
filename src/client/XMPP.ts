@@ -396,7 +396,7 @@ class XMPP extends Base {
             const [partyData] = data.response;
             let party: Party;
 
-            if (partyData.config.discoverability === 'ALL') party = await this.client.getParty(partyData.id);
+            if (partyData.config.discoverability === 'ALL') party = await this.client.getParty(partyData.id) as Party;
             else party = new Party(this.client, partyData);
 
             let invitation = partyData.invites.find((i: any) => i.sent_by === pingerId && i.status === 'SENT');

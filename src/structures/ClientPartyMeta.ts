@@ -84,7 +84,7 @@ class ClientPartyMeta extends PartyMeta {
     let i = 0;
     const assignments = [];
 
-    if (this.party.me && !this.party.hiddenMemberIds.includes(this.party.me.id)) {
+    if (this.party.me && !this.party.hiddenMemberIds.has(this.party.me.id)) {
       assignments.push({
         memberId: this.party.client.user?.id,
         absoluteMemberIdx: 0,
@@ -93,7 +93,7 @@ class ClientPartyMeta extends PartyMeta {
     }
 
     this.party.members.forEach((m) => {
-      if (m.id !== this.party.client.user?.id && !this.party.hiddenMemberIds.includes(m.id)) {
+      if (m.id !== this.party.client.user?.id && !this.party.hiddenMemberIds.has(m.id)) {
         assignments.push({
           memberId: m.id,
           absoluteMemberIdx: i,

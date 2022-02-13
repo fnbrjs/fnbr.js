@@ -206,7 +206,7 @@ export interface PartyConfig {
   privacy: PartyPrivacy;
 }
 
-export type PresenceOnlineType = 'away' | 'chat' | 'dnd' | 'xa' | 'online';
+export type PresenceOnlineType = 'online' | 'away' | 'chat' | 'dnd' | 'xa';
 
 export type StatsPlaylistType = 'other' | 'solo' | 'duo' | 'squad' | 'ltm';
 

@@ -1,4 +1,4 @@
-import { PartyPrivacy as IPartyPrivacy, Platform as IPlatform } from '../resources/structs';
+import { PartyPrivacy as IPartyPrivacy, Platform as IPlatform, PresenceOnlineType as IPresenceOnlineType } from '../resources/structs';
 
 export interface IPartyPrivacyEnum {
   PUBLIC: IPartyPrivacy;
@@ -16,6 +16,14 @@ export interface IPlatformEnum {
   SWITCH: IPlatform;
   IOS: IPlatform;
   ANDROID: IPlatform;
+}
+
+export interface IPresenceOnlineTypeEnum {
+  ONLINE: IPresenceOnlineType;
+  CHAT: IPresenceOnlineType;
+  AWAY: IPresenceOnlineType;
+  EXTENDED_AWAY: IPresenceOnlineType;
+  DO_NOT_DISTURB: IPresenceOnlineType;
 }
 
 export const PartyPrivacy: Readonly<IPartyPrivacyEnum> = Object.freeze({
@@ -183,6 +191,14 @@ export const STWLeadSynergy = Object.freeze({
   gadgeteers: 'IsGadgeteer',
 });
 
+export const PresenceOnlineType: Readonly<IPresenceOnlineTypeEnum> = Object.freeze({
+  ONLINE: 'online',
+  CHAT: 'chat',
+  AWAY: 'away',
+  EXTENDED_AWAY: 'xa',
+  DO_NOT_DISTURB: 'dnd',
+});
+
 export default Object.freeze({
   PartyPrivacy,
   Platform,
@@ -193,4 +209,5 @@ export default Object.freeze({
   SeasonStart,
   SeasonEnd,
   STWLeadSynergy,
+  PresenceOnlineType,
 });

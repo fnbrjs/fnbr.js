@@ -159,7 +159,7 @@ class Client extends EventEmitter {
       httpDebug: undefined,
       xmppDebug: undefined,
       defaultStatus: undefined,
-      defaultOnlineType: 'online',
+      defaultOnlineType: Enums.PresenceOnlineType.ONLINE,
       platform: 'WIN',
       defaultPartyMemberMeta: {},
       xmppKeepAliveInterval: 30,
@@ -705,7 +705,7 @@ class Client extends EventEmitter {
 
     const rawOnlineType = (onlineType || this.config.defaultOnlineType) === 'online' ? undefined : (onlineType || this.config.defaultOnlineType);
 
-    return this.xmpp.sendStatus(rawStatus, rawOnlineType as PresenceShow, toJID);
+    return this.xmpp.sendStatus(rawStatus, rawOnlineType as PresenceShow | undefined, toJID);
   }
 
   /**

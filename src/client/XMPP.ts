@@ -258,7 +258,7 @@ class XMPP extends Base {
         const presence = JSON.parse(p.status);
 
         const before = this.client.friends.get(friendId)?.presence;
-        const after = new FriendPresence(this.client, presence, friend);
+        const after = new FriendPresence(this.client, presence, friend, p.show || 'online', p.from);
         if ((this.client.config.cacheSettings.presences?.maxLifetime || 0) > 0) {
           friend.presence = after;
         }

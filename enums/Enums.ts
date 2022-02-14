@@ -16,6 +16,8 @@ export interface IPlatformEnum {
   SWITCH: IPlatform;
   IOS: IPlatform;
   ANDROID: IPlatform;
+  XBOX_SERIES_X: IPlatform;
+  PLAYSTATION_5: IPlatform;
 }
 
 export interface IPresenceOnlineTypeEnum {
@@ -77,6 +79,8 @@ export const Platform: Readonly<IPlatformEnum> = Object.freeze({
   SWITCH: 'SWT',
   IOS: 'IOS',
   ANDROID: 'AND',
+  XBOX_SERIES_X: 'XSX',
+  PLAYSTATION_5: 'PS5',
 });
 
 export const Playlist = Object.freeze({

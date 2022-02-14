@@ -64,6 +64,7 @@ import NewsMessage from '../structures/NewsMessage';
 import STWNewsMessage from '../structures/STWNewsMessage';
 import EventTokens from '../structures/EventTokens';
 import STWTheater from '../structures/STWTheater';
+import EventTimeoutError from '../exceptions/EventTimeoutError';
 
 /**
  * Represets the main client
@@ -445,9 +446,10 @@ class Client extends EventEmitter {
 
       this.on(event, handler);
 
+      const err = new EventTimeoutError(event, timeout);
       setTimeout(() => {
         this.removeListener(event, handler);
-        rej(new Error('Event timeout exceed'));
+        rej(err);
       }, timeout);
     });
   }

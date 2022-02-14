@@ -315,7 +315,11 @@ class Auth extends Base {
     if (EULAaccepted.error) return EULAaccepted;
 
     const fortniteAccess = await this.client.http.sendEpicgamesRequest(false, 'POST', `${Endpoints.INIT_GRANTACCESS}/${this.auths.get('fortnite')?.account_id}`, 'fortnite');
-    if (fortniteAccess.error) return fortniteAccess;
+    if (fortniteAccess.error) {
+      if (fortniteAccess.error.message !== 'Client requested access grant but already has the requested access entitlement') {
+        return fortniteAccess;
+      }
+    }
 
     return { response: { alreadyAccepted: false } };
   }

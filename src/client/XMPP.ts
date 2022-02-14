@@ -491,7 +491,8 @@ class XMPP extends Base {
 
           case 'com.epicgames.social.party.notification.v0.MEMBER_EXPIRED': {
             await this.client.partyLock.wait();
-            if (!this.client.party || this.client.party.id !== body.party_id) break;
+            if (!this.client.party || this.client.party.id !== body.party_id
+              || body.account_id === this.client.user?.id) break;
 
             const memberId = body.account_id;
             const member = this.client.party.members.get(memberId);

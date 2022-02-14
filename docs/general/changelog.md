@@ -5,7 +5,7 @@
 ### Additions
 * Enums
   * Added `XBOX_SERIES_X` and `PLAYSTATION_5` to the `Platform` enum
-  * Added the `STWLeadSynergy` emum
+  * Added the `STWLeadSynergy` enum
   * Added the `PresenceOnlineType` enum
 * Client Config
   * Added `ClientOptions#language`

@@ -1,5 +1,57 @@
 # Changelog
 
+## 3.0.0
+
+### Additions
+* Enums
+  * Added `XBOX_SERIES_X` and `PLAYSTATION_5` to the `Platform` enum
+  * Added the `STWLeadSynergy` emum
+  * Added the `PresenceOnlineType` enum
+* Client Config
+  * Added `ClientOptions#language`
+  * Added `ClientOptions#statsPlaylistTypeParser`
+  * Added comments to many all config options
+* Friend Online And Offline Events
+  * Added `Client#friend:online` and `Client#friend:offline` events
+  * Added `ClientOptions#friendOnlineConnectionTimeout`
+* Launcher Refresh Token Auth
+  * Added `AuthOptions#createLauncherSession`
+  * Reworked launcher refresh token auth to ensure that a token will always be created
+* Save The World Profiles
+  * Added `Client#getSTWProfile()`
+  * Can be used to calculate a profile's power level, fetch its survivors, etc
+* Save The World Info
+  * Added `Client#getSTWWorldInfo()`
+* Party Refreshing
+  * Added `Party#fetch()`
+
+### Changes
+* Party Fetching
+  * Added `raw` parameter to `Client#getParty()` that will make the method return the raw party data
+  * `Client#getParty()` now handles errors correctly
+* Stats
+  * **(Breaking)** `Client#getBRStats()` now returns a `Stats` object
+* News
+  * **(Breaking)** Removed `Client#getNews()`
+  * Added `Client#getBRNews()`
+  * Added `Client#getSTWNews()`
+* Battle Royale Account Level
+  * **(Breaking)** `Client#getBRAccountLevel()` now returns a `BRAccountLevelData` object
+* Event Tokens
+  * **(Breaking)** `Client#getEventTokens()` now returns a `EventTokens` object
+
+### Fixes
+* Fortnite EULA Accept Method
+  * Fixed an issue that occured when Fortnite was bought on an account but never actually launched
+* Client Presence Sweeping
+  * Fixed the documentation of the `maxLifetime` parameter of `Client#sweepPresences()`
+* HTTP Auth Error Handling
+  * Fixed an issue that affected automatic token refreshing
+* XMPP PARTY_MEMBER_EXPIRED Error
+  * Fixed an error that occured when the client handled its own party member expiration event
+
+<hr>
+
 ## 2.4.0
 
 ### Additions

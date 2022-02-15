@@ -122,7 +122,7 @@ class XMPP extends Base {
         this.connectedTimestamp = Date.now();
         this.client.debug(`[XMPP] Successfully connected (${((Date.now() - connectionStartTime) / 1000).toFixed(2)}s)`);
 
-        this.client.setStatus();
+        this.sendStatus();
 
         res({ response: true });
       });
@@ -236,6 +236,7 @@ class XMPP extends Base {
 
     this.stream.on('presence', async (p) => {
       try {
+        await this.client.cacheLock.wait();
         if (!p.status) return;
 
         const friendId = p.from.split('@')[0];
@@ -627,11 +628,8 @@ class XMPP extends Base {
    */
   public sendStatus(status?: object | string, show?: Constants.PresenceShow, to?: string) {
     if (!status) {
-      this.stream?.sendPresence({
-        status: undefined,
-        to,
-        show,
-      });
+      this.stream?.sendPresence();
+      this.client.debug('[XMPP] Sent presence: null', 'regular');
       return;
     }
 

@@ -8,6 +8,9 @@ import {
   STWHeroType,
   StatsPlaylistTypeData,
   STWItemTier,
+  STWSchematicType,
+  STWSchematicEvoType,
+  STWSchematicSubType,
 } from '../../resources/structs';
 import { STWLeadSynergy } from '../../enums/Enums';
 import BinaryWriter from './BinaryWriter';
@@ -359,6 +362,130 @@ export const parseSTWHeroTemplateId = (templateId: string) => {
 export const calcSTWNonSurvivorPowerLevel = (rarity: STWItemRarity, level: number, tier: STWItemTier) => (
   PowerLevelCurves.baseItemRating[`default_${rarity}_t0${tier}`].eval(level)
 );
+
+export function parseSTWSchematicTemplateId(templateId: string): {
+  type: STWSchematicType;
+  subType?: STWSchematicSubType;
+  tier?: STWItemTier;
+  evoType?: STWSchematicEvoType;
+  rarity?: STWItemRarity;
+  name?: string;
+} {
+  const id = templateId.split(':')[1];
+  const fields = id.split('_');
+
+  let type: STWSchematicType;
+  let subType: STWSchematicSubType | undefined;
+
+  let firstField = fields.shift();
+
+  if (firstField !== 'sid') {
+    // probably ammo or something weird
+    fields.unshift(firstField!);
+    return {
+      type: 'other',
+      subType: undefined,
+      tier: undefined,
+      evoType: undefined,
+      rarity: undefined,
+      name: fields[0] ? fields.join('_') : undefined,
+    };
+  }
+
+  firstField = fields.shift();
+  let nextField: string | undefined;
+  let i: number;
+
+  switch (firstField) {
+    case 'edged':
+      type = 'melee';
+      // look for axe, scythe, or sword - might not be next
+      i = fields.findIndex((f) => f === 'axe' || f === 'scythe' || f === 'sword');
+      if (i >= 0) {
+        subType = `edged_${fields[i] as 'axe' | 'scythe' | 'sword'}`;
+        fields.splice(i, 1);
+      } else {
+        subType = undefined;
+      }
+      break;
+    case 'blunt':
+      type = 'melee';
+      // if next is hammer, then blunt_hammer, otherwise blunt
+      nextField = fields.shift();
+      if (nextField === 'hammer') {
+        subType = 'blunt_hammer';
+      } else {
+        if (nextField !== undefined) {
+          fields.unshift(nextField);
+        }
+        subType = 'blunt';
+      }
+      break;
+    case 'piercing':
+      type = 'melee';
+      // spear should be next
+      nextField = fields.shift();
+      if (nextField === 'spear') {
+        subType = 'piercing_spear';
+      } else {
+        if (nextField !== undefined) {
+          fields.unshift(nextField);
+        }
+        subType = undefined;
+      }
+      break;
+    case 'ceiling':
+    case 'floor':
+    case 'wall':
+      type = 'trap';
+      subType = firstField;
+      break;
+    case 'explosive':
+    case 'launcher':
+      // some launchers are tagged explosive - we always use launcher
+      type = 'ranged';
+      subType = 'launcher';
+      break;
+    case 'assault':
+      type = 'ranged';
+      // a few SMGs are confusingly also tagged assault
+      i = fields.findIndex((f) => f === 'smg');
+      if (i >= 0) {
+        subType = 'smg';
+        fields.splice(i, 1);
+        fields.unshift(firstField);
+      } else {
+        subType = 'assault';
+      }
+      break;
+    case 'pistol':
+    case 'shotgun':
+    case 'smg':
+    case 'sniper':
+      type = 'ranged';
+      subType = firstField;
+      break;
+    default:
+      // uh oh
+      type = 'other';
+      subType = firstField as STWSchematicSubType;
+      break;
+  }
+
+  const tier = parseInt(fields.pop()!.slice(1), 10) as STWItemTier;
+  const evoType = type !== 'trap' ? fields.pop() as STWSchematicEvoType : undefined;
+  const rarity = fields.pop() as STWItemRarity;
+  const name = fields[0] ? fields.join('_') : undefined;
+
+  return {
+    type,
+    subType,
+    tier,
+    evoType,
+    rarity,
+    name,
+  };
+}
 
 const defaultStats = {
   score: 0,

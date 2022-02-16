@@ -629,7 +629,6 @@ class XMPP extends Base {
   public sendStatus(status?: object | string, show?: Constants.PresenceShow, to?: string) {
     if (!status) {
       this.stream?.sendPresence();
-      this.client.debug('[XMPP] Sent presence: null', 'regular');
       return;
     }
 

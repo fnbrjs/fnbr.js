@@ -1157,7 +1157,7 @@ export interface STWStatsBRLoadoutData {
   useRandomLoadout: boolean;
 }
 
-export interface STWStatsMissionAlertRedemtionData {
+export interface STWStatsMissionAlertRedemptionData {
   missionAlertId: string;
   redemptionDateUtc: Date;
   evictClaimDataAfterUtc: Date;

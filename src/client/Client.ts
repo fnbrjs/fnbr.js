@@ -103,6 +103,11 @@ class Client extends EventEmitter {
   public partyLock: AsyncLock;
 
   /**
+   * Lock used to pause xmpp presences while the friend caches are being populated
+   */
+  public cacheLock: AsyncLock;
+
+  /**
    * HTTP manager
    */
   public http: Http;
@@ -211,6 +216,7 @@ class Client extends EventEmitter {
 
     this.reauthLock = new AsyncLock();
     this.partyLock = new AsyncLock();
+    this.cacheLock = new AsyncLock();
 
     this.user = undefined;
     this.isReady = false;
@@ -259,6 +265,8 @@ class Client extends EventEmitter {
 
     this.initCacheSweeping();
 
+    this.cacheLock.lock();
+
     if (this.config.connectToXMPP) {
       this.xmpp.setup();
       const xmpp = await this.xmpp.connect();
@@ -268,6 +276,8 @@ class Client extends EventEmitter {
     if (this.config.fetchFriends) {
       await this.updateCaches();
     }
+
+    this.cacheLock.unlock();
 
     await this.initParty(this.config.createParty, this.config.forceNewParty);
     this.setStatus();
@@ -437,9 +447,13 @@ class Client extends EventEmitter {
     // eslint-disable-next-line no-unused-vars
     filter?: (...args: Parameters<ClientEvents[U]>) => boolean): Promise<Parameters<ClientEvents[U]>> {
     return new Promise<any>((res, rej) => {
+      // eslint-disable-next-line no-undef
+      let rejectionTimeout: NodeJS.Timeout;
+
       const handler = (...data: any) => {
         if (!filter || filter(...data)) {
           this.removeListener(event, handler);
+          if (rejectionTimeout) clearTimeout(rejectionTimeout);
           res(data);
         }
       };
@@ -447,7 +461,7 @@ class Client extends EventEmitter {
       this.on(event, handler);
 
       const err = new EventTimeoutError(event, timeout);
-      setTimeout(() => {
+      rejectionTimeout = setTimeout(() => {
         this.removeListener(event, handler);
         rej(err);
       }, timeout);
@@ -684,13 +698,14 @@ class Client extends EventEmitter {
       Status: status || this.config.defaultStatus
         || (this.party && `Battle Royale Lobby - ${this.party.size} / ${this.party.maxSize}`) || 'Playing Battle Royale',
       bIsPlaying: false,
-      bIsJoinable: false,
+      bIsJoinable: this.party && !this.party.isPrivate && this.party.size !== this.party.maxSize,
       bHasVoiceSupport: false,
       SessionId: '',
+      ProductName: 'Fortnite',
       Properties: {
         'party.joininfodata.286331153_j': partyJoinInfoData,
         FortBasicInfo_j: {
-          homeBaseRating: 1,
+          homeBaseRating: 0,
         },
         FortLFG_I: '0',
         FortPartySize_i: 1,

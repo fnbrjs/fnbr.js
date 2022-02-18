@@ -386,7 +386,7 @@ export function parseSTWSchematicTemplateId(templateId: string): {
   switch (firstField) {
     case 'edged':
       type = 'melee';
-      // look for axe, scythe, or sword - might not be next
+      // look for "axe", "scythe", or "sword", which might occur later in the name
       i = fields.findIndex((f) => f === 'axe' || f === 'scythe' || f === 'sword');
       if (i >= 0) {
         subType = `edged_${fields[i] as 'axe' | 'scythe' | 'sword'}`;
@@ -397,7 +397,7 @@ export function parseSTWSchematicTemplateId(templateId: string): {
       break;
     case 'blunt':
       type = 'melee';
-      // if next is hammer, then blunt_hammer, otherwise blunt
+      // if the next field is "hammer", then the full type is "blunt_hammer", otherwise "blunt"
       nextField = fields.shift();
       if (nextField === 'hammer') {
         subType = 'blunt_hammer';
@@ -410,7 +410,7 @@ export function parseSTWSchematicTemplateId(templateId: string): {
       break;
     case 'piercing':
       type = 'melee';
-      // spear should be next
+      // "piercing" should always be followed by "spear", because spear is the only piercing weapon type
       nextField = fields.shift();
       if (nextField === 'spear') {
         subType = 'piercing_spear';
@@ -429,13 +429,15 @@ export function parseSTWSchematicTemplateId(templateId: string): {
       break;
     case 'explosive':
     case 'launcher':
-      // some launchers are tagged explosive - we always use launcher
+      // "launcher" and "explosive" are used interchangeably to refer to the same subtype,
+      // but only some weapons of that subtype use "explosive" ammo, so we settle on "launcher"
       type = 'ranged';
       subType = 'launcher';
       break;
     case 'assault':
       type = 'ranged';
-      // a few SMGs are confusingly also tagged assault
+      // some weapons that were originally ARs were recategorized as SMGs when that subtype
+      // was added, and now they have both "assault" and "smg" in the name
       i = fields.findIndex((f) => f === 'smg');
       if (i >= 0) {
         subType = 'smg';
@@ -453,7 +455,8 @@ export function parseSTWSchematicTemplateId(templateId: string): {
       subType = firstField;
       break;
     default:
-      // uh oh
+      // the name doesn't fit any known pattern, so this might be a new type of schematic.
+      // in the meantimwe, we still need to represent it somehow.
       type = 'other';
       subType = firstField as STWSchematicSubType;
       break;

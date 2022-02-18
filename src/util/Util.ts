@@ -291,19 +291,6 @@ export const parseSTWSurvivorTemplateId = (templateId: string) => {
   };
 };
 
-export const calcSTWItemRarity = (rarity: STWItemRarity) => {
-  const rarities = {
-    c: 1,
-    uc: 2,
-    r: 3,
-    vr: 4,
-    sr: 5,
-    ur: 6,
-  };
-
-  return rarities[rarity] || 0;
-};
-
 export const calcSTWSurvivorPowerLevel = (rarity: STWItemRarity, isLeader: boolean, level: number, tier: STWItemTier) => {
   /**
    * We use Exclude<> here because mythic lead survivors actually have SR (legendary) rarity,

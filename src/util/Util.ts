@@ -8,6 +8,9 @@ import {
   STWHeroType,
   StatsPlaylistTypeData,
   STWItemTier,
+  STWSchematicType,
+  STWSchematicEvoType,
+  STWSchematicSubType,
 } from '../../resources/structs';
 import { STWLeadSynergy } from '../../enums/Enums';
 import BinaryWriter from './BinaryWriter';
@@ -288,19 +291,6 @@ export const parseSTWSurvivorTemplateId = (templateId: string) => {
   };
 };
 
-export const calcSTWItemRarity = (rarity: STWItemRarity) => {
-  const rarities = {
-    c: 1,
-    uc: 2,
-    r: 3,
-    vr: 4,
-    sr: 5,
-    ur: 6,
-  };
-
-  return rarities[rarity] || 0;
-};
-
 export const calcSTWSurvivorPowerLevel = (rarity: STWItemRarity, isLeader: boolean, level: number, tier: STWItemTier) => {
   /**
    * We use Exclude<> here because mythic lead survivors actually have SR (legendary) rarity,
@@ -359,6 +349,133 @@ export const parseSTWHeroTemplateId = (templateId: string) => {
 export const calcSTWNonSurvivorPowerLevel = (rarity: STWItemRarity, level: number, tier: STWItemTier) => (
   PowerLevelCurves.baseItemRating[`default_${rarity}_t0${tier}`].eval(level)
 );
+
+export function parseSTWSchematicTemplateId(templateId: string): {
+  type: STWSchematicType;
+  subType?: STWSchematicSubType;
+  tier?: STWItemTier;
+  evoType?: STWSchematicEvoType;
+  rarity?: STWItemRarity;
+  name?: string;
+} {
+  const id = templateId.split(':')[1];
+  const fields = id.split('_');
+
+  let type: STWSchematicType;
+  let subType: STWSchematicSubType | undefined;
+
+  let firstField = fields.shift();
+
+  if (firstField !== 'sid') {
+    // probably ammo or something weird
+    fields.unshift(firstField!);
+    return {
+      type: 'other',
+      subType: undefined,
+      tier: undefined,
+      evoType: undefined,
+      rarity: undefined,
+      name: fields[0] ? fields.join('_') : undefined,
+    };
+  }
+
+  firstField = fields.shift();
+  let nextField: string | undefined;
+  let i: number;
+
+  switch (firstField) {
+    case 'edged':
+      type = 'melee';
+      // look for "axe", "scythe", or "sword", which might occur later in the name
+      i = fields.findIndex((f) => f === 'axe' || f === 'scythe' || f === 'sword');
+      if (i >= 0) {
+        subType = `edged_${fields[i] as 'axe' | 'scythe' | 'sword'}`;
+        fields.splice(i, 1);
+      } else {
+        subType = undefined;
+      }
+      break;
+    case 'blunt':
+      type = 'melee';
+      // if the next field is "hammer", then the full type is "blunt_hammer", otherwise "blunt"
+      nextField = fields.shift();
+      if (nextField === 'hammer') {
+        subType = 'blunt_hammer';
+      } else {
+        if (nextField !== undefined) {
+          fields.unshift(nextField);
+        }
+        subType = 'blunt';
+      }
+      break;
+    case 'piercing':
+      type = 'melee';
+      // "piercing" should always be followed by "spear", because spear is the only piercing weapon type
+      nextField = fields.shift();
+      if (nextField === 'spear') {
+        subType = 'piercing_spear';
+      } else {
+        if (nextField !== undefined) {
+          fields.unshift(nextField);
+        }
+        subType = undefined;
+      }
+      break;
+    case 'ceiling':
+    case 'floor':
+    case 'wall':
+      type = 'trap';
+      subType = firstField;
+      break;
+    case 'explosive':
+    case 'launcher':
+      // "launcher" and "explosive" are used interchangeably to refer to the same subtype,
+      // but only some weapons of that subtype use "explosive" ammo, so we settle on "launcher"
+      type = 'ranged';
+      subType = 'launcher';
+      break;
+    case 'assault':
+      type = 'ranged';
+      // some weapons that were originally ARs were recategorized as SMGs when that subtype
+      // was added, and now they have both "assault" and "smg" in the name
+      i = fields.findIndex((f) => f === 'smg');
+      if (i >= 0) {
+        subType = 'smg';
+        fields.splice(i, 1);
+        fields.unshift(firstField);
+      } else {
+        subType = 'assault';
+      }
+      break;
+    case 'pistol':
+    case 'shotgun':
+    case 'smg':
+    case 'sniper':
+      type = 'ranged';
+      subType = firstField;
+      break;
+    default:
+      // the name doesn't fit any known pattern, so this might be a new type of schematic.
+      // in the meantimwe, we still need to represent it somehow.
+      type = 'other';
+      subType = firstField as STWSchematicSubType;
+      break;
+  }
+
+  const tier = parseInt(fields.pop()!.slice(1), 10) as STWItemTier;
+  const evoType = type !== 'trap' ? fields.pop() as STWSchematicEvoType : undefined;
+  const rarity = fields.pop() as STWItemRarity;
+  const name = fields[0] ? fields.join('_') : undefined;
+
+  return {
+    type,
+    subType,
+    tier,
+    evoType,
+    rarity,
+    name,
+  };
+}
 
 const defaultStats = {
   score: 0,

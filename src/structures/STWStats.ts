@@ -3,7 +3,7 @@ import Base from '../client/Base';
 import { STWProfileStatsData } from '../../resources/httpResponses';
 import {
   STWStatsNodeCostsData, STWStatsBRLoadoutData, STWStatsSTWLoadoutData,
-  STWStatsMissionAlertRedemtionData, STWStatsQuestData, STWStatsGameplayStatData,
+  STWStatsMissionAlertRedemptionData, STWStatsQuestData, STWStatsGameplayStatData,
   STWStatsClientSettingsData, STWStatsResearchLevelsData, STWStatsDailyRewardsData,
   STWStatsEventCurrencyData, STWStatsXPData,
 } from '../../resources/structs';
@@ -30,7 +30,7 @@ class STWStats extends Base {
   /**
    * The profile's mission alert redemption record
    */
-  public missionAlertRedemtionRecord?: STWStatsMissionAlertRedemtionData[];
+  public missionAlertRedemptionRecord?: STWStatsMissionAlertRedemptionData[];
 
   /**
    * The profile's amount of rewards claimed post max level
@@ -138,7 +138,7 @@ class STWStats extends Base {
       useRandomLoadout: data.use_random_loadout,
     };
 
-    this.missionAlertRedemtionRecord = data.mission_alert_redemption_record.claimData?.map((d) => ({
+    this.missionAlertRedemptionRecord = data.mission_alert_redemption_record.claimData?.map((d) => ({
       missionAlertId: d.missionAlertId,
       redemptionDateUtc: new Date(d.redemptionDateUtc),
       evictClaimDataAfterUtc: new Date(d.evictClaimDataAfterUtc),

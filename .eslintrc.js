@@ -24,8 +24,6 @@ module.exports = {
     'function-paren-newline': 'off',
     'function-call-argument-newline': 'off',
     'default-param-last': 'off',
-    'no-redeclare': 'off',
-    '@typescript-eslint/no-redeclare': ['error'],
   },
   settings: {
     'import/resolver': {

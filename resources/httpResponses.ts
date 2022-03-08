@@ -762,3 +762,88 @@ export interface STWTheaterData {
     }[];
   }[];
 }
+
+export interface STWMissionItem {
+  itemType: string;
+  quantity: number;
+}
+
+export interface STWMissionTierGroup {
+  tierGroupName: string;
+  items: STWMissionItem[];
+}
+
+export interface STWMissionOverrideMissionRewards {
+  Endurance: STWMissionTierGroup;
+  Wargames: STWMissionTierGroup;
+}
+
+export interface STWMissionMissionDifficultyInfo {
+  dataTable: string;
+  rowName: string;
+}
+
+export interface STWMissionAvailableMission {
+  missionGuid: string;
+  missionRewards: STWMissionTierGroup;
+  overrideMissionRewards: STWMissionOverrideMissionRewards;
+  missionGenerator: string;
+  missionDifficultyInfo: STWMissionMissionDifficultyInfo;
+  tileIndex: number;
+  availableUntil: Date;
+  bonusMissionRewards: STWMissionTierGroup;
+}
+
+export interface STWMissionData {
+  theaterId: string;
+  availableMissions: STWMissionAvailableMission[];
+  nextRefresh: string;
+}
+
+export interface STWMissionAlertAlteration {
+  LootTierGroup: string;
+  Tier: number;
+}
+
+export interface STWMissionAlertAttributes {
+  Alteration: STWMissionAlertAlteration;
+}
+
+export interface STWMissionAlertItemWithAttributes {
+  itemType: string;
+  quantity: number;
+  attributes: STWMissionAlertAttributes;
+}
+
+export interface STWMissionAlertMissionAlertRewards {
+  tierGroupName: string;
+  items: STWMissionAlertItemWithAttributes[];
+}
+
+export interface STWMissionAlertItem {
+  itemType: string;
+  quantity: number;
+}
+
+export interface STWMissionAlertMissionAlertModifiers {
+  tierGroupName: string;
+  items: STWMissionAlertItem[];
+}
+
+export interface STWMissionAlertAvailableMissionAlert {
+  name: string;
+  categoryName: string;
+  spreadDataName: string;
+  missionAlertGuid: string;
+  tileIndex: number;
+  availableUntil: Date;
+  totalSpreadRefreshes: number;
+  missionAlertRewards: STWMissionAlertMissionAlertRewards;
+  missionAlertModifiers: STWMissionAlertMissionAlertModifiers;
+}
+
+export interface STWMissionAlertData {
+  theaterId: string;
+  availableMissionAlerts: STWMissionAlertAvailableMissionAlert[];
+  nextRefresh: Date;
+}

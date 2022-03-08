@@ -17,10 +17,12 @@ import PartyMemberConfirmation from '../src/structures/PartyMemberConfirmation';
 import PartyMessage from '../src/structures/PartyMessage';
 import ReceivedPartyInvitation from '../src/structures/ReceivedPartyInvitation';
 import User from '../src/structures/User';
-import { EpicgamesOAuthData, STWProfileLockerSlotData, TournamentWindowTemplateData } from './httpResponses';
+import {
+  EpicgamesOAuthData, STWMissionAlertData, STWMissionData, STWProfileLockerSlotData,
+  STWTheaterData, TournamentWindowTemplateData,
+} from './httpResponses';
 import ReceivedFriendMessage from '../src/structures/ReceivedFriendMessage';
 import STWSurvivor from '../src/structures/STWSurvivor';
-import STWTheater from '../src/structures/STWTheater';
 
 export interface Schema {
   [key: string]: any;
@@ -1272,8 +1274,8 @@ export interface ImageData {
   height?: number;
 }
 
-export interface STWWorldInfo {
-  theaters: STWTheater[];
-  // missions: STWMission[];
-  // missionAlerts: STWMissionAlert[];
+export interface STWWorldInfoData {
+  theaters: STWTheaterData[];
+  missions: STWMissionData[];
+  missionAlerts: STWMissionAlertData[];
 }

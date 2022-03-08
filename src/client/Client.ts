@@ -14,7 +14,7 @@ import {
   ClientOptions, ClientConfig, ClientEvents, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
-  ReplayDownloadConfig, TournamentSessionMetadata, STWWorldInfo,
+  ReplayDownloadConfig, TournamentSessionMetadata, STWWorldInfoData,
   BRAccountLevelData, Language, PartyData,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
@@ -63,7 +63,6 @@ import Stats from '../structures/Stats';
 import NewsMessage from '../structures/NewsMessage';
 import STWNewsMessage from '../structures/STWNewsMessage';
 import EventTokens from '../structures/EventTokens';
-import STWTheater from '../structures/STWTheater';
 import EventTimeoutError from '../exceptions/EventTimeoutError';
 
 /**
@@ -1679,31 +1678,17 @@ class Client extends EventEmitter {
    * @param language The language of the world info
    * @throws {EpicgamesAPIError}
    */
-  public async getSTWWorldInfo(language = this.config.language): Promise<STWWorldInfo> {
+  public async getSTWWorldInfo(language = this.config.language): Promise<STWWorldInfoData> {
     const worldInfoResponse = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.STW_WORLD_INFO, 'fortnite', {
       'Accept-Language': language,
     });
     if (worldInfoResponse.error) throw worldInfoResponse.error;
 
     return {
-      theaters: worldInfoResponse.response.theaters.map((t: any) => new STWTheater(this, t)),
-      // missions: worldInfoResponse.response.missions.map((t: any) => new STWMission(this, t)),
-      // missionAlerts: worldInfoResponse.response.theaters.map((t: any) => new STWMissionAlert(this, t)),
+      theaters: worldInfoResponse.response.theaters,
+      missions: worldInfoResponse.response.missions,
+      missionAlerts: worldInfoResponse.response.missionAlerts,
     };
-  }
-
-  /**
-   * Fetches the current Save The World theaters
-   * @param language The language of the theaters
-   * @throws {EpicgamesAPIError}
-   */
-  public async getSTWTheaters(language = this.config.language): Promise<STWTheater> {
-    const worldInfoResponse = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.STW_WORLD_INFO, 'fortnite', {
-      'Accept-Language': language,
-    });
-    if (worldInfoResponse.error) throw worldInfoResponse.error;
-
-    return worldInfoResponse.response.theaters.map((t: any) => new STWTheater(this, t));
   }
 }
 

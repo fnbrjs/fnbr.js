@@ -81,7 +81,6 @@ export { default as STWSchematic } from './src/structures/STWSchematic';
 export { default as STWStats } from './src/structures/STWStats';
 export { default as STWSurvivor } from './src/structures/STWSurvivor';
 export { default as STWTeamPerk } from './src/structures/STWTeamPerk';
-export { default as STWTheater } from './src/structures/STWTheater';
 export { default as STWTrapSchematic } from './src/structures/STWTrapSchematic';
 export { default as STWWeaponSchematic } from './src/structures/STWWeaponSchematic';
 export { default as SentFriendMessage } from './src/structures/SentFriendMessage';

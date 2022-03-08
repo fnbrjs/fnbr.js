@@ -49,6 +49,12 @@
   * Fixed an issue that affected automatic token refreshing
 * XMPP PARTY_MEMBER_EXPIRED Error
   * Fixed an error that occured when the client handled its own party member expiration event
+* XMPP Presences
+  * Fixed an issue that caused the presence cache to be populated very slower
+* XBOX External Auth
+  * Added `ExternalAuths#xbl`
+* Party Join Requests
+  * Fixed `sender` and `receiver` being swapped
 
 <hr>
 

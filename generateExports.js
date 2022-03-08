@@ -9,6 +9,7 @@ const fs = require('fs').promises;
 
   output += '\n// exceptions\n';
   const exceptions = await fs.readdir('./src/exceptions');
+  exceptions.sort();
   exceptions.forEach((file) => {
     const fileWithoutExtension = file.split('.')[0];
     output += `export { default as ${fileWithoutExtension} } from './src/exceptions/${fileWithoutExtension}';\n`;
@@ -16,6 +17,7 @@ const fs = require('fs').promises;
 
   output += '\n// structures\n';
   const structures = await fs.readdir('./src/structures');
+  structures.sort();
   structures.forEach((file) => {
     const fileWithoutExtension = file.split('.')[0];
     output += `export { default as ${fileWithoutExtension} } from './src/structures/${fileWithoutExtension}';\n`;

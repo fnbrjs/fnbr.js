@@ -2,7 +2,7 @@ import { STWProfileHeroData } from '../../resources/httpResponses';
 import { STWItemRarity, STWHeroType, STWItemTier } from '../../resources/structs';
 import Client from '../client/Client';
 import {
-  calcSTWNonSurvivorPowerLevel, calcSTWItemRarity, parseSTWHeroTemplateId,
+  calcSTWNonSurvivorPowerLevel, parseSTWHeroTemplateId,
 } from '../util/Util';
 import STWItem from './STWItem';
 
@@ -82,13 +82,6 @@ class STWHero extends STWItem {
     this.isSeen = data.attributes.item_seen;
     this.isFavorite = data.attributes.favorite;
     this.isRefundable = data.attributes.refundable;
-  }
-
-  /**
-   * The hero's rarity value (number from 0-6).
-   */
-  public get rarityValue() {
-    return calcSTWItemRarity(this.rarity);
   }
 
   /**

@@ -2,7 +2,7 @@
 import { AxiosError } from 'axios';
 import EpicgamesAPIError from '../src/exceptions/EpicgamesAPIError';
 import EpicgamesGraphQLError from '../src/exceptions/EpicgamesGraphQLError';
-import { FullPlatform, Region } from './structs';
+import { FullPlatform, Region, STWSchematicAlterationRarity } from './structs';
 
 export interface HTTPResponse {
   response?: any;
@@ -459,6 +459,21 @@ export interface STWProfileHeroLoadoutData extends STWProfileItemData {
       gadget: string;
       slot_index: number;
     }[];
+  }
+}
+
+export interface STWProfileSchematicData extends STWProfileItemData {
+  attributes: {
+    legacy_alterations: unknown[];
+    max_level_bonus: number;
+    refund_legacy_item: boolean;
+    level: number;
+    item_seen: boolean;
+    alterations: string[];
+    xp: number;
+    refundable: boolean;
+    alteration_base_rarities: STWSchematicAlterationRarity[];
+    favorite: boolean;
   }
 }
 

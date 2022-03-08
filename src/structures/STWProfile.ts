@@ -6,6 +6,7 @@ import {
   STWProfileHeroLoadoutData,
   STWProfileLockerData,
   STWProfileResourceData,
+  STWProfileSchematicData,
   STWProfileSurvivorData,
 } from '../../resources/httpResponses';
 import PowerLevelCurves from '../../resources/PowerLevelCurves';
@@ -15,13 +16,20 @@ import {
   UserData,
 } from '../../resources/structs';
 import Client from '../client/Client';
+import { parseSTWSchematicTemplateId } from '../util/Util';
 import STWHero from './STWHero';
 import STWHeroLoadout from './STWHeroLoadout';
 import STWItem from './STWItem';
 import STWLocker from './STWLocker';
+import STWMeleeWeaponSchematic from './STWMeleeWeaponSchematic';
+import STWRangedWeaponSchematic from './STWRangedWeaponSchematic';
 import STWResource from './STWResource';
+import STWSchematic from './STWSchematic';
 import STWStats from './STWStats';
 import STWSurvivor from './STWSurvivor';
+import STWTeamPerk from './STWTeamPerk';
+import STWTrapSchematic from './STWTrapSchematic';
+import STWWeaponSchematic from './STWWeaponSchematic';
 import User from './User';
 
 /**
@@ -66,7 +74,7 @@ class STWProfile extends User {
   /**
    * The profile's items
    */
-  public items: (STWItem | STWSurvivor | STWLocker | STWResource | STWHero | STWHeroLoadout)[];
+  public items: (STWItem | STWSurvivor | STWLocker | STWResource | STWHero | STWHeroLoadout | STWSchematic | STWTeamPerk)[];
 
   /**
    * The profile's stats
@@ -109,6 +117,25 @@ class STWProfile extends User {
           break;
         case 'CampaignHeroLoadout':
           this.items.push(new STWHeroLoadout(this.client, itemId, item as STWProfileHeroLoadoutData));
+          break;
+        case 'Schematic':
+          switch (parseSTWSchematicTemplateId(item.templateId).type) {
+            case 'melee':
+              this.items.push(new STWMeleeWeaponSchematic(this.client, itemId, item as STWProfileSchematicData));
+              break;
+            case 'ranged':
+              this.items.push(new STWRangedWeaponSchematic(this.client, itemId, item as STWProfileSchematicData));
+              break;
+            case 'trap':
+              this.items.push(new STWTrapSchematic(this.client, itemId, item as STWProfileSchematicData));
+              break;
+            default:
+              this.items.push(new STWSchematic(this.client, itemId, item as STWProfileSchematicData));
+              break;
+          }
+          break;
+        case 'TeamPerk':
+          this.items.push(new STWTeamPerk(this.client, itemId, item));
           break;
         default:
           this.items.push(new STWItem(this.client, itemId, item));
@@ -174,6 +201,34 @@ class STWProfile extends User {
   public get heroLoadouts() {
     return (this.items.filter((i) => i instanceof STWHeroLoadout) as STWHeroLoadout[])
       .sort((a, b) => a.loadoutIndex - b.loadoutIndex);
+  }
+
+  /**
+   * The profile's schematics
+   */
+  public get schematics() {
+    return this.items.filter((i) => i instanceof STWSchematic) as STWSchematic[];
+  }
+
+  /**
+   * The profile's weapon schematics
+   */
+  public get weaponSchematics() {
+    return this.items.filter((i) => i instanceof STWWeaponSchematic) as STWWeaponSchematic[];
+  }
+
+  /**
+   * The profile's trap schematics
+   */
+  public get trapSchematics() {
+    return this.items.filter((i) => i instanceof STWTrapSchematic) as STWTrapSchematic[];
+  }
+
+  /**
+   * The profile's team perks
+   */
+  public get teamPerks() {
+    return this.items.filter((i) => i instanceof STWTeamPerk) as STWTeamPerk[];
   }
 
   /**

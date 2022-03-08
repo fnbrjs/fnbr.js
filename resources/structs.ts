@@ -1159,7 +1159,7 @@ export interface STWStatsBRLoadoutData {
   useRandomLoadout: boolean;
 }
 
-export interface STWStatsMissionAlertRedemtionData {
+export interface STWStatsMissionAlertRedemptionData {
   missionAlertId: string;
   redemptionDateUtc: Date;
   evictClaimDataAfterUtc: Date;
@@ -1237,6 +1237,20 @@ export interface STWLockerBannerData {
 }
 
 export type STWHeroType = 'commando' | 'constructor' | 'outlander' | 'ninja';
+
+export type STWSchematicType = 'ranged' | 'melee' | 'trap' | 'other';
+
+export type STWSchematicRangedSubType = 'assault' | 'launcher' | 'pistol' | 'shotgun' | 'smg' | 'sniper';
+
+export type STWSchematicMeleeSubType = 'blunt' | 'blunt_hammer' | 'edged_axe' | 'edged_scythe' | 'edged_sword' | 'piercing_spear';
+
+export type STWSchematicTrapSubType = 'ceiling' | 'floor' | 'wall';
+
+export type STWSchematicSubType = STWSchematicRangedSubType | STWSchematicMeleeSubType | STWSchematicTrapSubType;
+
+export type STWSchematicAlterationRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+
+export type STWSchematicEvoType = 'ore' | 'crystal';
 
 export interface StatsLevelData {
   [key: string]: {

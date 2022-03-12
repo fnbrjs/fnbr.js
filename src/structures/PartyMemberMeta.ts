@@ -72,7 +72,7 @@ class PartyMemberMeta extends Meta {
    * The cosmetic variants
    */
   public get variants(): CosmeticsVariantMeta {
-    const variants = this.get('Default:AthenaCosmeticLoadoutVariants_j')?.vL;
+    const variants = this.get('Default:AthenaCosmeticLoadoutVariants_j')?.AthenaCosmeticLoadoutVariants?.vL;
     if (!variants) return {};
 
     const pascalCaseVariants: any = {};

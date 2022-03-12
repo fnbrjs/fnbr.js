@@ -977,7 +977,7 @@ export interface PresencePartyData {
   pc?: number;
 }
 
-export type UserSearchPlatform = 'epic' | 'psn' | 'xbl';
+export type UserSearchPlatform = 'epic' | 'psn' | 'xbl' | 'steam';
 
 export type UserSearchMatchType = 'exact' | 'prefix';
 

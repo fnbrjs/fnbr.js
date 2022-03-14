@@ -2,7 +2,7 @@ import Collection from '@discordjs/collection';
 import { AsyncQueue } from '@sapphire/async-queue';
 import Endpoints from '../../resources/Endpoints';
 import {
-  PartyData, PartyPrivacy, Playlist, Schema,
+  PartyData, PartyPrivacy, PartySchema, Playlist,
 } from '../../resources/structs';
 import Client from '../client/Client';
 import FriendNotFoundError from '../exceptions/FriendNotFoundError';
@@ -106,7 +106,7 @@ class ClientParty extends Party {
    * @throws {PartyPermissionError} You're not the leader of this party
    * @throws {EpicgamesAPIError}
    */
-  public async sendPatch(updated: Schema, deleted: string[] = []): Promise<void> {
+  public async sendPatch(updated: PartySchema, deleted: (keyof PartySchema & string)[] = []): Promise<void> {
     await this.patchQueue.wait();
 
     const patch = await this.client.http.sendEpicgamesRequest(true, 'PATCH', `${Endpoints.BR_PARTY}/parties/${this.id}`, 'fortnite', {
@@ -245,8 +245,8 @@ class ClientParty extends Party {
   public async setPrivacy(privacy: PartyPrivacy, sendPatch = true) {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
-    const updated: Schema = {};
-    const deleted: string[] = [];
+    const updated: PartySchema = {};
+    const deleted: (keyof PartySchema & string)[] = [];
 
     const privacyMeta = this.meta.get('Default:PrivacySettings_j');
     if (privacyMeta) {

@@ -1,4 +1,4 @@
-import { PartyMemberData, PartyMemberUpdateData } from '../../resources/structs';
+import { PartyMemberData, PartyMemberSchema, PartyMemberUpdateData } from '../../resources/structs';
 import PartyPermissionError from '../exceptions/PartyPermissionError';
 import PartyMemberMeta from './PartyMemberMeta';
 import User from './User';
@@ -204,7 +204,7 @@ class PartyMember extends User {
     if (data.account_dn !== this.displayName) this.update({ id: this.id, displayName: data.account_dn, externalAuths: this.externalAuths });
 
     this.meta.update(data.member_state_updated, true);
-    this.meta.remove(data.member_state_removed);
+    this.meta.remove(data.member_state_removed as (keyof PartyMemberSchema)[]);
   }
 
   /**

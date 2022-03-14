@@ -1,4 +1,5 @@
-import { Schema } from '../../resources/structs';
+import defaultPartyMeta from '../../resources/defaultPartyMeta.json';
+import { PartySchema } from '../../resources/structs';
 import ClientParty from './ClientParty';
 import PartyMeta from './PartyMeta';
 
@@ -15,66 +16,12 @@ class ClientPartyMeta extends PartyMeta {
    * @param party The party
    * @param schema The schema
    */
-  constructor(party: ClientParty, schema: Schema) {
-    super(party, {
-      'Default:PrimaryGameSessionId_s': '',
-      'Default:PartyState_s': 'BattleRoyaleView',
-      'Default:LobbyConnectionStarted_b': 'false',
-      'Default:MatchmakingResult_s': 'NoResults',
-      'Default:MatchmakingState_s': 'NotMatchmaking',
-      'Default:SessionIsCriticalMission_b': 'false',
-      'Default:ZoneTileIndex_U': '-1',
-      'Default:ZoneInstanceId_s': '',
-      'Default:TheaterId_s': '',
-      'Default:TileStates_j': JSON.stringify({
-        TileStates: [],
-      }),
-      'Default:MatchmakingInfoString_s': '',
-      'Default:CustomMatchKey_s': '',
-      'Default:PlaylistData_j': JSON.stringify({
-        PlaylistData: {
-          playlistName: 'Playlist_DefaultSquad',
-          tournamentId: '',
-          eventWindowId: '',
-          regionId: 'EU',
-        },
-      }),
-      'Default:AthenaSquadFill_b': 'true',
-      'Default:AllowJoinInProgress_b': 'false',
-      'Default:LFGTime_s': '0001-01-01T00:00:00.000Z',
-      'Default:PartyIsJoinedInProgress_b': 'false',
-      'Default:GameSessionKey_s': '',
-      'Default:RawSquadAssignments_j': '',
-      'Default:PrivacySettings_j': JSON.stringify({
-        PrivacySettings: {
-          partyType: party.config.privacy.partyType,
-          partyInviteRestriction: party.config.privacy.inviteRestriction,
-          bOnlyLeaderFriendsCanJoin: party.config.privacy.onlyLeaderFriendsCanJoin,
-        },
-      }),
-      'Default:PlatformSessions_j': JSON.stringify({
-        PlatformSessions: [],
-      }),
-      'VoiceChat:implementation_s': 'VivoxVoiceChat',
-      'Default:CreativeDiscoverySurfaceRevisions_j': JSON.stringify({
-        CreativeDiscoverySurfaceRevisions: [],
-      }),
-      'Default:PartyMatchmakingInfo_j': JSON.stringify({
-        PartyMatchmakingInfo: {
-          buildId: -1,
-          hotfixVersion: -1,
-          regionId: '',
-          playlistName: 'None',
-          playlistRevision: 0,
-          tournamentId: '',
-          eventWindowId: '',
-          linkCode: '',
-        },
-      }),
-    });
+  constructor(party: ClientParty, schema: PartySchema) {
+    super(party, defaultPartyMeta);
 
-    if (schema) this.update(schema, true);
     this.refreshSquadAssignments();
+    this.updatePrivacy();
+    if (schema) this.update(schema, true);
   }
 
   /**
@@ -104,6 +51,16 @@ class ClientPartyMeta extends PartyMeta {
 
     return this.set('Default:RawSquadAssignments_j', {
       RawSquadAssignments: assignments,
+    });
+  }
+
+  public updatePrivacy() {
+    this.set('Default:PrivacySettings_j', {
+      PrivacySettings: {
+        partyType: this.party.config.privacy.partyType,
+        partyInviteRestriction: this.party.config.privacy.inviteRestriction,
+        bOnlyLeaderFriendsCanJoin: this.party.config.privacy.onlyLeaderFriendsCanJoin,
+      },
     });
   }
 }

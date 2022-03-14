@@ -1,7 +1,7 @@
 import { AsyncQueue } from '@sapphire/async-queue';
 import Endpoints from '../../resources/Endpoints';
 import {
-  CosmeticEnlightment, CosmeticsVariantMeta, CosmeticVariant, PartyMemberData, Schema,
+  CosmeticEnlightment, CosmeticsVariantMeta, CosmeticVariant, PartyMemberData, PartyMemberSchema, Schema,
 } from '../../resources/structs';
 import ClientPartyMemberMeta from './ClientPartyMemberMeta';
 import Party from './Party';
@@ -41,7 +41,7 @@ class ClientPartyMember extends PartyMember {
    * @param updated The updated schema
    * @throws {EpicgamesAPIError}
    */
-  public async sendPatch(updated: Schema): Promise<void> {
+  public async sendPatch(updated: PartyMemberSchema): Promise<void> {
     await this.patchQueue.wait();
 
     const patch = await this.client.http.sendEpicgamesRequest(true, 'PATCH', `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.id}/meta`, 'fortnite', {
@@ -480,7 +480,13 @@ class ClientPartyMember extends PartyMember {
   public async setPlaying(isPlaying = true, playerCount = 100, startedAt = new Date()) {
     await this.sendPatch({
       'Default:Location_s': this.meta.set('Default:Location_s', isPlaying ? 'InGame' : 'PreLobby'),
-      'Default:HasPreloadedAthena_b': this.meta.set('Default:HasPreloadedAthena_b', isPlaying),
+      'Default:LobbyState_j': this.meta.set('Default:LobbyState_j', {
+        ...this.meta.get('Default:LobbyState_j'),
+        LobbyState: {
+          ...this.meta.get('Default:LobbyState_j').LobbyState,
+          hasPreloadedAthena: isPlaying,
+        },
+      }),
       'Default:SpectateAPartyMemberAvailable_b': this.meta.set('Default:SpectateAPartyMemberAvailable_b', isPlaying),
       'Default:NumAthenaPlayersLeft_U': this.meta.set('Default:NumAthenaPlayersLeft_U', playerCount),
       'Default:UtcTimeStartedMatchAthena_s': this.meta.set('Default:UtcTimeStartedMatchAthena_s', startedAt.toISOString()),

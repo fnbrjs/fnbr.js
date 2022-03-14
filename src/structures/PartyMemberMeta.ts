@@ -1,6 +1,6 @@
 import {
   AssistedChallengeMeta,
-  BannerMeta, BattlePassMeta, CosmeticsVariantMeta, MatchMeta, Platform, Schema,
+  BannerMeta, BattlePassMeta, CosmeticsVariantMeta, MatchMeta, PartyMemberSchema, Platform,
 } from '../../resources/structs';
 import Meta from '../util/Meta';
 import PartyMember from './PartyMember';
@@ -8,7 +8,7 @@ import PartyMember from './PartyMember';
 /**
  * Represents a party member meta
  */
-class PartyMemberMeta extends Meta {
+class PartyMemberMeta extends Meta<PartyMemberSchema> {
   /**
    * The party member
    */
@@ -18,7 +18,7 @@ class PartyMemberMeta extends Meta {
    * @param member The party member
    * @param schema The schema
    */
-  constructor(member: PartyMember, schema: Schema) {
+  constructor(member: PartyMember, schema: PartyMemberSchema) {
     super(schema);
 
     this.member = member;
@@ -116,7 +116,7 @@ class PartyMemberMeta extends Meta {
    */
   public get match(): MatchMeta {
     const location = this.get('Default:Location_s');
-    const hasPreloadedAthena = this.get('Default:HasPreloadedAthena_b');
+    const hasPreloadedAthena = this.get('Default:LobbyState_j')?.LobbyState?.hasPreloadedAthena;
     const isSpectatable = this.get('Default:SpectateAPartyMemberAvailable_b');
     const playerCount = this.get('Default:NumAthenaPlayersLeft_U');
     const matchStartedAt = this.get('Default:UtcTimeStartedMatchAthena_s');

@@ -1,7 +1,9 @@
-import Collection from '@discordjs/collection';
+import { Collection } from '@discordjs/collection';
 import Endpoints from '../../resources/Endpoints';
 import { PartyPrivacy } from '../../enums/Enums';
-import { PartyConfig, PartyData, PartyUpdateData } from '../../resources/structs';
+import {
+  PartyConfig, PartyData, PartySchema, PartyUpdateData,
+} from '../../resources/structs';
 import Base from '../client/Base';
 import Client from '../client/Client';
 import PartyAlreadyJoinedError from '../exceptions/PartyAlreadyJoinedError';
@@ -59,7 +61,6 @@ class Party extends Base {
     this.meta = new PartyMeta(this, data.meta);
     this.revision = data.revision || 0;
 
-    // eslint-disable-next-line arrow-body-style
     this.members = new Collection(data.members.map((m) => {
       if (m.account_id === this.client.user?.id) return [m.account_id, new ClientPartyMember(this, m)];
       return [m.account_id, new PartyMember(this, m)];
@@ -176,7 +177,7 @@ class Party extends Base {
   public updateData(data: PartyUpdateData) {
     if (data.revision > this.revision) this.revision = data.revision;
     this.meta.update(data.party_state_updated, true);
-    this.meta.remove(data.party_state_removed);
+    this.meta.remove(data.party_state_removed as (keyof PartySchema & string)[]);
 
     this.config.joinability = data.party_privacy_type;
     this.config.maxSize = data.max_number_of_members;

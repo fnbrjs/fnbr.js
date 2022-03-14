@@ -15,7 +15,7 @@ import {
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
   ReplayDownloadConfig, TournamentSessionMetadata, STWWorldInfoData,
-  BRAccountLevelData, Language, PartyData,
+  BRAccountLevelData, Language, PartyData, PartySchema,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -971,7 +971,7 @@ class Client extends EventEmitter {
       ...newPrivacy.updated,
       ...Object.keys(this.party.meta.schema).filter((k: string) => !k.startsWith('urn:'))
         // eslint-disable-next-line no-param-reassign
-        .reduce((obj, key) => { (obj as any)[key] = this.party?.meta.schema[key]; return obj; }, {}),
+        .reduce((obj, key) => { (obj as any)[key] = this.party?.meta.schema[key as keyof PartySchema]; return obj; }, {}),
     }, newPrivacy.deleted);
 
     this.partyLock.unlock();

@@ -2,6 +2,8 @@
 /* eslint-disable no-unused-vars */
 import { AxiosRequestConfig } from 'axios';
 import { PathLike } from 'fs';
+import defaultPartyMeta from './defaultPartyMeta.json';
+import defaultPartyMemberMeta from './defaultPartyMemberMeta.json';
 import EpicgamesAPIError from '../src/exceptions/EpicgamesAPIError';
 import BlockedUser from '../src/structures/BlockedUser';
 import ClientParty from '../src/structures/ClientParty';
@@ -24,9 +26,16 @@ import {
 import ReceivedFriendMessage from '../src/structures/ReceivedFriendMessage';
 import STWSurvivor from '../src/structures/STWSurvivor';
 
-export interface Schema {
-  [key: string]: any;
+export type PartyMemberSchema = Partial<typeof defaultPartyMemberMeta>;
+export type PartySchema = Partial<typeof defaultPartyMeta> & {
+  'urn:epic:cfg:presence-perm_s'?: string;
+  'urn:epic:cfg:accepting-members_b'?: string;
+  'urn:epic:cfg:invite-perm_s'?: string;
+  'urn:epic:cfg:not-accepting-members'?: string;
+  'urn:epic:cfg:not-accepting-members-reason_i'?: string;
 }
+
+export type Schema = Record<string, string | undefined>;
 
 export type Language = 'de' | 'ru' | 'ko' |'zh-hant' | 'pt-br' | 'en' | 'it' | 'fr' | 'zh-cn' | 'es' | 'ar' | 'ja' | 'pl' | 'es-419' | 'tr';
 
@@ -847,7 +856,7 @@ export interface PartyData {
     intention_ttl: number;
   };
   members: PartyMemberData[];
-  meta: Schema;
+  meta: PartySchema;
   invites: any[];
   revision: number;
 }

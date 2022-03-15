@@ -10,7 +10,7 @@
 * Client Config
   * Added `ClientOptions#language`
   * Added `ClientOptions#statsPlaylistTypeParser`
-  * Added comments to many all config options
+  * Added comments to many config options
 * Friend Online And Offline Events
   * Added `Client#friend:online` and `Client#friend:offline` events
   * Added `ClientOptions#friendOnlineConnectionTimeout`
@@ -24,6 +24,8 @@
   * Added `Client#getSTWWorldInfo()`
 * Party Refreshing
   * Added `Party#fetch()`
+* Client Party Member
+  * Added `ClientPartyMember#setCrowns()`
 
 ### Changes
 * Party Fetching
@@ -47,6 +49,8 @@
   * Fixed the documentation of the `maxLifetime` parameter of `Client#sweepPresences()`
 * HTTP Auth Error Handling
   * Fixed an issue that affected automatic token refreshing
+* Refresh Token Auth
+  * Fixed an issue that occured when the client was kept running longer than the refresh token's lifetime
 * XMPP PARTY_MEMBER_EXPIRED Error
   * Fixed an error that occured when the client handled its own party member expiration event
 * XMPP Presences

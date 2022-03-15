@@ -544,6 +544,37 @@ class ClientPartyMember extends PartyMember {
       'Default:AssistedChallengeInfo_j': data,
     });
   }
+
+  /**
+   * Updates the client party member's crowns.
+   * Shown when using the EID_Coronet emote
+   * @param crowns The amount of crowns / "Royal Royales"
+   * @throws {EpicgamesAPIError}
+   */
+  public async setCrowns(crowns: number) {
+    let data = this.meta.get('Default:AthenaCosmeticLoadout_j');
+
+    data = this.meta.set('Default:AthenaCosmeticLoadout_j', {
+      ...data,
+      AthenaCosmeticLoadout: {
+        ...data.AthenaCosmeticLoadout,
+        cosmeticStats: [{
+          statName: 'TotalVictoryCrowns',
+          statValue: 0,
+        }, {
+          statName: 'TotalRoyalRoyales',
+          statValue: crowns,
+        }, {
+          statName: 'HasCrown',
+          statValue: 0,
+        }],
+      },
+    });
+
+    await this.sendPatch({
+      'Default:AthenaCosmeticLoadout_j': data,
+    });
+  }
 }
 
 export default ClientPartyMember;

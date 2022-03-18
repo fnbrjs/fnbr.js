@@ -26,6 +26,13 @@
   * Added `Party#fetch()`
 * Client Party Member
   * Added `ClientPartyMember#setCrowns()`
+* Party Member State Updated Events
+  * Added `Client#party:member:outfit:updated`
+  * Added `Client#party:member:backpack:updated`
+  * Added `Client#party:member:emote:updated`
+  * Added `Client#party:member:pickaxe:updated`
+  * Added `Client#party:member:readiness:updated`
+  * Added `Client#party:member:matchstate:updated`
 
 ### Changes
 * Party Fetching
@@ -59,6 +66,8 @@
   * Added `ExternalAuths#xbl`
 * Party Join Requests
   * Fixed `sender` and `receiver` being swapped
+* Party Invites
+  * Fixed an issue that caused party member display names to be undefined
 
 <hr>
 

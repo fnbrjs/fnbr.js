@@ -33,6 +33,11 @@ class PartyMember extends User {
   public revision: number;
 
   /**
+   * Whether this member has received an initial state update
+   */
+  public receivedInitialStateUpdate: boolean;
+
+  /**
    * @param party The party this member belongs to
    * @param data The member's data
    */
@@ -46,8 +51,9 @@ class PartyMember extends User {
     this.party = party;
     this.role = data.role;
     this.joinedAt = new Date(data.joined_at);
-    this.meta = new PartyMemberMeta(this, data.meta);
+    this.meta = new PartyMemberMeta(data.meta);
     this.revision = data.revision;
+    this.receivedInitialStateUpdate = false;
   }
 
   /**

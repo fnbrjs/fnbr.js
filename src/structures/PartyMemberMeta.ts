@@ -3,27 +3,11 @@ import {
   BannerMeta, BattlePassMeta, CosmeticsVariantMeta, MatchMeta, PartyMemberSchema, Platform,
 } from '../../resources/structs';
 import Meta from '../util/Meta';
-import PartyMember from './PartyMember';
 
 /**
  * Represents a party member meta
  */
 class PartyMemberMeta extends Meta<PartyMemberSchema> {
-  /**
-   * The party member
-   */
-  public member: PartyMember;
-
-  /**
-   * @param member The party member
-   * @param schema The schema
-   */
-  constructor(member: PartyMember, schema: PartyMemberSchema) {
-    super(schema);
-
-    this.member = member;
-  }
-
   /**
    * The currently equipped outfit CID
    */

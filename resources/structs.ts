@@ -352,6 +352,14 @@ export interface ClientConfig {
   statsPlaylistTypeParser?: (playlistId: string) => StatsPlaylistType;
 }
 
+export interface MatchMeta {
+  location?: 'PreLobby' | 'InGame' | 'ReturningToFrontEnd';
+  hasPreloadedAthena?: boolean;
+  isSpectatable?: boolean;
+  playerCount?: number;
+  matchStartedAt?: Date;
+}
+
 export interface ClientOptions extends Partial<ClientConfig> {}
 
 export interface ClientEvents {
@@ -539,6 +547,54 @@ export interface ClientEvents {
    * @param request The recieved join request
    */
   'party:joinrequest': (request: ReceivedPartyJoinRequest) => void;
+
+  /**
+   * Emitted when a party member updated their outfit
+   * @param member The member
+   * @param value The new outfit
+   * @param previousValue The previous outfit
+   */
+  'party:member:outfit:updated': (member: PartyMember | ClientPartyMember, value?: string, previousValue?: string) => void;
+
+  /**
+   * Emitted when a party member updated their emote
+   * @param member The member
+   * @param value The new emote
+   * @param previousValue The previous emote
+   */
+  'party:member:emote:updated': (member: PartyMember | ClientPartyMember, value?: string, previousValue?: string) => void;
+
+  /**
+   * Emitted when a party member updated their backpack
+   * @param member The member
+   * @param value The new backpack
+   * @param previousValue The previous backpack
+   */
+  'party:member:backpack:updated': (member: PartyMember | ClientPartyMember, value?: string, previousValue?: string) => void;
+
+  /**
+   * Emitted when a party member updated their pickaxe
+   * @param member The member
+   * @param value The new pickaxe
+   * @param previousValue The previous pickaxe
+   */
+  'party:member:pickaxe:updated': (member: PartyMember | ClientPartyMember, value?: string, previousValue?: string) => void;
+
+  /**
+   * Emitted when a party member updated their readiness state
+   * @param member The member
+   * @param value The new readiness state
+   * @param previousValue The previous readiness state
+   */
+  'party:member:readiness:updated': (member: PartyMember | ClientPartyMember, value?: boolean, previousValue?: boolean) => void;
+
+  /**
+   * Emitted when a party member updated their match state
+   * @param member The member
+   * @param value The new match state
+   * @param previousValue The previous match state
+   */
+  'party:member:matchstate:updated': (member: PartyMember | ClientPartyMember, value?: MatchMeta, previousValue?: MatchMeta) => void;
 }
 
 export interface AuthData {
@@ -914,14 +970,6 @@ export interface BattlePassMeta {
   passLevel: number;
   selfBoostXp: number;
   friendBoostXp: number;
-}
-
-export interface MatchMeta {
-  location?: 'PreLobby' | 'InGame' | 'ReturningToFrontEnd';
-  hasPreloadedAthena?: boolean;
-  isSpectatable?: boolean;
-  playerCount?: number;
-  matchStartedAt?: Date;
 }
 
 export interface AssistedChallengeMeta {

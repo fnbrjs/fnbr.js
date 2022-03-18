@@ -11,14 +11,16 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
   /**
    * The party member
    */
-  public member!: PartyMember;
+  public member: PartyMember;
 
   /**
    * @param member The party member
    * @param schema The schema
    */
   constructor(member: PartyMember, schema: PartyMemberSchema) {
-    super(member, defaultPartyMemberMeta);
+    super(defaultPartyMemberMeta);
+
+    this.member = member;
 
     const defaultCharacter = getRandomDefaultCharacter();
 

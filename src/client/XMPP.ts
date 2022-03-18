@@ -23,6 +23,7 @@ import PartyMemberConfirmation from '../structures/PartyMemberConfirmation';
 import ReceivedPartyJoinRequest from '../structures/ReceivedPartyJoinRequest';
 import PresenceParty from '../structures/PresenceParty';
 import ReceivedFriendMessage from '../structures/ReceivedFriendMessage';
+import PartyMemberMeta from '../structures/PartyMemberMeta';
 
 /**
  * Represents the client's XMPP manager
@@ -461,7 +462,22 @@ class XMPP extends Base {
             const member = this.client.party.members.get(memberId);
             if (!member) throw new PartyMemberNotFoundError(memberId);
 
+            if (member.receivedInitialStateUpdate) {
+              const newMeta = new PartyMemberMeta({ ...member.meta.schema });
+              newMeta.update(body.member_state_updated, true);
+
+              if (newMeta.outfit !== member.meta.outfit) this.client.emit('party:member:outfit:updated', member, newMeta.outfit, member.meta.outfit);
+              if (newMeta.backpack !== member.meta.backpack) this.client.emit('party:member:backpack:updated', member, newMeta.backpack, member.meta.backpack);
+              if (newMeta.pickaxe !== member.meta.pickaxe) this.client.emit('party:member:pickaxe:updated', member, newMeta.pickaxe, member.meta.pickaxe);
+              if (newMeta.emote !== member.meta.emote) this.client.emit('party:member:emote:updated', member, newMeta.emote, member.meta.emote);
+              if (newMeta.isReady !== member.meta.isReady) this.client.emit('party:member:readiness:updated', member, newMeta.isReady, member.meta.isReady);
+              if (JSON.stringify(newMeta.match) !== JSON.stringify(member.meta.match)) {
+                this.client.emit('party:member:matchstate:updated', member, newMeta.match, member.meta.match);
+              }
+            }
+
             member.updateData(body);
+            member.receivedInitialStateUpdate = true;
             this.client.emit('party:member:updated', member);
           } break;
 

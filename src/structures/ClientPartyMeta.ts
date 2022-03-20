@@ -10,14 +10,16 @@ class ClientPartyMeta extends PartyMeta {
   /**
    * The party
    */
-  public party!: ClientParty;
+  public party: ClientParty;
 
   /**
    * @param party The party
    * @param schema The schema
    */
   constructor(party: ClientParty, schema: PartySchema) {
-    super(party, defaultPartyMeta);
+    super({ ...defaultPartyMeta });
+
+    this.party = party;
 
     this.refreshSquadAssignments();
     this.updatePrivacy();

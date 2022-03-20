@@ -1,26 +1,10 @@
 import { PartySchema, Playlist } from '../../resources/structs';
 import Meta from '../util/Meta';
-import Party from './Party';
 
 /**
  * Represents a party's meta
  */
 class PartyMeta extends Meta<PartySchema> {
-  /**
-   * The party
-   */
-  public party: Party;
-
-  /**
-   * @param party The party
-   * @param schema The schema
-   */
-  constructor(party: Party, schema: PartySchema) {
-    super(schema);
-
-    this.party = party;
-  }
-
   /**
    * The currently selected playlist
    */

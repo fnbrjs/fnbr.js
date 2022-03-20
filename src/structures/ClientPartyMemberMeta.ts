@@ -18,7 +18,7 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
    * @param schema The schema
    */
   constructor(member: PartyMember, schema: PartyMemberSchema) {
-    super(defaultPartyMemberMeta);
+    super({ ...defaultPartyMemberMeta });
 
     this.member = member;
 

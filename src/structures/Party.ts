@@ -58,7 +58,7 @@ class Party extends Base {
     this.createdAt = new Date(data.created_at);
     this.config = makeCamelCase(data.config);
     this.config.privacy = this.config.joinability === 'OPEN' ? PartyPrivacy.PUBLIC : PartyPrivacy.PRIVATE;
-    this.meta = new PartyMeta(this, data.meta);
+    this.meta = new PartyMeta(data.meta);
     this.revision = data.revision || 0;
 
     this.members = new Collection(data.members.map((m) => {
@@ -214,7 +214,7 @@ class Party extends Base {
     this.createdAt = new Date(partyData.created_at);
     this.config = makeCamelCase(partyData.config);
     this.config.privacy = this.config.joinability === 'OPEN' ? PartyPrivacy.PUBLIC : PartyPrivacy.PRIVATE;
-    this.meta = new PartyMeta(this, partyData.meta);
+    this.meta = new PartyMeta(partyData.meta);
     this.revision = partyData.revision || 0;
 
     // eslint-disable-next-line arrow-body-style

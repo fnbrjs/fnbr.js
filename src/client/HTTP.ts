@@ -56,9 +56,9 @@ class HTTP extends Base {
    * @param data The body
    * @param form The form
    * @param responseType The axios response type
-   * @param retires How many times this request has been retried
+   * @param retries How many times this request has been retried
    */
-  async send(method: Method, url: string, headers: KeyValuePair = {}, body?: any, form?: KeyValuePair, responseType?: ResponseType, retries = 0): Promise<HTTPResponse> {
+  public async send(method: Method, url: string, headers: KeyValuePair = {}, body?: any, form?: KeyValuePair, responseType?: ResponseType, retries = 0): Promise<HTTPResponse> {
     let data;
 
     if (body) data = body;
@@ -124,7 +124,7 @@ class HTTP extends Base {
    * @param form The form
    * @param ignoreLocks Where the request should ignore locks such as the reauth lock
    */
-  async sendEpicgamesRequest(checkToken: boolean, method: Method, url: string,
+  public async sendEpicgamesRequest(checkToken: boolean, method: Method, url: string,
     auth?: AuthType, headers: KeyValuePair = {}, data?: any, form?: KeyValuePair, ignoreLocks = false): Promise<EpicgamesAPIResponse> {
     if (!ignoreLocks) await this.client.reauthLock.wait();
 
@@ -172,7 +172,7 @@ class HTTP extends Base {
    * @param operationName The GraphQL operation name (optional, will be auto set)
    * @param ignoreLocks Where the request should ignore locks such as the reauth lock
    */
-  async sendEpicgamesGraphQLRequest(checkToken: boolean, url: string, query: string, variables: KeyValuePair = {},
+  public async sendEpicgamesGraphQLRequest(checkToken: boolean, url: string, query: string, variables: KeyValuePair = {},
     auth?: AuthType, operationName?: string, ignoreLocks = false): Promise<EpicgamesGraphQLResponse> {
     if (!ignoreLocks) await this.client.reauthLock.wait();
 

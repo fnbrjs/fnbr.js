@@ -159,7 +159,7 @@ class STWStats extends Base {
           questHistory: d.questHistory,
         })),
         dailyLoginInterval: new Date(data.quest_manager.questPoolStats.dailyLoginInterval!),
-        lockouts: data.quest_manager.questPoolStats.poolLockouts.poolLockouts,
+        lockouts: data.quest_manager.questPoolStats.poolLockouts?.poolLockouts || [],
       },
     } : undefined;
 

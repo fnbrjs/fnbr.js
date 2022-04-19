@@ -1235,8 +1235,8 @@ class Client extends EventEmitter {
   /**
    * Fetches Battle Royale v2 stats for one or multiple players
    * @param user The id(s) or display name(s) of the user(s)
-   * @param startTime The timestamp to start fetching stats from, can be null/undefined for lifetime
-   * @param endTime The timestamp to stop fetching stats from, can be undefined for lifetime
+   * @param startTime The timestamp in seconds to start fetching stats from, can be null/undefined for lifetime
+   * @param endTime The timestamp in seconds to stop fetching stats from, can be undefined for lifetime
    * @param stats An array of stats keys. Required if you want to get the stats of multiple users at once (If not, ignore this)
    * @throws {UserNotFoundError} The user wasn't found
    * @throws {StatsPrivacyError} The user set their stats to private

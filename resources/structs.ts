@@ -2,6 +2,8 @@
 /* eslint-disable no-unused-vars */
 import { AxiosRequestConfig } from 'axios';
 import { PathLike } from 'fs';
+import defaultPartyMeta from './defaultPartyMeta.json';
+import defaultPartyMemberMeta from './defaultPartyMemberMeta.json';
 import EpicgamesAPIError from '../src/exceptions/EpicgamesAPIError';
 import BlockedUser from '../src/structures/BlockedUser';
 import ClientParty from '../src/structures/ClientParty';
@@ -17,25 +19,56 @@ import PartyMemberConfirmation from '../src/structures/PartyMemberConfirmation';
 import PartyMessage from '../src/structures/PartyMessage';
 import ReceivedPartyInvitation from '../src/structures/ReceivedPartyInvitation';
 import User from '../src/structures/User';
-import { EpicgamesOAuthData, TournamentWindowTemplateData } from './httpResponses';
+import {
+  EpicgamesOAuthData, STWMissionAlertData, STWMissionData, STWProfileLockerSlotData,
+  STWTheaterData, TournamentWindowTemplateData,
+} from './httpResponses';
 import ReceivedFriendMessage from '../src/structures/ReceivedFriendMessage';
+import STWSurvivor from '../src/structures/STWSurvivor';
 
-export interface Schema {
-  [key: string]: any;
+export type PartyMemberSchema = Partial<typeof defaultPartyMemberMeta>;
+export type PartySchema = Partial<typeof defaultPartyMeta> & {
+  'urn:epic:cfg:presence-perm_s'?: string;
+  'urn:epic:cfg:accepting-members_b'?: string;
+  'urn:epic:cfg:invite-perm_s'?: string;
+  'urn:epic:cfg:not-accepting-members'?: string;
+  'urn:epic:cfg:not-accepting-members-reason_i'?: string;
 }
+
+export type Schema = Record<string, string | undefined>;
+
+export type Language = 'de' | 'ru' | 'ko' |'zh-hant' | 'pt-br' | 'en' | 'it' | 'fr' | 'zh-cn' | 'es' | 'ar' | 'ja' | 'pl' | 'es-419' | 'tr';
 
 export type StringFunction = () => string;
 
 export type StringFunctionAsync = () => Promise<string>;
 
 export interface DeviceAuth {
+  /**
+   * The device auth's account ID
+   */
   accountId: string;
+
+  /**
+   * The device auth's device ID (that does not mean it can only be used on a single device)
+   */
   deviceId: string;
+
+  /**
+   * The device auth's secret
+   */
   secret: string;
 }
 
 export interface DeviceAuthWithSnakeCaseSupport extends DeviceAuth {
+  /**
+   * The device auth's account ID
+   */
   account_id?: string;
+
+  /**
+   * The device auth's device ID (that does not mean it can only be used on a single device)
+   */
   device_id?: string;
 }
 
@@ -47,17 +80,40 @@ export type DeviceAuthResolveable = DeviceAuth | PathLike | DeviceAuthFunction |
 
 export type AuthStringResolveable = string | PathLike | StringFunction | StringFunctionAsync;
 
-export type Platform = 'WIN' | 'MAC' | 'PSN' | 'XBL' | 'SWT' | 'IOS' | 'AND';
+export type Platform = 'WIN' | 'MAC' | 'PSN' | 'XBL' | 'SWT' | 'IOS' | 'AND' | 'PS5' | 'XSX';
 
 export type AuthClient = 'fortnitePCGameClient' | 'fortniteIOSGameClient' | 'fortniteAndroidGameClient'
   | 'fortniteSwitchGameClient' | 'fortniteCNGameClient' | 'launcherAppClient2' | 'Diesel - Dauntless';
 
 export interface RefreshTokenData {
+  /**
+   * The refresh token
+   */
   token: string;
+
+  /**
+   * The refresh token's expiration time in seconds
+   */
   expiresIn: number;
+
+  /**
+   * The refresh token's expiration date
+   */
   expiresAt: string;
+
+  /**
+   * The ID of the account the refresh token belongs to
+   */
   accountId: string;
+
+  /**
+   * The display name of the account the refresh token belongs to
+   */
   displayName: string;
+
+  /**
+   * The refresh token's client ID (will always be the ID of launcherAppClient2)
+   */
   clientId: string;
 }
 
@@ -74,17 +130,58 @@ export interface CacheSetting {
 }
 
 export interface CacheSettings {
+  /**
+   * The presence cache settings
+   */
   presences?: CacheSetting;
 }
 
 export interface AuthOptions {
+  /**
+   * A device auth object, a function that returns a device auth object or a path to a file containing a device auth object
+   */
   deviceAuth?: DeviceAuthResolveable;
+
+  /**
+   * An exchange code, a function that returns an exchange code or a path to a file containing an exchange code
+   */
   exchangeCode?: AuthStringResolveable;
+
+  /**
+   * An authorization code, a function that returns an authorization code or a path to a file containing an authorization code
+   */
   authorizationCode?: AuthStringResolveable;
+
+  /**
+   * A refresh token, a function that returns a refresh token or a path to a file containing a refresh token
+   */
   refreshToken?: AuthStringResolveable;
+
+  /**
+   * A launcher refresh token, a function that returns a launcher refresh token or a path to a file containing a launcher refresh token
+   */
   launcherRefreshToken?: AuthStringResolveable;
+
+  /**
+   * Whether the client should check whether the EULA has been accepted.
+   * Do not modify this unless you know what you're doing
+   */
   checkEULA?: boolean;
+
+  /**
+   * Whether the client should kill other active Fortnite auth sessions on startup
+   */
   killOtherTokens?: boolean;
+
+  /**
+   * Whether the client should create a launcher auth session and keep it alive.
+   * The launcher auth session can be accessed via `client.auth.auths.get('launcher')`
+   */
+  createLauncherSession?: boolean;
+
+  /**
+   * The Fortnite auth client (eg. 'fortnitePCGameClient' or 'fortniteAndroidGameClient')
+   */
   authClient?: AuthClient;
 }
 
@@ -120,7 +217,9 @@ export interface PartyConfig {
   privacy: PartyPrivacy;
 }
 
-export type PresenceOnlineType = 'away' | 'chat' | 'dnd' | 'xa' | 'online';
+export type PresenceOnlineType = 'online' | 'away' | 'chat' | 'dnd' | 'xa';
+
+export type StatsPlaylistType = 'other' | 'solo' | 'duo' | 'squad' | 'ltm';
 
 export interface ClientConfig {
   /**
@@ -234,6 +333,31 @@ export interface ClientConfig {
    * By default, this is set to false because two clients attempting to log into one account could result in an endless loop
    */
   restartOnInvalidRefresh: boolean;
+
+  /**
+   * The default language for all http requests.
+   * Will be overwritten by a method's language parameter
+   */
+  language: Language;
+
+  /**
+   * Amount of time (in ms) to wait after the initial xmpp connection before emitting friend:online events
+   */
+  friendOnlineConnectionTimeout: number;
+
+  /**
+   * A custom parser for resolving the stats playlist type (ie. "solo", "duo", "ltm").
+   * Can be useful if you want to use data in the game files to determine the stats playlist type
+   */
+  statsPlaylistTypeParser?: (playlistId: string) => StatsPlaylistType;
+}
+
+export interface MatchMeta {
+  location?: 'PreLobby' | 'InGame' | 'ReturningToFrontEnd';
+  hasPreloadedAthena?: boolean;
+  isSpectatable?: boolean;
+  playerCount?: number;
+  matchStartedAt?: Date;
 }
 
 export interface ClientOptions extends Partial<ClientConfig> {}
@@ -273,6 +397,18 @@ export interface ClientEvents {
    * @param after The friend's current presence
    */
   'friend:presence': (before: FriendPresence | undefined, after: FriendPresence) => void;
+
+  /**
+   * Emitted when a friend becomes online
+   * @param friend The friend that became online
+   */
+  'friend:online': (friend: Friend) => void;
+
+  /**
+   * Emitted when a friend goes offline
+   * @param friend The friend that went offline
+   */
+  'friend:offline': (friend: Friend) => void;
 
   /**
    * Emitted when a member in the client's party sent a message in the party chat
@@ -411,6 +547,54 @@ export interface ClientEvents {
    * @param request The recieved join request
    */
   'party:joinrequest': (request: ReceivedPartyJoinRequest) => void;
+
+  /**
+   * Emitted when a party member updated their outfit
+   * @param member The member
+   * @param value The new outfit
+   * @param previousValue The previous outfit
+   */
+  'party:member:outfit:updated': (member: PartyMember | ClientPartyMember, value?: string, previousValue?: string) => void;
+
+  /**
+   * Emitted when a party member updated their emote
+   * @param member The member
+   * @param value The new emote
+   * @param previousValue The previous emote
+   */
+  'party:member:emote:updated': (member: PartyMember | ClientPartyMember, value?: string, previousValue?: string) => void;
+
+  /**
+   * Emitted when a party member updated their backpack
+   * @param member The member
+   * @param value The new backpack
+   * @param previousValue The previous backpack
+   */
+  'party:member:backpack:updated': (member: PartyMember | ClientPartyMember, value?: string, previousValue?: string) => void;
+
+  /**
+   * Emitted when a party member updated their pickaxe
+   * @param member The member
+   * @param value The new pickaxe
+   * @param previousValue The previous pickaxe
+   */
+  'party:member:pickaxe:updated': (member: PartyMember | ClientPartyMember, value?: string, previousValue?: string) => void;
+
+  /**
+   * Emitted when a party member updated their readiness state
+   * @param member The member
+   * @param value The new readiness state
+   * @param previousValue The previous readiness state
+   */
+  'party:member:readiness:updated': (member: PartyMember | ClientPartyMember, value?: boolean, previousValue?: boolean) => void;
+
+  /**
+   * Emitted when a party member updated their match state
+   * @param member The member
+   * @param value The new match state
+   * @param previousValue The previous match state
+   */
+  'party:member:matchstate:updated': (member: PartyMember | ClientPartyMember, value?: MatchMeta, previousValue?: MatchMeta) => void;
 }
 
 export interface AuthData {
@@ -453,14 +637,42 @@ export interface PresenceGameplayStats {
 
 export type PendingFriendDirection = 'INCOMING' | 'OUTGOING';
 
+export interface StatsPlaylistTypeData {
+  score: number;
+  scorePerMin: number;
+  scorePerMatch: number;
+  wins: number;
+  top3: number;
+  top5: number;
+  top6: number;
+  top10: number;
+  top12: number;
+  top25: number;
+  kills: number;
+  killsPerMin: number;
+  killsPerMatch: number;
+  deaths: number;
+  kd: number;
+  matches: number;
+  winRate: number;
+  minutesPlayed: number;
+  playersOutlived: number;
+  lastModified?: Date;
+}
+
+export interface StatsInputTypeData {
+  overall: StatsPlaylistTypeData;
+  solo: StatsPlaylistTypeData;
+  duo: StatsPlaylistTypeData;
+  squad: StatsPlaylistTypeData;
+  ltm: StatsPlaylistTypeData;
+}
+
 export interface StatsData {
-  startTime: number;
-  endTime: number;
-  stats: {
-    [key: string]: string | number;
-  };
-  accountId: string;
-  query: string;
+  all: StatsInputTypeData;
+  keyboardmouse: StatsInputTypeData;
+  gamepad: StatsInputTypeData;
+  touch: StatsInputTypeData;
 }
 
 export interface NewsMOTD {
@@ -585,6 +797,7 @@ export interface ExternalAuths {
   twitch?: ExternalAuth;
   steam?: ExternalAuth;
   psn?: ExternalAuth;
+  xbl?: ExternalAuth;
   nintendo?: ExternalAuth;
 }
 
@@ -666,6 +879,7 @@ export interface FriendPresenceData {
 }
 
 export interface PartyMemberData {
+  id: string;
   account_id: string;
   account_dn?: string;
   meta: Schema;
@@ -698,7 +912,7 @@ export interface PartyData {
     intention_ttl: number;
   };
   members: PartyMemberData[];
-  meta: Schema;
+  meta: PartySchema;
   invites: any[];
   revision: number;
 }
@@ -720,6 +934,7 @@ export interface Playlist {
   tournamentId?: string;
   eventWindowId?: string;
   regionId?: string;
+  mnemonic?: string;
 }
 
 export interface CosmeticVariant {
@@ -755,14 +970,6 @@ export interface BattlePassMeta {
   passLevel: number;
   selfBoostXp: number;
   friendBoostXp: number;
-}
-
-export interface MatchMeta {
-  location?: 'PreLobby' | 'InGame';
-  hasPreloadedAthena?: boolean;
-  isSpectatable?: boolean;
-  playerCount?: number;
-  matchStartedAt?: Date;
 }
 
 export interface AssistedChallengeMeta {
@@ -827,7 +1034,7 @@ export interface PresencePartyData {
   pc?: number;
 }
 
-export type UserSearchPlatform = 'epic' | 'psn' | 'xbl';
+export type UserSearchPlatform = 'epic' | 'psn' | 'xbl' | 'steam';
 
 export type UserSearchMatchType = 'exact' | 'prefix';
 
@@ -932,8 +1139,13 @@ export interface EventTokensResponse {
 }
 
 export interface BRAccountLevel {
-  query: string;
-  level?: number;
+  level: number;
+  progress: number;
+}
+
+export interface BRAccountLevelData {
+  user: User;
+  level: BRAccountLevel;
 }
 
 export interface TournamentSessionMetadata {
@@ -951,4 +1163,190 @@ export interface TournamentSessionMetadata {
   isLive: boolean;
 }
 
-export type Language = 'ar' | 'en' | 'de' | 'es' | 'fr' | 'it' | 'ja' | 'pl' | 'ru' | 'tr';
+export interface STWFORTStats {
+  fortitude: number;
+  resistance: number;
+  offense: number;
+  tech: number;
+}
+
+export type STWSurvivorType = 'special' | 'manager' | 'basic';
+
+export type STWItemRarity = 'c' | 'uc' | 'r' | 'vr' | 'sr' | 'ur';
+
+export type STWItemTier = 1 | 2 | 3 | 4 | 5 | 6;
+
+export type STWSurvivorGender = 'male' | 'female';
+
+export interface STWSurvivorSquads {
+  trainingteam: STWSurvivor[];
+  fireteamalpha: STWSurvivor[];
+  closeassaultsquad: STWSurvivor[];
+  thethinktank: STWSurvivor[];
+  emtsquad: STWSurvivor[];
+  corpsofengineering: STWSurvivor[];
+  scoutingparty: STWSurvivor[];
+  gadgeteers: STWSurvivor[];
+}
+
+export type STWSurvivorSquadType = 'medicine' | 'arms' | 'synthesis' | 'scavenging';
+
+export interface STWSurvivorSquadData {
+  id: string;
+  name: keyof STWSurvivorSquads;
+  type: STWSurvivorSquadType;
+  slotIdx: number;
+}
+
+export interface STWStatsNodeCostsData {
+  [key: string]: {
+    [key: string]: number;
+  };
+}
+
+export interface STWStatsSTWLoadoutData {
+  selectedHeroLoadout: string;
+  modeLoadouts: string[];
+  activeLoadoutIndex: number;
+}
+
+export interface STWStatsBRLoadoutData {
+  loadouts: string[];
+  lastAppliedLoadout: string;
+  useRandomLoadout: boolean;
+}
+
+export interface STWStatsMissionAlertRedemptionData {
+  missionAlertId: string;
+  redemptionDateUtc: Date;
+  evictClaimDataAfterUtc: Date;
+}
+
+export interface STWStatsQuestData {
+  dailyLoginInterval: Date;
+  dailyQuestRerolls?: number;
+  poolStats: {
+    stats: {
+      poolName: string;
+      nextRefresh: Date;
+      rerollsRemaining: number;
+      questHistory: string[];
+    }[];
+    dailyLoginInterval: Date;
+    lockouts: {
+      lockoutName: string;
+    }[];
+  };
+}
+
+export interface STWStatsGameplayStatData {
+  statName: string;
+  statValue: number;
+}
+
+export interface STWStatsClientSettingsData {
+  pinnedQuestInstances?: any[];
+}
+
+export interface STWStatsResearchLevelsData {
+  technology: number;
+  offense: number;
+  fortitude: number;
+  resistance: number;
+}
+
+export interface STWStatsEventCurrencyData {
+  templateId: string;
+  cf: number;
+}
+
+export interface STWStatsXPData {
+  total: number;
+  overflow: number;
+  lost: number;
+}
+
+export interface STWStatsDailyRewardsData {
+  nextDefaultReward: number;
+  totalDaysLoggedIn: number;
+  lastClaimDate: Date;
+  additionalSchedules?: {
+    [key: string]: {
+      rewardsClaimed: number;
+      claimedToday: boolean;
+    };
+  };
+}
+
+export interface STWLockerSlotsData {
+  Pickaxe: STWProfileLockerSlotData;
+  MusicPack?: STWProfileLockerSlotData;
+  Character?: STWProfileLockerSlotData;
+  ItemWrap: STWProfileLockerSlotData;
+  Backpack: STWProfileLockerSlotData;
+  Dance: STWProfileLockerSlotData;
+  LoadingScreen: STWProfileLockerSlotData;
+}
+
+export interface STWLockerBannerData {
+  icon: string;
+  color: string;
+}
+
+export type STWHeroType = 'commando' | 'constructor' | 'outlander' | 'ninja';
+
+export type STWSchematicType = 'ranged' | 'melee' | 'trap' | 'other';
+
+export type STWSchematicRangedSubType = 'assault' | 'launcher' | 'pistol' | 'shotgun' | 'smg' | 'sniper';
+
+export type STWSchematicMeleeSubType = 'blunt' | 'blunt_hammer' | 'edged_axe' | 'edged_scythe' | 'edged_sword' | 'piercing_spear';
+
+export type STWSchematicTrapSubType = 'ceiling' | 'floor' | 'wall';
+
+export type STWSchematicSubType = STWSchematicRangedSubType | STWSchematicMeleeSubType | STWSchematicTrapSubType;
+
+export type STWSchematicAlterationRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+
+export type STWSchematicEvoType = 'ore' | 'crystal';
+
+export interface StatsLevelData {
+  [key: string]: {
+    level: number;
+    progress: number;
+  };
+}
+
+export interface ArenaDivisionData {
+  [key: string]: number;
+}
+
+export interface NewsMessageVideoData {
+  videoAutoplay: boolean;
+  videoFullscreen: boolean;
+  videoLoop: boolean;
+  videoMute: boolean;
+  videoStreamingEnabled: boolean;
+  videoVideoString: string;
+  videoUID: string;
+}
+
+export interface NewsMessagePlaylist {
+  id: string;
+}
+
+export interface NewsMessageOffer {
+  id: string;
+  action: string;
+}
+
+export interface ImageData {
+  url: string;
+  width?: number;
+  height?: number;
+}
+
+export interface STWWorldInfoData {
+  theaters: STWTheaterData[];
+  missions: STWMissionData[];
+  missionAlerts: STWMissionAlertData[];
+}

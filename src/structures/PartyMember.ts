@@ -1,4 +1,4 @@
-import { PartyMemberData, PartyMemberUpdateData } from '../../resources/structs';
+import { PartyMemberData, PartyMemberSchema, PartyMemberUpdateData } from '../../resources/structs';
 import PartyPermissionError from '../exceptions/PartyPermissionError';
 import PartyMemberMeta from './PartyMemberMeta';
 import User from './User';
@@ -31,6 +31,16 @@ class PartyMember extends User {
    * The member's revision
    */
   public revision: number;
+
+  /**
+   * Whether this member has received an initial state update
+   */
+  public receivedInitialStateUpdate: boolean;
+
+  /**
+   * @param party The party this member belongs to
+   * @param data The member's data
+   */
   constructor(party: import('./Party').default | import('./ClientParty').default, data: PartyMemberData) {
     super(party.client, {
       ...data,
@@ -41,8 +51,9 @@ class PartyMember extends User {
     this.party = party;
     this.role = data.role;
     this.joinedAt = new Date(data.joined_at);
-    this.meta = new PartyMemberMeta(this, data.meta);
+    this.meta = new PartyMemberMeta(data.meta);
     this.revision = data.revision;
+    this.receivedInitialStateUpdate = false;
   }
 
   /**
@@ -199,7 +210,7 @@ class PartyMember extends User {
     if (data.account_dn !== this.displayName) this.update({ id: this.id, displayName: data.account_dn, externalAuths: this.externalAuths });
 
     this.meta.update(data.member_state_updated, true);
-    this.meta.remove(data.member_state_removed);
+    this.meta.remove(data.member_state_removed as (keyof PartyMemberSchema)[]);
   }
 
   /**
@@ -207,6 +218,7 @@ class PartyMember extends User {
    */
   public toObject(): PartyMemberData {
     return {
+      id: this.id,
       account_id: this.id,
       joined_at: this.joinedAt.toISOString(),
       updated_at: new Date().toISOString(),

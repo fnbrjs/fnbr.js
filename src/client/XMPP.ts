@@ -23,6 +23,7 @@ import PartyMemberConfirmation from '../structures/PartyMemberConfirmation';
 import ReceivedPartyJoinRequest from '../structures/ReceivedPartyJoinRequest';
 import PresenceParty from '../structures/PresenceParty';
 import ReceivedFriendMessage from '../structures/ReceivedFriendMessage';
+import PartyMemberMeta from '../structures/PartyMemberMeta';
 
 /**
  * Represents the client's XMPP manager
@@ -40,6 +41,11 @@ class XMPP extends Base {
   private isDisconnecting: boolean;
 
   /**
+   * Timestamp of the last XMPP connection
+   */
+  private connectedTimestamp?: number;
+
+  /**
    * @param client The main client
    */
   constructor(client: Client) {
@@ -47,6 +53,7 @@ class XMPP extends Base {
 
     this.stream = undefined;
     this.isDisconnecting = false;
+    this.connectedTimestamp = undefined;
   }
 
   /**
@@ -113,9 +120,10 @@ class XMPP extends Base {
 
       this.stream?.once('session:started', () => {
         clearTimeout(timeout);
+        this.connectedTimestamp = Date.now();
         this.client.debug(`[XMPP] Successfully connected (${((Date.now() - connectionStartTime) / 1000).toFixed(2)}s)`);
 
-        this.client.setStatus();
+        this.sendStatus();
 
         res({ response: true });
       });
@@ -147,6 +155,7 @@ class XMPP extends Base {
 
       this.stream?.once('disconnected', () => {
         clearTimeout(timeout);
+        this.connectedTimestamp = undefined;
         this.destroy();
         res({ response: true });
         this.client.debug(`[XMPP] Successfully disconnected (${((Date.now() - disconnectionStartTime) / 1000).toFixed(2)}s)`);
@@ -228,6 +237,7 @@ class XMPP extends Base {
 
     this.stream.on('presence', async (p) => {
       try {
+        await this.client.cacheLock.wait();
         if (!p.status) return;
 
         const friendId = p.from.split('@')[0];
@@ -239,21 +249,28 @@ class XMPP extends Base {
         if (p.type === 'unavailable') {
           friend.lastAvailableTimestamp = undefined;
           friend.party = undefined;
+
+          this.client.emit('friend:offline', friend);
           return;
         }
 
+        const wasUnavailable = !friend.lastAvailableTimestamp;
         friend.lastAvailableTimestamp = Date.now();
 
         const presence = JSON.parse(p.status);
 
         const before = this.client.friends.get(friendId)?.presence;
-        const after = new FriendPresence(this.client, presence, friend);
+        const after = new FriendPresence(this.client, presence, friend, p.show || 'online', p.from);
         if ((this.client.config.cacheSettings.presences?.maxLifetime || 0) > 0) {
           friend.presence = after;
         }
 
         if (presence.Properties?.['party.joininfodata.286331153_j']) {
           friend.party = new PresenceParty(this.client, presence.Properties['party.joininfodata.286331153_j']);
+        }
+
+        if (wasUnavailable && this.connectedTimestamp && this.connectedTimestamp > this.client.config.friendOnlineConnectionTimeout) {
+          this.client.emit('friend:online', friend);
         }
 
         this.client.emit('friend:presence', before, after);
@@ -396,8 +413,10 @@ class XMPP extends Base {
             const [partyData] = data.response;
             let party: Party;
 
-            if (partyData.config.discoverability === 'ALL') party = await this.client.getParty(partyData.id);
+            if (partyData.config.discoverability === 'ALL') party = await this.client.getParty(partyData.id) as Party;
             else party = new Party(this.client, partyData);
+
+            if (party.members.some((pm) => !pm.displayName)) await party.updateMemberBasicInfo();
 
             let invitation = partyData.invites.find((i: any) => i.sent_by === pingerId && i.status === 'SENT');
             if (!invitation) invitation = createPartyInvitation((this.client.user as ClientUser).id, pingerId, { ...body, ...partyData });
@@ -443,7 +462,22 @@ class XMPP extends Base {
             const member = this.client.party.members.get(memberId);
             if (!member) throw new PartyMemberNotFoundError(memberId);
 
+            if (member.receivedInitialStateUpdate) {
+              const newMeta = new PartyMemberMeta({ ...member.meta.schema });
+              newMeta.update(body.member_state_updated, true);
+
+              if (newMeta.outfit !== member.meta.outfit) this.client.emit('party:member:outfit:updated', member, newMeta.outfit, member.meta.outfit);
+              if (newMeta.backpack !== member.meta.backpack) this.client.emit('party:member:backpack:updated', member, newMeta.backpack, member.meta.backpack);
+              if (newMeta.pickaxe !== member.meta.pickaxe) this.client.emit('party:member:pickaxe:updated', member, newMeta.pickaxe, member.meta.pickaxe);
+              if (newMeta.emote !== member.meta.emote) this.client.emit('party:member:emote:updated', member, newMeta.emote, member.meta.emote);
+              if (newMeta.isReady !== member.meta.isReady) this.client.emit('party:member:readiness:updated', member, newMeta.isReady, member.meta.isReady);
+              if (JSON.stringify(newMeta.match) !== JSON.stringify(member.meta.match)) {
+                this.client.emit('party:member:matchstate:updated', member, newMeta.match, member.meta.match);
+              }
+            }
+
             member.updateData(body);
+            member.receivedInitialStateUpdate = true;
             this.client.emit('party:member:updated', member);
           } break;
 
@@ -476,7 +510,8 @@ class XMPP extends Base {
 
           case 'com.epicgames.social.party.notification.v0.MEMBER_EXPIRED': {
             await this.client.partyLock.wait();
-            if (!this.client.party || this.client.party.id !== body.party_id) break;
+            if (!this.client.party || this.client.party.id !== body.party_id
+              || body.account_id === this.client.user?.id) break;
 
             const memberId = body.account_id;
             const member = this.client.party.members.get(memberId);
@@ -611,11 +646,7 @@ class XMPP extends Base {
    */
   public sendStatus(status?: object | string, show?: Constants.PresenceShow, to?: string) {
     if (!status) {
-      this.stream?.sendPresence({
-        status: undefined,
-        to,
-        show,
-      });
+      this.stream?.sendPresence();
       return;
     }
 
@@ -648,15 +679,19 @@ class XMPP extends Base {
    */
   public waitForSentMessage(id: string, timeout = 1000) {
     return new Promise<Stanzas.Message|undefined>((res) => {
+      // eslint-disable-next-line no-undef
+      let messageTimeout: NodeJS.Timeout;
+
       const listener = (m: Stanzas.Message) => {
         if (m.id === id) {
-          res(m);
           this.stream?.removeListener('message:sent', listener);
+          if (messageTimeout) clearTimeout(messageTimeout);
+          res(m);
         }
       };
 
       this.stream?.on('message:sent', listener);
-      setTimeout(() => {
+      messageTimeout = setTimeout(() => {
         res(undefined);
         this.stream?.removeListener('message:sent', listener);
       }, timeout);

@@ -6,8 +6,8 @@ import Friend from './Friend';
  * Represents an incoming party join request
  */
 class ReceivedPartyJoinRequest extends BasePartyJoinRequest {
-  public receiver: ClientUser;
-  public sender: Friend;
+  public receiver!: ClientUser;
+  public sender!: Friend;
 
   /**
    * Accepts the join request. If it expired, a normal invite will be sent

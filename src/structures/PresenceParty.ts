@@ -2,6 +2,7 @@ import { PresencePartyData } from '../../resources/structs';
 import Base from '../client/Base';
 import Client from '../client/Client';
 import PartyPermissionError from '../exceptions/PartyPermissionError';
+import Party from './Party';
 
 /**
  * Represents a party received by a friend's presence
@@ -92,7 +93,7 @@ class PresenceParty extends Base {
   public async fetch() {
     if (this.isPrivate || !this.id) throw new PartyPermissionError();
 
-    return this.client.getParty(this.id);
+    return this.client.getParty(this.id) as Promise<Party>;
   }
 }
 

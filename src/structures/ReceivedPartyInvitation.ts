@@ -8,8 +8,8 @@ import Friend from './Friend';
  * Represents a recieved party invitation
  */
 class ReceivedPartyInvitation extends BasePartyInvitation {
-  public sender: Friend;
-  public receiver: ClientUser;
+  public sender!: Friend;
+  public receiver!: ClientUser;
 
   /**
    * Accepts this invitation

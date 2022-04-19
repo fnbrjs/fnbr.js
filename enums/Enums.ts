@@ -1,4 +1,9 @@
-import { PartyPrivacy as IPartyPrivacy, Platform as IPlatform } from '../resources/structs';
+import {
+  PartyPrivacy as IPartyPrivacy, Platform as IPlatform, PresenceOnlineType as IPresenceOnlineType,
+  STWHeroType as ISTWHeroType, STWSchematicRangedSubType as ISTWSchematicRangedSubType,
+  STWSchematicMeleeSubType as ISTWSchematicMeleeSubType, STWSchematicTrapSubType as ISTWSchematicTrapSubType,
+  STWSchematicAlterationRarity as ISTWSchematicAlterationRarity, STWSchematicEvoType as ISTWSchematicEvoType,
+} from '../resources/structs';
 
 export interface IPartyPrivacyEnum {
   PUBLIC: IPartyPrivacy;
@@ -16,6 +21,61 @@ export interface IPlatformEnum {
   SWITCH: IPlatform;
   IOS: IPlatform;
   ANDROID: IPlatform;
+  XBOX_SERIES_X: IPlatform;
+  PLAYSTATION_5: IPlatform;
+}
+
+export interface IPresenceOnlineTypeEnum {
+  ONLINE: IPresenceOnlineType;
+  CHAT: IPresenceOnlineType;
+  AWAY: IPresenceOnlineType;
+  EXTENDED_AWAY: IPresenceOnlineType;
+  DO_NOT_DISTURB: IPresenceOnlineType;
+}
+
+export interface ISTWHeroTypeEnum {
+  SOLDIER: ISTWHeroType;
+  CONSTRUCTOR: ISTWHeroType;
+  OUTLANDER: ISTWHeroType;
+  NINJA: ISTWHeroType;
+}
+
+export interface ISTWSchematicTypeEnum {
+  RANGED_WEAPON: 'ranged';
+  MELEE_WEAPON: 'melee';
+  TRAP: 'trap';
+  OTHER: 'other';
+}
+
+export interface ISTWSchematicSubTypeEnum {
+  ASSAULT: ISTWSchematicRangedSubType;
+  LAUNCHER: ISTWSchematicRangedSubType;
+  PISTOL: ISTWSchematicRangedSubType;
+  SHOTGUN: ISTWSchematicRangedSubType;
+  SMG: ISTWSchematicRangedSubType;
+  SNIPER: ISTWSchematicRangedSubType;
+  CLUB: ISTWSchematicMeleeSubType;
+  HARDWARE: ISTWSchematicMeleeSubType;
+  AXE: ISTWSchematicMeleeSubType;
+  SCYTHE: ISTWSchematicMeleeSubType;
+  SWORD: ISTWSchematicMeleeSubType;
+  SPEAR: ISTWSchematicMeleeSubType;
+  CEILING_TRAP: ISTWSchematicTrapSubType;
+  FLOOR_TRAP: ISTWSchematicTrapSubType;
+  WALL_TRAP: ISTWSchematicTrapSubType;
+}
+
+export interface ISTWSchematicAlterationRarityEnum {
+  COMMON: ISTWSchematicAlterationRarity;
+  UNCOMMON: ISTWSchematicAlterationRarity;
+  RARE: ISTWSchematicAlterationRarity;
+  EPIC: ISTWSchematicAlterationRarity;
+  LEGENDARY: ISTWSchematicAlterationRarity;
+}
+
+export interface ISTWSchematicEvoTypeEnum {
+  ORE: ISTWSchematicEvoType;
+  CRYSTAL: ISTWSchematicEvoType;
 }
 
 export const PartyPrivacy: Readonly<IPartyPrivacyEnum> = Object.freeze({
@@ -69,6 +129,8 @@ export const Platform: Readonly<IPlatformEnum> = Object.freeze({
   SWITCH: 'SWT',
   IOS: 'IOS',
   ANDROID: 'AND',
+  XBOX_SERIES_X: 'XSX',
+  PLAYSTATION_5: 'PS5',
 });
 
 export const Playlist = Object.freeze({
@@ -172,6 +234,63 @@ export const SeasonEnd = Object.freeze({
   CH2_S8: 1638662400,
 });
 
+export const STWLeadSynergy = Object.freeze({
+  trainingteam: 'IsTrainer',
+  fireteamalpha: 'IsSoldier',
+  closeassaultsquad: 'IsMartialArtist',
+  thethinktank: 'IsInventor',
+  emtsquad: 'IsDoctor',
+  corpsofengineering: 'IsEngineer',
+  scoutingparty: 'IsExplorer',
+  gadgeteers: 'IsGadgeteer',
+});
+
+export const PresenceOnlineType: Readonly<IPresenceOnlineTypeEnum> = Object.freeze({
+  ONLINE: 'online',
+  CHAT: 'chat',
+  AWAY: 'away',
+  EXTENDED_AWAY: 'xa',
+  DO_NOT_DISTURB: 'dnd',
+});
+
+export const STWHeroType: Readonly<ISTWHeroTypeEnum> = Object.freeze({
+  SOLDIER: 'commando',
+  CONSTRUCTOR: 'constructor',
+  OUTLANDER: 'outlander',
+  NINJA: 'ninja',
+});
+
+export const STWSchematicSubType: Readonly<ISTWSchematicSubTypeEnum> = Object.freeze({
+  ASSAULT: 'assault',
+  LAUNCHER: 'launcher',
+  PISTOL: 'pistol',
+  SHOTGUN: 'shotgun',
+  SMG: 'smg',
+  SNIPER: 'sniper',
+  CLUB: 'blunt',
+  HARDWARE: 'blunt_hammer',
+  AXE: 'edged_axe',
+  SCYTHE: 'edged_scythe',
+  SWORD: 'edged_sword',
+  SPEAR: 'piercing_spear',
+  CEILING_TRAP: 'ceiling',
+  FLOOR_TRAP: 'floor',
+  WALL_TRAP: 'wall',
+});
+
+export const STWSchematicAlterationRarity: Readonly<ISTWSchematicAlterationRarityEnum> = Object.freeze({
+  COMMON: 'common',
+  UNCOMMON: 'uncommon',
+  RARE: 'rare',
+  EPIC: 'epic',
+  LEGENDARY: 'legendary',
+});
+
+export const STWSchematicEvoType: Readonly<ISTWSchematicEvoTypeEnum> = Object.freeze({
+  ORE: 'ore',
+  CRYSTAL: 'crystal',
+});
+
 export default Object.freeze({
   PartyPrivacy,
   Platform,
@@ -181,4 +300,10 @@ export default Object.freeze({
   DefaultSkin,
   SeasonStart,
   SeasonEnd,
+  STWLeadSynergy,
+  PresenceOnlineType,
+  STWHeroType,
+  STWSchematicSubType,
+  STWSchematicAlterationRarity,
+  STWSchematicEvoType,
 });

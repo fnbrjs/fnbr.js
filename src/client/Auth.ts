@@ -30,7 +30,7 @@ class Auth extends Base {
    * A timeout that handles auth refreshing
    */
   // eslint-disable-next-line no-undef
-  private authRefreshTimeout: NodeJS.Timeout;
+  private authRefreshTimeout?: NodeJS.Timeout;
 
   /**
    * @param client The main client
@@ -55,15 +55,14 @@ class Auth extends Base {
     let auth: AuthResponse;
     const authCreds = this.client.config.auth;
 
-    if (authCreds.deviceAuth) {
+    if (authCreds.launcherRefreshToken) {
+      auth = await this.launcherRefreshTokenAuthenticate(authCreds.launcherRefreshToken, authClient);
+    } else if (authCreds.deviceAuth) {
       auth = await this.deviceAuthAuthenticate(authCreds.deviceAuth, authClient);
-    } else if (authCreds.exchangeCode) {
-      auth = await this.exchangeCodeAuthenticate(authCreds.exchangeCode, authClient);
     } else if (authCreds.refreshToken) {
       auth = await this.refreshTokenAuthenticate(authCreds.refreshToken, authClient);
-    } else if (authCreds.launcherRefreshToken) {
-      auth = await this.launcherRefreshTokenAuthenticate(authCreds.launcherRefreshToken, authClient);
-      this.auths.delete('launcher');
+    } else if (authCreds.exchangeCode) {
+      auth = await this.exchangeCodeAuthenticate(authCreds.exchangeCode, authClient);
     } else if (authCreds.authorizationCode) {
       auth = await this.authorizationCodeAuthenticate(authCreds.authorizationCode, authClient);
     } else {
@@ -80,7 +79,7 @@ class Auth extends Base {
       account_id: auth.response.account_id,
     });
 
-    clearTimeout(this.authRefreshTimeout);
+    if (this.authRefreshTimeout) clearTimeout(this.authRefreshTimeout);
     this.authRefreshTimeout = this.client.setTimeout(async () => {
       await this.reauthenticate();
     }, (auth.response.expires_in * 1000) - 10 * 60 * 1000);
@@ -95,6 +94,26 @@ class Auth extends Base {
         accountId: launcherAuth.response.account_id,
         displayName: launcherAuth.response.displayName,
         clientId: launcherAuth.response.client_id,
+      });
+
+      this.auths.set('launcher', {
+        token: launcherAuth.response.access_token,
+        refresh_token: launcherAuth.response.refresh_token,
+        expires_at: launcherAuth.response.expires_at,
+        client: 'launcherAppClient2',
+        account_id: launcherAuth.response.account_id,
+      });
+    }
+
+    if (authCreds.createLauncherSession && !this.auths.has('launcher')) {
+      const launcherAuth = await this.exchangeAuth('fortnite', 'launcherAppClient2');
+
+      this.auths.set('launcher', {
+        token: launcherAuth.response.access_token,
+        refresh_token: launcherAuth.response.refresh_token,
+        expires_at: launcherAuth.response.expires_at,
+        client: 'launcherAppClient2',
+        account_id: launcherAuth.response.account_id,
       });
     }
 
@@ -197,9 +216,20 @@ class Auth extends Base {
         client: authResponse.authData.client,
         account_id: authResponse.auth.response!.account_id,
       });
+
+      if (authResponse.authType === 'launcher') {
+        this.client.emit('refreshtoken:created', {
+          token: authResponse.auth.response!.refresh_token,
+          expiresIn: authResponse.auth.response!.refresh_expires,
+          expiresAt: authResponse.auth.response!.refresh_expires_at,
+          accountId: authResponse.auth.response!.account_id,
+          displayName: authResponse.auth.response!.displayName,
+          clientId: authResponse.auth.response!.client_id,
+        });
+      }
     }
 
-    clearTimeout(this.authRefreshTimeout);
+    if (this.authRefreshTimeout) clearTimeout(this.authRefreshTimeout);
     this.authRefreshTimeout = this.client.setTimeout(async () => {
       await this.reauthenticate();
     }, (authResponses.find((res) => res.authType === 'fortnite')!.auth.response!.expires_in * 1000) - 10 * 60 * 1000);
@@ -237,7 +267,7 @@ class Auth extends Base {
    */
   public async killAllTokens() {
     const proms = [];
-    for (const [authType, auth] of this.auths.filter((a) => !!a.account_id)) {
+    for (const [authType, auth] of this.auths.filter((a) => !!a.account_id && a.client !== 'launcherAppClient2')) {
       proms.push(this.client.http.sendEpicgamesRequest(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL}/${auth.token}`, authType));
     }
 
@@ -285,7 +315,11 @@ class Auth extends Base {
     if (EULAaccepted.error) return EULAaccepted;
 
     const fortniteAccess = await this.client.http.sendEpicgamesRequest(false, 'POST', `${Endpoints.INIT_GRANTACCESS}/${this.auths.get('fortnite')?.account_id}`, 'fortnite');
-    if (fortniteAccess.error) return fortniteAccess;
+    if (fortniteAccess.error) {
+      if (fortniteAccess.error.message !== 'Client requested access grant but already has the requested access entitlement') {
+        return fortniteAccess;
+      }
+    }
 
     return { response: { alreadyAccepted: false } };
   }

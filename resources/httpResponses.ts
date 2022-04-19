@@ -2,7 +2,7 @@
 import { AxiosError } from 'axios';
 import EpicgamesAPIError from '../src/exceptions/EpicgamesAPIError';
 import EpicgamesGraphQLError from '../src/exceptions/EpicgamesGraphQLError';
-import { FullPlatform, Region } from './structs';
+import { FullPlatform, Region, STWSchematicAlterationRarity } from './structs';
 
 export interface HTTPResponse {
   response?: any;
@@ -349,4 +349,516 @@ export interface CreativeDiscoveryPanel {
     }[];
     hasMore: boolean;
   }[];
+}
+
+export interface STWProfileItemData {
+  templateId: string;
+  attributes: {
+    [key: string]: any;
+  };
+  quantity: number;
+}
+
+export interface STWProfileSurvivorData extends STWProfileItemData {
+  attributes: {
+    gender: '1' | '2';
+    level: number;
+    squad_slot_idx: number;
+    item_seen: boolean;
+    managerSynergy?: string;
+    portrait?: string;
+    max_level_bonus: number;
+    personality: string;
+    squad_id: string;
+    xp: number;
+    slotted_building_id: string;
+    building_slot_used: number;
+    favorite: boolean;
+    set_bonus: string;
+  };
+}
+
+export interface STWProfileLockerSlotData {
+  items: string[];
+  activeVariants: string[];
+}
+
+export interface STWProfileLockerData extends STWProfileItemData {
+  attributes: {
+    locker_slots_data: {
+      slots: {
+        Pickaxe: STWProfileLockerSlotData;
+        MusicPack?: STWProfileLockerSlotData;
+        Character?: STWProfileLockerSlotData;
+        ItemWrap: STWProfileLockerSlotData;
+        Backpack: STWProfileLockerSlotData;
+        Dance: STWProfileLockerSlotData;
+        LoadingScreen: STWProfileLockerSlotData;
+      };
+    };
+    use_count: number;
+    banner_icon_template: string;
+    banner_color_template: string;
+    locker_name: string;
+    item_seen: boolean;
+    favorite: boolean;
+  };
+}
+
+export interface STWProfileResourceData extends STWProfileItemData {
+  attributes: {
+    max_level_bonus: number;
+    level: number;
+    item_seen: boolean;
+    xp: number;
+    favorite: boolean;
+  };
+}
+
+export interface STWProfileHeroVariantData {
+  channel: string;
+  active: string;
+}
+
+export interface STWProfileHeroData extends STWProfileItemData {
+  attributes: {
+    outfitvariants: STWProfileHeroVariantData[];
+    backblingvariants: STWProfileHeroVariantData[];
+    gender: 0;
+    level: number;
+    item_seen: boolean;
+    squad_slot_idx: number;
+    portrait: string;
+    hero_name: string;
+    max_level_bonus: number;
+    squad_id: string;
+    mode_loadouts: [];
+    xp: number;
+    slotted_building_id: string;
+    refundable: boolean;
+    favorite: boolean;
+    building_slot_used: number;
+  }
+}
+
+export interface STWProfileHeroLoadoutData extends STWProfileItemData {
+  attributes: {
+    team_perk?: string;
+    loadout_name: string;
+    crew_members: {
+      commanderslot: string;
+      followerslot1?: string;
+      followerslot2?: string;
+      followerslot3?: string;
+      followerslot4?: string;
+      followerslot5?: string;
+      leaderslot?: string;
+    };
+    loadout_index: number;
+    gadgets: {
+      gadget: string;
+      slot_index: number;
+    }[];
+  }
+}
+
+export interface STWProfileSchematicData extends STWProfileItemData {
+  attributes: {
+    legacy_alterations: unknown[];
+    max_level_bonus: number;
+    refund_legacy_item: boolean;
+    level: number;
+    item_seen: boolean;
+    alterations: string[];
+    xp: number;
+    refundable: boolean;
+    alteration_base_rarities: STWSchematicAlterationRarity[];
+    favorite: boolean;
+  }
+}
+
+export interface STWProfileStatsData {
+  node_costs: Partial<{
+    homebase_node_default_page: {
+      'Token:homebasepoints': number;
+    };
+    research_node_default_page: {
+      'Token:homebasepoints': number;
+    };
+  }>;
+  use_random_loadout: boolean;
+  mission_alert_redemption_record: Partial<{
+    claimData: {
+      missionAlertId: string;
+      redemptionDateUtc: string;
+      evictClaimDataAfterUtc: string;
+    }[];
+  }>;
+  rewards_claimed_post_max_level: number;
+  selected_hero_loadout: string;
+  loadouts: string[];
+  collection_book: Partial<{
+    maxBookXpLevelAchieved: number;
+  }>;
+  mfa_reward_claimed: boolean;
+  quest_manager: Partial<{
+    dailyLoginInterval: string;
+    dailyQuestRerolls: number;
+    questPoolStats: {
+      poolStats: {
+        poolName: string;
+        nextRefresh: string;
+        rerollsRemaining: number;
+        questHistory: string[];
+      }[];
+      dailyLoginInterval: string;
+      poolLockouts: {
+        poolLockouts: {
+          lockoutName: string;
+        }[];
+      };
+    };
+  }>;
+  legacy_research_points_spent: number;
+  gameplay_stats: {
+    statName: string;
+    statValue: number;
+  }[];
+  permissions: any[];
+  unslot_mtx_spend: number;
+  twitch: any;
+  client_settings: Partial<{
+    pinnedQuestInstances: any[];
+  }>;
+  research_levels: Partial<{
+    technology: number;
+    offense: number;
+    fortitude: number;
+    resistance: number;
+  }>;
+  level: number;
+  xp_overflow: number;
+  latent_xp_marker: string;
+  event_currency?: {
+    templateId: string;
+    cf: number;
+  };
+  inventory_limit_bonus: number;
+  matches_played: number;
+  xp_lost: number;
+  mode_loadouts: any[];
+  last_applied_loadout: string;
+  daily_rewards: Partial<{
+    nextDefaultReward: number;
+    totalDaysLoggedIn: number;
+    lastClaimDate: string;
+    additionalSchedules: {
+      [key: string]: {
+        rewardsClaimed: number;
+        claimedToday: boolean;
+      };
+    };
+  }>;
+  xp: number;
+  packs_granted: number;
+  active_loadout_index: number;
+}
+
+export interface STWProfileData {
+  _id: string;
+  created: string;
+  updated: string;
+  rvn: number;
+  wipeNumber: number;
+  accountId: string;
+  profileId: string;
+  version: string;
+  items: {
+    [key: string]: STWProfileItemData;
+  };
+  stats: {
+    attributes: STWProfileStatsData;
+  };
+  commandRevision: number;
+}
+
+export interface RawStatsData {
+  accountId: string;
+  startTime: number;
+  endTime: number;
+  stats: {
+    [key: string]: number;
+  };
+}
+
+export type STWTheaterLocaleData = string;
+
+export interface STWTheaterDataRequirements {
+  commanderLevel: number;
+  personalPowerRating: number;
+  maxPersonalPowerRating: number;
+  partyPowerRating: number;
+  maxPartyPowerRating: number;
+  activeQuestDefinitions: string[];
+  questDefinition: string;
+  objectiveStatHandle: {
+    dataTable: string;
+    rowName: string;
+  };
+  uncompletedQuestDefinition: string;
+  itemDefinition: string;
+  eventFlag: string;
+}
+
+export interface STWTheaterColorData {
+  specifiedColor: {
+    r: number;
+    g: number;
+    b: number;
+    a: number;
+  };
+  colorUseRule: string;
+}
+
+export interface STWTheaterBrushData {
+  imageSize: {
+    x: number;
+    y: number;
+  };
+  margin: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  };
+  tintColor: STWTheaterColorData;
+  outlineSettings: {
+    cornerRadii: {
+      x: number;
+      y: number;
+      z: number;
+      w: number;
+    };
+    color: STWTheaterColorData;
+    width: number;
+    roundingType: string;
+  };
+  resourceObject: string;
+  resourceName: string;
+  uVRegion: {
+    min: {
+      x: number;
+      y: number;
+    };
+    max: {
+      x: number;
+      y: number;
+    };
+    bIsValid: number;
+  };
+  drawAs: string;
+  tiling: string;
+  mirroring: string;
+  imageType: string;
+  bIsDynamicallyLoaded: boolean;
+}
+
+export interface STWTheaterData {
+  displayName: STWTheaterLocaleData;
+  uniqueId: string;
+  theaterSlot: number;
+  bIsTestTheater: boolean;
+  bHideLikeTestTheater: boolean;
+  requiredEventFlag: string;
+  missionRewardNamedWeightsRowName: string;
+  description: STWTheaterLocaleData;
+  runtimeInfo: {
+    theaterType: string;
+    theaterTags: {
+      gameplayTags: {
+        tagName: string;
+      }[];
+    };
+    eventDependentTheaterTags: {
+      requiredEventFlag: string;
+      relatedTag: {
+        tagName: string;
+      };
+    }[];
+    theaterVisibilityRequirements: STWTheaterDataRequirements;
+    requirements: STWTheaterDataRequirements;
+    requiredSubGameForVisibility: string;
+    bOnlyMatchLinkedQuestsToTiles: boolean;
+    worldMapPinClass: string;
+    theaterImage: string;
+    theaterImages: {
+      brush_XXS: STWTheaterBrushData;
+      brush_XS: STWTheaterBrushData;
+      brush_S: STWTheaterBrushData;
+      brush_M: STWTheaterBrushData;
+      brush_L: STWTheaterBrushData;
+      brush_XL: STWTheaterBrushData;
+    };
+    theaterColorInfo: {
+      bUseDifficultyToDetermineColor: boolean;
+      color: STWTheaterColorData;
+    };
+    socket: string;
+    missionAlertRequirements: STWTheaterDataRequirements;
+    missionAlertCategoryRequirements: {
+      missionAlertCategoryName: string;
+      bRespectTileRequirements: boolean;
+      bAllowQuickplay: boolean;
+    }[];
+    gameplayModifierList: any[];
+  };
+  tiles: {
+    tileType: string;
+    zoneTheme: string;
+    requirements: STWTheaterDataRequirements;
+    linkedQuests: {
+      questDefinition: string;
+      objectiveStatHandle: {
+        dataTable: string;
+        rowName: string;
+      };
+    }[];
+    xCoordinate: number;
+    yCoordinate: number;
+    missionWeightOverrides: {
+      weight: number;
+      missionGenerator: string;
+    }[];
+    difficultyWeightOverrides: {
+      weight: number;
+      difficultyInfo: {
+        dataTable: string;
+        rowName: string;
+      };
+    }[];
+    canBeMissionAlert: boolean;
+    tileTags: {
+      gameplayTags: {
+        tagName: string;
+      }[];
+    };
+    bDisallowQuickplay: boolean;
+  }[];
+  regions: {
+    displayName: STWTheaterLocaleData;
+    uniqueId: string;
+    regionTags: {
+      gameplayTags: {
+        tagName: string;
+      }[];
+    };
+    tileIndices: number[];
+    regionThemeIcon: string;
+    missionData: {
+      missionWeights: {
+        weight: number;
+        missionGenerator: string;
+      }[];
+      difficultyWeights: {
+        weight: number;
+        difficultyInfo: {
+          dataTable: string;
+          rowName: string;
+        };
+      }[];
+      numMissionsAvailable: number;
+      numMissionsToChange: number;
+      missionChangeFrequency: number;
+    };
+    requirements: STWTheaterDataRequirements;
+    missionAlertRequirements: {
+      categoryName: string;
+      requirements: STWTheaterDataRequirements;
+    }[];
+  }[];
+}
+
+export interface STWMissionItem {
+  itemType: string;
+  quantity: number;
+}
+
+export interface STWMissionTierGroup {
+  tierGroupName: string;
+  items: STWMissionItem[];
+}
+
+export interface STWMissionOverrideMissionRewards {
+  Endurance: STWMissionTierGroup;
+  Wargames: STWMissionTierGroup;
+}
+
+export interface STWMissionMissionDifficultyInfo {
+  dataTable: string;
+  rowName: string;
+}
+
+export interface STWMissionAvailableMission {
+  missionGuid: string;
+  missionRewards: STWMissionTierGroup;
+  overrideMissionRewards: STWMissionOverrideMissionRewards;
+  missionGenerator: string;
+  missionDifficultyInfo: STWMissionMissionDifficultyInfo;
+  tileIndex: number;
+  availableUntil: Date;
+  bonusMissionRewards: STWMissionTierGroup;
+}
+
+export interface STWMissionData {
+  theaterId: string;
+  availableMissions: STWMissionAvailableMission[];
+  nextRefresh: string;
+}
+
+export interface STWMissionAlertAlteration {
+  LootTierGroup: string;
+  Tier: number;
+}
+
+export interface STWMissionAlertAttributes {
+  Alteration: STWMissionAlertAlteration;
+}
+
+export interface STWMissionAlertItemWithAttributes {
+  itemType: string;
+  quantity: number;
+  attributes: STWMissionAlertAttributes;
+}
+
+export interface STWMissionAlertMissionAlertRewards {
+  tierGroupName: string;
+  items: STWMissionAlertItemWithAttributes[];
+}
+
+export interface STWMissionAlertItem {
+  itemType: string;
+  quantity: number;
+}
+
+export interface STWMissionAlertMissionAlertModifiers {
+  tierGroupName: string;
+  items: STWMissionAlertItem[];
+}
+
+export interface STWMissionAlertAvailableMissionAlert {
+  name: string;
+  categoryName: string;
+  spreadDataName: string;
+  missionAlertGuid: string;
+  tileIndex: number;
+  availableUntil: Date;
+  totalSpreadRefreshes: number;
+  missionAlertRewards: STWMissionAlertMissionAlertRewards;
+  missionAlertModifiers: STWMissionAlertMissionAlertModifiers;
+}
+
+export interface STWMissionAlertData {
+  theaterId: string;
+  availableMissionAlerts: STWMissionAlertAvailableMissionAlert[];
+  nextRefresh: Date;
 }

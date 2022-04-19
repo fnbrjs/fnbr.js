@@ -1,6 +1,9 @@
-import Collection from '@discordjs/collection';
+import { Collection } from '@discordjs/collection';
+import Endpoints from '../../resources/Endpoints';
 import { PartyPrivacy } from '../../enums/Enums';
-import { PartyConfig, PartyData, PartyUpdateData } from '../../resources/structs';
+import {
+  PartyConfig, PartyData, PartySchema, PartyUpdateData,
+} from '../../resources/structs';
 import Base from '../client/Base';
 import Client from '../client/Client';
 import PartyAlreadyJoinedError from '../exceptions/PartyAlreadyJoinedError';
@@ -55,10 +58,9 @@ class Party extends Base {
     this.createdAt = new Date(data.created_at);
     this.config = makeCamelCase(data.config);
     this.config.privacy = this.config.joinability === 'OPEN' ? PartyPrivacy.PUBLIC : PartyPrivacy.PRIVATE;
-    this.meta = new PartyMeta(this, data.meta);
+    this.meta = new PartyMeta(data.meta);
     this.revision = data.revision || 0;
 
-    // eslint-disable-next-line arrow-body-style
     this.members = new Collection(data.members.map((m) => {
       if (m.account_id === this.client.user?.id) return [m.account_id, new ClientPartyMember(this, m)];
       return [m.account_id, new PartyMember(this, m)];
@@ -108,13 +110,65 @@ class Party extends Base {
   }
 
   /**
-   * Join this party
+   * Joins this party
+   * @param skipRefresh Whether to skip refreshing the party data (Only use this if you know what you're doing)
    * @throws {PartyAlreadyJoinedError} The client already joined this party
+   * @throws {PartyNotFoundError} The party wasn't found
+   * @throws {PartyPermissionError} The party cannot be fetched due to a permission error
+   * @throws {PartyMaxSizeReachedError} The party has reached its max size
    * @throws {EpicgamesAPIError}
    */
-  public async join() {
+  public async join(skipRefresh = false) {
+    if (!skipRefresh) {
+      await this.fetch();
+    }
+
     if (this.members.get((this.client.user as ClientUser).id)) throw new PartyAlreadyJoinedError();
-    return this.client.joinParty(this.id);
+
+    this.client.partyLock.lock();
+    if (this.client.party) await this.client.party.leave(false);
+
+    const joinParty = await this.client.http.sendEpicgamesRequest(true, 'POST',
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.client.user?.id}/join`, 'fortnite', {
+        'Content-Type': 'application/json',
+      }, {
+        connection: {
+          id: this.client.xmpp.JID,
+          meta: {
+            'urn:epic:conn:platform_s': this.client.config.platform,
+            'urn:epic:conn:type_s': 'game',
+          },
+          yield_leadership: false,
+        },
+        meta: {
+          'urn:epic:member:dn_s': this.client.user!.displayName,
+          'urn:epic:member:joinrequestusers_j': JSON.stringify({
+            users: [
+              {
+                id: this.client.user!.id,
+                dn: this.client.user!.displayName,
+                plat: this.client.config.platform,
+                data: JSON.stringify({
+                  CrossplayPreference: '1',
+                  SubGame_u: '1',
+                }),
+              },
+            ],
+          }),
+        },
+      });
+
+    if (joinParty.error) {
+      this.client.partyLock.unlock();
+      await this.client.initParty(true, false);
+
+      throw joinParty.error;
+    }
+
+    // eslint-disable-next-line new-cap
+    this.client.setClientParty(this);
+    await this.client.party!.chat.join();
+    this.client.partyLock.unlock();
   }
 
   /**
@@ -123,7 +177,7 @@ class Party extends Base {
   public updateData(data: PartyUpdateData) {
     if (data.revision > this.revision) this.revision = data.revision;
     this.meta.update(data.party_state_updated, true);
-    this.meta.remove(data.party_state_removed);
+    this.meta.remove(data.party_state_removed as (keyof PartySchema & string)[]);
 
     this.config.joinability = data.party_privacy_type;
     this.config.maxSize = data.max_number_of_members;
@@ -146,6 +200,28 @@ class Party extends Base {
   public async updateMemberBasicInfo() {
     const users = await this.client.getProfile(this.members.map((m) => m.id));
     users.forEach((u) => this.members.get(u.id)?.update(u));
+  }
+
+  /**
+   * Refetches this party's data
+   * @throws {PartyNotFoundError} The party wasn't found
+   * @throws {PartyPermissionError} The party cannot be fetched due to a permission error
+   * @throws {EpicgamesAPIError}
+   */
+  public async fetch() {
+    const partyData = await this.client.getParty(this.id, true) as PartyData;
+
+    this.createdAt = new Date(partyData.created_at);
+    this.config = makeCamelCase(partyData.config);
+    this.config.privacy = this.config.joinability === 'OPEN' ? PartyPrivacy.PUBLIC : PartyPrivacy.PRIVATE;
+    this.meta = new PartyMeta(partyData.meta);
+    this.revision = partyData.revision || 0;
+
+    // eslint-disable-next-line arrow-body-style
+    this.members = new Collection(partyData.members.map((m) => {
+      if (m.account_id === this.client.user?.id) return [m.account_id, new ClientPartyMember(this, m)];
+      return [m.account_id, new PartyMember(this, m)];
+    }));
   }
 
   /**

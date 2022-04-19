@@ -32,11 +32,7 @@ class UserSearchResult extends User {
    * @param data The user entry data
    */
   constructor(client: Client, user: User, data: any) {
-    super(client, {
-      id: user.id,
-      displayName: user.displayName,
-      externalAuths: user.externalAuths,
-    });
+    super(client, user.toObject());
 
     this.matchType = data.matchType;
     this.sortPosition = data.sortPosition;

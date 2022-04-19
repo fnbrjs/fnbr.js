@@ -1,7 +1,9 @@
 import Client from '../client/Client';
 import Base from '../client/Base';
 import Friend from './Friend';
-import { FriendPresenceData, PresenceGameplayStats } from '../../resources/structs';
+import {
+  FriendPresenceData, PresenceGameplayStats, Platform, PresenceOnlineType,
+} from '../../resources/structs';
 
 /**
  * Represents a friend's presence
@@ -83,15 +85,27 @@ class FriendPresence extends Base {
   public gameplayStats?: PresenceGameplayStats;
 
   /**
+   * The platform the friend is currently playing on
+   */
+  public platform?: Platform;
+
+  /**
+   * The friend's online type
+   */
+  public onlineType: PresenceOnlineType;
+
+  /**
    * @param client The main client
    * @param data The presence data
    * @param friend The friend this presence belongs to
    */
-  constructor(client: Client, data: FriendPresenceData, friend: Friend) {
+  constructor(client: Client, data: FriendPresenceData, friend: Friend, show: PresenceOnlineType, from: string) {
     super(client);
 
     this.friend = friend;
     this.status = data.Status;
+    this.onlineType = show;
+    this.platform = from.match(/(?<=\/.+?:.+?:).+(?=::)/g)?.[0] as Platform | undefined;
     this.receivedAt = new Date();
     this.isPlaying = data.bIsPlaying || false;
     this.isJoinable = data.bIsJoinable || false;

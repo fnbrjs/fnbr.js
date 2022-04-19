@@ -4,6 +4,7 @@ import UserNotFoundError from '../exceptions/UserNotFoundError';
 import { BRAccountLevel, ExternalAuths, UserData } from '../../resources/structs';
 import Avatar from './Avatar';
 import GlobalProfile from './GlobalProfile';
+import EventTokens from './EventTokens';
 
 /**
  * Represents a user
@@ -44,6 +45,13 @@ class User extends Base {
    */
   public get displayName(): string | undefined {
     return this._displayName || (Object.values(this.externalAuths)[0] && (Object.values(this.externalAuths)[0] as any).externalDisplayName);
+  }
+
+  /**
+   * Whether the user is headless (the account is not actually an epicgames account)
+   */
+  public get isHeadless() {
+    return !this._displayName;
   }
 
   /**
@@ -96,7 +104,7 @@ class User extends Base {
    * @param seasonNumber The season number (eg. 16, 17, 18)
    */
   public async getBRAccountLevel(seasonNumber: number): Promise<BRAccountLevel | undefined> {
-    return (await this.client.getBRAccountLevel(this.id, seasonNumber))[0];
+    return (await this.client.getBRAccountLevel(this.id, seasonNumber))[0].level;
   }
 
   /**
@@ -116,12 +124,34 @@ class User extends Base {
   }
 
   /**
+   * Fetches the event tokens for an account.
+   * This can be used to check if a user is eligible to play a certain tournament window
+   * or to check a user's arena division in any season
+   * @throws {EpicgamesAPIError}
+   */
+  public async getEventTokens(): Promise<EventTokens | undefined> {
+    return (await this.client.getEventTokens(this.id))[0];
+  }
+
+  /**
    * Updates this user with the given data
    * @param data The updated user data
    */
   public update(data: UserData) {
     this._displayName = data.displayName;
     this.externalAuths = data.externalAuths || {};
+    if (Array.isArray(this.externalAuths)) this.externalAuths = {};
+  }
+
+  /**
+   * The raw user data
+   */
+  public toObject(): UserData {
+    return {
+      id: this.id,
+      displayName: this._displayName,
+      externalAuths: this.externalAuths,
+    };
   }
 }
 

@@ -11,7 +11,7 @@ class TournamentWindow {
   /**
    * The tournament this window belongs to
    */
-  public tournament: Tournament;
+  public tournament!: Tournament;
 
   /**
    * The tournament window ID

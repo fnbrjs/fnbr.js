@@ -1,7 +1,8 @@
 import Collection from '@discordjs/collection';
+import { AsyncQueue } from '@sapphire/async-queue';
 import Endpoints from '../../resources/Endpoints';
 import {
-  PartyData, PartyPrivacy, Playlist, Schema,
+  PartyData, PartyPrivacy, PartySchema, Playlist,
 } from '../../resources/structs';
 import Client from '../client/Client';
 import FriendNotFoundError from '../exceptions/FriendNotFoundError';
@@ -9,7 +10,6 @@ import PartyAlreadyJoinedError from '../exceptions/PartyAlreadyJoinedError';
 import PartyMaxSizeReachedError from '../exceptions/PartyMaxSizeReachedError';
 import PartyMemberNotFoundError from '../exceptions/PartyMemberNotFoundError';
 import PartyPermissionError from '../exceptions/PartyPermissionError';
-import AsyncQueue from '../util/AsyncQueue';
 import ClientPartyMember from './ClientPartyMember';
 import ClientPartyMeta from './ClientPartyMeta';
 import ClientUser from './ClientUser';
@@ -40,7 +40,7 @@ class ClientParty extends Party {
   /**
    * The hidden member ids
    */
-  public hiddenMemberIds: string[];
+  public hiddenMemberIds: Set<string>;
 
   /**
    * The pending member confirmations
@@ -51,14 +51,14 @@ class ClientParty extends Party {
    * @param client The main client
    * @param data The party's data
    */
-  constructor(client: Client, data: PartyData) {
-    super(client, data);
-    this.hiddenMemberIds = [];
+  constructor(client: Client, data: PartyData | Party) {
+    super(client, data instanceof Party ? data.toObject() : data);
+    this.hiddenMemberIds = new Set();
     this.pendingMemberConfirmations = new Collection();
 
     this.patchQueue = new AsyncQueue();
     this.chat = new PartyChat(this.client, this);
-    this.meta = new ClientPartyMeta(this, data.meta);
+    this.meta = new ClientPartyMeta(this, data instanceof Party ? data.meta.schema : data.meta);
   }
 
   /**
@@ -81,7 +81,22 @@ class ClientParty extends Party {
    * @throws {EpicgamesAPIError}
    */
   public async leave(createNew = true) {
-    return this.client.leaveParty(createNew);
+    this.client.partyLock.lock();
+
+    if (this.chat.isConnected) await this.chat.leave();
+
+    const partyLeave = await this.client.http.sendEpicgamesRequest(true, 'DELETE',
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.me?.id}`, 'fortnite');
+
+    if (partyLeave.error && partyLeave.error?.code !== 'errors.com.epicgames.social.party.party_not_found') {
+      this.client.partyLock.unlock();
+      throw partyLeave.error;
+    }
+
+    this.client.party = undefined;
+
+    this.client.partyLock.unlock();
+    if (createNew) await this.client.createParty();
   }
 
   /**
@@ -91,7 +106,7 @@ class ClientParty extends Party {
    * @throws {PartyPermissionError} You're not the leader of this party
    * @throws {EpicgamesAPIError}
    */
-  public async sendPatch(updated: Schema, deleted: string[] = []): Promise<void> {
+  public async sendPatch(updated: PartySchema, deleted: (keyof PartySchema & string)[] = []): Promise<void> {
     await this.patchQueue.wait();
 
     const patch = await this.client.http.sendEpicgamesRequest(true, 'PATCH', `${Endpoints.BR_PARTY}/parties/${this.id}`, 'fortnite', {
@@ -230,8 +245,8 @@ class ClientParty extends Party {
   public async setPrivacy(privacy: PartyPrivacy, sendPatch = true) {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
-    const updated: Schema = {};
-    const deleted: string[] = [];
+    const updated: PartySchema = {};
+    const deleted: (keyof PartySchema & string)[] = [];
 
     const privacyMeta = this.meta.get('Default:PrivacySettings_j');
     if (privacyMeta) {
@@ -321,9 +336,9 @@ class ClientParty extends Party {
     if (!partyMember) throw new PartyMemberNotFoundError(member);
 
     if (hide) {
-      this.hiddenMemberIds.push(partyMember.id);
+      this.hiddenMemberIds.add(partyMember.id);
     } else {
-      this.hiddenMemberIds.splice(this.hiddenMemberIds.findIndex((i) => i === partyMember.id), 1);
+      this.hiddenMemberIds.delete(partyMember.id);
     }
 
     await this.refreshSquadAssignments();
@@ -339,9 +354,9 @@ class ClientParty extends Party {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
     if (hide) {
-      this.hiddenMemberIds = this.members.filter((m) => m.id !== this.me.id).map((m) => m.id);
+      this.members.filter((m) => m.id !== this.me.id).forEach((m) => this.hiddenMemberIds.add(m.id));
     } else {
-      this.hiddenMemberIds = [];
+      this.hiddenMemberIds.clear();
     }
 
     await this.refreshSquadAssignments();

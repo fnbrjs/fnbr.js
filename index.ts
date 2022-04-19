@@ -5,12 +5,16 @@ export { default as Enums } from './enums/Enums';
 // types and interfaces
 export * from './resources/structs';
 
+// endpoints
+export { default as Endpoints } from './resources/Endpoints';
+
 // exceptions
 export { default as CreativeIslandNotFoundError } from './src/exceptions/CreativeIslandNotFoundError';
 export { default as CreatorCodeNotFoundError } from './src/exceptions/CreatorCodeNotFoundError';
 export { default as DuplicateFriendshipError } from './src/exceptions/DuplicateFriendshipError';
 export { default as EpicgamesAPIError } from './src/exceptions/EpicgamesAPIError';
 export { default as EpicgamesGraphQLError } from './src/exceptions/EpicgamesGraphQLError';
+export { default as EventTimeoutError } from './src/exceptions/EventTimeoutError';
 export { default as FriendNotFoundError } from './src/exceptions/FriendNotFoundError';
 export { default as FriendshipRequestAlreadySentError } from './src/exceptions/FriendshipRequestAlreadySentError';
 export { default as InviteeFriendshipRequestLimitExceededError } from './src/exceptions/InviteeFriendshipRequestLimitExceededError';
@@ -43,10 +47,14 @@ export { default as ClientPartyMemberMeta } from './src/structures/ClientPartyMe
 export { default as ClientPartyMeta } from './src/structures/ClientPartyMeta';
 export { default as ClientUser } from './src/structures/ClientUser';
 export { default as CreatorCode } from './src/structures/CreatorCode';
+export { default as EventTokens } from './src/structures/EventTokens';
 export { default as Friend } from './src/structures/Friend';
 export { default as FriendPresence } from './src/structures/FriendPresence';
 export { default as GlobalProfile } from './src/structures/GlobalProfile';
+export { default as Image } from './src/structures/Image';
 export { default as IncomingPendingFriend } from './src/structures/IncomingPendingFriend';
+export { default as NewsMessage } from './src/structures/NewsMessage';
+export { default as NewsMessageVideo } from './src/structures/NewsMessageVideo';
 export { default as OutgoingPendingFriend } from './src/structures/OutgoingPendingFriend';
 export { default as Party } from './src/structures/Party';
 export { default as PartyChat } from './src/structures/PartyChat';
@@ -60,9 +68,25 @@ export { default as RadioStation } from './src/structures/RadioStation';
 export { default as ReceivedFriendMessage } from './src/structures/ReceivedFriendMessage';
 export { default as ReceivedPartyInvitation } from './src/structures/ReceivedPartyInvitation';
 export { default as ReceivedPartyJoinRequest } from './src/structures/ReceivedPartyJoinRequest';
+export { default as STWHero } from './src/structures/STWHero';
+export { default as STWHeroLoadout } from './src/structures/STWHeroLoadout';
+export { default as STWItem } from './src/structures/STWItem';
+export { default as STWLocker } from './src/structures/STWLocker';
+export { default as STWMeleeWeaponSchematic } from './src/structures/STWMeleeWeaponSchematic';
+export { default as STWNewsMessage } from './src/structures/STWNewsMessage';
+export { default as STWProfile } from './src/structures/STWProfile';
+export { default as STWRangedWeaponSchematic } from './src/structures/STWRangedWeaponSchematic';
+export { default as STWResource } from './src/structures/STWResource';
+export { default as STWSchematic } from './src/structures/STWSchematic';
+export { default as STWStats } from './src/structures/STWStats';
+export { default as STWSurvivor } from './src/structures/STWSurvivor';
+export { default as STWTeamPerk } from './src/structures/STWTeamPerk';
+export { default as STWTrapSchematic } from './src/structures/STWTrapSchematic';
+export { default as STWWeaponSchematic } from './src/structures/STWWeaponSchematic';
 export { default as SentFriendMessage } from './src/structures/SentFriendMessage';
 export { default as SentPartyInvitation } from './src/structures/SentPartyInvitation';
 export { default as SentPartyJoinRequest } from './src/structures/SentPartyJoinRequest';
+export { default as Stats } from './src/structures/Stats';
 export { default as Tournament } from './src/structures/Tournament';
 export { default as TournamentWindow } from './src/structures/TournamentWindow';
 export { default as User } from './src/structures/User';

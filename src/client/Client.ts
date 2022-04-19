@@ -2,6 +2,7 @@
 import { EventEmitter } from 'events';
 import Collection from '@discordjs/collection';
 import { ResponseType } from 'axios';
+import { PresenceShow } from 'stanza/Constants';
 import Enums from '../../enums/Enums';
 import {
   buildReplay, consoleQuestion, parseBlurlStream, parseM3U8File,
@@ -10,11 +11,11 @@ import Auth from './Auth';
 import Http from './HTTP';
 import AsyncLock from '../util/AsyncLock';
 import {
-  ClientOptions, ClientConfig, ClientEvents, StatsData, NewsMOTD, NewsMessage, LightswitchData,
+  ClientOptions, ClientConfig, ClientEvents, LightswitchData,
   EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
-  ReplayDownloadConfig, EventTokensResponse, BRAccountLevel, TournamentSessionMetadata,
-  Language,
+  ReplayDownloadConfig, TournamentSessionMetadata, STWWorldInfoData,
+  BRAccountLevelData, Language, PartyData, PartySchema,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/ClientUser';
@@ -47,7 +48,6 @@ import Party from '../structures/Party';
 import PartyNotFoundError from '../exceptions/PartyNotFoundError';
 import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
 import PartyPermissionError from '../exceptions/PartyPermissionError';
-import PartyMaxSizeReachedError from '../exceptions/PartyMaxSizeReachedError';
 import Tournament from '../structures/Tournament';
 import SentPartyJoinRequest from '../structures/SentPartyJoinRequest';
 import UserSearchResult from '../structures/UserSearchResult';
@@ -58,6 +58,12 @@ import CreativeIslandNotFoundError from '../exceptions/CreativeIslandNotFoundErr
 import Avatar from '../structures/Avatar';
 import GlobalProfile from '../structures/GlobalProfile';
 import OfferNotFoundError from '../exceptions/OfferNotFoundError';
+import STWProfile from '../structures/STWProfile';
+import Stats from '../structures/Stats';
+import NewsMessage from '../structures/NewsMessage';
+import STWNewsMessage from '../structures/STWNewsMessage';
+import EventTokens from '../structures/EventTokens';
+import EventTimeoutError from '../exceptions/EventTimeoutError';
 
 /**
  * Represets the main client
@@ -94,6 +100,11 @@ class Client extends EventEmitter {
    * Lock used to pause certain incoming xmpp messages while the bots party is being modified
    */
   public partyLock: AsyncLock;
+
+  /**
+   * Lock used to pause xmpp presences while the friend caches are being populated
+   */
+  public cacheLock: AsyncLock;
 
   /**
    * HTTP manager
@@ -153,7 +164,7 @@ class Client extends EventEmitter {
       httpDebug: undefined,
       xmppDebug: undefined,
       defaultStatus: undefined,
-      defaultOnlineType: 'online',
+      defaultOnlineType: Enums.PresenceOnlineType.ONLINE,
       platform: 'WIN',
       defaultPartyMemberMeta: {},
       xmppKeepAliveInterval: 30,
@@ -165,6 +176,8 @@ class Client extends EventEmitter {
       handleRatelimits: true,
       partyBuildId: '1:3:',
       restartOnInvalidRefresh: false,
+      language: 'en',
+      friendOnlineConnectionTimeout: 30000,
       ...config,
       cacheSettings: {
         ...config.cacheSettings,
@@ -178,6 +191,7 @@ class Client extends EventEmitter {
         authorizationCode: async () => consoleQuestion('Please enter an authorization code: '),
         checkEULA: true,
         killOtherTokens: true,
+        createLauncherSession: false,
         authClient: 'fortniteIOSGameClient',
         ...config.auth,
       },
@@ -201,6 +215,7 @@ class Client extends EventEmitter {
 
     this.reauthLock = new AsyncLock();
     this.partyLock = new AsyncLock();
+    this.cacheLock = new AsyncLock();
 
     this.user = undefined;
     this.isReady = false;
@@ -249,6 +264,8 @@ class Client extends EventEmitter {
 
     this.initCacheSweeping();
 
+    this.cacheLock.lock();
+
     if (this.config.connectToXMPP) {
       this.xmpp.setup();
       const xmpp = await this.xmpp.connect();
@@ -258,6 +275,8 @@ class Client extends EventEmitter {
     if (this.config.fetchFriends) {
       await this.updateCaches();
     }
+
+    this.cacheLock.unlock();
 
     await this.initParty(this.config.createParty, this.config.forceNewParty);
     this.setStatus();
@@ -287,6 +306,7 @@ class Client extends EventEmitter {
 
     this.config.auth.refreshToken = refreshToken;
     await this.login();
+    this.config.auth.refreshToken = undefined;
   }
 
   /**
@@ -301,6 +321,15 @@ class Client extends EventEmitter {
       await this.leaveParty(false);
       await this.createParty();
     }
+  }
+
+  /**
+   * Internal method that sets a {@link ClientParty} to the value of {@link Client#party}
+   * @param party The party
+   * @private
+   */
+  public setClientParty(party: Party) {
+    this.party = new ClientParty(this, party);
   }
 
   /**
@@ -386,7 +415,7 @@ class Client extends EventEmitter {
 
   /**
    * Removes presences from the clients cache that are older than the max lifetime
-   * @param maxLifetime How old a presence must be before it can be sweeped (in ms)
+   * @param maxLifetime How old a presence must be before it can be sweeped (in seconds)
    * @returns The amount of presences sweeped
    */
   public sweepPresences(maxLifetime = this.config.cacheSettings.presences?.maxLifetime) {
@@ -394,7 +423,7 @@ class Client extends EventEmitter {
 
     let presences = 0;
     for (const friend of this.friends.values()) {
-      if (typeof friend.presence?.receivedAt !== 'undefined' && Date.now() - friend.presence.receivedAt.getTime() > maxLifetime) {
+      if (typeof friend.presence?.receivedAt !== 'undefined' && Date.now() - friend.presence.receivedAt.getTime() > (maxLifetime * 1000)) {
         delete friend.presence;
         presences += 1;
       }
@@ -417,18 +446,23 @@ class Client extends EventEmitter {
     // eslint-disable-next-line no-unused-vars
     filter?: (...args: Parameters<ClientEvents[U]>) => boolean): Promise<Parameters<ClientEvents[U]>> {
     return new Promise<any>((res, rej) => {
+      // eslint-disable-next-line no-undef
+      let rejectionTimeout: NodeJS.Timeout;
+
       const handler = (...data: any) => {
         if (!filter || filter(...data)) {
           this.removeListener(event, handler);
+          if (rejectionTimeout) clearTimeout(rejectionTimeout);
           res(data);
         }
       };
 
       this.on(event, handler);
 
-      setTimeout(() => {
+      const err = new EventTimeoutError(event, timeout);
+      rejectionTimeout = setTimeout(() => {
         this.removeListener(event, handler);
-        rej(new Error('Event timeout exceed'));
+        rej(err);
       }, timeout);
     });
   }
@@ -656,20 +690,21 @@ class Client extends EventEmitter {
       }
     }
 
-    if (status) this.config.defaultStatus = status;
-    if (onlineType) this.config.defaultOnlineType = onlineType;
+    if (status && !toJID) this.config.defaultStatus = status;
+    if (onlineType && !toJID) this.config.defaultOnlineType = onlineType;
 
     const rawStatus = {
-      Status: this.config.defaultStatus
+      Status: status || this.config.defaultStatus
         || (this.party && `Battle Royale Lobby - ${this.party.size} / ${this.party.maxSize}`) || 'Playing Battle Royale',
       bIsPlaying: false,
-      bIsJoinable: false,
+      bIsJoinable: this.party && !this.party.isPrivate && this.party.size !== this.party.maxSize,
       bHasVoiceSupport: false,
       SessionId: '',
+      ProductName: 'Fortnite',
       Properties: {
         'party.joininfodata.286331153_j': partyJoinInfoData,
         FortBasicInfo_j: {
-          homeBaseRating: 1,
+          homeBaseRating: 0,
         },
         FortLFG_I: '0',
         FortPartySize_i: 1,
@@ -684,9 +719,9 @@ class Client extends EventEmitter {
       },
     };
 
-    const rawOnlineType = this.config.defaultOnlineType === 'online' ? undefined : this.config.defaultOnlineType;
+    const rawOnlineType = (onlineType || this.config.defaultOnlineType) === 'online' ? undefined : (onlineType || this.config.defaultOnlineType);
 
-    return this.xmpp.sendStatus(rawStatus, rawOnlineType, toJID);
+    return this.xmpp.sendStatus(rawStatus, rawOnlineType as PresenceShow | undefined, toJID);
   }
 
   /**
@@ -857,6 +892,7 @@ class Client extends EventEmitter {
    * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {PartyAlreadyJoinedError} The user is already a member of this party
    * @throws {PartyMaxSizeReachedError} The party reached its max size
+   * @throws {PartyNotFoundError} The client is not in party
    * @throws {EpicgamesAPIError}
    */
   public async invite(friend: string) {
@@ -874,66 +910,9 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async joinParty(id: string) {
-    this.partyLock.lock();
+    const party = await this.getParty(id) as Party;
 
-    // eslint-disable-next-line no-undef-init
-    let party: Party | undefined = undefined;
-
-    try {
-      party = await this.getParty(id);
-    } catch (e) {
-      if (e instanceof EpicgamesAPIError) {
-        if (e.code === 'errors.com.epicgames.social.party.party_not_found') throw new PartyNotFoundError();
-        if (e.code === 'errors.com.epicgames.social.party.party_query_forbidden') throw new PartyPermissionError();
-        if (e.code === 'errors.com.epicgames.social.party.party_is_full') throw new PartyMaxSizeReachedError();
-        throw e;
-      } else {
-        throw e;
-      }
-    }
-
-    if (this.party) await this.party.leave(false);
-
-    const joinParty = await this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.BR_PARTY}/parties/${party.id}/members/${this.user?.id}/join`, 'fortnite', {
-      'Content-Type': 'application/json',
-    }, {
-      connection: {
-        id: this.xmpp.JID,
-        meta: {
-          'urn:epic:conn:platform_s': this.config.platform,
-          'urn:epic:conn:type_s': 'game',
-        },
-        yield_leadership: false,
-      },
-      meta: {
-        'urn:epic:member:dn_s': this.user?.displayName,
-        'urn:epic:member:joinrequestusers_j': JSON.stringify({
-          users: [
-            {
-              id: this.user?.id,
-              dn: this.user?.displayName,
-              plat: this.config.platform,
-              data: JSON.stringify({
-                CrossplayPreference: '1',
-                SubGame_u: '1',
-              }),
-            },
-          ],
-        }),
-      },
-    });
-
-    if (joinParty.error) {
-      this.partyLock.unlock();
-      await this.initParty(true, false);
-      if (joinParty.error.code === 'errors.com.epicgames.social.party.user_has_party') {
-        throw joinParty.error;
-      } else throw joinParty.error;
-    }
-
-    this.party = new ClientParty(this, party.toObject());
-    await this.party.chat.join();
-    this.partyLock.unlock();
+    return party.join(true);
   }
 
   /**
@@ -992,7 +971,7 @@ class Client extends EventEmitter {
       ...newPrivacy.updated,
       ...Object.keys(this.party.meta.schema).filter((k: string) => !k.startsWith('urn:'))
         // eslint-disable-next-line no-param-reassign
-        .reduce((obj, key) => { (obj as any)[key] = this.party?.meta.schema[key]; return obj; }, {}),
+        .reduce((obj, key) => { (obj as any)[key] = this.party?.meta.schema[key as keyof PartySchema]; return obj; }, {}),
     }, newPrivacy.deleted);
 
     this.partyLock.unlock();
@@ -1006,23 +985,9 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async leaveParty(createNew = true) {
-    if (!this.party) return;
-    this.partyLock.lock();
+    if (!this.party) return undefined;
 
-    if (this.party.chat.isConnected) await this.party.chat.leave();
-
-    const partyLeave = await this.http.sendEpicgamesRequest(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.user?.id}`, 'fortnite');
-
-    if (partyLeave.error && partyLeave.error?.code !== 'errors.com.epicgames.social.party.party_not_found') {
-      this.partyLock.unlock();
-      throw partyLeave.error;
-    }
-
-    this.party = undefined;
-
-    this.partyLock.unlock();
-    if (createNew) await this.createParty();
+    return this.party.leave(createNew);
   }
 
   /**
@@ -1067,11 +1032,23 @@ class Client extends EventEmitter {
   /**
    * Fetches a party by its id
    * @param id The party's id
+   * @param raw Whether to return the raw party data
+   * @throws {PartyNotFoundError} The party wasn't found
+   * @throws {PartyPermissionError} The party cannot be fetched due to a permission error
    * @throws {EpicgamesAPIError}
    */
-  public async getParty(id: string) {
+  public async getParty(id: string, raw = false): Promise<Party | PartyData> {
     const party = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_PARTY}/parties/${id}`, 'fortnite');
-    if (party.error) throw party.error;
+    if (party.error) {
+      if (party.error instanceof EpicgamesAPIError) {
+        if (party.error.code === 'errors.com.epicgames.social.party.party_not_found') throw new PartyNotFoundError();
+        if (party.error.code === 'errors.com.epicgames.social.party.party_query_forbidden') throw new PartyPermissionError();
+      } else {
+        throw party.error;
+      }
+    }
+
+    if (raw) return party.response;
 
     const constuctedParty = new Party(this, party.response);
     await constuctedParty.updateMemberBasicInfo();
@@ -1251,47 +1228,44 @@ class Client extends EventEmitter {
   /* -------------------------------------------------------------------------- */
 
   // eslint-disable-next-line no-unused-vars
-  public async getBRStats(user: string, startTime?: number, endTime?: number): Promise<StatsData>;
+  public async getBRStats(user: string, startTime?: number, endTime?: number): Promise<Stats>;
   // eslint-disable-next-line no-unused-vars
-  public async getBRStats(user: string[], startTime?: number, endTime?: number, stats?: string[]): Promise<StatsData[]>;
+  public async getBRStats(user: string[], startTime?: number, endTime?: number, stats?: string[]): Promise<Stats[]>;
 
   /**
-   * Fetches battle royale v2 stats for one or multiple players
+   * Fetches Battle Royale v2 stats for one or multiple players
    * @param user The id(s) or display name(s) of the user(s)
-   * @param startTime The timestamp to start fetching stats from, can be null/undefined for lifetime
-   * @param endTime The timestamp to stop fetching stats from, can be undefined for lifetime
+   * @param startTime The timestamp in seconds to start fetching stats from, can be null/undefined for lifetime
+   * @param endTime The timestamp in seconds to stop fetching stats from, can be undefined for lifetime
    * @param stats An array of stats keys. Required if you want to get the stats of multiple users at once (If not, ignore this)
    * @throws {UserNotFoundError} The user wasn't found
    * @throws {StatsPrivacyError} The user set their stats to private
    * @throws {TypeError} You must provide an array of stats keys for multiple user lookup
    * @throws {EpicgamesAPIError}
    */
-  public async getBRStats(user: string | string[], startTime?: number, endTime?: number, stats: string[] = []): Promise<StatsData | StatsData[] | undefined> {
+  public async getBRStats(user: string | string[], startTime?: number, endTime?: number, stats: string[] = []): Promise<Stats | Stats[] | undefined> {
     const params = [];
     if (startTime) params.push(`startTime=${startTime}`);
     if (endTime) params.push(`endTime=${endTime}`);
     const query = params[0] ? `?${params.join('&')}` : '';
 
     if (typeof user === 'string') {
-      const userID = await this.resolveUserId(user);
-      if (!userID) throw new UserNotFoundError(user);
+      const resolvedUser = await this.getProfile(user);
+      if (!resolvedUser) throw new UserNotFoundError(user);
 
-      const statsResponse = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_STATS_V2}/account/${userID}${query}`, 'fortnite');
+      const statsResponse = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_STATS_V2}/account/${resolvedUser.id}${query}`, 'fortnite');
 
       if (!statsResponse.error && !statsResponse.response) throw new StatsPrivacyError(user);
       if (statsResponse.error) throw statsResponse.error;
 
-      return {
-        ...statsResponse.response,
-        query: user,
-      };
+      return new Stats(this, statsResponse.response, resolvedUser);
     }
 
     if (!stats[0]) throw new TypeError('You need to provide an array of stats keys to fetch multiple user\'s stats');
 
-    const ids = await this.resolveUserIds(user);
+    const resolvedUsers = await this.getProfile(user);
 
-    const idChunks: { id: string, query: string }[][] = ids.reduce((resArr: any[], id, i) => {
+    const idChunks: string[][] = resolvedUsers.map((u) => u.id).reduce((resArr: any[], id, i) => {
       const chunkIndex = Math.floor(i / 51);
       // eslint-disable-next-line no-param-reassign
       if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
@@ -1303,84 +1277,38 @@ class Client extends EventEmitter {
       'Content-Type': 'application/json',
     }, {
       appId: 'fortnite',
-      owners: c.map((o) => o.id),
+      owners: c,
       stats,
     })));
 
     if (statsResponses.some((r) => r.error)) throw statsResponses.find((r) => r.error)?.error;
 
-    return statsResponses.map((r) => r.response).flat(1).map((r) => ({
-      ...r,
-      query: ids.find((id) => id.id === r.accountId)?.query,
-    }));
+    return statsResponses.map((r) => r.response).flat(1).map((r) => new Stats(this, r, resolvedUsers.find((u) => u.id === r.accountId)!));
   }
 
-  // eslint-disable-next-line no-unused-vars
-  public async getNews(mode: 'battleroyale' | 'creative', language: Language): Promise<NewsMOTD[]>;
-  // eslint-disable-next-line no-unused-vars
-  public async getNews(mode: 'savetheworld', language: Language): Promise<NewsMessage[]>;
-
   /**
-   * Fetches the current news for a specific gamemode
-   * @param mode The gamemode to fetch the news for
+   * Fetches the current Battle Royale news
    * @param language The language of the news
+   * @param customPayload Extra data to send in the request body for a personalized news response (battle pass level, country, etc)
    * @throws {EpicgamesAPIError}
    */
-  public async getNews(mode: 'battleroyale' | 'creative' | 'savetheworld' = 'battleroyale', language: Language = 'en'): Promise<NewsMOTD[] | NewsMessage[]> {
-    const news = await this.http.sendEpicgamesRequest(false, 'GET', `${Endpoints.BR_NEWS}/${mode}news${mode === 'savetheworld' ? '' : 'v2'}?lang=${language}`);
-    if (news.error) throw news.error;
-
-    const { messages, motds, platform_motds: platformMotds } = news.response.news;
-
-    if (mode === 'savetheworld') return messages;
-
-    const oldNewsMessages: NewsMOTD[] = [...motds, ...(platformMotds || []).filter((m: any) => m.platform === 'windows').map((m: any) => m.message)];
-
-    if (mode === 'creative') return oldNewsMessages;
-
-    const newNews = await this.http.sendEpicgamesRequest(true, 'POST', Endpoints.BR_NEWS_MOTD, 'fortnite', undefined, {
+  public async getBRNews(language = Enums.Language.ENGLISH, customPayload: any): Promise<NewsMessage[]> {
+    const news = await this.http.sendEpicgamesRequest(true, 'POST', Endpoints.BR_NEWS_MOTD, 'fortnite', {
+      'Content-Type': 'application/json',
+      'Accept-Language': language,
+    }, {
       platform: 'Windows',
-      language: 'en',
+      language,
       country: 'US',
       serverRegion: 'NA',
       subscription: false,
       battlepass: false,
       battlepassLevel: 1,
+      ...customPayload,
     });
-    if (newNews.error) throw newNews.error;
+    if (news.error) throw news.error;
 
-    const newsMessages: NewsMOTD[] = (newNews.response?.contentItems as any[])?.map((i: any, y) => ({
-      _type: i.contentSchemaName,
-      body: i.contentFields.body,
-      entryType: i.contentFields.entryType,
-      hidden: i.contentFields.hidden,
-      id: i.contentId,
-      image: i.contentFields.image?.[0]?.url,
-      offerAction: i.contentFields.offerAction,
-      sortingPriority: 1000 - y,
-      spotlight: i.contentFields.spotlight,
-      tabTitleOverride: i.contentFields.tabTitleOverride,
-      tileImage: i.contentFields.tileImage?.[0]?.url,
-      title: i.contentFields.title,
-      videoAutoplay: i.contentFields.videoAutoplay,
-      videoFullscreen: i.contentFields.videoFullscreen,
-      videoLoop: i.contentFields.videoLoop,
-      videoMute: i.contentFields.videoMute,
-      videoStreamingEnabled: i.contentFields.videoStreamingEnabled,
-      buttonTextOverride: i.contentFields.buttonTextOverride,
-      offerId: i.contentFields.offerId,
-      playlistId: i.contentFields.playlistId,
-      videoUID: i.contentFields.videoUID,
-      videoVideoString: i.contentFields.videoVideoString,
-    })) || [];
-
-    oldNewsMessages.forEach((omsg) => {
-      if (!newsMessages.some((msg) => msg.title === omsg.title && msg.body === omsg.body)) {
-        newsMessages.push(omsg);
-      }
-    });
-
-    return newsMessages;
+    return news.response.contentItems.map((i: any) => new NewsMessage(this, i));
   }
 
   /**
@@ -1402,7 +1330,7 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Fetches the current Fortnite battle royale radio stations
+   * Fetches the current Fortnite Battle Royale radio stations
    * @throws {EpicgamesAPIError}
    */
   public async getRadioStations(): Promise<RadioStation[]> {
@@ -1415,7 +1343,7 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Fetches the current battle royale event flags
+   * Fetches the current Battle Royale event flags
    * @param language The language
    * @throws {EpicgamesAPIError}
    */
@@ -1427,23 +1355,21 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Fetches the battle royale account level for one or multiple users
+   * Fetches the Battle Royale account level for one or multiple users
    * @param user The id(s) and/or display name(s) of the user(s) to fetch the account level for
    * @param seasonNumber The season number (eg. 16, 17, 18)
    * @throws {UserNotFoundError} The user wasn't found
    * @throws {StatsPrivacyError} The user set their stats to private
    * @throws {EpicgamesAPIError}
    */
-  public async getBRAccountLevel(user: string | string[], seasonNumber: number): Promise<BRAccountLevel[]> {
-    if (seasonNumber < 11) throw new RangeError('The season number must be at least 11');
-
+  public async getBRAccountLevel(user: string | string[], seasonNumber: number): Promise<BRAccountLevelData[]> {
     const users = Array.isArray(user) ? user : [user];
 
     const accountLevels = await this.getBRStats(users, undefined, undefined, [`s${seasonNumber}_social_bp_level`]);
 
     return accountLevels.map((al) => ({
-      query: al.query,
-      level: al.stats[`s${seasonNumber}_social_bp_level`] as number || 0,
+      user: al.user,
+      level: al.levelData[`s${seasonNumber}`] || { level: 0, progress: 0 },
     }));
   }
 
@@ -1470,7 +1396,7 @@ class Client extends EventEmitter {
    * @throws {UserNotFoundError} The user wasn't found
    * @throws {EpicgamesAPIError}
    */
-  public async getEventTokens(user: string | string[]): Promise<EventTokensResponse[]> {
+  public async getEventTokens(user: string | string[]): Promise<EventTokens[]> {
     const users = typeof user === 'string' ? [user] : user;
 
     const resolvedUsers = await this.getProfile(users);
@@ -1486,14 +1412,12 @@ class Client extends EventEmitter {
     const statsResponses = await Promise.all(userChunks.map((c) => this.http.sendEpicgamesRequest(true, 'GET',
       `${Endpoints.BR_TOURNAMENT_TOKENS}?teamAccountIds=${c.join(',')}`, 'fortnite')));
 
-    return statsResponses.map((r) => r.response.accounts).flat(1).map((r) => ({
-      user: resolvedUsers.find((u) => u.id === r.accountId) as User,
-      tokens: r.tokens,
-    }));
+    return statsResponses.map((r) => r.response.accounts).flat(1)
+      .map((r) => new EventTokens(this, r.tokens, resolvedUsers.find((u) => u.id === r.accountId)!));
   }
 
   /**
-   * Fetches the current and past battle royale tournaments
+   * Fetches the current and past Battle Royale tournaments
    * @param region The region
    * @param platform The platform
    * @throws {EpicgamesAPIError}
@@ -1705,6 +1629,66 @@ class Client extends EventEmitter {
     }
 
     return creativeDiscovery.response.Panels;
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                           FORTNITE SAVE THE WORLD                          */
+  /* -------------------------------------------------------------------------- */
+
+  /**
+   * Fetches the Save The World profile for a players
+   * @param user The id or display name of the user
+   * @throws {UserNotFoundError} The user wasn't found
+   * @throws {EpicgamesAPIError}
+   */
+  public async getSTWProfile(user: string) {
+    const resolvedUser = await this.getProfile(user);
+    if (!resolvedUser) throw new UserNotFoundError(user);
+
+    const queryProfileResponse = await this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.MCP}/${resolvedUser.id}/public/QueryPublicProfile?profileId=campaign`, 'fortnite', {
+      'Content-Type': 'application/json',
+    }, {});
+    if (queryProfileResponse.error) {
+      if (queryProfileResponse.error.code === 'errors.com.epicgames.modules.profiles.profile_not_found') {
+        throw new UserNotFoundError(user);
+      }
+
+      throw queryProfileResponse.error;
+    }
+
+    return new STWProfile(this, queryProfileResponse.response.profileChanges[0].profile, resolvedUser);
+  }
+
+  /**
+   * Fetches the current Save The World news
+   * @param language The language of the news
+   * @throws {EpicgamesAPIError}
+   */
+  public async getSTWNews(language = this.config.language): Promise<STWNewsMessage[]> {
+    const newsResponse = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_NEWS}/savetheworldnews?lang=${language}`, 'fortnite', {
+      'Accept-Language': language,
+    });
+    if (newsResponse.error) throw newsResponse.error;
+
+    return newsResponse.response.news.messages.map((m: any) => new STWNewsMessage(this, m));
+  }
+
+  /**
+   * Fetches the current Save The World world info
+   * @param language The language of the world info
+   * @throws {EpicgamesAPIError}
+   */
+  public async getSTWWorldInfo(language = this.config.language): Promise<STWWorldInfoData> {
+    const worldInfoResponse = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.STW_WORLD_INFO, 'fortnite', {
+      'Accept-Language': language,
+    });
+    if (worldInfoResponse.error) throw worldInfoResponse.error;
+
+    return {
+      theaters: worldInfoResponse.response.theaters,
+      missions: worldInfoResponse.response.missions,
+      missionAlerts: worldInfoResponse.response.missionAlerts,
+    };
   }
 }
 

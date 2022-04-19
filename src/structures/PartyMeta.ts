@@ -1,26 +1,10 @@
-import { Playlist, Schema } from '../../resources/structs';
+import { PartySchema, Playlist } from '../../resources/structs';
 import Meta from '../util/Meta';
-import Party from './Party';
 
 /**
  * Represents a party's meta
  */
-class PartyMeta extends Meta {
-  /**
-   * The party
-   */
-  public party: Party;
-
-  /**
-   * @param member The party
-   * @param schema The schema
-   */
-  constructor(party: Party, schema: Schema) {
-    super(schema);
-
-    this.party = party;
-  }
-
+class PartyMeta extends Meta<PartySchema> {
   /**
    * The currently selected playlist
    */
@@ -32,7 +16,7 @@ class PartyMeta extends Meta {
    * The custom matchmaking key
    */
   public get customMatchmakingKey(): string | undefined {
-    const key = this.get('CustomMatchKey_s');
+    const key = this.get('Default:CustomMatchKey_s');
 
     if (typeof key !== 'string' || key.length === 0) return undefined;
     return key;

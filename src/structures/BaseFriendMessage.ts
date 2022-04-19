@@ -9,12 +9,12 @@ class BaseFriendMessage extends BaseMessage {
   /**
    * The message's content
    */
-  public content: string;
+  public content!: string;
 
   /**
    * The message's author
    */
-  public author: Friend | ClientUser;
+  public author!: Friend | ClientUser;
 
   /**
    * Replies to this whisper message

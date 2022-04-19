@@ -4,8 +4,17 @@ import zlib from 'zlib';
 import crypto from 'crypto';
 import {
   Schema, ReplayData, ReplayDataChunk, ReplayEvent,
+  STWItemRarity, STWSurvivorType, STWSurvivorSquads,
+  STWHeroType,
+  StatsPlaylistTypeData,
+  STWItemTier,
+  STWSchematicType,
+  STWSchematicEvoType,
+  STWSchematicSubType,
 } from '../../resources/structs';
+import { STWLeadSynergy } from '../../enums/Enums';
 import BinaryWriter from './BinaryWriter';
+import PowerLevelCurves from '../../resources/PowerLevelCurves';
 
 const defaultCharacters = [
   'CID_556_Athena_Commando_F_RebirthDefaultA',
@@ -258,4 +267,272 @@ export const buildReplay = (replayData: ReplayData, addStats: boolean) => {
   buildChunks(replay, replayData);
 
   return replay.buffer;
+};
+
+export const parseSTWSurvivorTemplateId = (templateId: string) => {
+  const id = templateId.split(':')[1];
+  const fields = id.split('_');
+
+  let type: STWSurvivorType;
+  const rawType = fields.shift();
+  if (rawType === 'worker') type = 'special';
+  else if (rawType?.includes('manager')) type = 'manager';
+  else type = 'basic';
+
+  const tier = parseInt(fields.pop()!.slice(1), 10) as STWItemTier;
+  const rarity = (type === 'manager' ? fields.shift() : fields.pop()) as STWItemRarity;
+  const name = fields[0] ? fields.join('_') : undefined;
+
+  return {
+    type,
+    tier,
+    rarity,
+    name,
+  };
+};
+
+export const calcSTWSurvivorPowerLevel = (rarity: STWItemRarity, isLeader: boolean, level: number, tier: STWItemTier) => {
+  /**
+   * We use Exclude<> here because mythic lead survivors actually have SR (legendary) rarity,
+   * and thus there are no rating curves for UR managers.
+   */
+  const key = isLeader
+    ? `manager_${rarity as Exclude<STWItemRarity, 'ur'>}_t0${tier}` as const
+    : `default_${rarity}_t0${tier}` as const;
+  return PowerLevelCurves.survivorItemRating[key].eval(level);
+};
+
+export const calcSTWSurvivorBonus = (leaderPersonality: string, leaderRarity: string, survivorPersonality: string, survivorPowerLevel: number) => {
+  if (survivorPersonality === leaderPersonality) {
+    if (leaderRarity === 'sr') return 8;
+    if (leaderRarity === 'vr') return 5;
+    if (leaderRarity === 'r') return 4;
+    if (leaderRarity === 'uc') return 3;
+    if (leaderRarity === 'c') return 2;
+  } else if (leaderRarity === 'sr') {
+    if (survivorPowerLevel <= 2) return 0;
+    return -2;
+  }
+
+  return 0;
+};
+
+export const calcSTWSurvivorLeadBonus = (managerSynergy: string, squadName: keyof STWSurvivorSquads, powerLevel: number) => {
+  const leaderMatch = managerSynergy!.split('.')[2];
+
+  if (STWLeadSynergy[squadName] === leaderMatch) {
+    return powerLevel;
+  }
+
+  return 0;
+};
+
+export const parseSTWHeroTemplateId = (templateId: string) => {
+  const id = templateId.split(':')[1];
+  const fields = id.split('_');
+
+  fields.shift();
+  const type = fields.shift() as STWHeroType;
+
+  const tier = parseInt(fields.pop()!.slice(1), 10) as STWItemTier;
+  const rarity = fields.pop() as STWItemRarity;
+  const name = fields[0] ? fields.join('_') : undefined;
+
+  return {
+    type,
+    tier,
+    rarity,
+    name,
+  };
+};
+
+export const calcSTWNonSurvivorPowerLevel = (rarity: STWItemRarity, level: number, tier: STWItemTier) => (
+  PowerLevelCurves.baseItemRating[`default_${rarity}_t0${tier}`].eval(level)
+);
+
+export function parseSTWSchematicTemplateId(templateId: string): {
+  type: STWSchematicType;
+  subType?: STWSchematicSubType;
+  tier?: STWItemTier;
+  evoType?: STWSchematicEvoType;
+  rarity?: STWItemRarity;
+  name?: string;
+} {
+  const id = templateId.split(':')[1];
+  const fields = id.split('_');
+
+  let type: STWSchematicType;
+  let subType: STWSchematicSubType | undefined;
+
+  let firstField = fields.shift();
+
+  if (firstField !== 'sid') {
+    // probably ammo or something weird
+    fields.unshift(firstField!);
+    return {
+      type: 'other',
+      subType: undefined,
+      tier: undefined,
+      evoType: undefined,
+      rarity: undefined,
+      name: fields[0] ? fields.join('_') : undefined,
+    };
+  }
+
+  firstField = fields.shift();
+  let nextField: string | undefined;
+  let i: number;
+
+  switch (firstField) {
+    case 'edged':
+      type = 'melee';
+      // look for "axe", "scythe", or "sword", which might occur later in the name
+      i = fields.findIndex((f) => f === 'axe' || f === 'scythe' || f === 'sword');
+      if (i >= 0) {
+        subType = `edged_${fields[i] as 'axe' | 'scythe' | 'sword'}`;
+        fields.splice(i, 1);
+      } else {
+        subType = undefined;
+      }
+      break;
+    case 'blunt':
+      type = 'melee';
+      // if the next field is "hammer", then the full type is "blunt_hammer", otherwise "blunt"
+      nextField = fields.shift();
+      if (nextField === 'hammer') {
+        subType = 'blunt_hammer';
+      } else {
+        if (nextField !== undefined) {
+          fields.unshift(nextField);
+        }
+        subType = 'blunt';
+      }
+      break;
+    case 'piercing':
+      type = 'melee';
+      // "piercing" should always be followed by "spear", because spear is the only piercing weapon type
+      nextField = fields.shift();
+      if (nextField === 'spear') {
+        subType = 'piercing_spear';
+      } else {
+        if (nextField !== undefined) {
+          fields.unshift(nextField);
+        }
+        subType = undefined;
+      }
+      break;
+    case 'ceiling':
+    case 'floor':
+    case 'wall':
+      type = 'trap';
+      subType = firstField;
+      break;
+    case 'explosive':
+    case 'launcher':
+      // "launcher" and "explosive" are used interchangeably to refer to the same subtype,
+      // but only some weapons of that subtype use "explosive" ammo, so we settle on "launcher"
+      type = 'ranged';
+      subType = 'launcher';
+      break;
+    case 'assault':
+      type = 'ranged';
+      // some weapons that were originally ARs were recategorized as SMGs when that subtype
+      // was added, and now they have both "assault" and "smg" in the name
+      i = fields.findIndex((f) => f === 'smg');
+      if (i >= 0) {
+        subType = 'smg';
+        fields.splice(i, 1);
+        fields.unshift(firstField);
+      } else {
+        subType = 'assault';
+      }
+      break;
+    case 'pistol':
+    case 'shotgun':
+    case 'smg':
+    case 'sniper':
+      type = 'ranged';
+      subType = firstField;
+      break;
+    default:
+      // the name doesn't fit any known pattern, so this might be a new type of schematic.
+      // in the meantimwe, we still need to represent it somehow.
+      type = 'other';
+      subType = firstField as STWSchematicSubType;
+      break;
+  }
+
+  const tier = parseInt(fields.pop()!.slice(1), 10) as STWItemTier;
+  const evoType = type !== 'trap' ? fields.pop() as STWSchematicEvoType : undefined;
+  const rarity = fields.pop() as STWItemRarity;
+  const name = fields[0] ? fields.join('_') : undefined;
+
+  return {
+    type,
+    subType,
+    tier,
+    evoType,
+    rarity,
+    name,
+  };
+}
+
+const defaultStats = {
+  score: 0,
+  scorePerMin: 0,
+  scorePerMatch: 0,
+  wins: 0,
+  top3: 0,
+  top5: 0,
+  top6: 0,
+  top10: 0,
+  top12: 0,
+  top25: 0,
+  kills: 0,
+  killsPerMin: 0,
+  killsPerMatch: 0,
+  deaths: 0,
+  kd: 0,
+  matches: 0,
+  winRate: 0,
+  minutesPlayed: 0,
+  playersOutlived: 0,
+  lastModified: undefined,
+};
+
+export const createDefaultInputTypeStats = () => ({
+  overall: { ...defaultStats },
+  solo: { ...defaultStats },
+  duo: { ...defaultStats },
+  squad: { ...defaultStats },
+  ltm: { ...defaultStats },
+});
+
+export const parseStatKey = (key: string, value: number): [keyof StatsPlaylistTypeData, (number | Date)] => {
+  switch (key) {
+    case 'lastmodified':
+      return ['lastModified', new Date(value * 1000)];
+    case 'placetop25':
+      return ['top25', value];
+    case 'placetop12':
+      return ['top12', value];
+    case 'placetop10':
+      return ['top10', value];
+    case 'placetop6':
+      return ['top6', value];
+    case 'placetop5':
+      return ['top5', value];
+    case 'placetop3':
+      return ['top3', value];
+    case 'placetop1':
+      return ['wins', value];
+    case 'playersoutlived':
+      return ['playersOutlived', value];
+    case 'minutesplayed':
+      return ['minutesPlayed', value];
+    case 'matchesplayed':
+      return ['matches', value];
+    default:
+      return [key as keyof StatsPlaylistTypeData, value];
+  }
 };

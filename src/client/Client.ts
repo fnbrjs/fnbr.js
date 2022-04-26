@@ -1493,7 +1493,7 @@ class Client extends EventEmitter {
 
     const replayMetadataResponse = await this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, 'json');
     if (replayMetadataResponse.error) {
-      if (!(replayMetadataResponse.error instanceof EpicgamesAPIError)
+      if (!(replayMetadataResponse.error instanceof EpicgamesAPIError) && typeof replayMetadataResponse.error.response?.data === 'string'
         && replayMetadataResponse.error.response?.data.includes('<Message>The specified key does not exist.</Message>')) {
         throw new MatchNotFoundError(sessionId);
       }
@@ -1551,7 +1551,7 @@ class Client extends EventEmitter {
   public async getTournamentSessionMetadata(sessionId: string): Promise<TournamentSessionMetadata> {
     const replayMetadataResponse = await this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, 'json');
     if (replayMetadataResponse.error) {
-      if (!(replayMetadataResponse.error instanceof EpicgamesAPIError)
+      if (!(replayMetadataResponse.error instanceof EpicgamesAPIError) && typeof replayMetadataResponse.error.response?.data === 'string'
         && replayMetadataResponse.error.response?.data.includes('<Message>The specified key does not exist.</Message>')) {
         throw new MatchNotFoundError(sessionId);
       }

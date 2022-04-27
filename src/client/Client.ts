@@ -1131,7 +1131,7 @@ class Client extends EventEmitter {
           bandwidth: parseInt(ss.data.BANDWIDTH, 10),
           resolution: ss.data.RESOLUTION,
         },
-        type: ss.data.AUDIO ? 'video' : 'audio',
+        type: ss.data.RESOLUTION ? 'video' : 'audio',
         url: `${baseURL || ''}${ss.url}`,
         stream: streamData.playlists
           .find((p) => p.type === 'variant' && p.rel_url === ss.url)?.data

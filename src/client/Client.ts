@@ -18,10 +18,10 @@ import {
   BRAccountLevelData, Language, PartyData, PartySchema,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
-import ClientUser from '../structures/ClientUser';
+import ClientUser from '../structures/user/ClientUser';
 import XMPP from './XMPP';
-import Friend from '../structures/Friend';
-import User from '../structures/User';
+import Friend from '../structures/friend/Friend';
+import User from '../structures/user/User';
 import {
   BlurlStreamData, CreativeIslandData,
   BlurlStreamMasterPlaylistData, CreativeDiscoveryPanel,
@@ -39,29 +39,29 @@ import InviterFriendshipsLimitExceededError from '../exceptions/InviterFriendshi
 import InviteeFriendshipsLimitExceededError from '../exceptions/InviteeFriendshipsLimitExceededError';
 import InviteeFriendshipRequestLimitExceededError from '../exceptions/InviteeFriendshipRequestLimitExceededError';
 import InviteeFriendshipSettingsError from '../exceptions/InviteeFriendshipSettingsError';
-import IncomingPendingFriend from '../structures/IncomingPendingFriend';
-import OutgoingPendingFriend from '../structures/OutgoingPendingFriend';
-import BlockedUser from '../structures/BlockedUser';
-import ClientParty from '../structures/ClientParty';
+import IncomingPendingFriend from '../structures/friend/IncomingPendingFriend';
+import OutgoingPendingFriend from '../structures/friend/OutgoingPendingFriend';
+import BlockedUser from '../structures/user/BlockedUser';
+import ClientParty from '../structures/party/ClientParty';
 import SendMessageError from '../exceptions/SendMessageError';
-import Party from '../structures/Party';
+import Party from '../structures/party/Party';
 import PartyNotFoundError from '../exceptions/PartyNotFoundError';
 import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
 import PartyPermissionError from '../exceptions/PartyPermissionError';
 import Tournament from '../structures/Tournament';
-import SentPartyJoinRequest from '../structures/SentPartyJoinRequest';
-import UserSearchResult from '../structures/UserSearchResult';
+import SentPartyJoinRequest from '../structures/party/SentPartyJoinRequest';
+import UserSearchResult from '../structures/user/UserSearchResult';
 import RadioStation from '../structures/RadioStation';
-import SentFriendMessage from '../structures/SentFriendMessage';
+import SentFriendMessage from '../structures/friend/SentFriendMessage';
 import MatchNotFoundError from '../exceptions/MatchNotFoundError';
 import CreativeIslandNotFoundError from '../exceptions/CreativeIslandNotFoundError';
 import Avatar from '../structures/Avatar';
 import GlobalProfile from '../structures/GlobalProfile';
 import OfferNotFoundError from '../exceptions/OfferNotFoundError';
-import STWProfile from '../structures/STWProfile';
+import STWProfile from '../structures/stw/STWProfile';
 import Stats from '../structures/Stats';
 import NewsMessage from '../structures/NewsMessage';
-import STWNewsMessage from '../structures/STWNewsMessage';
+import STWNewsMessage from '../structures/stw/STWNewsMessage';
 import EventTokens from '../structures/EventTokens';
 import EventTimeoutError from '../exceptions/EventTimeoutError';
 
@@ -625,24 +625,6 @@ class Client extends EventEmitter {
   private async resolveUserId(query: string) {
     if (query.length === 32) return query;
     return (await this.getProfile(query))?.id;
-  }
-
-  /**
-   * Resolves multiple user ids
-   * @param query Display names or ids of the account's ids to resolve
-   */
-  private async resolveUserIds(query: string[]) {
-    const displayNames: string[] = [];
-    const ids: string[] = [];
-
-    query.forEach((q) => {
-      if (q.length === 32) ids.push(q);
-      else if (q.length >= 3 && q.length <= 16) displayNames.push(q);
-    });
-
-    const users = await Promise.all(displayNames.map((dn) => this.getProfile(dn)));
-
-    return [...ids.map((id) => ({ id, query: id })), ...users.filter((u) => !!u).map((u) => ({ id: u?.id as string, query: u?.displayName as string }))];
   }
 
   /* -------------------------------------------------------------------------- */

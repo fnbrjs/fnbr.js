@@ -1,4 +1,4 @@
-import User from './User';
+import User from './user/User';
 import Client from '../client/Client';
 import Base from '../client/Base';
 

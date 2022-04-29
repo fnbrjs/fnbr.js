@@ -5,26 +5,26 @@ import { PathLike } from 'fs';
 import defaultPartyMeta from './defaultPartyMeta.json';
 import defaultPartyMemberMeta from './defaultPartyMemberMeta.json';
 import EpicgamesAPIError from '../src/exceptions/EpicgamesAPIError';
-import BlockedUser from '../src/structures/BlockedUser';
-import ClientParty from '../src/structures/ClientParty';
-import ClientPartyMember from '../src/structures/ClientPartyMember';
-import ClientUser from '../src/structures/ClientUser';
-import Friend from '../src/structures/Friend';
-import FriendPresence from '../src/structures/FriendPresence';
-import IncomingPendingFriend from '../src/structures/IncomingPendingFriend';
-import OutgoingPendingFriend from '../src/structures/OutgoingPendingFriend';
-import ReceivedPartyJoinRequest from '../src/structures/ReceivedPartyJoinRequest';
-import PartyMember from '../src/structures/PartyMember';
-import PartyMemberConfirmation from '../src/structures/PartyMemberConfirmation';
-import PartyMessage from '../src/structures/PartyMessage';
-import ReceivedPartyInvitation from '../src/structures/ReceivedPartyInvitation';
-import User from '../src/structures/User';
+import BlockedUser from '../src/structures/user/BlockedUser';
+import ClientParty from '../src/structures/party/ClientParty';
+import ClientPartyMember from '../src/structures/party/ClientPartyMember';
+import ClientUser from '../src/structures/user/ClientUser';
+import Friend from '../src/structures/friend/Friend';
+import FriendPresence from '../src/structures/friend/FriendPresence';
+import IncomingPendingFriend from '../src/structures/friend/IncomingPendingFriend';
+import OutgoingPendingFriend from '../src/structures/friend/OutgoingPendingFriend';
+import ReceivedPartyJoinRequest from '../src/structures/party/ReceivedPartyJoinRequest';
+import PartyMember from '../src/structures/party/PartyMember';
+import PartyMemberConfirmation from '../src/structures/party/PartyMemberConfirmation';
+import PartyMessage from '../src/structures/party/PartyMessage';
+import ReceivedPartyInvitation from '../src/structures/party/ReceivedPartyInvitation';
+import User from '../src/structures/user/User';
 import {
   EpicgamesOAuthData, STWMissionAlertData, STWMissionData, STWProfileLockerSlotData,
   STWTheaterData, TournamentWindowTemplateData,
 } from './httpResponses';
-import ReceivedFriendMessage from '../src/structures/ReceivedFriendMessage';
-import STWSurvivor from '../src/structures/STWSurvivor';
+import ReceivedFriendMessage from '../src/structures/friend/ReceivedFriendMessage';
+import STWSurvivor from '../src/structures/stw/STWSurvivor';
 
 export type PartyMemberSchema = Partial<typeof defaultPartyMemberMeta>;
 export type PartySchema = Partial<typeof defaultPartyMeta> & {

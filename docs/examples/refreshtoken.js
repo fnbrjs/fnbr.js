@@ -1,11 +1,11 @@
 /* eslint-disable */
 const { readFile, writeFile } = require('fs').promises;
-const { Client } = require('../..');
+const { Client } = require('fnbr');
 
 (async () => {
   let auth;
   try {
-    auth = { launcherRefreshToken: await readFile('./refreshToken') };
+    auth = { launcherRefreshToken: await readFile('./refreshToken', 'utf8') };
   } catch (e) {
     auth = { authorizationCode: async () => Client.consoleQuestion('Please enter an authorization code: ') };
   }

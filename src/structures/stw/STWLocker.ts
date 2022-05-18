@@ -40,7 +40,7 @@ class STWLocker extends STWItem {
       color: data.attributes.banner_color_template,
     };
 
-    this.lockerName = data.attributes.locker_name.length > 0 ? data.attributes.locker_name : undefined;
+    this.lockerName = data.attributes.locker_name;
     this.useCount = data.attributes.use_count;
 
     this.slots = data.attributes.locker_slots_data.slots;

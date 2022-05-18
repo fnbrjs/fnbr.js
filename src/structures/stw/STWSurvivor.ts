@@ -119,7 +119,7 @@ class STWSurvivor extends STWItem {
     this.gender = data.attributes.gender === '1' ? 'male' : 'female';
     this.level = data.attributes.level;
 
-    this.squad = data.attributes.squad_id !== '' ? {
+    this.squad = data.attributes.squad_id ? {
       id: data.attributes.squad_id,
       name: data.attributes.squad_id.split('_')[3] as keyof STWSurvivorSquads,
       type: data.attributes.squad_id.split('_')[2] as STWSurvivorSquadType,

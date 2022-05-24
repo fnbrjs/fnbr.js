@@ -11,8 +11,8 @@ import Auth from './Auth';
 import Http from './HTTP';
 import AsyncLock from '../util/AsyncLock';
 import {
-  ClientOptions, ClientConfig, ClientEvents, LightswitchData,
-  EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
+  ClientOptions, ClientConfig, ClientEvents,
+  PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
   ReplayDownloadConfig, TournamentSessionMetadata, STWWorldInfoData,
   BRAccountLevelData, Language, PartyData, PartySchema,
@@ -64,6 +64,8 @@ import NewsMessage from '../structures/NewsMessage';
 import STWNewsMessage from '../structures/stw/STWNewsMessage';
 import EventTokens from '../structures/EventTokens';
 import EventTimeoutError from '../exceptions/EventTimeoutError';
+import FortniteServerStatus from '../structures/FortniteServerStatus';
+import EpicgamesServerStatus from '../structures/EpicgamesServerStatus';
 
 /**
  * Represets the main client
@@ -1046,25 +1048,23 @@ class Client extends EventEmitter {
    * Fetches the current Fortnite server status (lightswitch)
    * @throws {EpicgamesAPIError}
    */
-  public async getFortniteServerStatus(): Promise<LightswitchData> {
+  public async getFortniteServerStatus(): Promise<FortniteServerStatus> {
     const fortniteServerStatus = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.BR_SERVER_STATUS, 'fortnite');
-
     if (fortniteServerStatus.error) throw fortniteServerStatus.error;
 
-    return fortniteServerStatus.response[0];
+    return new FortniteServerStatus(this, fortniteServerStatus.response[0]);
   }
 
   /**
    * Fetches the current epicgames server status (https://status.epicgames.com/)
    * @throws {AxiosError}
    */
-  public async getEpicgamesServerStatus(): Promise<EpicgamesServerStatusData> {
+  public async getEpicgamesServerStatus(): Promise<EpicgamesServerStatus> {
     const epicgamesServerStatus = await this.http.send('GET', Endpoints.SERVER_STATUS_SUMMARY);
-
     if (epicgamesServerStatus.error) throw epicgamesServerStatus.error;
     if (!epicgamesServerStatus.response) throw new Error('Request returned an empty body');
 
-    return epicgamesServerStatus.response.data;
+    return new EpicgamesServerStatus(this, epicgamesServerStatus.response.data);
   }
 
   /**

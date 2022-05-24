@@ -710,19 +710,21 @@ export interface NewsMessage {
   spotlight: boolean;
 }
 
+export interface LightswitchLauncherInfo {
+  appName: string;
+  catalogItemId: string;
+  namespace: string;
+}
+
 export interface LightswitchData {
   serviceInstanceId: string;
   status: string;
   message: string;
-  maintenanceUri: null;
+  maintenanceUri?: string;
   overrideCatalogIds: string[];
   allowedActions: string[];
   banned: boolean;
-  launcherInfoDTO: {
-    appName: string;
-    catalogItemId: string;
-    namespace: string;
-  };
+  launcherInfoDTO: LightswitchLauncherInfo;
 }
 
 export interface EpicgamesServerStatusData {
@@ -755,6 +757,15 @@ export interface EpicgamesServerStatusData {
     indicator: string;
     description: string;
   };
+}
+
+export interface EpicgamesServerStatusIncidentUpdate {
+  id: string;
+  body: string;
+  createdAt: Date;
+  displayAt: Date;
+  status: string;
+  updatedAt: Date;
 }
 
 export interface MessageData {

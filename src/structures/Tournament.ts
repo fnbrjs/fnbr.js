@@ -106,7 +106,6 @@ class Tournament extends Base {
   constructor(client: Client, tournamentData: TournamentData, tournamentDisplayData: TournamentDisplayData, templates: TournamentWindowTemplate[]) {
     super(client);
 
-    // Tournament data
     this.id = tournamentData.eventId;
     this.regions = tournamentData.regions;
     this.regionMappings = tournamentData.regionMappings;
@@ -121,7 +120,6 @@ class Tournament extends Base {
     this.beginTime = new Date(tournamentData.beginTime);
     this.endTime = new Date(tournamentData.endTime);
 
-    // Display data
     this.colors = {
       titleColor: tournamentDisplayData.title_color,
       backgroundTextColor: tournamentDisplayData.background_text_color,

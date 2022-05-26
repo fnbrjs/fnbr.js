@@ -37,7 +37,12 @@ export { default as UserNotFoundError } from './src/exceptions/UserNotFoundError
 export { default as Avatar } from './src/structures/Avatar';
 export { default as BaseMessage } from './src/structures/BaseMessage';
 export { default as CreatorCode } from './src/structures/CreatorCode';
+export { default as EpicgamesServerStatus } from './src/structures/EpicgamesServerStatus';
+export { default as EpicgamesServerStatusComponent } from './src/structures/EpicgamesServerStatusComponent';
+export { default as EpicgamesServerStatusIncident } from './src/structures/EpicgamesServerStatusIncident';
+export { default as EpicgamesServerStatusScheduledMainteance } from './src/structures/EpicgamesServerStatusScheduledMainteance';
 export { default as EventTokens } from './src/structures/EventTokens';
+export { default as FortniteServerStatus } from './src/structures/FortniteServerStatus';
 export { default as GlobalProfile } from './src/structures/GlobalProfile';
 export { default as Image } from './src/structures/Image';
 export { default as NewsMessage } from './src/structures/NewsMessage';

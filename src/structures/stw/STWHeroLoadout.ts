@@ -63,8 +63,8 @@ class STWHeroLoadout extends STWItem {
     ];
 
     this.gadgets = [
-      data.attributes.gadgets.find((g) => g.slot_index === 0)?.gadget,
-      data.attributes.gadgets.find((g) => g.slot_index === 1)?.gadget,
+      data.attributes.gadgets?.find((g) => g.slot_index === 0)?.gadget,
+      data.attributes.gadgets?.find((g) => g.slot_index === 1)?.gadget,
     ];
   }
 }

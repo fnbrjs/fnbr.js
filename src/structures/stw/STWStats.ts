@@ -145,7 +145,7 @@ class STWStats extends Base {
     }));
 
     this.rewardsClaimedPostMaxLevel = data.rewards_claimed_post_max_level;
-    this.collectionBookMaxXPLevel = data.collection_book.maxBookXpLevelAchieved;
+    this.collectionBookMaxXPLevel = data.collection_book?.maxBookXpLevelAchieved;
     this.mfaRewardClaimed = data.mfa_reward_claimed;
 
     this.quests = data.quest_manager?.questPoolStats ? {
@@ -168,7 +168,7 @@ class STWStats extends Base {
     this.unslotMtxSpend = data.unslot_mtx_spend;
     this.clientSettings = data.client_settings;
 
-    this.researchLevels = typeof data.research_levels.fortitude === 'number' ? {
+    this.researchLevels = typeof data.research_levels?.fortitude === 'number' ? {
       fortitude: data.research_levels.fortitude!,
       resistance: data.research_levels.resistance!,
       technology: data.research_levels.technology!,
@@ -187,7 +187,7 @@ class STWStats extends Base {
       lost: data.xp_lost,
     };
 
-    this.dailyRewards = data.daily_rewards.lastClaimDate ? {
+    this.dailyRewards = data.daily_rewards?.lastClaimDate ? {
       nextDefaultReward: data.daily_rewards.nextDefaultReward!,
       totalDaysLoggedIn: data.daily_rewards.totalDaysLoggedIn!,
       lastClaimDate: new Date(data.daily_rewards.lastClaimDate),

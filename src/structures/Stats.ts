@@ -3,7 +3,7 @@
 import Client from '../client/Client';
 import Base from '../client/Base';
 import { StatsData, StatsPlaylistTypeData, StatsLevelData } from '../../resources/structs';
-import User from './User';
+import User from './user/User';
 import { createDefaultInputTypeStats, parseStatKey } from '../util/Util';
 import { RawStatsData } from '../../resources/httpResponses';
 

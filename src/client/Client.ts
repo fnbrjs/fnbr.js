@@ -11,17 +11,17 @@ import Auth from './Auth';
 import Http from './HTTP';
 import AsyncLock from '../util/AsyncLock';
 import {
-  ClientOptions, ClientConfig, ClientEvents, LightswitchData,
-  EpicgamesServerStatusData, PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
+  ClientOptions, ClientConfig, ClientEvents,
+  PartyConfig, Schema, PresenceOnlineType, Region, FullPlatform,
   TournamentWindowTemplate, UserSearchPlatform, BlurlStream, ReplayData, ReplayDownloadOptions,
   ReplayDownloadConfig, TournamentSessionMetadata, STWWorldInfoData,
   BRAccountLevelData, Language, PartyData, PartySchema,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
-import ClientUser from '../structures/ClientUser';
+import ClientUser from '../structures/user/ClientUser';
 import XMPP from './XMPP';
-import Friend from '../structures/Friend';
-import User from '../structures/User';
+import Friend from '../structures/friend/Friend';
+import User from '../structures/user/User';
 import {
   BlurlStreamData, CreativeIslandData,
   BlurlStreamMasterPlaylistData, CreativeDiscoveryPanel,
@@ -39,31 +39,33 @@ import InviterFriendshipsLimitExceededError from '../exceptions/InviterFriendshi
 import InviteeFriendshipsLimitExceededError from '../exceptions/InviteeFriendshipsLimitExceededError';
 import InviteeFriendshipRequestLimitExceededError from '../exceptions/InviteeFriendshipRequestLimitExceededError';
 import InviteeFriendshipSettingsError from '../exceptions/InviteeFriendshipSettingsError';
-import IncomingPendingFriend from '../structures/IncomingPendingFriend';
-import OutgoingPendingFriend from '../structures/OutgoingPendingFriend';
-import BlockedUser from '../structures/BlockedUser';
-import ClientParty from '../structures/ClientParty';
+import IncomingPendingFriend from '../structures/friend/IncomingPendingFriend';
+import OutgoingPendingFriend from '../structures/friend/OutgoingPendingFriend';
+import BlockedUser from '../structures/user/BlockedUser';
+import ClientParty from '../structures/party/ClientParty';
 import SendMessageError from '../exceptions/SendMessageError';
-import Party from '../structures/Party';
+import Party from '../structures/party/Party';
 import PartyNotFoundError from '../exceptions/PartyNotFoundError';
 import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
 import PartyPermissionError from '../exceptions/PartyPermissionError';
 import Tournament from '../structures/Tournament';
-import SentPartyJoinRequest from '../structures/SentPartyJoinRequest';
-import UserSearchResult from '../structures/UserSearchResult';
+import SentPartyJoinRequest from '../structures/party/SentPartyJoinRequest';
+import UserSearchResult from '../structures/user/UserSearchResult';
 import RadioStation from '../structures/RadioStation';
-import SentFriendMessage from '../structures/SentFriendMessage';
+import SentFriendMessage from '../structures/friend/SentFriendMessage';
 import MatchNotFoundError from '../exceptions/MatchNotFoundError';
 import CreativeIslandNotFoundError from '../exceptions/CreativeIslandNotFoundError';
 import Avatar from '../structures/Avatar';
 import GlobalProfile from '../structures/GlobalProfile';
 import OfferNotFoundError from '../exceptions/OfferNotFoundError';
-import STWProfile from '../structures/STWProfile';
+import STWProfile from '../structures/stw/STWProfile';
 import Stats from '../structures/Stats';
 import NewsMessage from '../structures/NewsMessage';
-import STWNewsMessage from '../structures/STWNewsMessage';
+import STWNewsMessage from '../structures/stw/STWNewsMessage';
 import EventTokens from '../structures/EventTokens';
 import EventTimeoutError from '../exceptions/EventTimeoutError';
+import FortniteServerStatus from '../structures/FortniteServerStatus';
+import EpicgamesServerStatus from '../structures/EpicgamesServerStatus';
 
 /**
  * Represets the main client
@@ -627,24 +629,6 @@ class Client extends EventEmitter {
     return (await this.getProfile(query))?.id;
   }
 
-  /**
-   * Resolves multiple user ids
-   * @param query Display names or ids of the account's ids to resolve
-   */
-  private async resolveUserIds(query: string[]) {
-    const displayNames: string[] = [];
-    const ids: string[] = [];
-
-    query.forEach((q) => {
-      if (q.length === 32) ids.push(q);
-      else if (q.length >= 3 && q.length <= 16) displayNames.push(q);
-    });
-
-    const users = await Promise.all(displayNames.map((dn) => this.getProfile(dn)));
-
-    return [...ids.map((id) => ({ id, query: id })), ...users.filter((u) => !!u).map((u) => ({ id: u?.id as string, query: u?.displayName as string }))];
-  }
-
   /* -------------------------------------------------------------------------- */
   /*                                   FRIENDS                                  */
   /* -------------------------------------------------------------------------- */
@@ -1064,25 +1048,23 @@ class Client extends EventEmitter {
    * Fetches the current Fortnite server status (lightswitch)
    * @throws {EpicgamesAPIError}
    */
-  public async getFortniteServerStatus(): Promise<LightswitchData> {
+  public async getFortniteServerStatus(): Promise<FortniteServerStatus> {
     const fortniteServerStatus = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.BR_SERVER_STATUS, 'fortnite');
-
     if (fortniteServerStatus.error) throw fortniteServerStatus.error;
 
-    return fortniteServerStatus.response[0];
+    return new FortniteServerStatus(this, fortniteServerStatus.response[0]);
   }
 
   /**
    * Fetches the current epicgames server status (https://status.epicgames.com/)
    * @throws {AxiosError}
    */
-  public async getEpicgamesServerStatus(): Promise<EpicgamesServerStatusData> {
+  public async getEpicgamesServerStatus(): Promise<EpicgamesServerStatus> {
     const epicgamesServerStatus = await this.http.send('GET', Endpoints.SERVER_STATUS_SUMMARY);
-
     if (epicgamesServerStatus.error) throw epicgamesServerStatus.error;
     if (!epicgamesServerStatus.response) throw new Error('Request returned an empty body');
 
-    return epicgamesServerStatus.response.data;
+    return new EpicgamesServerStatus(this, epicgamesServerStatus.response.data);
   }
 
   /**
@@ -1131,7 +1113,7 @@ class Client extends EventEmitter {
           bandwidth: parseInt(ss.data.BANDWIDTH, 10),
           resolution: ss.data.RESOLUTION,
         },
-        type: ss.data.AUDIO ? 'video' : 'audio',
+        type: ss.data.RESOLUTION ? 'video' : 'audio',
         url: `${baseURL || ''}${ss.url}`,
         stream: streamData.playlists
           .find((p) => p.type === 'variant' && p.rel_url === ss.url)?.data
@@ -1493,7 +1475,7 @@ class Client extends EventEmitter {
 
     const replayMetadataResponse = await this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, 'json');
     if (replayMetadataResponse.error) {
-      if (!(replayMetadataResponse.error instanceof EpicgamesAPIError)
+      if (!(replayMetadataResponse.error instanceof EpicgamesAPIError) && typeof replayMetadataResponse.error.response?.data === 'string'
         && replayMetadataResponse.error.response?.data.includes('<Message>The specified key does not exist.</Message>')) {
         throw new MatchNotFoundError(sessionId);
       }
@@ -1551,7 +1533,7 @@ class Client extends EventEmitter {
   public async getTournamentSessionMetadata(sessionId: string): Promise<TournamentSessionMetadata> {
     const replayMetadataResponse = await this.downloadReplayCDNFile(`${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`, 'json');
     if (replayMetadataResponse.error) {
-      if (!(replayMetadataResponse.error instanceof EpicgamesAPIError)
+      if (!(replayMetadataResponse.error instanceof EpicgamesAPIError) && typeof replayMetadataResponse.error.response?.data === 'string'
         && replayMetadataResponse.error.response?.data.includes('<Message>The specified key does not exist.</Message>')) {
         throw new MatchNotFoundError(sessionId);
       }

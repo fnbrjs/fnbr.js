@@ -53,7 +53,7 @@ class HTTP extends Base {
    * @param method The HTTP method
    * @param url The uri
    * @param headers The headers
-   * @param data The body
+   * @param body The body
    * @param form The form
    * @param responseType The axios response type
    * @param retries How many times this request has been retried

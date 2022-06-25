@@ -86,7 +86,7 @@ export const PartyPrivacy: Readonly<IPartyPrivacyEnum> = Object.freeze({
     presencePermission: 'Anyone',
     invitePermission: 'Anyone',
     acceptingMembers: true,
-  },
+  } as IPartyPrivacy,
   FRIENDS_ALLOW_FRIENDS_OF_FRIENDS: {
     partyType: 'FriendsOnly',
     inviteRestriction: 'AnyMember',
@@ -94,7 +94,7 @@ export const PartyPrivacy: Readonly<IPartyPrivacyEnum> = Object.freeze({
     presencePermission: 'Anyone',
     invitePermission: 'AnyMember',
     acceptingMembers: true,
-  },
+  } as IPartyPrivacy,
   FRIENDS: {
     partyType: 'FriendsOnly',
     inviteRestriction: 'LeaderOnly',
@@ -102,7 +102,7 @@ export const PartyPrivacy: Readonly<IPartyPrivacyEnum> = Object.freeze({
     presencePermission: 'Leader',
     invitePermission: 'Leader',
     acceptingMembers: false,
-  },
+  } as IPartyPrivacy,
   PRIVATE_ALLOW_FRIENDS_OF_FRIENDS: {
     partyType: 'Private',
     inviteRestriction: 'AnyMember',
@@ -110,7 +110,7 @@ export const PartyPrivacy: Readonly<IPartyPrivacyEnum> = Object.freeze({
     presencePermission: 'Noone',
     invitePermission: 'AnyMember',
     acceptingMembers: false,
-  },
+  } as IPartyPrivacy,
   PRIVATE: {
     partyType: 'Private',
     inviteRestriction: 'LeaderOnly',
@@ -118,7 +118,7 @@ export const PartyPrivacy: Readonly<IPartyPrivacyEnum> = Object.freeze({
     presencePermission: 'Noone',
     invitePermission: 'Leader',
     acceptingMembers: false,
-  },
+  } as IPartyPrivacy,
 });
 
 export const Platform: Readonly<IPlatformEnum> = Object.freeze({

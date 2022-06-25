@@ -1,5 +1,24 @@
 # Changelog
 
+## 3.1.0
+
+### Changes
+* Server Status
+  * **(Breaking)** `Client#getFortniteServerStatus` now returns a `FortniteServerStatus` instance
+  * **(Breaking)** `Client#getEpicgamesServerStatus` now returns a `EpicgamesServerStatus` instance
+
+### Fixes
+* STW Profiles
+  * Fixed a few issues that made `Client#getSTWProfile` incorrectly throw an error in rare cases
+* Tournament Session Downloading
+  * Improved error handling for downloading tournament replays and tournament session metadata
+* Blurl Streams
+  * Improvements for downloading blurl streams (blurl streams would not get parsed correctly in rare cases)
+* Docs Examples
+  * Fixed "refreshtoken" and "fortniteapicom" examples
+
+<hr>
+
 ## 3.0.0
 
 ### Additions

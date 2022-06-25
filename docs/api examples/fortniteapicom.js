@@ -5,7 +5,7 @@ const { Client } = require('fnbr');
 
 const fetchCosmetic = async (name, type) => {
   try {
-    const cosmetic = (await axios(`https://fortnite-api.com/v2/cosmetics/br/search?name=${encodeURI(name)}&type=${type}`)).data;
+    const { data: cosmetic } = (await axios(`https://fortnite-api.com/v2/cosmetics/br/search?name=${encodeURI(name)}&type=${type}`)).data;
     return cosmetic;
   } catch (err) {
     return undefined;

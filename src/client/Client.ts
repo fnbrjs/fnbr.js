@@ -615,6 +615,8 @@ class Client extends EventEmitter {
     const results = await this.http.sendEpicgamesRequest(true, 'GET',
       `${Endpoints.ACCOUNT_SEARCH}/${this.user?.id}?prefix=${encodeURIComponent(prefix)}&platform=${platform}`, 'fortnite');
 
+    if (results.error) throw results.error;
+
     const users = await this.getProfile(results.response.map((r: any) => r.accountId) as string[]);
 
     return results.response.map((r: any) => new UserSearchResult(this, users.find((u) => u.id === r.accountId) as User, r));

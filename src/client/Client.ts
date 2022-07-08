@@ -1423,8 +1423,8 @@ class Client extends EventEmitter {
         ?.find((td: TournamentDisplayData) => td.tournament_display_id === t.displayDataId);
 
       if (!tournamentDisplayData) {
-        tournamentDisplayData = Object.values(tournamentsInfo.response!)
-          .find((tdr: any) => tdr.tournament_info?.tournament_display_id === t.displayDataId);
+        tournamentDisplayData = (Object.values(tournamentsInfo.response!) as any[])
+          .find((tdr: any) => tdr.tournament_info?.tournament_display_id === t.displayDataId)?.tournament_info;
       }
 
       if (!tournamentDisplayData) {

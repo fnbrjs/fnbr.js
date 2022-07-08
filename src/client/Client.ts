@@ -1419,15 +1419,17 @@ class Client extends EventEmitter {
     const constuctedTournaments: Tournament[] = [];
 
     tournaments.response.events.forEach((t: TournamentData) => {
-      let tournamentDisplayData = tournamentsInfo.response?.tournament_info?.tournaments
+      let tournamentDisplayData = tournamentsInfo.response!.tournament_info?.tournaments
         ?.find((td: TournamentDisplayData) => td.tournament_display_id === t.displayDataId);
 
       if (!tournamentDisplayData) {
-        tournamentDisplayData = tournamentsInfo.response?.
-          [t.displayDataId.split('_').map((s, i) => (i > 0 ? `${s.charAt(0).toUpperCase()}${s.slice(1)}` : s)).join('')]?.tournament_info;
+        tournamentDisplayData = Object.values(tournamentsInfo.response!)
+          .find((tdr: any) => tdr.tournament_info?.tournament_display_id === t.displayDataId);
       }
 
-      if (!tournamentDisplayData) return;
+      if (!tournamentDisplayData) {
+        return;
+      }
 
       const templates: TournamentWindowTemplate[] = [];
 

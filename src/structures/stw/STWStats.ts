@@ -144,7 +144,7 @@ class STWStats extends Base {
       evictClaimDataAfterUtc: new Date(d.evictClaimDataAfterUtc),
     }));
 
-    this.rewardsClaimedPostMaxLevel = data.rewards_claimed_post_max_level;
+    this.rewardsClaimedPostMaxLevel = data.rewards_claimed_post_max_level || 0;
     this.collectionBookMaxXPLevel = data.collection_book?.maxBookXpLevelAchieved;
     this.mfaRewardClaimed = data.mfa_reward_claimed;
 
@@ -175,7 +175,7 @@ class STWStats extends Base {
       offense: data.research_levels.offense!,
     } : undefined;
 
-    this.level = data.level;
+    this.level = data.level || 0;
     this.latentXpMarker = data.latent_xp_marker;
     this.eventCurrency = data.event_currency;
     this.inventoryLimitBonus = data.inventory_limit_bonus;

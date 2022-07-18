@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-syntax */
 import { EventEmitter } from 'events';
-import Collection from '@discordjs/collection';
+import { Collection } from '@discordjs/collection';
 import { ResponseType } from 'axios';
 import { PresenceShow } from 'stanza/Constants';
 import Enums from '../../enums/Enums';

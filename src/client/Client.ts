@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-syntax */
 import { EventEmitter } from 'events';
-import Collection from '@discordjs/collection';
+import { Collection } from '@discordjs/collection';
 import { ResponseType } from 'axios';
 import { PresenceShow } from 'stanza/Constants';
 import Enums from '../../enums/Enums';
@@ -614,6 +614,8 @@ class Client extends EventEmitter {
   public async searchProfiles(prefix: string, platform: UserSearchPlatform = 'epic'): Promise<UserSearchResult[]> {
     const results = await this.http.sendEpicgamesRequest(true, 'GET',
       `${Endpoints.ACCOUNT_SEARCH}/${this.user?.id}?prefix=${encodeURIComponent(prefix)}&platform=${platform}`, 'fortnite');
+
+    if (results.error) throw results.error;
 
     const users = await this.getProfile(results.response.map((r: any) => r.accountId) as string[]);
 
@@ -1417,15 +1419,17 @@ class Client extends EventEmitter {
     const constuctedTournaments: Tournament[] = [];
 
     tournaments.response.events.forEach((t: TournamentData) => {
-      let tournamentDisplayData = tournamentsInfo.response?.tournament_info?.tournaments
+      let tournamentDisplayData = tournamentsInfo.response!.tournament_info?.tournaments
         ?.find((td: TournamentDisplayData) => td.tournament_display_id === t.displayDataId);
 
       if (!tournamentDisplayData) {
-        tournamentDisplayData = tournamentsInfo.response?.
-          [t.displayDataId.split('_').map((s, i) => (i > 0 ? `${s.charAt(0).toUpperCase()}${s.slice(1)}` : s)).join('')]?.tournament_info;
+        tournamentDisplayData = (Object.values(tournamentsInfo.response!) as any[])
+          .find((tdr: any) => tdr.tournament_info?.tournament_display_id === t.displayDataId)?.tournament_info;
       }
 
-      if (!tournamentDisplayData) return;
+      if (!tournamentDisplayData) {
+        return;
+      }
 
       const templates: TournamentWindowTemplate[] = [];
 

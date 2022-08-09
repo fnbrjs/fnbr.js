@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.1.1
+
+### Fixes
+* Client Reconnecting
+  * Fixed an issue that caused the client to ignore `ClientOptions#fetchFriends`,
+    `ClientOptions#createParty` and `ClientOptions#forceParty` when reconnecting
+* Tournaments
+  * Fixed an issue that caused some tournaments to not be returned by `Client#getTournaments()`
+* STW Stats
+  * Fixed `STWStats#level` and `STWStats#rewardsClaimedPostMaxLevel` being `NaN` in rare cases
+
+<hr>
+
 ## 3.1.0
 
 ### Changes

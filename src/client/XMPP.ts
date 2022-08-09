@@ -188,8 +188,8 @@ class XMPP extends Base {
       this.setup();
 
       await this.connect();
-      await this.client.updateCaches();
-      await this.client.initParty();
+      if (this.client.config.fetchFriends) await this.client.updateCaches();
+      await this.client.initParty(this.client.config.createParty, this.client.config.forceNewParty);
     });
 
     this.stream.on('raw:incoming', (raw) => this.client.debug(`IN ${raw}`, 'xmpp'));

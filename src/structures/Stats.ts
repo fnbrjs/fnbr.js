@@ -122,12 +122,12 @@ class Stats extends Base {
     for (const inputTypes of Object.keys(this.stats)) {
       for (const playlistTypeStats of Object.values(this.stats[inputTypes as keyof StatsData]) as StatsPlaylistTypeData[]) {
         playlistTypeStats.deaths = playlistTypeStats.matches - playlistTypeStats.wins;
-        playlistTypeStats.kd = playlistTypeStats.kills / playlistTypeStats.deaths;
-        playlistTypeStats.killsPerMin = playlistTypeStats.kills / playlistTypeStats.minutesPlayed;
-        playlistTypeStats.killsPerMatch = playlistTypeStats.kills / playlistTypeStats.matches;
-        playlistTypeStats.scorePerMin = playlistTypeStats.score / playlistTypeStats.minutesPlayed;
-        playlistTypeStats.scorePerMatch = playlistTypeStats.score / playlistTypeStats.matches;
-        playlistTypeStats.winRate = playlistTypeStats.wins / playlistTypeStats.matches;
+        playlistTypeStats.kd = playlistTypeStats.kills / (playlistTypeStats.deaths || 1);
+        playlistTypeStats.killsPerMin = playlistTypeStats.kills / (playlistTypeStats.minutesPlayed || 1);
+        playlistTypeStats.killsPerMatch = playlistTypeStats.kills / (playlistTypeStats.matches || 1);
+        playlistTypeStats.scorePerMin = playlistTypeStats.score / (playlistTypeStats.minutesPlayed || 1);
+        playlistTypeStats.scorePerMatch = playlistTypeStats.score / (playlistTypeStats.matches || 1);
+        playlistTypeStats.winRate = playlistTypeStats.wins / (playlistTypeStats.matches || 1);
       }
     }
   }

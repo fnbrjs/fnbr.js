@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.1.2
+
+### Fixes
+* Battle Royale Stats
+  * Fixed an issue that caused values like k/d and winrate to be Infinity instead of 0
+* HTTP Ratelimit handling
+  * The HTTP client now properly handles ratelimits on the user search api (`Client#searchProfiles()`)
+
+<hr>
+
 ## 3.1.1
 
 ### Fixes

@@ -92,13 +92,17 @@ class HTTP extends Base {
         + `${err.response?.status || '???'} ${err.response?.statusText || '???'}`, 'http');
 
       const errResponse = (err as AxiosError).response;
+      const errResponseData = errResponse?.data as any;
 
       if (errResponse?.status.toString().startsWith('5') && retries < this.client.config.restRetryLimit) {
         return this.send(method, url, headers, body, form, responseType, retries + 1);
       }
 
-      if (errResponse && (errResponse.status === 429 || (errResponse?.data as any)?.errorCode === 'errors.com.epicgames.common.throttled')) {
-        const retryAfter = parseInt(errResponse.headers['Retry-After'] || (errResponse.data as any).messageVars[0], 10);
+      if (errResponse && (errResponse.status === 429 || errResponseData?.errorCode === 'errors.com.epicgames.common.throttled')) {
+        const retryString = errResponse.headers['retry-after']
+          || errResponseData?.messageVars?.[0]
+          || errResponseData?.errorMessage?.match(/(?<=in )\d+(?= second)/)?.[0];
+        const retryAfter = parseInt(retryString, 10);
         if (!Number.isNaN(retryAfter)) {
           const sleepTimeout = (retryAfter * 1000) + 500;
           await new Promise((res) => {

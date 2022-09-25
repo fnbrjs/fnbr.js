@@ -42,7 +42,7 @@ export default Object.freeze({
 
   // CREATIVE
   CREATIVE_ISLAND_LOOKUP: 'https://links-public-service-live.ol.epicgames.com/links/api/fn/mnemonic',
-  CREATIVE_DISCOVERY: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/game/v2/creative/discovery/surface',
+  CREATIVE_DISCOVERY: 'https://fn-service-discovery-live-public.ogs.live.on.epicgames.com/api/v1/discovery/surface',
 
   // SAVE THE WORLD
   STW_WORLD_INFO: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/game/v2/world/info',

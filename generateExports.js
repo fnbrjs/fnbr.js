@@ -33,7 +33,7 @@ const recursiveReaddir = async (folder) => {
   const exceptions = await recursiveReaddir('./src/exceptions');
   exceptions.sort();
   exceptions.forEach((file) => {
-    const fileWithoutExtension = file.split('/').at(-1).split('.')[0];
+    const fileWithoutExtension = file.split('/').pop().split('.')[0];
     const filePathWithoutExtension = file.split('.').slice(0, -1).join('.');
     output += `export { default as ${fileWithoutExtension} } from '${filePathWithoutExtension}';\n`;
   });
@@ -42,7 +42,7 @@ const recursiveReaddir = async (folder) => {
   const structures = await recursiveReaddir('./src/structures');
   structures.sort();
   structures.forEach((file) => {
-    const fileWithoutExtension = file.split('/').at(-1).split('.')[0];
+    const fileWithoutExtension = file.split('/').pop().split('.')[0];
     const filePathWithoutExtension = file.split('.').slice(0, -1).join('.');
     output += `export { default as ${fileWithoutExtension} } from '${filePathWithoutExtension}';\n`;
   });

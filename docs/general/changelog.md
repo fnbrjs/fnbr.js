@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.1.3
+
+### Fixes
+* Creative Discovery
+  * Updated to new the new discovery endpoint
+
+<hr>
+
 ## 3.1.2
 
 ### Fixes

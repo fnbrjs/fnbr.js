@@ -1601,20 +1601,22 @@ class Client extends EventEmitter {
    * @param gameVersion The current game version (MAJOR.MINOR)
    * @throws {EpicgamesAPIError}
    */
-  public async getCreativeDiscoveryPanels(gameVersion = '18.30'): Promise<CreativeDiscoveryPanel[]> {
-    const creativeDiscovery = await this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.CREATIVE_DISCOVERY}/${this.user?.id}`, 'fortnite', {
+  public async getCreativeDiscoveryPanels(gameVersion = '19.40', region: Region): Promise<CreativeDiscoveryPanel[]> {
+    const creativeDiscovery = await this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.CREATIVE_DISCOVERY}/${this.user?.id}?appId=Fortnite`, 'fortnite', {
       'Content-Type': 'application/json',
-      'User-Agent': `Fortnite/++Fortnite+Release-${gameVersion}-CL-00000000 Windows/10`,
+      'User-Agent': `Fortnite/++Fortnite+Release-${gameVersion}-CL-00000000 Windows/10.0.19044.1.768.64bit`,
     }, {
       surfaceName: 'CreativeDiscoverySurface_Frontend',
+      revision: -1,
       partyMemberIds: [this.user?.id],
+      matchmakingRegion: region,
     });
 
     if (creativeDiscovery.error) {
       throw creativeDiscovery.error;
     }
 
-    return creativeDiscovery.response.Panels;
+    return creativeDiscovery.response;
   }
 
   /* -------------------------------------------------------------------------- */

@@ -12,11 +12,10 @@ import MatchNotFoundError from '../exceptions/MatchNotFoundError';
 import EventTokens from './EventTokens';
 import Tournament from './Tournament';
 
+/**
+ * Represent's the client's tournament manager.
+*/
 class TournamentManager extends Base {
-  /**
-   * @param client The main client
-   */
-
   /**
    * Downloads a file from the CDN (used for replays)
    * @param url The URL of the file to download

@@ -22,7 +22,7 @@ class BaseFriendMessage extends BaseMessage {
    * @throws {FriendNotFoundError} The user is not friends with the client
    */
   public reply(content: string) {
-    return this.client.sendFriendMessage(this.author.id, content);
+    return this.client.friends.sendFriendMessage(this.author.id, content);
   }
 }
 

@@ -17,6 +17,8 @@ import Party from './Party';
 import PartyChat from './PartyChat';
 import PartyMemberConfirmation from './PartyMemberConfirmation';
 import SentPartyInvitation from './SentPartyInvitation';
+import PartyMember from './PartyMember';
+import Friend from '../friend/Friend';
 
 /**
  * Represents a party that the client is a member of
@@ -163,7 +165,7 @@ class ClientParty extends Party {
   public async kick(member: string) {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
-    const partyMember = this.members.find((m) => m.displayName === member || m.id === member);
+    const partyMember = this.members.find((m: PartyMember) => m.displayName === member || m.id === member);
     if (!partyMember) throw new PartyMemberNotFoundError(member);
 
     const kick = await this.client.http.sendEpicgamesRequest(true, 'DELETE',
@@ -183,7 +185,7 @@ class ClientParty extends Party {
    * @throws {EpicgamesAPIError}
    */
   public async invite(friend: string) {
-    const resolvedFriend = this.client.friends.find((f) => f.id === friend || f.displayName === friend);
+    const resolvedFriend = this.client.friends.friends.find((f: Friend) => f.id === friend || f.displayName === friend);
     if (!resolvedFriend) throw new FriendNotFoundError(friend);
 
     if (this.members.has(resolvedFriend.id)) throw new PartyAlreadyJoinedError();
@@ -310,7 +312,7 @@ class ClientParty extends Party {
   public async promote(member: string) {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
-    const partyMember = this.members.find((m) => m.displayName === member || m.id === member);
+    const partyMember = this.members.find((m: PartyMember) => m.displayName === member || m.id === member);
     if (!partyMember) throw new PartyMemberNotFoundError(member);
 
     const promote = await this.client.http.sendEpicgamesRequest(true, 'POST',
@@ -332,7 +334,7 @@ class ClientParty extends Party {
   public async hideMember(member: string, hide = true) {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
-    const partyMember = this.members.find((m) => m.displayName === member || m.id === member);
+    const partyMember = this.members.find((m: PartyMember) => m.displayName === member || m.id === member);
     if (!partyMember) throw new PartyMemberNotFoundError(member);
 
     if (hide) {
@@ -354,7 +356,7 @@ class ClientParty extends Party {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
     if (hide) {
-      this.members.filter((m) => m.id !== this.me.id).forEach((m) => this.hiddenMemberIds.add(m.id));
+      this.members.filter((m: PartyMember) => m.id !== this.me.id).forEach((m: PartyMember) => this.hiddenMemberIds.add(m.id));
     } else {
       this.hiddenMemberIds.clear();
     }

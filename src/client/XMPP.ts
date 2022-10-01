@@ -259,7 +259,7 @@ class XMPP extends Base {
 
         const presence = JSON.parse(p.status);
 
-        const before = this.client.friends.get(friendId)?.presence;
+        const before = this.client.friends.friends.get(friendId)?.presence;
         const after = new FriendPresence(this.client, presence, friend, p.show || 'online', p.from);
         if ((this.client.config.cacheSettings.presences?.maxLifetime || 0) > 0) {
           friend.presence = after;
@@ -317,8 +317,8 @@ class XMPP extends Base {
                 note: '',
               });
 
-              this.client.friends.set(friend.id, friend);
-              this.client.pendingFriends.delete(friend.id);
+              this.client.friends.friends.set(friend.id, friend);
+              this.client.friends.pendingFriends.delete(friend.id);
 
               this.client.emit('friend:added', friend);
             } else if (status === 'PENDING') {
@@ -331,7 +331,7 @@ class XMPP extends Base {
                   favorite,
                 });
 
-                this.client.pendingFriends.set(pendingFriend.id, pendingFriend);
+                this.client.friends.pendingFriends.set(pendingFriend.id, pendingFriend);
                 this.client.emit('friend:request', pendingFriend);
               } else if (direction === 'OUTBOUND') {
                 const pendingFriend = new OutgoingPendingFriend(this.client, {
@@ -342,7 +342,7 @@ class XMPP extends Base {
                   favorite,
                 });
 
-                this.client.pendingFriends.set(pendingFriend.id, pendingFriend);
+                this.client.friends.pendingFriends.set(pendingFriend.id, pendingFriend);
                 this.client.emit('friend:request:sent', pendingFriend);
               }
             }
@@ -353,22 +353,22 @@ class XMPP extends Base {
             const accountId = from === this.client.user?.id ? to : from;
 
             if (reason === 'ABORTED') {
-              const pendingFriend = this.client.pendingFriends.get(accountId);
+              const pendingFriend = this.client.friends.pendingFriends.get(accountId);
               if (!pendingFriend) break;
 
-              this.client.pendingFriends.delete(pendingFriend.id);
+              this.client.friends.pendingFriends.delete(pendingFriend.id);
               this.client.emit('friend:request:aborted', pendingFriend);
             } else if (reason === 'REJECTED') {
-              const pendingFriend = this.client.pendingFriends.get(accountId);
+              const pendingFriend = this.client.friends.pendingFriends.get(accountId);
               if (!pendingFriend) break;
 
-              this.client.pendingFriends.delete(pendingFriend.id);
+              this.client.friends.pendingFriends.delete(pendingFriend.id);
               this.client.emit('friend:request:declined', pendingFriend);
             } else if (reason === 'DELETED') {
               const friend = await this.waitForFriend(accountId);
               if (!friend) break;
 
-              this.client.friends.delete(friend.id);
+              this.client.friends.friends.delete(friend.id);
               this.client.emit('friend:removed', friend);
             }
           } break;
@@ -416,7 +416,7 @@ class XMPP extends Base {
             if (partyData.config.discoverability === 'ALL') party = await this.client.getParty(partyData.id) as Party;
             else party = new Party(this.client, partyData);
 
-            if (party.members.some((pm) => !pm.displayName)) await party.updateMemberBasicInfo();
+            if (party.members.some((pm: PartyMember) => !pm.displayName)) await party.updateMemberBasicInfo();
 
             let invitation = partyData.invites.find((i: any) => i.sent_by === pingerId && i.status === 'SENT');
             if (!invitation) invitation = createPartyInvitation((this.client.user as ClientUser).id, pingerId, { ...body, ...partyData });
@@ -442,7 +442,7 @@ class XMPP extends Base {
             if (!member) break;
             if (!member.displayName) await member.fetch();
 
-            this.client.setStatus();
+            this.client.friends.setStatus();
             if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
 
             try {
@@ -502,7 +502,7 @@ class XMPP extends Base {
             }
 
             this.client.party.members.delete(member.id);
-            this.client.setStatus();
+            this.client.friends.setStatus();
             if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
 
             this.client.emit('party:member:left', member);
@@ -518,7 +518,7 @@ class XMPP extends Base {
             if (!member) return;
 
             this.client.party.members.delete(member.id);
-            this.client.setStatus();
+            this.client.friends.setStatus();
             if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
 
             this.client.emit('party:member:expired', member);
@@ -537,7 +537,7 @@ class XMPP extends Base {
               await this.client.initParty(true, false);
             } else {
               this.client.party.members.delete(member.id);
-              this.client.setStatus();
+              this.client.friends.setStatus();
               if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
             }
 
@@ -553,7 +553,7 @@ class XMPP extends Base {
             if (!member) throw new PartyMemberNotFoundError(memberId);
 
             this.client.party.members.delete(member.id);
-            this.client.setStatus();
+            this.client.friends.setStatus();
             if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
             this.client.emit('party:member:disconnected', member);
           } break;
@@ -569,7 +569,7 @@ class XMPP extends Base {
             if (!member) throw new PartyMemberNotFoundError(memberId);
 
             member.role = 'CAPTAIN';
-            this.client.setStatus();
+            this.client.friends.setStatus();
 
             this.client.emit('party:member:promoted', member);
           } break;
@@ -579,7 +579,7 @@ class XMPP extends Base {
             if (!this.client.party || this.client.party.id !== body.party_id) break;
 
             this.client.party.updateData(body);
-            this.client.setStatus();
+            this.client.friends.setStatus();
 
             this.client.emit('party:updated', this.client.party);
             break;
@@ -624,7 +624,7 @@ class XMPP extends Base {
    * Waits for a friend to be added to the clients cache
    */
   private async waitForFriend(id: string) {
-    const cachedFriend = this.client.friends.get(id);
+    const cachedFriend = this.client.friends.friends.get(id);
     if (cachedFriend) return cachedFriend;
 
     try {

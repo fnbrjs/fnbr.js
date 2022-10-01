@@ -1,37 +1,18 @@
 /* eslint-disable no-restricted-syntax */
 import { EventEmitter } from 'events';
 import { Collection } from '@discordjs/collection';
-import { ResponseType } from 'axios';
 import Enums from '../../enums/Enums';
 import {
-  buildReplay,
-  consoleQuestion,
-  parseBlurlStream,
-  parseM3U8File,
+  consoleQuestion, parseBlurlStream, parseM3U8File,
 } from '../util/Util';
 import Auth from './Auth';
 import Http from './HTTP';
 import AsyncLock from '../util/AsyncLock';
 import {
-  ClientOptions,
-  ClientConfig,
-  ClientEvents,
-  PartyConfig,
-  Schema,
-  Region,
-  FullPlatform,
-  TournamentWindowTemplate,
-  UserSearchPlatform,
-  BlurlStream,
-  ReplayData,
-  ReplayDownloadOptions,
-  ReplayDownloadConfig,
-  TournamentSessionMetadata,
-  STWWorldInfoData,
-  BRAccountLevelData,
-  Language,
-  PartyData,
-  PartySchema,
+  ClientOptions, ClientConfig, ClientEvents,
+  PartyConfig, Schema, Region,
+  UserSearchPlatform, BlurlStream, STWWorldInfoData,
+  BRAccountLevelData, Language, PartyData, PartySchema,
 } from '../../resources/structs';
 import Endpoints from '../../resources/Endpoints';
 import ClientUser from '../structures/user/ClientUser';
@@ -39,15 +20,9 @@ import XMPP from './XMPP';
 import Friend from '../structures/friend/Friend';
 import User from '../structures/user/User';
 import {
-  BlurlStreamData,
-  CreativeIslandData,
-  BlurlStreamMasterPlaylistData,
-  CreativeDiscoveryPanel,
+  BlurlStreamData, CreativeIslandData,
+  BlurlStreamMasterPlaylistData, CreativeDiscoveryPanel,
   EpicgamesAPIResponse,
-  TournamentData,
-  TournamentDisplayData,
-  TournamentWindowResults,
-  TournamentWindowTemplateData,
 } from '../../resources/httpResponses';
 import UserNotFoundError from '../exceptions/UserNotFoundError';
 import StatsPrivacyError from '../exceptions/StatsPrivacyError';
@@ -62,11 +37,9 @@ import Party from '../structures/party/Party';
 import PartyNotFoundError from '../exceptions/PartyNotFoundError';
 import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
 import PartyPermissionError from '../exceptions/PartyPermissionError';
-import Tournament from '../structures/Tournament';
 import SentPartyJoinRequest from '../structures/party/SentPartyJoinRequest';
 import UserSearchResult from '../structures/user/UserSearchResult';
 import RadioStation from '../structures/RadioStation';
-import MatchNotFoundError from '../exceptions/MatchNotFoundError';
 import CreativeIslandNotFoundError from '../exceptions/CreativeIslandNotFoundError';
 import Avatar from '../structures/Avatar';
 import GlobalProfile from '../structures/GlobalProfile';
@@ -74,10 +47,10 @@ import STWProfile from '../structures/stw/STWProfile';
 import Stats from '../structures/Stats';
 import NewsMessage from '../structures/NewsMessage';
 import STWNewsMessage from '../structures/stw/STWNewsMessage';
-import EventTokens from '../structures/EventTokens';
 import EventTimeoutError from '../exceptions/EventTimeoutError';
 import FortniteServerStatus from '../structures/FortniteServerStatus';
 import EpicgamesServerStatus from '../structures/EpicgamesServerStatus';
+import TournamentManager from '../structures/TournamentManager';
 import FriendsManager from '../structures/FriendManager';
 
 /**
@@ -157,6 +130,11 @@ class Client extends EventEmitter {
   public party?: ClientParty;
 
   /**
+   * The client's tournament manager.
+   */
+  public tournaments: TournamentManager;
+
+  /**
    * The last saved client party member meta
    */
   public lastPartyMemberMeta?: Schema;
@@ -234,6 +212,7 @@ class Client extends EventEmitter {
     this.blockedUsers = new Collection();
 
     this.party = undefined;
+    this.tournaments = new TournamentManager(this);
     this.lastPartyMemberMeta = this.config.defaultPartyMemberMeta;
   }
 
@@ -1440,299 +1419,6 @@ class Client extends EventEmitter {
     if (keychain.error) throw keychain.error;
 
     return keychain.response;
-  }
-
-  /* -------------------------------------------------------------------------- */
-  /*                     FORTNITE BATTLE ROYALE TOURNAMENTS                     */
-  /* -------------------------------------------------------------------------- */
-
-  /**
-   * Fetches the event tokens for an account.
-   * This can be used to check if a user is eligible to play a certain tournament window
-   * or to check a user's arena division in any season
-   * @param user The id(s) or display name(s) of the user(s)
-   * @throws {UserNotFoundError} The user wasn't found
-   * @throws {EpicgamesAPIError}
-   */
-  public async getEventTokens(user: string | string[]): Promise<EventTokens[]> {
-    const users = typeof user === 'string' ? [user] : user;
-
-    const resolvedUsers = await this.getProfile(users);
-
-    const userChunks: string[][] = resolvedUsers
-      .map((u) => u.id)
-      .reduce((resArr: any[], usr, i) => {
-        const chunkIndex = Math.floor(i / 16);
-        // eslint-disable-next-line no-param-reassign
-        if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
-        resArr[chunkIndex].push(usr);
-        return resArr;
-      }, []);
-
-    const statsResponses = await Promise.all(
-      userChunks.map((c) => this.http.sendEpicgamesRequest(
-        true,
-        'GET',
-        `${Endpoints.BR_TOURNAMENT_TOKENS}?teamAccountIds=${c.join(',')}`,
-        'fortnite',
-      ),
-      ),
-    );
-
-    return statsResponses
-      .map((r) => r.response.accounts)
-      .flat(1)
-      .map(
-        (r) => new EventTokens(
-          this,
-          r.tokens,
-            resolvedUsers.find((u) => u.id === r.accountId)!,
-        ),
-      );
-  }
-
-  /**
-   * Fetches the current and past Battle Royale tournaments
-   * @param region The region
-   * @param platform The platform
-   * @throws {EpicgamesAPIError}
-   */
-  public async getTournaments(region?: Region, platform: FullPlatform = 'Windows') {
-    const [tournaments, tournamentsInfo] = await Promise.all([
-      this.http.sendEpicgamesRequest(
-        true,
-        'GET',
-        `${Endpoints.BR_TOURNAMENTS_DOWNLOAD}/${this.user?.id}?region=${region}&platform=${platform}&teamAccountIds=${this.user?.id}`,
-        'fortnite',
-      ),
-      this.http.sendEpicgamesRequest(
-        true,
-        'GET',
-        `${Endpoints.BR_NEWS}/tournamentinformation`,
-        'fortnite',
-      ),
-    ]);
-
-    if (tournaments.error) throw tournaments.error;
-    if (tournamentsInfo.error) throw tournamentsInfo.error;
-
-    const constuctedTournaments: Tournament[] = [];
-
-    tournaments.response.events.forEach((t: TournamentData) => {
-      let tournamentDisplayData = tournamentsInfo.response!.tournament_info?.tournaments?.find(
-        (td: TournamentDisplayData) => td.tournament_display_id === t.displayDataId,
-      );
-
-      if (!tournamentDisplayData) {
-        tournamentDisplayData = (
-          Object.values(tournamentsInfo.response!) as any[]
-        ).find(
-          (tdr: any) => tdr.tournament_info?.tournament_display_id === t.displayDataId,
-        )?.tournament_info;
-      }
-
-      if (!tournamentDisplayData) {
-        return;
-      }
-
-      const templates: TournamentWindowTemplate[] = [];
-
-      t.eventWindows.forEach((w) => {
-        const template = tournaments.response.templates.find(
-          (tt: TournamentWindowTemplateData) => tt.eventTemplateId === w.eventTemplateId,
-        );
-        if (template) { templates.push({ windowId: w.eventWindowId, templateData: template }); }
-      });
-
-      constuctedTournaments.push(
-        new Tournament(this, t, tournamentDisplayData, templates),
-      );
-    });
-
-    return constuctedTournaments;
-  }
-
-  /**
-   * Fetches the results for a tournament window
-   * @param eventId The tournament's ID
-   * @param eventWindowId The tournament window's ID
-   * @param showLiveSessions Whether to show live sessions
-   * @param page The results page index
-   * @throws {EpicgamesAPIError}
-   */
-  public async getTournamentWindowResults(
-    eventId: string,
-    eventWindowId: string,
-    showLiveSessions = false,
-    page = 0,
-  ): Promise<TournamentWindowResults> {
-    const window = await this.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      `${Endpoints.BR_TOURNAMENT_WINDOW}/${eventId}/${eventWindowId}/`
-        + `${this.user?.id}?page=${page}&rank=0&teamAccountIds=&appId=Fortnite&showLiveSessions=${showLiveSessions}`,
-      'fortnite',
-    );
-    if (window.error) throw window.error;
-
-    return window.response;
-  }
-
-  /**
-   * Downloads a tournament replay by its session ID.
-   * This method returns a regular Fortnite replay file, can be parsed using https://github.com/ThisNils/node-replay-reader
-   * @param sessionId The session ID
-   * @param options Replay download and build options
-   * @throws {MatchNotFoundError} The match wasn't found
-   * @throws {EpicgamesAPIError}
-   * @throws {AxiosError}
-   */
-  public async downloadTournamentReplay(
-    sessionId: string,
-    options: ReplayDownloadOptions,
-  ) {
-    const downloadConfig: ReplayDownloadConfig = {
-      dataTypes: ['EVENT', 'DATACHUNK'],
-      addStatsPlaceholder: false,
-      ...options,
-    };
-
-    const replayMetadataResponse = await this.downloadReplayCDNFile(
-      `${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`,
-      'json',
-    );
-    if (replayMetadataResponse.error) {
-      if (
-        !(replayMetadataResponse.error instanceof EpicgamesAPIError)
-        && typeof replayMetadataResponse.error.response?.data === 'string'
-        && replayMetadataResponse.error.response?.data.includes(
-          '<Message>The specified key does not exist.</Message>',
-        )
-      ) {
-        throw new MatchNotFoundError(sessionId);
-      }
-
-      throw replayMetadataResponse.error;
-    }
-
-    const replayHeaderResponse = await this.downloadReplayCDNFile(
-      `${Endpoints.BR_REPLAY}%2F${sessionId}%2Fheader.bin`,
-      'arraybuffer',
-    );
-    if (replayHeaderResponse.error) throw replayHeaderResponse.error;
-
-    const replayData: ReplayData = replayMetadataResponse.response;
-    replayData.Header = replayHeaderResponse.response;
-
-    const downloadKeys = new Set(['Events', 'DataChunks', 'Checkpoints']);
-
-    if (!downloadConfig.dataTypes.includes('EVENT')) {
-      downloadKeys.delete('Events');
-      delete replayData.Events;
-    }
-
-    if (!downloadConfig.dataTypes.includes('DATACHUNK')) {
-      downloadKeys.delete('DataChunks');
-      delete replayData.DataChunks;
-    }
-
-    if (!downloadConfig.dataTypes.includes('CHECKPOINT')) {
-      downloadKeys.delete('Checkpoints');
-      delete replayData.Checkpoints;
-    }
-
-    const promises: Promise<any>[] = [];
-    for (const downloadKey of downloadKeys.values()) {
-      const chunks = (replayData as any)[downloadKey];
-      for (const chunk of chunks) {
-        promises.push(
-          this.downloadReplayCDNFile(
-            `${Endpoints.BR_REPLAY}%2F${sessionId}%2F${chunk.Id}.bin`,
-            'arraybuffer',
-          ).then((resp) => {
-            if (resp.error) throw resp.error;
-
-            chunks.find((d: any) => d.Id === chunk.Id).data = resp.response;
-          }),
-        );
-      }
-    }
-
-    await Promise.all(promises);
-
-    return buildReplay(replayData, downloadConfig.addStatsPlaceholder);
-  }
-
-  /**
-   * Fetches a tournament session's metadata
-   * @param sessionId The session ID
-   * @throws {MatchNotFoundError} The match wasn't found
-   * @throws {EpicgamesAPIError}
-   * @throws {AxiosError}
-   */
-  public async getTournamentSessionMetadata(
-    sessionId: string,
-  ): Promise<TournamentSessionMetadata> {
-    const replayMetadataResponse = await this.downloadReplayCDNFile(
-      `${Endpoints.BR_REPLAY_METADATA}%2F${sessionId}.json`,
-      'json',
-    );
-    if (replayMetadataResponse.error) {
-      if (
-        !(replayMetadataResponse.error instanceof EpicgamesAPIError)
-        && typeof replayMetadataResponse.error.response?.data === 'string'
-        && replayMetadataResponse.error.response?.data.includes(
-          '<Message>The specified key does not exist.</Message>',
-        )
-      ) {
-        throw new MatchNotFoundError(sessionId);
-      }
-
-      throw replayMetadataResponse.error;
-    }
-
-    return {
-      changelist: replayMetadataResponse.response.Changelist,
-      checkpoints: replayMetadataResponse.response.Checkpoints,
-      dataChunks: replayMetadataResponse.response.DataChunks,
-      desiredDelayInSeconds:
-        replayMetadataResponse.response.DesiredDelayInSeconds,
-      events: replayMetadataResponse.response.Events,
-      friendlyName: replayMetadataResponse.response.FriendlyName,
-      lengthInMS: replayMetadataResponse.response.LengthInMS,
-      networkVersion: replayMetadataResponse.response.NetworkVersion,
-      replayName: replayMetadataResponse.response.ReplayName,
-      timestamp: new Date(replayMetadataResponse.response.Timestamp),
-      isCompressed: replayMetadataResponse.response.bCompressed,
-      isLive: replayMetadataResponse.response.bIsLive,
-    };
-  }
-
-  /**
-   * Downloads a file from the CDN (used for replays)
-   * @param url The URL of the file to download
-   * @param responseType The response type
-   */
-  private async downloadReplayCDNFile(url: string, responseType: ResponseType) {
-    const fileLocationInfo = await this.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      url,
-      'fortnite',
-    );
-    if (fileLocationInfo.error) return fileLocationInfo;
-
-    const file = await this.http.send(
-      'GET',
-      (Object.values(fileLocationInfo.response.files)[0] as any).readLink,
-      undefined,
-      undefined,
-      undefined,
-      responseType,
-    );
-
-    if (file.response) return { response: file.response.data };
-    return file;
   }
 
   /* -------------------------------------------------------------------------- */

@@ -161,7 +161,7 @@ class FriendsManager extends Base {
    * @throws {InviteeFriendshipRequestLimitExceededError} The user's incoming friend request limit is reached
    * @throws {EpicgamesAPIError}
    */
-  public async addFriend(friend: string) {
+  public async add(friend: string) {
     const userID = await this.resolveUserId(friend);
     if (!userID) throw new UserNotFoundError(friend);
 
@@ -200,7 +200,7 @@ class FriendsManager extends Base {
    * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {EpicgamesAPIError}
    */
-  public async removeFriend(friend: string) {
+  public async remove(friend: string) {
     let resolvedFriend:
       | Friend
       | OutgoingPendingFriend
@@ -232,7 +232,7 @@ class FriendsManager extends Base {
    * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {EpicgamesAPIError}
    */
-  public async getMutualFriends(friend: string): Promise<Friend[]> {
+  public async getMutual(friend: string): Promise<Friend[]> {
     const resolvedFriend = this.list.find(
       (f: Friend) => f.displayName === friend || f.id === friend,
     );
@@ -259,7 +259,7 @@ class FriendsManager extends Base {
    * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {EpicgamesAPIError}
    */
-  public async checkFriendOfferOwnership(friend: string, offerId: string) {
+  public async checkOfferOwnership(friend: string, offerId: string) {
     const resolvedFriend = this.list.find(
       (f: Friend) => f.displayName === friend || f.id === friend,
     );
@@ -295,7 +295,7 @@ class FriendsManager extends Base {
    * @throws {UserNotFoundError} The user wasn't found
    * @throws {EpicgamesAPIError}
    */
-  public async blockUser(user: string) {
+  public async block(user: string) {
     const userID = await this.resolveUserId(user);
     if (!userID) throw new UserNotFoundError(user);
 
@@ -314,7 +314,7 @@ class FriendsManager extends Base {
    * @throws {UserNotFoundError} The user wasn't found
    * @throws {EpicgamesAPIError}
    */
-  public async unblockUser(user: string) {
+  public async unblock(user: string) {
     const blockedUser = this.client.blockedUsers.find(
       (u: BlockedUser) => u.displayName === user || u.id === user,
     );
@@ -336,7 +336,7 @@ class FriendsManager extends Base {
    * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {SendMessageError} The messant could not be sent
    */
-  public async sendFriendMessage(friend: string, content: string) {
+  public async sendMessage(friend: string, content: string) {
     const resolvedFriend = this.list.find(
       (f: Friend) => f.displayName === friend || f.id === friend,
     );

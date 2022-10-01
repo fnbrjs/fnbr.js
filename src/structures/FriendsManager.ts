@@ -1,12 +1,12 @@
-import Base from '../client/Base';
 import { Collection } from '@discordjs/collection';
+import { PresenceShow } from 'stanza/Constants';
+import Base from '../client/Base';
 import Friend from './friend/Friend';
 import IncomingPendingFriend from './friend/IncomingPendingFriend';
 import OutgoingPendingFriend from './friend/OutgoingPendingFriend';
 import FriendNotFoundError from '../exceptions/FriendNotFoundError';
 import Endpoints from '../../resources/Endpoints';
-import { AuthClient, PresenceOnlineType } from '../../resources/structs';
-import { PresenceShow } from 'stanza/Constants';
+import { PresenceOnlineType } from '../../resources/structs';
 import UserNotFoundError from '../exceptions/UserNotFoundError';
 import DuplicateFriendshipError from '../exceptions/DuplicateFriendshipError';
 import FriendshipRequestAlreadySentError from '../exceptions/FriendshipRequestAlreadySentError';
@@ -18,7 +18,6 @@ import SendMessageError from '../exceptions/SendMessageError';
 import SentFriendMessage from './friend/SentFriendMessage';
 import ClientUser from './user/ClientUser';
 import Client from '../client/Client';
-import User from './user/User';
 import BlockedUser from './user/BlockedUser';
 import BasePendingFriend from './friend/BasePendingFriend';
 
@@ -35,11 +34,13 @@ class FriendsManager extends Base {
     string,
     IncomingPendingFriend | OutgoingPendingFriend
   >;
-    constructor(constr: Client){
-        super(constr);
-        this.friends = new Collection();
-        this.pendingFriends = new Collection();
-    }
+
+  constructor(constr: Client) {
+    super(constr);
+    this.friends = new Collection();
+    this.pendingFriends = new Collection();
+  }
+
   /**
    * Sets the clients XMPP status
    * @param status The status
@@ -50,13 +51,13 @@ class FriendsManager extends Base {
   public setStatus(
     status?: string,
     onlineType?: PresenceOnlineType,
-    friend?: string
+    friend?: string,
   ) {
     // eslint-disable-next-line no-undef-init
     let toJID: string | undefined = undefined;
     if (friend) {
       const resolvedFriend = this.friends.find(
-        (f: Friend) => f.displayName === friend || f.id === friend
+        (f: Friend) => f.displayName === friend || f.id === friend,
       );
       if (!resolvedFriend) throw new FriendNotFoundError(friend);
       toJID = `${resolvedFriend.id}@${Endpoints.EPIC_PROD_ENV}`;
@@ -67,9 +68,9 @@ class FriendsManager extends Base {
     if (this.client.party) {
       const partyPrivacy = this.client.party.config.privacy;
       if (
-        partyPrivacy.presencePermission === 'Noone' ||
-        (partyPrivacy.presencePermission === 'Leader' &&
-          !this.client.party.me?.isLeader)
+        partyPrivacy.presencePermission === 'Noone'
+        || (partyPrivacy.presencePermission === 'Leader'
+          && !this.client.party.me?.isLeader)
       ) {
         partyJoinInfoData = {
           isPrivate: true,
@@ -96,16 +97,16 @@ class FriendsManager extends Base {
 
     const rawStatus = {
       Status:
-        status ||
-        this.client.config.defaultStatus ||
-        (this.client.party &&
-          `Battle Royale Lobby - ${this.client.party.size} / ${this.client.party.maxSize}`) ||
-        'Playing Battle Royale',
+        status
+        || this.client.config.defaultStatus
+        || (this.client.party
+          && `Battle Royale Lobby - ${this.client.party.size} / ${this.client.party.maxSize}`)
+        || 'Playing Battle Royale',
       bIsPlaying: false,
       bIsJoinable:
-        this.client.party &&
-        !this.client.party.isPrivate &&
-        this.client.party.size !== this.client.party.maxSize,
+        this.client.party
+        && !this.client.party.isPrivate
+        && this.client.party.size !== this.client.party.maxSize,
       bHasVoiceSupport: false,
       SessionId: '',
       ProductName: 'Fortnite',
@@ -127,15 +128,14 @@ class FriendsManager extends Base {
       },
     };
 
-    const rawOnlineType =
-      (onlineType || this.client.config.defaultOnlineType) === 'online'
-        ? undefined
-        : onlineType || this.client.config.defaultOnlineType;
+    const rawOnlineType = (onlineType || this.client.config.defaultOnlineType) === 'online'
+      ? undefined
+      : onlineType || this.client.config.defaultOnlineType;
 
     return this.client.xmpp.sendStatus(
       rawStatus,
       rawOnlineType as PresenceShow | undefined,
-      toJID
+      toJID,
     );
   }
 
@@ -169,7 +169,7 @@ class FriendsManager extends Base {
       true,
       'POST',
       `${Endpoints.FRIEND_ADD}/${this.client.user?.id}/${userID}`,
-      'fortnite'
+      'fortnite',
     );
 
     if (addFriend.error) {
@@ -207,12 +207,13 @@ class FriendsManager extends Base {
       | IncomingPendingFriend
       | undefined;
     resolvedFriend = this.friends.find(
-      (f: Friend) => f.displayName === friend || f.id === friend
+      (f: Friend) => f.displayName === friend || f.id === friend,
     );
-    if (!resolvedFriend)
+    if (!resolvedFriend) {
       resolvedFriend = this.pendingFriends.find(
-        (f: BasePendingFriend) => f.displayName === friend || f.id === friend
+        (f: BasePendingFriend) => f.displayName === friend || f.id === friend,
       );
+    }
 
     if (!resolvedFriend) throw new FriendNotFoundError(friend);
 
@@ -220,7 +221,7 @@ class FriendsManager extends Base {
       true,
       'DELETE',
       `${Endpoints.FRIEND_DELETE}/${this.client.user?.id}/friends/${resolvedFriend.id}`,
-      'fortnite'
+      'fortnite',
     );
     if (removeFriend.error) throw removeFriend.error;
   }
@@ -233,7 +234,7 @@ class FriendsManager extends Base {
    */
   public async getMutualFriends(friend: string): Promise<Friend[]> {
     const resolvedFriend = this.friends.find(
-      (f: Friend) => f.displayName === friend || f.id === friend
+      (f: Friend) => f.displayName === friend || f.id === friend,
     );
     if (!resolvedFriend) throw new FriendNotFoundError(friend);
 
@@ -241,7 +242,7 @@ class FriendsManager extends Base {
       true,
       'GET',
       `${Endpoints.FRIENDS}/${this.client.user?.id}/friends/${resolvedFriend.id}/mutual`,
-      'fortnite'
+      'fortnite',
     );
     if (mutualFriends.error) throw mutualFriends.error;
 
@@ -260,29 +261,27 @@ class FriendsManager extends Base {
    */
   public async checkFriendOfferOwnership(friend: string, offerId: string) {
     const resolvedFriend = this.friends.find(
-      (f: Friend) => f.displayName === friend || f.id === friend
+      (f: Friend) => f.displayName === friend || f.id === friend,
     );
     if (!resolvedFriend) throw new FriendNotFoundError(friend);
 
     const giftData = await this.client.http.sendEpicgamesRequest(
       true,
       'GET',
-      `${Endpoints.BR_GIFT_ELIGIBILITY}/recipient/${resolvedFriend.id}` +
-        `/offer/${encodeURIComponent(offerId)}`,
-      'fortnite'
+      `${Endpoints.BR_GIFT_ELIGIBILITY}/recipient/${resolvedFriend.id}`
+        + `/offer/${encodeURIComponent(offerId)}`,
+      'fortnite',
     );
 
     if (giftData.error) {
       if (
-        giftData.error.code ===
-        'errors.com.epicgames.modules.gamesubcatalog.catalog_out_of_date'
-      )
-        throw new OfferNotFoundError(offerId);
+        giftData.error.code
+        === 'errors.com.epicgames.modules.gamesubcatalog.catalog_out_of_date'
+      ) { throw new OfferNotFoundError(offerId); }
       if (
-        giftData.error.code ===
-        'errors.com.epicgames.modules.gamesubcatalog.purchase_not_allowed'
-      )
-        return true;
+        giftData.error.code
+        === 'errors.com.epicgames.modules.gamesubcatalog.purchase_not_allowed'
+      ) { return true; }
 
       throw giftData.error;
     }
@@ -304,7 +303,7 @@ class FriendsManager extends Base {
       true,
       'POST',
       `${Endpoints.FRIEND_BLOCK}/${this.client.user?.id}/${userID}`,
-      'fortnite'
+      'fortnite',
     );
     if (blockUser.error) throw blockUser.error;
   }
@@ -317,7 +316,7 @@ class FriendsManager extends Base {
    */
   public async unblockUser(user: string) {
     const blockedUser = this.client.blockedUsers.find(
-      (u: BlockedUser) => u.displayName === user || u.id === user
+      (u: BlockedUser) => u.displayName === user || u.id === user,
     );
     if (!blockedUser) throw new UserNotFoundError(user);
 
@@ -325,7 +324,7 @@ class FriendsManager extends Base {
       true,
       'DELETE',
       `${Endpoints.FRIEND_BLOCK}/${this.client.user?.id}/${blockedUser.id}`,
-      'fortnite'
+      'fortnite',
     );
     if (unblockUser.error) throw unblockUser.error;
   }
@@ -339,28 +338,30 @@ class FriendsManager extends Base {
    */
   public async sendFriendMessage(friend: string, content: string) {
     const resolvedFriend = this.friends.find(
-      (f: Friend) => f.displayName === friend || f.id === friend
+      (f: Friend) => f.displayName === friend || f.id === friend,
     );
     if (!resolvedFriend) throw new FriendNotFoundError(friend);
 
-    if (!this.client.xmpp.isConnected)
+    if (!this.client.xmpp.isConnected) {
       throw new SendMessageError(
         "You're not connected via XMPP",
         'FRIEND',
-        resolvedFriend
+        resolvedFriend,
       );
+    }
 
     const message = await this.client.xmpp.sendMessage(
       `${resolvedFriend.id}@${Endpoints.EPIC_PROD_ENV}`,
-      content
+      content,
     );
 
-    if (!message)
+    if (!message) {
       throw new SendMessageError(
         'Message timeout exceeded',
         'FRIEND',
-        resolvedFriend
+        resolvedFriend,
       );
+    }
 
     return new SentFriendMessage(this.client, {
       author: this.client.user as ClientUser,

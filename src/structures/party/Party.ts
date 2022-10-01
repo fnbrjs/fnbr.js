@@ -198,7 +198,7 @@ class Party extends Base {
    * Updates the basic user information (display name and external auths) of all party members
    */
   public async updateMemberBasicInfo() {
-    const users  = await this.client.getProfile(this.members.map((m: PartyMember) => m.id))
+    const users = await this.client.getProfile(this.members.map((m: PartyMember) => m.id));
     users.forEach((u) => this.members.get(u.id)?.update(u));
   }
 

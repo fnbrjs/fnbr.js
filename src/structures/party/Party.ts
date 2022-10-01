@@ -85,7 +85,7 @@ class Party extends Base {
    * The party's leader
    */
   public get leader() {
-    return this.members.find((m) => m.role === 'CAPTAIN');
+    return this.members.find((m: PartyMember) => m.role === 'CAPTAIN');
   }
 
   /**
@@ -198,7 +198,7 @@ class Party extends Base {
    * Updates the basic user information (display name and external auths) of all party members
    */
   public async updateMemberBasicInfo() {
-    const users = await this.client.getProfile(this.members.map((m) => m.id));
+    const users = await this.client.getProfile(this.members.map((m: PartyMember) => m.id));
     users.forEach((u) => this.members.get(u.id)?.update(u));
   }
 
@@ -233,7 +233,7 @@ class Party extends Base {
       created_at: this.createdAt.toISOString(),
       config: makeSnakeCase(this.config),
       invites: [],
-      members: this.members.map((m) => m.toObject()),
+      members: this.members.map((m: PartyMember) => m.toObject()),
       meta: this.meta.schema,
       revision: 0,
       updated_at: new Date().toISOString(),

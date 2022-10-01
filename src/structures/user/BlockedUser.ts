@@ -10,7 +10,7 @@ class BlockedUser extends User {
    * @throws {EpicgamesAPIError}
    */
   public async unblock() {
-    return this.client.unblockUser(this.id);
+    return this.client.friends.unblock(this.id);
   }
 }
 

@@ -16,7 +16,7 @@ class ReceivedFriendMessage extends BaseFriendMessage {
    * @throws {FriendNotFoundError} The user is not friends with the client
    */
   public reply(content: string) {
-    return this.client.sendFriendMessage(this.author.id, content);
+    return this.client.friends.sendMessage(this.author.id, content);
   }
 }
 

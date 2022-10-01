@@ -1497,10 +1497,7 @@ class Client extends EventEmitter {
    * @param platform The platform
    * @throws {EpicgamesAPIError}
    */
-  public async getTournaments(
-    region: Region = 'EU',
-    platform: FullPlatform = 'Windows',
-  ) {
+  public async getTournaments(region?: Region, platform: FullPlatform = 'Windows') {
     const [tournaments, tournamentsInfo] = await Promise.all([
       this.http.sendEpicgamesRequest(
         true,

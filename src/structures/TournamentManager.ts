@@ -65,7 +65,7 @@ class TournamentManager extends Base {
    * @param platform The platform
    * @throws {EpicgamesAPIError}
    */
-  public async get(region: Region = 'EU', platform: FullPlatform = 'Windows') {
+  public async get(region?: Region, platform: FullPlatform = 'Windows') {
     const [tournaments, tournamentsInfo] = await Promise.all([
       this.client.http.sendEpicgamesRequest(true, 'GET',
         `${Endpoints.BR_TOURNAMENTS_DOWNLOAD}/${this.client.user?.id}?region=${region}&platform=${platform}&teamAccountIds=${this.client.user?.id}`, 'fortnite'),

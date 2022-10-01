@@ -19,7 +19,7 @@ class OutgoingPendingFriend extends BasePendingFriend {
    * @throws {EpicgamesAPIError}
    */
   public async abort() {
-    return this.client.removeFriend(this.id);
+    return this.client.friends.remove(this.id);
   }
 }
 

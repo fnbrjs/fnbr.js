@@ -98,7 +98,7 @@ class Friend extends User {
    * @throws {EpicgamesAPIError}
    */
   public async remove() {
-    return this.client.removeFriend(this.id);
+    return this.client.friends.remove(this.id);
   }
 
   /**
@@ -107,7 +107,7 @@ class Friend extends User {
    * @throws {FriendNotFoundError} The user is not friends with the client
    */
   public sendMessage(content: string) {
-    return this.client.sendFriendMessage(this.id, content);
+    return this.client.friends.sendMessage(this.id, content);
   }
 
   /**
@@ -136,7 +136,7 @@ class Friend extends User {
    * @throws {EpicgamesAPIError}
    */
   public async getMutualFriends() {
-    return this.client.getMutualFriends(this.id);
+    return this.client.friends.getMutual(this.id);
   }
 
   /**
@@ -147,7 +147,7 @@ class Friend extends User {
    * @throws {EpicgamesAPIError}
    */
   public async checkOfferOwnership(offerId: string) {
-    return this.client.checkFriendOfferOwnership(this.id, offerId);
+    return this.client.friends.checkOfferOwnership(this.id, offerId);
   }
 }
 

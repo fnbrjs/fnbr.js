@@ -25,7 +25,7 @@ class FriendsManager extends Base {
   /**
    * Friend list
    */
-  public friends: Collection<string, Friend>;
+  public list: Collection<string, Friend>;
 
   /**
    * Pending friend requests (incoming or outgoing)
@@ -37,7 +37,7 @@ class FriendsManager extends Base {
 
   constructor(constr: Client) {
     super(constr);
-    this.friends = new Collection();
+    this.list = new Collection();
     this.pendingFriends = new Collection();
   }
 
@@ -56,7 +56,7 @@ class FriendsManager extends Base {
     // eslint-disable-next-line no-undef-init
     let toJID: string | undefined = undefined;
     if (friend) {
-      const resolvedFriend = this.friends.find(
+      const resolvedFriend = this.list.find(
         (f: Friend) => f.displayName === friend || f.id === friend,
       );
       if (!resolvedFriend) throw new FriendNotFoundError(friend);
@@ -206,7 +206,7 @@ class FriendsManager extends Base {
       | OutgoingPendingFriend
       | IncomingPendingFriend
       | undefined;
-    resolvedFriend = this.friends.find(
+    resolvedFriend = this.list.find(
       (f: Friend) => f.displayName === friend || f.id === friend,
     );
     if (!resolvedFriend) {
@@ -233,7 +233,7 @@ class FriendsManager extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async getMutualFriends(friend: string): Promise<Friend[]> {
-    const resolvedFriend = this.friends.find(
+    const resolvedFriend = this.list.find(
       (f: Friend) => f.displayName === friend || f.id === friend,
     );
     if (!resolvedFriend) throw new FriendNotFoundError(friend);
@@ -247,7 +247,7 @@ class FriendsManager extends Base {
     if (mutualFriends.error) throw mutualFriends.error;
 
     return mutualFriends.response
-      .map((f: string) => this.friends.get(f))
+      .map((f: string) => this.list.get(f))
       .filter((f: Friend | undefined) => !!f);
   }
 
@@ -260,7 +260,7 @@ class FriendsManager extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async checkFriendOfferOwnership(friend: string, offerId: string) {
-    const resolvedFriend = this.friends.find(
+    const resolvedFriend = this.list.find(
       (f: Friend) => f.displayName === friend || f.id === friend,
     );
     if (!resolvedFriend) throw new FriendNotFoundError(friend);
@@ -337,7 +337,7 @@ class FriendsManager extends Base {
    * @throws {SendMessageError} The messant could not be sent
    */
   public async sendFriendMessage(friend: string, content: string) {
-    const resolvedFriend = this.friends.find(
+    const resolvedFriend = this.list.find(
       (f: Friend) => f.displayName === friend || f.id === friend,
     );
     if (!resolvedFriend) throw new FriendNotFoundError(friend);

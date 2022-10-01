@@ -185,7 +185,7 @@ class ClientParty extends Party {
    * @throws {EpicgamesAPIError}
    */
   public async invite(friend: string) {
-    const resolvedFriend = this.client.friends.friends.find((f: Friend) => f.id === friend || f.displayName === friend);
+    const resolvedFriend = this.client.friends.list.find((f: Friend) => f.id === friend || f.displayName === friend);
     if (!resolvedFriend) throw new FriendNotFoundError(friend);
 
     if (this.members.has(resolvedFriend.id)) throw new PartyAlreadyJoinedError();

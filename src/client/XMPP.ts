@@ -259,7 +259,7 @@ class XMPP extends Base {
 
         const presence = JSON.parse(p.status);
 
-        const before = this.client.friends.friends.get(friendId)?.presence;
+        const before = this.client.friends.list.get(friendId)?.presence;
         const after = new FriendPresence(this.client, presence, friend, p.show || 'online', p.from);
         if ((this.client.config.cacheSettings.presences?.maxLifetime || 0) > 0) {
           friend.presence = after;
@@ -317,7 +317,7 @@ class XMPP extends Base {
                 note: '',
               });
 
-              this.client.friends.friends.set(friend.id, friend);
+              this.client.friends.list.set(friend.id, friend);
               this.client.friends.pendingFriends.delete(friend.id);
 
               this.client.emit('friend:added', friend);
@@ -368,7 +368,7 @@ class XMPP extends Base {
               const friend = await this.waitForFriend(accountId);
               if (!friend) break;
 
-              this.client.friends.friends.delete(friend.id);
+              this.client.friends.list.delete(friend.id);
               this.client.emit('friend:removed', friend);
             }
           } break;
@@ -624,7 +624,7 @@ class XMPP extends Base {
    * Waits for a friend to be added to the clients cache
    */
   private async waitForFriend(id: string) {
-    const cachedFriend = this.client.friends.friends.get(id);
+    const cachedFriend = this.client.friends.list.get(id);
     if (cachedFriend) return cachedFriend;
 
     try {

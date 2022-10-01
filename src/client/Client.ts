@@ -78,7 +78,7 @@ import EventTokens from '../structures/EventTokens';
 import EventTimeoutError from '../exceptions/EventTimeoutError';
 import FortniteServerStatus from '../structures/FortniteServerStatus';
 import EpicgamesServerStatus from '../structures/EpicgamesServerStatus';
-import FriendsManager from '../structures/FriendsManager';
+import FriendsManager from '../structures/FriendManager';
 
 /**
  * Represets the main client
@@ -385,7 +385,7 @@ class Client extends EventEmitter {
     this.intervals.clear();
 
     // Clear remaining caches
-    this.friends.friends.clear();
+    this.friends.list.clear();
     this.friends.pendingFriends.clear();
     this.blockedUsers.clear();
   }
@@ -423,12 +423,12 @@ class Client extends EventEmitter {
     );
 
     if (friendsSummary.error) throw friendsSummary.error;
-    this.friends.friends.clear();
+    this.friends.list.clear();
     this.friends.pendingFriends.clear();
     this.blockedUsers.clear();
 
     friendsSummary.response.friends.forEach((f: any) => {
-      this.friends.friends.set(
+      this.friends.list.set(
         f.accountId,
         new Friend(this, { ...f, id: f.accountId }),
       );
@@ -457,7 +457,7 @@ class Client extends EventEmitter {
 
     const users = await this.getProfile(
       [
-        ...this.friends.friends.values(),
+        ...this.friends.list.values(),
         ...this.friends.pendingFriends.values(),
         ...this.blockedUsers.values(),
       ]
@@ -466,7 +466,7 @@ class Client extends EventEmitter {
     );
 
     users.forEach((u) => {
-      this.friends.friends.get(u.id)?.update(u);
+      this.friends.list.get(u.id)?.update(u);
       this.friends.pendingFriends.get(u.id)?.update(u);
       this.blockedUsers.get(u.id)?.update(u);
     });
@@ -483,7 +483,7 @@ class Client extends EventEmitter {
     if (typeof maxLifetime !== 'number') { throw new TypeError('maxLifetime must be typeof number'); }
 
     let presences = 0;
-    for (const friend of this.friends.friends.values()) {
+    for (const friend of this.friends.list.values()) {
       if (
         typeof friend.presence?.receivedAt !== 'undefined'
         && Date.now() - friend.presence.receivedAt.getTime() > maxLifetime * 1000
@@ -889,7 +889,7 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async sendRequestToJoin(friend: string) {
-    const resolvedFriend = this.friends.friends.find(
+    const resolvedFriend = this.friends.list.find(
       (f: Friend) => f.displayName === friend || f.id === friend,
     );
     if (!resolvedFriend) throw new FriendNotFoundError(friend);

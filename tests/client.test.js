@@ -18,7 +18,7 @@ describe('Client Startup', () => {
     expect(client.config).toBeDefined();
     expect(client.user).toBeUndefined();
     expect(client.isReady).toBe(false);
-    expect(client.friends.size).toBe(0);
+    expect(client.friends.friends.size).toBe(0);
 
     expect(client.reauthLock.isLocked).toBe(false);
     expect(client.partyLock.isLocked).toBe(false);

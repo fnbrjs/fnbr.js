@@ -22,7 +22,7 @@ class IncomingPendingFriend extends BasePendingFriend {
    * @throws {EpicgamesAPIError}
    */
   public async accept() {
-    return this.client.friends.addFriend(this.id);
+    return this.client.friends.add(this.id);
   }
 
   /**
@@ -32,7 +32,7 @@ class IncomingPendingFriend extends BasePendingFriend {
    * @throws {EpicgamesAPIError}
    */
   public async decline() {
-    return this.client.friends.removeFriend(this.id);
+    return this.client.friends.remove(this.id);
   }
 }
 

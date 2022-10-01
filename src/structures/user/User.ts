@@ -66,7 +66,7 @@ class User extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async addFriend() {
-    return this.client.friends.addFriend(this.id);
+    return this.client.friends.add(this.id);
   }
 
   /**
@@ -75,7 +75,7 @@ class User extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async block() {
-    return this.client.friends.blockUser(this.id);
+    return this.client.friends.block(this.id);
   }
 
   /**

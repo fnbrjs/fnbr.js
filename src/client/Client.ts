@@ -217,24 +217,15 @@ class Client extends EventEmitter {
   }
 
   // Events
-  public on<U extends keyof ClientEvents>(
-    event: U,
-    listener: ClientEvents[U],
-  ): this {
+  public on<U extends keyof ClientEvents>(event: U, listener: ClientEvents[U]): this {
     return super.on(event, listener);
   }
 
-  public once<U extends keyof ClientEvents>(
-    event: U,
-    listener: ClientEvents[U],
-  ): this {
+  public once<U extends keyof ClientEvents>(event: U, listener: ClientEvents[U]): this {
     return super.once(event, listener);
   }
 
-  public emit<U extends keyof ClientEvents>(
-    event: U,
-    ...args: Parameters<ClientEvents[U]>
-  ): boolean {
+  public emit<U extends keyof ClientEvents>(event: U, ...args: Parameters<ClientEvents[U]>): boolean {
     return super.emit(event, ...args);
   }
 
@@ -251,19 +242,14 @@ class Client extends EventEmitter {
    */
   public async login() {
     const auth = await this.auth.authenticate();
-    if (!auth.response) { throw auth.error || new Error("Couldn't authenticate the client"); }
+    if (!auth.response) {
+      throw auth.error || new Error('Couldn\'t authenticate the client');
+    }
 
-    const clientInfo = await this.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      `${Endpoints.ACCOUNT_ID}/${auth.response.account_id}`,
-      'fortnite',
-    );
+    const clientInfo = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.ACCOUNT_ID}/${auth.response.account_id}`,
+      'fortnite');
     if (!clientInfo.response) {
-      throw (
-        clientInfo.error
-        || new Error("Couldn't fetch the client's account info")
-      );
+      throw clientInfo.error || new Error('Couldn\'t fetch the client\'s account info');
     }
 
     this.user = new ClientUser(this, clientInfo.response);
@@ -276,7 +262,9 @@ class Client extends EventEmitter {
     if (this.config.connectToXMPP) {
       this.xmpp.setup();
       const xmpp = await this.xmpp.connect();
-      if (!xmpp.response) { throw xmpp.error || new Error("Couldn't connect to XMPP"); }
+      if (!xmpp.response) {
+        throw xmpp.error || new Error('Couldn\'t connect to XMPP');
+      }
     }
 
     if (this.config.fetchFriends) {
@@ -376,13 +364,8 @@ class Client extends EventEmitter {
     const { cacheSettings } = this.config;
 
     const presenceCacheSettings = cacheSettings.presences;
-    if (
-      presenceCacheSettings
-      && presenceCacheSettings.sweepInterval
-      && presenceCacheSettings.sweepInterval > 0
-      && presenceCacheSettings.maxLifetime > 0
-      && presenceCacheSettings.maxLifetime !== Infinity
-    ) {
+    if (presenceCacheSettings && presenceCacheSettings.sweepInterval && presenceCacheSettings.sweepInterval > 0
+      && presenceCacheSettings.maxLifetime > 0 && presenceCacheSettings.maxLifetime !== Infinity) {
       this.setInterval(
         this.sweepPresences.bind(this),
         presenceCacheSettings.sweepInterval,
@@ -394,12 +377,8 @@ class Client extends EventEmitter {
    * Updates the client's caches
    */
   public async updateCaches() {
-    const friendsSummary = await this.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      `${Endpoints.FRIENDS}/${this.user?.id}/summary`,
-      'fortnite',
-    );
+    const friendsSummary = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.FRIENDS}/${this.user?.id}/summary`,
+      'fortnite');
 
     if (friendsSummary.error) throw friendsSummary.error;
     this.friends.list.clear();
@@ -407,42 +386,28 @@ class Client extends EventEmitter {
     this.blockedUsers.clear();
 
     friendsSummary.response.friends.forEach((f: any) => {
-      this.friends.list.set(
-        f.accountId,
-        new Friend(this, { ...f, id: f.accountId }),
-      );
+      this.friends.list.set(f.accountId, new Friend(this, { ...f, id: f.accountId }));
     });
 
     friendsSummary.response.incoming.forEach((f: any) => {
-      this.friends.pendingFriends.set(
-        f.accountId,
-        new IncomingPendingFriend(this, { ...f, id: f.accountId }),
-      );
+      this.friends.pendingFriends.set(f.accountId, new IncomingPendingFriend(this, { ...f, id: f.accountId }));
     });
 
     friendsSummary.response.outgoing.forEach((f: any) => {
-      this.friends.pendingFriends.set(
-        f.accountId,
-        new OutgoingPendingFriend(this, { ...f, id: f.accountId }),
-      );
+      this.friends.pendingFriends.set(f.accountId, new OutgoingPendingFriend(this, { ...f, id: f.accountId }));
     });
 
     friendsSummary.response.blocklist.forEach((u: any) => {
-      this.blockedUsers.set(
-        u.accountId,
-        new BlockedUser(this, { ...u, id: u.accountId }),
-      );
+      this.blockedUsers.set(u.accountId, new BlockedUser(this, { ...u, id: u.accountId }));
     });
 
-    const users = await this.getProfile(
-      [
-        ...this.friends.list.values(),
-        ...this.friends.pendingFriends.values(),
-        ...this.blockedUsers.values(),
-      ]
-        .filter((u) => !!u.id)
-        .map((u) => u.id),
-    );
+    const users = await this.getProfile([
+      ...this.friends.list.values(),
+      ...this.friends.pendingFriends.values(),
+      ...this.blockedUsers.values(),
+    ]
+      .filter((u) => !!u.id)
+      .map((u) => u.id));
 
     users.forEach((u) => {
       this.friends.list.get(u.id)?.update(u);
@@ -456,17 +421,14 @@ class Client extends EventEmitter {
    * @param maxLifetime How old a presence must be before it can be sweeped (in seconds)
    * @returns The amount of presences sweeped
    */
-  public sweepPresences(
-    maxLifetime = this.config.cacheSettings.presences?.maxLifetime,
-  ) {
-    if (typeof maxLifetime !== 'number') { throw new TypeError('maxLifetime must be typeof number'); }
+  public sweepPresences(maxLifetime = this.config.cacheSettings.presences?.maxLifetime) {
+    if (typeof maxLifetime !== 'number') {
+      throw new TypeError('maxLifetime must be typeof number');
+    }
 
     let presences = 0;
     for (const friend of this.friends.list.values()) {
-      if (
-        typeof friend.presence?.receivedAt !== 'undefined'
-        && Date.now() - friend.presence.receivedAt.getTime() > maxLifetime * 1000
-      ) {
+      if (typeof friend.presence?.receivedAt !== 'undefined' && Date.now() - friend.presence.receivedAt.getTime() > maxLifetime * 1000) {
         delete friend.presence;
         presences += 1;
       }
@@ -485,12 +447,9 @@ class Client extends EventEmitter {
    * @param timeout The timeout (in milliseconds)
    * @param filter The filter for the event
    */
-  public waitForEvent<U extends keyof ClientEvents>(
-    event: U,
-    timeout = 5000,
+  public waitForEvent<U extends keyof ClientEvents>(event: U, timeout = 5000,
     // eslint-disable-next-line no-unused-vars
-    filter?: (...args: Parameters<ClientEvents[U]>) => boolean,
-  ): Promise<Parameters<ClientEvents[U]>> {
+    filter?: (...args: Parameters<ClientEvents[U]>) => boolean): Promise<Parameters<ClientEvents[U]>> {
     return new Promise<any>((res, rej) => {
       // eslint-disable-next-line no-undef
       let rejectionTimeout: NodeJS.Timeout;
@@ -600,41 +559,30 @@ class Client extends EventEmitter {
    * @param query An array of display names and/or account ids
    * @throws {EpicgamesAPIError}
    */
-  public async getProfile(
-    query: string | string[],
-  ): Promise<User | User[] | undefined> {
+  public async getProfile(query: string | string[]): Promise<User | User[] | undefined> {
     if (typeof query === 'string') {
       let user: EpicgamesAPIResponse | undefined;
 
       if (query.length === 32) {
-        user = await this.http.sendEpicgamesRequest(
-          true,
-          'GET',
-          `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${query}`,
-          'fortnite',
-        );
+        user = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${query}`, 'fortnite');
       } else if (query.length >= 3 && query.length <= 16) {
-        user = await this.http.sendEpicgamesRequest(
-          true,
-          'GET',
-          `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURIComponent(query)}`,
-          'fortnite',
-        );
-      } else return undefined;
+        user = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURIComponent(query)}`,
+          'fortnite');
+      } else {
+        return undefined;
+      }
 
       if (user?.error) {
-        if (
-          user.error.code === 'errors.com.epicgames.account.account_not_found'
-        ) { return undefined; }
+        if (user.error.code === 'errors.com.epicgames.account.account_not_found') {
+          return undefined;
+        }
+
         throw user.error;
       }
 
       if (Array.isArray(user.response) && !user.response[0]) return undefined;
 
-      return new User(
-        this,
-        Array.isArray(user?.response) ? user?.response[0] : user?.response,
-      );
+      return new User(this, Array.isArray(user?.response) ? user?.response[0] : user?.response);
     }
 
     const displayNames: string[] = [];
@@ -647,15 +595,8 @@ class Client extends EventEmitter {
 
     const proms = [];
 
-    proms.push(
-      ...displayNames.map((dn) => this.http.sendEpicgamesRequest(
-        true,
-        'GET',
-        `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURIComponent(dn)}`,
-        'fortnite',
-      ),
-      ),
-    );
+    proms.push(...displayNames.map((dn) => this.http.sendEpicgamesRequest(true, 'GET',
+      `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURIComponent(dn)}`, 'fortnite')));
 
     const idChunks: string[][] = ids.reduce((resArr: any[], id, i) => {
       const chunkIndex = Math.floor(i / 100);
@@ -665,15 +606,8 @@ class Client extends EventEmitter {
       return resArr;
     }, []);
 
-    proms.push(
-      ...idChunks.map((ic) => this.http.sendEpicgamesRequest(
-        true,
-        'GET',
-        `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${ic.join('&accountId=')}`,
-        'fortnite',
-      ),
-      ),
-    );
+    proms.push(...idChunks.map((ic) => this.http.sendEpicgamesRequest(true, 'GET',
+      `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${ic.join('&accountId=')}`, 'fortnite')));
 
     const users = await Promise.all(proms);
 
@@ -683,7 +617,11 @@ class Client extends EventEmitter {
           if (u.error.code === 'errors.com.epicgames.account.account_not_found') { return undefined; }
           throw u.error;
         }
-        if (Array.isArray(u.response)) { return u.response.map((ur) => new User(this, ur)); }
+
+        if (Array.isArray(u.response)) {
+          return u.response.map((ur) => new User(this, ur));
+        }
+
         return new User(this, u.response);
       })
       .filter((u) => !!u)
@@ -695,42 +633,17 @@ class Client extends EventEmitter {
    * @param prefix The prefix (a string that the user's display names start with)
    * @param platform The search platform. Other platform's accounts will still be searched with a lower priority
    */
-  public async searchProfiles(
-    prefix: string,
-    platform: UserSearchPlatform = 'epic',
-  ): Promise<UserSearchResult[]> {
-    const results = await this.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      `${Endpoints.ACCOUNT_SEARCH}/${this.user?.id}?prefix=${encodeURIComponent(
-        prefix,
-      )}&platform=${platform}`,
-      'fortnite',
-    );
+  public async searchProfiles(prefix: string, platform: UserSearchPlatform = 'epic'): Promise<UserSearchResult[]> {
+    const results = await this.http.sendEpicgamesRequest(true, 'GET',
+      `${Endpoints.ACCOUNT_SEARCH}/${this.user?.id}?prefix=${encodeURIComponent(prefix)}&platform=${platform}`, 'fortnite');
 
     if (results.error) throw results.error;
 
-    const users = await this.getProfile(
-      results.response.map((r: any) => r.accountId) as string[],
-    );
+    const users = await this.getProfile(results.response.map((r: any) => r.accountId) as string[]);
 
-    return results.response.map(
-      (r: any) => new UserSearchResult(
-        this,
-          users.find((u) => u.id === r.accountId) as User,
-          r,
-      ),
-    );
+    return results.response.map((r: any) => new UserSearchResult(this, users.find((u) => u.id === r.accountId) as User, r));
   }
 
-  /**
-   * Resolves a single user id
-   * @param query Display name or id of the account's id to resolve
-   */
-  private async resolveUserId(query: string) {
-    if (query.length === 32) return query;
-    return (await this.getProfile(query))?.id;
-  }
   /* -------------------------------------------------------------------------- */
   /*                                   PARTIES                                  */
   /* -------------------------------------------------------------------------- */
@@ -774,11 +687,7 @@ class Client extends EventEmitter {
     this.partyLock.lock();
 
     const partyConfig = { ...this.config.partyConfig, ...config };
-    const party = await this.http.sendEpicgamesRequest(
-      true,
-      'POST',
-      `${Endpoints.BR_PARTY}/parties`,
-      'fortnite',
+    const party = await this.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.BR_PARTY}/parties`, 'fortnite',
       {
         'Content-Type': 'application/json',
       },
@@ -814,34 +723,28 @@ class Client extends EventEmitter {
 
     if (party.error) {
       this.partyLock.unlock();
-      if (
-        party.error.code === 'errors.com.epicgames.social.party.user_has_party'
-      ) {
+      if (party.error.code === 'errors.com.epicgames.social.party.user_has_party') {
         await this.leaveParty(false);
         return this.createParty(config);
       }
+
       throw party.error;
     }
 
     this.party = new ClientParty(this, party.response);
 
-    const newPrivacy = await this.party.setPrivacy(
-      partyConfig.privacy || Enums.PartyPrivacy.PUBLIC,
-      false,
-    );
-    await this.party.sendPatch(
-      {
-        ...newPrivacy.updated,
-        ...Object.keys(this.party.meta.schema)
-          .filter((k: string) => !k.startsWith('urn:'))
+    const newPrivacy = await this.party.setPrivacy(partyConfig.privacy || Enums.PartyPrivacy.PUBLIC, false);
+
+    await this.party.sendPatch({
+      ...newPrivacy.updated,
+      ...Object.keys(this.party.meta.schema)
+        .filter((k: string) => !k.startsWith('urn:'))
+        .reduce((obj, key) => {
           // eslint-disable-next-line no-param-reassign
-          .reduce((obj, key) => {
-            (obj as any)[key] = this.party?.meta.schema[key as keyof PartySchema];
-            return obj;
-          }, {}),
-      },
-      newPrivacy.deleted,
-    );
+          (obj as any)[key] = this.party?.meta.schema[key as keyof PartySchema];
+          return obj;
+        }, {}),
+    }, newPrivacy.deleted);
 
     this.partyLock.unlock();
     await this.party.chat.join();
@@ -868,38 +771,22 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async sendRequestToJoin(friend: string) {
-    const resolvedFriend = this.friends.list.find(
-      (f: Friend) => f.displayName === friend || f.id === friend,
-    );
+    const resolvedFriend = this.friends.list.find((f: Friend) => f.displayName === friend || f.id === friend);
     if (!resolvedFriend) throw new FriendNotFoundError(friend);
 
-    const intention = await this.http.sendEpicgamesRequest(
-      true,
-      'POST',
-      `${Endpoints.BR_PARTY}/members/${resolvedFriend.id}/intentions/${this.user?.id}`,
-      'fortnite',
-      {
-        'Content-Type': 'application/json',
-      },
-      {
-        'urn:epic:invite:platformdata_s': '',
-      },
-    );
+    const intention = await this.http.sendEpicgamesRequest(true, 'POST',
+      `${Endpoints.BR_PARTY}/members/${resolvedFriend.id}/intentions/${this.user?.id}`, 'fortnite',
+      { 'Content-Type': 'application/json' }, { 'urn:epic:invite:platformdata_s': '' });
 
     if (intention.error) {
-      if (
-        intention.error.code
-        === 'errors.com.epicgames.social.party.user_has_no_party'
-      ) { throw new PartyNotFoundError(); }
+      if (intention.error.code === 'errors.com.epicgames.social.party.user_has_no_party') {
+        throw new PartyNotFoundError();
+      }
+
       throw intention.error;
     }
 
-    return new SentPartyJoinRequest(
-      this,
-      this.user as ClientUser,
-      resolvedFriend,
-      intention.response,
-    );
+    return new SentPartyJoinRequest(this, this.user as ClientUser, resolvedFriend, intention.response);
   }
 
   /**
@@ -907,12 +794,7 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async getClientParty() {
-    const party = await this.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      `${Endpoints.BR_PARTY}/user/${this.user?.id}`,
-      'fortnite',
-    );
+    const party = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_PARTY}/user/${this.user?.id}`, 'fortnite');
     if (party.error) throw party.error;
 
     if (!party.response?.current[0]) return undefined;
@@ -928,22 +810,16 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async getParty(id: string, raw = false): Promise<Party | PartyData> {
-    const party = await this.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      `${Endpoints.BR_PARTY}/parties/${id}`,
-      'fortnite',
-    );
+    const party = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_PARTY}/parties/${id}`, 'fortnite');
     if (party.error) {
       if (party.error instanceof EpicgamesAPIError) {
-        if (
-          party.error.code
-          === 'errors.com.epicgames.social.party.party_not_found'
-        ) { throw new PartyNotFoundError(); }
-        if (
-          party.error.code
-          === 'errors.com.epicgames.social.party.party_query_forbidden'
-        ) { throw new PartyPermissionError(); }
+        if (party.error.code === 'errors.com.epicgames.social.party.party_not_found') {
+          throw new PartyNotFoundError();
+        }
+
+        if (party.error.code === 'errors.com.epicgames.social.party.party_query_forbidden') {
+          throw new PartyPermissionError();
+        }
       } else {
         throw party.error;
       }
@@ -966,12 +842,7 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async getFortniteServerStatus(): Promise<FortniteServerStatus> {
-    const fortniteServerStatus = await this.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      Endpoints.BR_SERVER_STATUS,
-      'fortnite',
-    );
+    const fortniteServerStatus = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.BR_SERVER_STATUS, 'fortnite');
     if (fortniteServerStatus.error) throw fortniteServerStatus.error;
 
     return new FortniteServerStatus(this, fortniteServerStatus.response[0]);
@@ -982,12 +853,14 @@ class Client extends EventEmitter {
    * @throws {AxiosError}
    */
   public async getEpicgamesServerStatus(): Promise<EpicgamesServerStatus> {
-    const epicgamesServerStatus = await this.http.send(
-      'GET',
-      Endpoints.SERVER_STATUS_SUMMARY,
-    );
-    if (epicgamesServerStatus.error) throw epicgamesServerStatus.error;
-    if (!epicgamesServerStatus.response) { throw new Error('Request returned an empty body'); }
+    const epicgamesServerStatus = await this.http.send('GET', Endpoints.SERVER_STATUS_SUMMARY);
+    if (epicgamesServerStatus.error) {
+      throw epicgamesServerStatus.error;
+    }
+
+    if (!epicgamesServerStatus.response) {
+      throw new Error('Request returned an empty body');
+    }
 
     return new EpicgamesServerStatus(this, epicgamesServerStatus.response.data);
   }
@@ -998,12 +871,7 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async getStorefronts(language: Language = 'en') {
-    const store = await this.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      `${Endpoints.BR_STORE}?lang=${language}`,
-      'fortnite',
-    );
+    const store = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_STORE}?lang=${language}`, 'fortnite');
     if (store.error) throw store.error;
 
     return store.response.storefronts;
@@ -1015,19 +883,11 @@ class Client extends EventEmitter {
    * @throws {AxiosError}
    */
   public async downloadBlurlStream(id: string): Promise<BlurlStream> {
-    const blurlFile = await this.http.send(
-      'GET',
-      `${Endpoints.BR_STREAM}/${id}/master.blurl`,
-      undefined,
-      undefined,
-      undefined,
-      'arraybuffer',
-    );
+    const blurlFile = await this.http.send('GET', `${Endpoints.BR_STREAM}/${id}/master.blurl`, undefined, undefined, undefined,
+      'arraybuffer');
     if (blurlFile.error) throw blurlFile.error;
 
-    const streamData: BlurlStreamData = await parseBlurlStream(
-      blurlFile.response?.data,
-    );
+    const streamData: BlurlStreamData = await parseBlurlStream(blurlFile.response?.data);
 
     const streamMetaData = {
       subtitles: streamData.subtitles ? JSON.parse(streamData.subtitles) : {},
@@ -1039,11 +899,7 @@ class Client extends EventEmitter {
       duration: streamData.duration,
     };
 
-    const languageStreams = (
-      streamData.playlists.filter(
-        (p) => p.type === 'master',
-      ) as BlurlStreamMasterPlaylistData[]
-    ).map((s) => {
+    const languageStreams = (streamData.playlists.filter((p) => p.type === 'master') as BlurlStreamMasterPlaylistData[]).map((s) => {
       let baseURL = s.url.match(/.+\//)?.[0];
       if (baseURL && !baseURL.endsWith('/')) baseURL += '/';
 
@@ -1058,18 +914,14 @@ class Client extends EventEmitter {
         type: ss.data.RESOLUTION ? 'video' : 'audio',
         url: `${baseURL || ''}${ss.url}`,
         stream: streamData.playlists
-          .find((p) => p.type === 'variant' && p.rel_url === ss.url)
-          ?.data.split(/\n/)
-          .map((l) => (!l.startsWith('#') && l.length > 0 ? `${baseURL || ''}${l}` : l),
-          )
+          .find((p) => p.type === 'variant' && p.rel_url === ss.url)?.data.split(/\n/)
+          .map((l) => (!l.startsWith('#') && l.length > 0 ? `${baseURL || ''}${l}` : l))
           .join('\n')
           .replace(/init_/g, `${baseURL || ''}init_`),
       }));
 
       if (!streamMetaData.audioonly) {
-        const audioStreamUrl = variants.find(
-          (v: any) => v.type === 'audio',
-        )?.url;
+        const audioStreamUrl = variants.find((v: any) => v.type === 'audio')?.url;
 
         if (audioStreamUrl) {
           variants = variants.map((v: any) => ({
@@ -1080,10 +932,8 @@ class Client extends EventEmitter {
                 : v.stream.replace(
                   '#EXTINF:',
                   '#EXT-X-STREAM-INF:AUDIO="group_audio"\n'
-                      + `#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="group_audio",NAME="audio",DEFAULT=YES,URI="${audioStreamUrl}"\n#EXTINF:`,
-                ),
-              'utf8',
-            ),
+                      + `#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="group_audio",NAME="audio",DEFAULT=YES,URI="${audioStreamUrl}"\n#EXTINF:`),
+              'utf8'),
           }));
         }
       }
@@ -1117,28 +967,16 @@ class Client extends EventEmitter {
       return resArr;
     }, []);
 
-    const avatars = await Promise.all(
-      userChunks.map((uc) => this.http.sendEpicgamesRequest(
-        true,
-        'GET',
-        `${Endpoints.ACCOUNT_AVATAR}/fortnite/ids?accountIds=${uc
-          .map((u) => u.id)
-          .join(',')}`,
-        'fortnite',
-      ),
-      ),
-    );
+    const avatars = await Promise.all(userChunks.map((uc) => this.http.sendEpicgamesRequest(true, 'GET',
+      `${Endpoints.ACCOUNT_AVATAR}/fortnite/ids?accountIds=${uc.map((u) => u.id).join(',')}`, 'fortnite')));
 
     return avatars
       .map((a) => {
-        if (
-          a.error
-          && a.error.code !== 'errors.com.epicgames.account.account_not_found'
-        ) { throw a.error; }
+        if (a.error && a.error.code !== 'errors.com.epicgames.account.account_not_found') {
+          throw a.error;
+        }
 
-        return a.response.map(
-          (ar: any) => new Avatar(this, ar, users.find((u) => u.id === ar.accountId)!),
-        );
+        return a.response.map((ar: any) => new Avatar(this, ar, users.find((u) => u.id === ar.accountId)!));
       })
       .flat(1);
   }
@@ -1148,9 +986,7 @@ class Client extends EventEmitter {
    * @param user The id(s) or display name(s) of the user(s)
    * @throws {EpicgamesAPIError}
    */
-  public async getGlobalProfile(
-    user: string | string[],
-  ): Promise<GlobalProfile[]> {
+  public async getGlobalProfile(user: string | string[]): Promise<GlobalProfile[]> {
     const users = await this.getProfile(Array.isArray(user) ? user : [user]);
 
     const userChunks: User[][] = users.reduce((resArr: any[], u, i) => {
@@ -1161,34 +997,20 @@ class Client extends EventEmitter {
       return resArr;
     }, []);
 
-    const globalProfiles = await Promise.all(
-      userChunks.map((uc) => this.http.sendEpicgamesRequest(
-        true,
-        'PUT',
-        `${Endpoints.ACCOUNT_GLOBAL_PROFILE}`,
-        'fortnite',
-        {
-          'Content-Type': 'application/json',
-        },
-        {
-          namespace: 'Fortnite',
-          accountIds: uc.map((u) => u.id),
-        },
-      ),
-      ),
-    );
+    const globalProfiles = await Promise.all(userChunks.map((uc) => this.http.sendEpicgamesRequest(true, 'PUT',
+      `${Endpoints.ACCOUNT_GLOBAL_PROFILE}`, 'fortnite', {
+        'Content-Type': 'application/json',
+      },
+      {
+        namespace: 'Fortnite',
+        accountIds: uc.map((u) => u.id),
+      })));
 
     return globalProfiles
       .map((a) => {
         if (a.error) throw a.error;
 
-        return a.response.profiles.map(
-          (ar: any) => new GlobalProfile(
-            this,
-            ar,
-              users.find((u) => u.id === ar.accountId)!,
-          ),
-        );
+        return a.response.profiles.map((ar: any) => new GlobalProfile(this, ar, users.find((u) => u.id === ar.accountId)!));
       })
       .flat(1);
   }
@@ -1212,12 +1034,8 @@ class Client extends EventEmitter {
    * @throws {TypeError} You must provide an array of stats keys for multiple user lookup
    * @throws {EpicgamesAPIError}
    */
-  public async getBRStats(
-    user: string | string[],
-    startTime?: number,
-    endTime?: number,
-    stats: string[] = [],
-  ): Promise<Stats | Stats[] | undefined> {
+  public async getBRStats(user: string | string[], startTime?: number, endTime?: number,
+    stats: string[] = []): Promise<Stats | Stats[] | undefined> {
     const params = [];
     if (startTime) params.push(`startTime=${startTime}`);
     if (endTime) params.push(`endTime=${endTime}`);
@@ -1227,12 +1045,8 @@ class Client extends EventEmitter {
       const resolvedUser = await this.getProfile(user);
       if (!resolvedUser) throw new UserNotFoundError(user);
 
-      const statsResponse = await this.http.sendEpicgamesRequest(
-        true,
-        'GET',
-        `${Endpoints.BR_STATS_V2}/account/${resolvedUser.id}${query}`,
-        'fortnite',
-      );
+      const statsResponse = await this.http.sendEpicgamesRequest(true, 'GET',
+        `${Endpoints.BR_STATS_V2}/account/${resolvedUser.id}${query}`, 'fortnite');
 
       if (!statsResponse.error && !statsResponse.response) { throw new StatsPrivacyError(user); }
       if (statsResponse.error) throw statsResponse.error;
@@ -1241,9 +1055,7 @@ class Client extends EventEmitter {
     }
 
     if (!stats[0]) {
-      throw new TypeError(
-        "You need to provide an array of stats keys to fetch multiple user's stats",
-      );
+      throw new TypeError('You need to provide an array of stats keys to fetch multiple user\'s stats');
     }
 
     const resolvedUsers = await this.getProfile(user);
@@ -1258,32 +1070,24 @@ class Client extends EventEmitter {
         return resArr;
       }, []);
 
-    const statsResponses = await Promise.all(
-      idChunks.map((c) => this.http.sendEpicgamesRequest(
-        true,
-        'POST',
-        `${Endpoints.BR_STATS_V2}/query${query}`,
-        'fortnite',
-        {
-          'Content-Type': 'application/json',
-        },
-        {
-          appId: 'fortnite',
-          owners: c,
-          stats,
-        },
-      ),
-      ),
-    );
+    const statsResponses = await Promise.all(idChunks.map((c) => this.http.sendEpicgamesRequest(true, 'POST',
+      `${Endpoints.BR_STATS_V2}/query${query}`, 'fortnite', {
+        'Content-Type': 'application/json',
+      },
+      {
+        appId: 'fortnite',
+        owners: c,
+        stats,
+      })));
 
-    if (statsResponses.some((r) => r.error)) { throw statsResponses.find((r) => r.error)?.error; }
+    if (statsResponses.some((r) => r.error)) {
+      throw statsResponses.find((r) => r.error)?.error;
+    }
 
     return statsResponses
       .map((r) => r.response)
       .flat(1)
-      .map(
-        (r) => new Stats(this, r, resolvedUsers.find((u) => u.id === r.accountId)!),
-      );
+      .map((r) => new Stats(this, r, resolvedUsers.find((u) => u.id === r.accountId)!));
   }
 
   /**
@@ -1292,30 +1096,22 @@ class Client extends EventEmitter {
    * @param customPayload Extra data to send in the request body for a personalized news response (battle pass level, country, etc)
    * @throws {EpicgamesAPIError}
    */
-  public async getBRNews(
-    language = Enums.Language.ENGLISH,
-    customPayload: any,
-  ): Promise<NewsMessage[]> {
-    const news = await this.http.sendEpicgamesRequest(
-      true,
-      'POST',
-      Endpoints.BR_NEWS_MOTD,
-      'fortnite',
-      {
-        'Content-Type': 'application/json',
-        'Accept-Language': language,
-      },
-      {
-        platform: 'Windows',
-        language,
-        country: 'US',
-        serverRegion: 'NA',
-        subscription: false,
-        battlepass: false,
-        battlepassLevel: 1,
-        ...customPayload,
-      },
-    );
+  public async getBRNews(language = Enums.Language.ENGLISH, customPayload: any): Promise<NewsMessage[]> {
+    const news = await this.http.sendEpicgamesRequest(true, 'POST', Endpoints.BR_NEWS_MOTD, 'fortnite', {
+      'Content-Type': 'application/json',
+      'Accept-Language': language,
+    },
+    {
+      platform: 'Windows',
+      language,
+      country: 'US',
+      serverRegion: 'NA',
+      subscription: false,
+      battlepass: false,
+      battlepassLevel: 1,
+      ...customPayload,
+    });
+
     if (news.error) throw news.error;
 
     return news.response.contentItems.map((i: any) => new NewsMessage(this, i));
@@ -1328,18 +1124,14 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async getCreatorCode(code: string): Promise<CreatorCode> {
-    const codeResponse = await this.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      `${Endpoints.BR_SAC}/${encodeURIComponent(code)}`,
-      'fortniteClientCredentials',
-    );
+    const codeResponse = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_SAC}/${encodeURIComponent(code)}`,
+      'fortniteClientCredentials');
 
     if (codeResponse.error) {
-      if (
-        codeResponse.error.code
-        === 'errors.com.epicgames.ecommerce.affiliate.not_found'
-      ) { throw new CreatorCodeNotFoundError(code); }
+      if (codeResponse.error.code === 'errors.com.epicgames.ecommerce.affiliate.not_found') {
+        throw new CreatorCodeNotFoundError(code);
+      }
+
       throw codeResponse.error;
     }
 
@@ -1352,11 +1144,7 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async getRadioStations(): Promise<RadioStation[]> {
-    const fortniteContent = await this.http.sendEpicgamesRequest(
-      false,
-      'GET',
-      Endpoints.BR_NEWS,
-    );
+    const fortniteContent = await this.http.sendEpicgamesRequest(false, 'GET', Endpoints.BR_NEWS);
     if (fortniteContent.error) throw fortniteContent.error;
 
     const radioStations = fortniteContent.response.radioStations.radioStationList.stations;
@@ -1370,12 +1158,7 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async getBREventFlags(language: Language = 'en') {
-    const eventFlags = await this.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      `${Endpoints.BR_EVENT_FLAGS}?lang=${language}`,
-      'fortnite',
-    );
+    const eventFlags = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_EVENT_FLAGS}?lang=${language}`, 'fortnite');
     if (eventFlags.error) throw eventFlags.error;
 
     return eventFlags.response;
@@ -1389,15 +1172,10 @@ class Client extends EventEmitter {
    * @throws {StatsPrivacyError} The user set their stats to private
    * @throws {EpicgamesAPIError}
    */
-  public async getBRAccountLevel(
-    user: string | string[],
-    seasonNumber: number,
-  ): Promise<BRAccountLevelData[]> {
+  public async getBRAccountLevel(user: string | string[], seasonNumber: number): Promise<BRAccountLevelData[]> {
     const users = Array.isArray(user) ? user : [user];
 
-    const accountLevels = await this.getBRStats(users, undefined, undefined, [
-      `s${seasonNumber}_social_bp_level`,
-    ]);
+    const accountLevels = await this.getBRStats(users, undefined, undefined, [`s${seasonNumber}_social_bp_level`]);
 
     return accountLevels.map((al) => ({
       user: al.user,
@@ -1410,12 +1188,7 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async getStorefrontKeychain(): Promise<string[]> {
-    const keychain = await this.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      Endpoints.BR_STORE_KEYCHAIN,
-      'fortnite',
-    );
+    const keychain = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.BR_STORE_KEYCHAIN, 'fortnite');
     if (keychain.error) throw keychain.error;
 
     return keychain.response;
@@ -1432,16 +1205,12 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async getCreativeIsland(code: string): Promise<CreativeIslandData> {
-    const islandInfo = await this.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      `${Endpoints.CREATIVE_ISLAND_LOOKUP}/${code}`,
-      'fortnite',
-    );
+    const islandInfo = await this.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.CREATIVE_ISLAND_LOOKUP}/${code}`, 'fortnite');
     if (islandInfo.error) {
-      if (
-        islandInfo.error.code === 'errors.com.epicgames.links.no_active_version'
-      ) { throw new CreativeIslandNotFoundError(code); }
+      if (islandInfo.error.code === 'errors.com.epicgames.links.no_active_version') {
+        throw new CreativeIslandNotFoundError(code);
+      }
+
       throw islandInfo.error;
     }
 
@@ -1453,16 +1222,9 @@ class Client extends EventEmitter {
    * @param gameVersion The current game version (MAJOR.MINOR)
    * @throws {EpicgamesAPIError}
    */
-  public async getCreativeDiscoveryPanels(
-    gameVersion = '19.40',
-    region: Region,
-  ): Promise<CreativeDiscoveryPanel[]> {
-    const creativeDiscovery = await this.http.sendEpicgamesRequest(
-      true,
-      'POST',
-      `${Endpoints.CREATIVE_DISCOVERY}/${this.user?.id}?appId=Fortnite`,
-      'fortnite',
-      {
+  public async getCreativeDiscoveryPanels(gameVersion = '19.40', region: Region): Promise<CreativeDiscoveryPanel[]> {
+    const creativeDiscovery = await this.http.sendEpicgamesRequest(true, 'POST',
+      `${Endpoints.CREATIVE_DISCOVERY}/${this.user?.id}?appId=Fortnite`, 'fortnite', {
         'Content-Type': 'application/json',
         'User-Agent': `Fortnite/++Fortnite+Release-${gameVersion}-CL-00000000 Windows/10.0.19044.1.768.64bit`,
       },
@@ -1471,8 +1233,7 @@ class Client extends EventEmitter {
         revision: -1,
         partyMemberIds: [this.user?.id],
         matchmakingRegion: region,
-      },
-    );
+      });
 
     if (creativeDiscovery.error) {
       throw creativeDiscovery.error;
@@ -1495,32 +1256,21 @@ class Client extends EventEmitter {
     const resolvedUser = await this.getProfile(user);
     if (!resolvedUser) throw new UserNotFoundError(user);
 
-    const queryProfileResponse = await this.http.sendEpicgamesRequest(
-      true,
-      'POST',
-      `${Endpoints.MCP}/${resolvedUser.id}/public/QueryPublicProfile?profileId=campaign`,
-      'fortnite',
-      {
+    const queryProfileResponse = await this.http.sendEpicgamesRequest(true, 'POST',
+      `${Endpoints.MCP}/${resolvedUser.id}/public/QueryPublicProfile?profileId=campaign`, 'fortnite', {
         'Content-Type': 'application/json',
       },
       {},
     );
     if (queryProfileResponse.error) {
-      if (
-        queryProfileResponse.error.code
-        === 'errors.com.epicgames.modules.profiles.profile_not_found'
-      ) {
+      if (queryProfileResponse.error.code === 'errors.com.epicgames.modules.profiles.profile_not_found') {
         throw new UserNotFoundError(user);
       }
 
       throw queryProfileResponse.error;
     }
 
-    return new STWProfile(
-      this,
-      queryProfileResponse.response.profileChanges[0].profile,
-      resolvedUser,
-    );
+    return new STWProfile(this, queryProfileResponse.response.profileChanges[0].profile, resolvedUser);
   }
 
   /**
@@ -1528,23 +1278,15 @@ class Client extends EventEmitter {
    * @param language The language of the news
    * @throws {EpicgamesAPIError}
    */
-  public async getSTWNews(
-    language = this.config.language,
-  ): Promise<STWNewsMessage[]> {
-    const newsResponse = await this.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      `${Endpoints.BR_NEWS}/savetheworldnews?lang=${language}`,
-      'fortnite',
-      {
+  public async getSTWNews(language = this.config.language): Promise<STWNewsMessage[]> {
+    const newsResponse = await this.http.sendEpicgamesRequest(true, 'GET',
+      `${Endpoints.BR_NEWS}/savetheworldnews?lang=${language}`, 'fortnite', {
         'Accept-Language': language,
-      },
-    );
+      });
+
     if (newsResponse.error) throw newsResponse.error;
 
-    return newsResponse.response.news.messages.map(
-      (m: any) => new STWNewsMessage(this, m),
-    );
+    return newsResponse.response.news.messages.map((m: any) => new STWNewsMessage(this, m));
   }
 
   /**
@@ -1552,18 +1294,10 @@ class Client extends EventEmitter {
    * @param language The language of the world info
    * @throws {EpicgamesAPIError}
    */
-  public async getSTWWorldInfo(
-    language = this.config.language,
-  ): Promise<STWWorldInfoData> {
-    const worldInfoResponse = await this.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      Endpoints.STW_WORLD_INFO,
-      'fortnite',
-      {
-        'Accept-Language': language,
-      },
-    );
+  public async getSTWWorldInfo(language = this.config.language): Promise<STWWorldInfoData> {
+    const worldInfoResponse = await this.http.sendEpicgamesRequest(true, 'GET', Endpoints.STW_WORLD_INFO, 'fortnite', {
+      'Accept-Language': language,
+    });
     if (worldInfoResponse.error) throw worldInfoResponse.error;
 
     return {

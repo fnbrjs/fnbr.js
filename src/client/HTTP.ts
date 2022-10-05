@@ -162,7 +162,7 @@ class HTTP extends Base {
     return {
       response: request.response?.data,
       error: request.error && request.error.response
-        && new EpicgamesAPIError(request.error.response?.data as any, request.error.config, request.error.response.status as number),
+        && new EpicgamesAPIError(request.error.response?.data as any, request.error?.config as any, request.error.response.status as number),
     };
   }
 

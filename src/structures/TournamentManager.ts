@@ -103,6 +103,45 @@ class TournamentManager extends Base {
     return constuctedTournaments;
   }
 
+  public async getData(region?: Region, platform?: FullPlatform) {
+    const params = new URLSearchParams();
+    if (region) params.append('region', region);
+    if (platform) params.append('platform', platform);
+    params.append('teamAccountIds', this.client.user?.id!);
+    const tournaments = await this.client.http.sendEpicgamesRequest(true, 'GET',
+      `${Endpoints.BR_TOURNAMENTS}/${this.client.user?.id}${params.toString()}`, 'fortnite');
+    const tournamentsInfo = await this.client.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_NEWS}/tournamentinformation`, 'fortnite');
+    if (tournaments.error) throw tournaments.error;
+    if (tournamentsInfo.error) throw tournamentsInfo.error;
+
+    const constuctedTournaments: Tournament[] = [];
+
+    tournaments.response.events.forEach((t: TournamentData) => {
+      let tournamentDisplayData = tournamentsInfo.response!.tournament_info?.tournaments
+        ?.find((td: TournamentDisplayData) => td.tournament_display_id === t.displayDataId);
+
+      if (!tournamentDisplayData) {
+        tournamentDisplayData = (Object.values(tournamentsInfo.response!) as any[])
+          .find((tdr: any) => tdr.tournament_info?.tournament_display_id === t.displayDataId)?.tournament_info;
+      }
+
+      if (!tournamentDisplayData) {
+        return;
+      }
+
+      const templates: TournamentWindowTemplate[] = [];
+
+      t.eventWindows.forEach((w) => {
+        const template = tournaments.response.templates.find((tt: TournamentWindowTemplateData) => tt.eventTemplateId === w.eventTemplateId);
+        if (template) templates.push({ windowId: w.eventWindowId, templateData: template });
+      });
+
+      constuctedTournaments.push(new Tournament(this.client, t, tournamentDisplayData, templates));
+    });
+
+    return constuctedTournaments;
+  }
+
   /**
    * Fetches a tournament session's metadata
    * @param sessionId The session ID

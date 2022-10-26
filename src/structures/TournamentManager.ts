@@ -103,13 +103,9 @@ class TournamentManager extends Base {
     return constuctedTournaments;
   }
 
-  public async getData(region?: Region, platform?: FullPlatform) {
-    const params = new URLSearchParams();
-    if (region) params.append('region', region);
-    if (platform) params.append('platform', platform);
-    params.append('teamAccountIds', this.client.user?.id!);
+  public async getData() {
     const tournaments = await this.client.http.sendEpicgamesRequest(true, 'GET',
-      `${Endpoints.BR_TOURNAMENTS}/${this.client.user?.id}?${params.toString()}`, 'fortnite');
+      `${Endpoints.BR_TOURNAMENTS}/${this.client.user?.id}`, 'fortnite');
     const tournamentsInfo = await this.client.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_NEWS}/tournamentinformation`, 'fortnite');
     if (tournaments.error) throw tournaments.error;
     if (tournamentsInfo.error) throw tournamentsInfo.error;

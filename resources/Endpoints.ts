@@ -31,7 +31,7 @@ export default Object.freeze({
   BR_SAC_SEARCH: 'https://payment-website-pci.ol.epicgames.com/affiliate/search-by-slug',
   BR_SAC: 'https://affiliate-public-service-prod.ol.epicgames.com/affiliate/api/public/affiliates/slug',
   BR_PARTY: 'https://party-service-prod.ol.epicgames.com/party/api/v1/Fortnite',
-  BR_TOURNAMENTS: 'https://events-public-service-prod.ol.epicgames.com/api/v1/events/Fortnite/data',
+  BR_TOURNAMENTS: 'https://events-public-service-live.ol.epicgames.com/api/v1/events/Fortnite/data',
   BR_TOURNAMENTS_DOWNLOAD: 'https://events-public-service-live.ol.epicgames.com/api/v1/events/Fortnite/download',
   BR_TOURNAMENT_WINDOW: 'https://events-public-service-live.ol.epicgames.com/api/v1/leaderboards/Fortnite',
   BR_TOURNAMENT_TOKENS: 'https://events-public-service-live.ol.epicgames.com/api/v1/players/Fortnite/tokens',

@@ -65,13 +65,48 @@ class TournamentManager extends Base {
    * @param platform The platform
    * @throws {EpicgamesAPIError}
    */
-  public async get(region?: Region, platform: FullPlatform = 'Windows') {
+  public async get(region: Region = 'EU', platform: FullPlatform = 'Windows') {
     const [tournaments, tournamentsInfo] = await Promise.all([
       this.client.http.sendEpicgamesRequest(true, 'GET',
         `${Endpoints.BR_TOURNAMENTS_DOWNLOAD}/${this.client.user?.id}?region=${region}&platform=${platform}&teamAccountIds=${this.client.user?.id}`, 'fortnite'),
       this.client.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_NEWS}/tournamentinformation`, 'fortnite'),
     ]);
 
+    if (tournaments.error) throw tournaments.error;
+    if (tournamentsInfo.error) throw tournamentsInfo.error;
+
+    const constuctedTournaments: Tournament[] = [];
+
+    tournaments.response.events.forEach((t: TournamentData) => {
+      let tournamentDisplayData = tournamentsInfo.response!.tournament_info?.tournaments
+        ?.find((td: TournamentDisplayData) => td.tournament_display_id === t.displayDataId);
+
+      if (!tournamentDisplayData) {
+        tournamentDisplayData = (Object.values(tournamentsInfo.response!) as any[])
+          .find((tdr: any) => tdr.tournament_info?.tournament_display_id === t.displayDataId)?.tournament_info;
+      }
+
+      if (!tournamentDisplayData) {
+        return;
+      }
+
+      const templates: TournamentWindowTemplate[] = [];
+
+      t.eventWindows.forEach((w) => {
+        const template = tournaments.response.templates.find((tt: TournamentWindowTemplateData) => tt.eventTemplateId === w.eventTemplateId);
+        if (template) templates.push({ windowId: w.eventWindowId, templateData: template });
+      });
+
+      constuctedTournaments.push(new Tournament(this.client, t, tournamentDisplayData, templates));
+    });
+
+    return constuctedTournaments;
+  }
+
+  public async getData() {
+    const tournaments = await this.client.http.sendEpicgamesRequest(true, 'GET',
+      `${Endpoints.BR_TOURNAMENTS}/${this.client.user?.id}`, 'fortnite');
+    const tournamentsInfo = await this.client.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_NEWS}/tournamentinformation`, 'fortnite');
     if (tournaments.error) throw tournaments.error;
     if (tournamentsInfo.error) throw tournamentsInfo.error;
 

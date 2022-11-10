@@ -67,7 +67,7 @@ jobs:
         env:
           CURRENT_BRANCH: ${{ steps.current_branch.outputs.match  }}
         run: |
-          git pull
+          git pull https://fnbr-bot:${{ secrets.BOT_PAT }}@github.com/fnbrjs/fnbr.js docs
           mv ../docgen/docs.json ./${CURRENT_BRANCH}.json
           git add . -A
           git commit -m "Docs build for ${CURRENT_BRANCH}: ${GITHUB_SHA}"

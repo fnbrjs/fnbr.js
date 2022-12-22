@@ -80,7 +80,7 @@ export type DeviceAuthResolveable = DeviceAuth | PathLike | DeviceAuthFunction |
 
 export type AuthStringResolveable = string | PathLike | StringFunction | StringFunctionAsync;
 
-export type Platform = 'WIN' | 'MAC' | 'PSN' | 'XBL' | 'SWT' | 'IOS' | 'AND' | 'PS5' | 'XSX';
+export type Platform = 'WIN' | 'MAC' | 'PSN' | 'XBL' | 'SWT' | 'IOS' | 'AND' | 'PS5' | 'XSX' | 'GFNMOBILE' | 'HELIOSMOBILE';
 
 export type AuthClient = 'fortnitePCGameClient' | 'fortniteIOSGameClient' | 'fortniteAndroidGameClient'
   | 'fortniteSwitchGameClient' | 'fortniteCNGameClient' | 'launcherAppClient2' | 'Diesel - Dauntless';

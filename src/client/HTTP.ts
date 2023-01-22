@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-syntax */
 import axios, {
-  AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse, HeadersDefaults, Method, ResponseType,
+  AxiosError, AxiosInstance, AxiosResponse, HeadersDefaults, Method, RawAxiosRequestConfig, ResponseType,
 } from 'axios';
 import { URLSearchParams } from 'url';
 import { EpicgamesAPIResponse, EpicgamesGraphQLResponse, HTTPResponse } from '../../resources/httpResponses';
@@ -22,7 +22,7 @@ class HTTP extends Base {
   /**
    * The default requests options
    */
-  public options: AxiosRequestConfig;
+  public options: RawAxiosRequestConfig;
 
   /**
    * The axios instance

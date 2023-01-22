@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 /* eslint-disable no-unused-vars */
-import { AxiosRequestConfig } from 'axios';
+import { AxiosRequestConfig, RawAxiosRequestConfig } from 'axios';
 import { PathLike } from 'fs';
 import defaultPartyMeta from './defaultPartyMeta.json';
 import defaultPartyMemberMeta from './defaultPartyMemberMeta.json';
@@ -230,7 +230,7 @@ export interface ClientConfig {
   /**
    * Additional axios request options
    */
-  http: AxiosRequestConfig;
+  http: RawAxiosRequestConfig;
 
   /**
    * Debug function used for general debugging purposes

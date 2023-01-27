@@ -619,7 +619,9 @@ class Client extends EventEmitter {
 
     const users = await this.getProfile(results.response.map((r: any) => r.accountId) as string[]);
 
-    return results.response.map((r: any) => new UserSearchResult(this, users.find((u) => u.id === r.accountId) as User, r));
+    return results.response
+      .filter((r: any) => users.find((u) => u.id === r.accountId))
+      .map((r: any) => new UserSearchResult(this, users.find((u) => u.id === r.accountId) as User, r));
   }
 
   /**

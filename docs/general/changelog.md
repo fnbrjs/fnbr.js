@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.1.4
+
+### Fixes
+* Stats
+  * Fix an issue that caused `Client#getBRStats()` to throw an error when the user had stats keys that were not parsed properly
+* User Search
+  * Fix an issue that caused `Client#searchProfiles()` to throw an error if a search result could not be resolved
+
+<hr>
+
 ## 3.1.3
 
 ### Fixes

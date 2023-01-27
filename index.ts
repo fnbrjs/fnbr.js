@@ -43,6 +43,7 @@ export { default as EpicgamesServerStatusIncident } from './src/structures/Epicg
 export { default as EpicgamesServerStatusScheduledMainteance } from './src/structures/EpicgamesServerStatusScheduledMainteance';
 export { default as EventTokens } from './src/structures/EventTokens';
 export { default as FortniteServerStatus } from './src/structures/FortniteServerStatus';
+export { default as FriendManager } from './src/structures/FriendManager';
 export { default as GlobalProfile } from './src/structures/GlobalProfile';
 export { default as Image } from './src/structures/Image';
 export { default as NewsMessage } from './src/structures/NewsMessage';
@@ -50,6 +51,7 @@ export { default as NewsMessageVideo } from './src/structures/NewsMessageVideo';
 export { default as RadioStation } from './src/structures/RadioStation';
 export { default as Stats } from './src/structures/Stats';
 export { default as Tournament } from './src/structures/Tournament';
+export { default as TournamentManager } from './src/structures/TournamentManager';
 export { default as TournamentWindow } from './src/structures/TournamentWindow';
 export { default as BaseFriendMessage } from './src/structures/friend/BaseFriendMessage';
 export { default as BasePendingFriend } from './src/structures/friend/BasePendingFriend';

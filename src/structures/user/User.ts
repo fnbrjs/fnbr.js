@@ -66,7 +66,7 @@ class User extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async addFriend() {
-    return this.client.addFriend(this.id);
+    return this.client.friends.add(this.id);
   }
 
   /**
@@ -75,7 +75,7 @@ class User extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async block() {
-    return this.client.blockUser(this.id);
+    return this.client.friends.block(this.id);
   }
 
   /**
@@ -130,7 +130,7 @@ class User extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async getEventTokens(): Promise<EventTokens | undefined> {
-    return (await this.client.getEventTokens(this.id))[0];
+    return (await this.client.tournaments.getEventTokens(this.id))[0];
   }
 
   /**

@@ -1,6 +1,7 @@
 import defaultPartyMeta from '../../../resources/defaultPartyMeta.json';
 import { PartySchema } from '../../../resources/structs';
 import ClientParty from './ClientParty';
+import PartyMember from './PartyMember';
 import PartyMeta from './PartyMeta';
 
 /**
@@ -41,7 +42,7 @@ class ClientPartyMeta extends PartyMeta {
       i += 1;
     }
 
-    this.party.members.forEach((m) => {
+    this.party.members.forEach((m: PartyMember) => {
       if (m.id !== this.party.client.user?.id && !this.party.hiddenMemberIds.has(m.id)) {
         assignments.push({
           memberId: m.id,

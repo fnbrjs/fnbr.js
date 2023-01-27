@@ -182,7 +182,7 @@ class TournamentWindow {
    * @param showLiveSessions Whether to show live sessions
    */
   public async getResults(page = 0, showLiveSessions = false) {
-    return this.tournament.client.getTournamentWindowResults(this.tournament.id, this.id, showLiveSessions, page);
+    return this.tournament.client.tournaments.getWindowResults(this.tournament.id, this.id, showLiveSessions, page);
   }
 }
 

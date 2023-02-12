@@ -1,6 +1,6 @@
-import { AxiosRequestConfig } from 'axios';
-import { EpicgamesGraphQLErrorData, EpicgamesGraphQLErrorLocation } from '../../resources/httpResponses';
-import EpicgamesAPIError from './EpicgamesAPIError';
+import type { AxiosRequestConfig } from 'axios';
+import type { EpicgamesGraphQLErrorData, EpicgamesGraphQLErrorLocation } from '../../resources/httpResponses';
+import type EpicgamesAPIError from './EpicgamesAPIError';
 
 /**
  * Represets a GraphQL HTTP error from the Epicgames GraphQL API

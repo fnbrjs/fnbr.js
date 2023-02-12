@@ -1,8 +1,7 @@
 import {
-  createClient, Stanzas, Agent, Constants,
+  createClient,
 } from 'stanza';
 import crypto from 'crypto';
-import Client from './Client';
 import Base from './Base';
 import Endpoints from '../../resources/Endpoints';
 import PartyMessage from '../structures/party/PartyMessage';
@@ -13,7 +12,6 @@ import OutgoingPendingFriend from '../structures/friend/OutgoingPendingFriend';
 import BlockedUser from '../structures/user/BlockedUser';
 import Party from '../structures/party/Party';
 import { createPartyInvitation } from '../util/Util';
-import ClientUser from '../structures/user/ClientUser';
 import ReceivedPartyInvitation from '../structures/party/ReceivedPartyInvitation';
 import FriendNotFoundError from '../exceptions/FriendNotFoundError';
 import ClientPartyMember from '../structures/party/ClientPartyMember';
@@ -24,6 +22,9 @@ import ReceivedPartyJoinRequest from '../structures/party/ReceivedPartyJoinReque
 import PresenceParty from '../structures/party/PresenceParty';
 import ReceivedFriendMessage from '../structures/friend/ReceivedFriendMessage';
 import PartyMemberMeta from '../structures/party/PartyMemberMeta';
+import type ClientUser from '../structures/user/ClientUser';
+import type Client from './Client';
+import type { Stanzas, Agent, Constants } from 'stanza';
 
 /**
  * Represents the client's XMPP manager
@@ -113,7 +114,7 @@ class XMPP extends Base {
     this.client.debug('[XMPP] Connecting...');
     const connectionStartTime = Date.now();
 
-    return new Promise<{ response?: boolean, error?: Error | Stanzas.StreamError }>((res) => {
+    return new Promise<{ response?: boolean, error?: Error }>((res) => {
       const timeout = setTimeout(() => {
         res({ error: new Error('Timeout of 15000ms exceeded') });
       }, 15000);
@@ -130,7 +131,7 @@ class XMPP extends Base {
 
       this.stream?.once('stream:error', (err) => {
         clearTimeout(timeout);
-        res({ error: err });
+        res({ error: new Error(err.text) });
       });
 
       this.stream?.connect();
@@ -259,7 +260,7 @@ class XMPP extends Base {
 
         const presence = JSON.parse(p.status);
 
-        const before = this.client.friends.list.get(friendId)?.presence;
+        const before = this.client.friend.list.get(friendId)?.presence;
         const after = new FriendPresence(this.client, presence, friend, p.show || 'online', p.from);
         if ((this.client.config.cacheSettings.presences?.maxLifetime || 0) > 0) {
           friend.presence = after;
@@ -317,8 +318,8 @@ class XMPP extends Base {
                 note: '',
               });
 
-              this.client.friends.list.set(friend.id, friend);
-              this.client.friends.pendingFriends.delete(friend.id);
+              this.client.friend.list.set(friend.id, friend);
+              this.client.friend.pendingList.delete(friend.id);
 
               this.client.emit('friend:added', friend);
             } else if (status === 'PENDING') {
@@ -331,7 +332,7 @@ class XMPP extends Base {
                   favorite,
                 });
 
-                this.client.friends.pendingFriends.set(pendingFriend.id, pendingFriend);
+                this.client.friend.pendingList.set(pendingFriend.id, pendingFriend);
                 this.client.emit('friend:request', pendingFriend);
               } else if (direction === 'OUTBOUND') {
                 const pendingFriend = new OutgoingPendingFriend(this.client, {
@@ -342,7 +343,7 @@ class XMPP extends Base {
                   favorite,
                 });
 
-                this.client.friends.pendingFriends.set(pendingFriend.id, pendingFriend);
+                this.client.friend.pendingList.set(pendingFriend.id, pendingFriend);
                 this.client.emit('friend:request:sent', pendingFriend);
               }
             }
@@ -353,22 +354,22 @@ class XMPP extends Base {
             const accountId = from === this.client.user?.id ? to : from;
 
             if (reason === 'ABORTED') {
-              const pendingFriend = this.client.friends.pendingFriends.get(accountId);
+              const pendingFriend = this.client.friend.pendingList.get(accountId);
               if (!pendingFriend) break;
 
-              this.client.friends.pendingFriends.delete(pendingFriend.id);
+              this.client.friend.pendingList.delete(pendingFriend.id);
               this.client.emit('friend:request:aborted', pendingFriend);
             } else if (reason === 'REJECTED') {
-              const pendingFriend = this.client.friends.pendingFriends.get(accountId);
+              const pendingFriend = this.client.friend.pendingList.get(accountId);
               if (!pendingFriend) break;
 
-              this.client.friends.pendingFriends.delete(pendingFriend.id);
+              this.client.friend.pendingList.delete(pendingFriend.id);
               this.client.emit('friend:request:declined', pendingFriend);
             } else if (reason === 'DELETED') {
               const friend = await this.waitForFriend(accountId);
               if (!friend) break;
 
-              this.client.friends.list.delete(friend.id);
+              this.client.friend.list.delete(friend.id);
               this.client.emit('friend:removed', friend);
             }
           } break;
@@ -401,8 +402,12 @@ class XMPP extends Base {
             const friend = await this.waitForFriend(pingerId);
             if (!friend) throw new FriendNotFoundError(pingerId);
 
-            const data = await this.client.http.sendEpicgamesRequest(true, 'GET',
-              `${Endpoints.BR_PARTY}/user/${this.client.user?.id}/pings/${pingerId}/parties`, 'fortnite');
+            const data = await this.client.http.sendEpicgamesRequest(
+              true,
+              'GET',
+              `${Endpoints.BR_PARTY}/user/${this.client.user?.id}/pings/${pingerId}/parties`,
+              'fortnite',
+            );
             if (data.error) throw data.error;
 
             if (!data.response?.[0]) {
@@ -442,7 +447,7 @@ class XMPP extends Base {
             if (!member) break;
             if (!member.displayName) await member.fetch();
 
-            this.client.friends.setStatus();
+            this.client.friend.setStatus();
             if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
 
             try {
@@ -466,11 +471,26 @@ class XMPP extends Base {
               const newMeta = new PartyMemberMeta({ ...member.meta.schema });
               newMeta.update(body.member_state_updated, true);
 
-              if (newMeta.outfit !== member.meta.outfit) this.client.emit('party:member:outfit:updated', member, newMeta.outfit, member.meta.outfit);
-              if (newMeta.backpack !== member.meta.backpack) this.client.emit('party:member:backpack:updated', member, newMeta.backpack, member.meta.backpack);
-              if (newMeta.pickaxe !== member.meta.pickaxe) this.client.emit('party:member:pickaxe:updated', member, newMeta.pickaxe, member.meta.pickaxe);
-              if (newMeta.emote !== member.meta.emote) this.client.emit('party:member:emote:updated', member, newMeta.emote, member.meta.emote);
-              if (newMeta.isReady !== member.meta.isReady) this.client.emit('party:member:readiness:updated', member, newMeta.isReady, member.meta.isReady);
+              if (newMeta.outfit !== member.meta.outfit) {
+                this.client.emit('party:member:outfit:updated', member, newMeta.outfit, member.meta.outfit);
+              }
+
+              if (newMeta.backpack !== member.meta.backpack) {
+                this.client.emit('party:member:backpack:updated', member, newMeta.backpack, member.meta.backpack);
+              }
+
+              if (newMeta.pickaxe !== member.meta.pickaxe) {
+                this.client.emit('party:member:pickaxe:updated', member, newMeta.pickaxe, member.meta.pickaxe);
+              }
+
+              if (newMeta.emote !== member.meta.emote) {
+                this.client.emit('party:member:emote:updated', member, newMeta.emote, member.meta.emote);
+              }
+
+              if (newMeta.isReady !== member.meta.isReady) {
+                this.client.emit('party:member:readiness:updated', member, newMeta.isReady, member.meta.isReady);
+              }
+
               if (JSON.stringify(newMeta.match) !== JSON.stringify(member.meta.match)) {
                 this.client.emit('party:member:matchstate:updated', member, newMeta.match, member.meta.match);
               }
@@ -502,7 +522,7 @@ class XMPP extends Base {
             }
 
             this.client.party.members.delete(member.id);
-            this.client.friends.setStatus();
+            this.client.friend.setStatus();
             if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
 
             this.client.emit('party:member:left', member);
@@ -518,7 +538,7 @@ class XMPP extends Base {
             if (!member) return;
 
             this.client.party.members.delete(member.id);
-            this.client.friends.setStatus();
+            this.client.friend.setStatus();
             if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
 
             this.client.emit('party:member:expired', member);
@@ -537,7 +557,7 @@ class XMPP extends Base {
               await this.client.initParty(true, false);
             } else {
               this.client.party.members.delete(member.id);
-              this.client.friends.setStatus();
+              this.client.friend.setStatus();
               if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
             }
 
@@ -553,7 +573,7 @@ class XMPP extends Base {
             if (!member) throw new PartyMemberNotFoundError(memberId);
 
             this.client.party.members.delete(member.id);
-            this.client.friends.setStatus();
+            this.client.friend.setStatus();
             if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
             this.client.emit('party:member:disconnected', member);
           } break;
@@ -569,7 +589,7 @@ class XMPP extends Base {
             if (!member) throw new PartyMemberNotFoundError(memberId);
 
             member.role = 'CAPTAIN';
-            this.client.friends.setStatus();
+            this.client.friend.setStatus();
 
             this.client.emit('party:member:promoted', member);
           } break;
@@ -579,7 +599,7 @@ class XMPP extends Base {
             if (!this.client.party || this.client.party.id !== body.party_id) break;
 
             this.client.party.updateData(body);
-            this.client.friends.setStatus();
+            this.client.friend.setStatus();
 
             this.client.emit('party:updated', this.client.party);
             break;
@@ -624,7 +644,7 @@ class XMPP extends Base {
    * Waits for a friend to be added to the clients cache
    */
   private async waitForFriend(id: string) {
-    const cachedFriend = this.client.friends.list.get(id);
+    const cachedFriend = this.client.friend.list.get(id);
     if (cachedFriend) return cachedFriend;
 
     try {
@@ -678,7 +698,7 @@ class XMPP extends Base {
    * @param timeout How long to wait for the message
    */
   public waitForSentMessage(id: string, timeout = 1000) {
-    return new Promise<Stanzas.Message|undefined>((res) => {
+    return new Promise<Stanzas.Message | undefined>((res) => {
       // eslint-disable-next-line no-undef
       let messageTimeout: NodeJS.Timeout;
 

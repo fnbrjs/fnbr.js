@@ -1,7 +1,7 @@
 import path from 'path';
 import Base from '../client/Base';
-import Client from '../client/Client';
-import { ImageData } from '../../resources/structs';
+import type Client from '../client/Client';
+import type { ImageData } from '../../resources/structs';
 
 /**
  * Represents an image

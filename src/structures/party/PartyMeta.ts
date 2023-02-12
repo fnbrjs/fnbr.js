@@ -1,5 +1,5 @@
-import { PartySchema, Playlist } from '../../../resources/structs';
 import Meta from '../../util/Meta';
+import type { PartySchema, Playlist } from '../../../resources/structs';
 
 /**
  * Represents a party's meta

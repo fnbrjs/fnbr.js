@@ -1,10 +1,11 @@
-import Client from '../../client/Client';
+/* eslint-disable no-underscore-dangle */
 import Base from '../../client/Base';
 import UserNotFoundError from '../../exceptions/UserNotFoundError';
-import { BRAccountLevel, ExternalAuths, UserData } from '../../../resources/structs';
-import Avatar from '../Avatar';
-import GlobalProfile from '../GlobalProfile';
-import EventTokens from '../EventTokens';
+import type { BRAccountLevel, ExternalAuths, UserData } from '../../../resources/structs';
+import type Avatar from '../Avatar';
+import type GlobalProfile from '../GlobalProfile';
+import type EventTokens from '../EventTokens';
+import type Client from '../../client/Client';
 
 /**
  * Represents a user
@@ -66,7 +67,7 @@ class User extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async addFriend() {
-    return this.client.friends.add(this.id);
+    return this.client.friend.add(this.id);
   }
 
   /**
@@ -75,7 +76,7 @@ class User extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async block() {
-    return this.client.friends.block(this.id);
+    return this.client.friend.block(this.id);
   }
 
   /**

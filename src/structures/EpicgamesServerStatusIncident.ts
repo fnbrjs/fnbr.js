@@ -1,6 +1,6 @@
-import Client from '../client/Client';
 import Base from '../client/Base';
-import { EpicgamesServerStatusIncidentUpdate } from '../../resources/structs';
+import type Client from '../client/Client';
+import type { EpicgamesServerStatusIncidentUpdate } from '../../resources/structs';
 
 /**
  * Represents an Epicgames server status

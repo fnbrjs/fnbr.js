@@ -1,8 +1,8 @@
 import defaultPartyMeta from '../../../resources/defaultPartyMeta.json';
-import { PartySchema } from '../../../resources/structs';
-import ClientParty from './ClientParty';
-import PartyMember from './PartyMember';
 import PartyMeta from './PartyMeta';
+import type { PartySchema } from '../../../resources/structs';
+import type ClientParty from './ClientParty';
+import type PartyMember from './PartyMember';
 
 /**
  * Represents the client's party meta

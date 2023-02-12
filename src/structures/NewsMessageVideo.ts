@@ -1,6 +1,6 @@
 import Base from '../client/Base';
-import Client from '../client/Client';
-import { NewsMessageVideoData } from '../../resources/structs';
+import type Client from '../client/Client';
+import type { NewsMessageVideoData } from '../../resources/structs';
 
 /**
  * Represents a fortnite news message video

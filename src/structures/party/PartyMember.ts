@@ -1,7 +1,9 @@
-import { PartyMemberData, PartyMemberSchema, PartyMemberUpdateData } from '../../../resources/structs';
 import PartyPermissionError from '../../exceptions/PartyPermissionError';
 import PartyMemberMeta from './PartyMemberMeta';
 import User from '../user/User';
+import type Party from './Party';
+import type ClientParty from './ClientParty';
+import type { PartyMemberData, PartyMemberSchema, PartyMemberUpdateData } from '../../../resources/structs';
 
 /**
  * Represents a party member
@@ -25,7 +27,7 @@ class PartyMember extends User {
   /**
    * The party this member belongs to
    */
-  public party: import('./Party').default | import('./ClientParty').default;
+  public party: Party | ClientParty;
 
   /**
    * The member's revision
@@ -41,7 +43,7 @@ class PartyMember extends User {
    * @param party The party this member belongs to
    * @param data The member's data
    */
-  constructor(party: import('./Party').default | import('./ClientParty').default, data: PartyMemberData) {
+  constructor(party: Party | ClientParty, data: PartyMemberData) {
     super(party.client, {
       ...data,
       displayName: data.account_dn,

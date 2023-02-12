@@ -1,8 +1,8 @@
-import Client from '../../client/Client';
 import User from '../user/User';
-import { FriendConnections, FriendData } from '../../../resources/structs';
-import FriendPresence from './FriendPresence';
-import PresenceParty from '../party/PresenceParty';
+import type { FriendConnections, FriendData } from '../../../resources/structs';
+import type FriendPresence from './FriendPresence';
+import type PresenceParty from '../party/PresenceParty';
+import type Client from '../../client/Client';
 
 /**
  * Represents a friend
@@ -98,7 +98,7 @@ class Friend extends User {
    * @throws {EpicgamesAPIError}
    */
   public async remove() {
-    return this.client.friends.remove(this.id);
+    return this.client.friend.remove(this.id);
   }
 
   /**
@@ -107,7 +107,7 @@ class Friend extends User {
    * @throws {FriendNotFoundError} The user is not friends with the client
    */
   public sendMessage(content: string) {
-    return this.client.friends.sendMessage(this.id, content);
+    return this.client.friend.sendMessage(this.id, content);
   }
 
   /**
@@ -136,7 +136,7 @@ class Friend extends User {
    * @throws {EpicgamesAPIError}
    */
   public async getMutualFriends() {
-    return this.client.friends.getMutual(this.id);
+    return this.client.friend.getMutual(this.id);
   }
 
   /**
@@ -147,7 +147,7 @@ class Friend extends User {
    * @throws {EpicgamesAPIError}
    */
   public async checkOfferOwnership(offerId: string) {
-    return this.client.friends.checkOfferOwnership(this.id, offerId);
+    return this.client.friend.checkOfferOwnership(this.id, offerId);
   }
 }
 

@@ -1,10 +1,10 @@
 import Base from '../../client/Base';
-import Client from '../../client/Client';
 import SendMessageError from '../../exceptions/SendMessageError';
 import AsyncLock from '../../util/AsyncLock';
-import ClientParty from './ClientParty';
-import ClientPartyMember from './ClientPartyMember';
 import PartyMessage from './PartyMessage';
+import type Client from '../../client/Client';
+import type ClientParty from './ClientParty';
+import type ClientPartyMember from './ClientPartyMember';
 
 /**
  * Represents a party's multi user chat room (MUC)

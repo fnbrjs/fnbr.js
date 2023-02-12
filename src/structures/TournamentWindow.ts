@@ -1,8 +1,9 @@
-import {
+import type {
   TournamentWindowBlackoutPeriod, TournamentWindowData, TournamentWindowMetadata, TournamentWindowScoreLocation,
-  TournamentWindowTemplateData, TournamentWindowTemplatePayoutTable, TournamentWindowTemplateScoringRule, TournamentWindowTemplateTiebreakFormula,
+  TournamentWindowTemplateData, TournamentWindowTemplatePayoutTable, TournamentWindowTemplateScoringRule,
+  TournamentWindowTemplateTiebreakFormula,
 } from '../../resources/httpResponses';
-import Tournament from './Tournament';
+import type Tournament from './Tournament';
 
 /**
  * Represents a Fortnite tournament window

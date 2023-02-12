@@ -3,14 +3,14 @@ import { Collection } from '@discordjs/collection';
 import { promises as fs } from 'fs';
 import { URL } from 'url';
 import Base from './Base';
-import Client from './Client';
 import AuthClients from '../../resources/AuthClients';
-import {
+import Endpoints from '../../resources/Endpoints';
+import type Client from './Client';
+import type {
   AuthData, AuthClient, AuthType, AuthStringResolveable, DeviceAuthResolveable,
   AuthResponse, DeviceAuthWithSnakeCaseSupport,
 } from '../../resources/structs';
-import Endpoints from '../../resources/Endpoints';
-import { EpicgamesOAuthResponse } from '../../resources/httpResponses';
+import type { EpicgamesOAuthResponse } from '../../resources/httpResponses';
 
 interface KeyValuePair {
   [key: string]: any;
@@ -118,7 +118,12 @@ class Auth extends Base {
     }
 
     if (this.client.config.auth.killOtherTokens) {
-      await this.client.http.sendEpicgamesRequest(false, 'DELETE', `${Endpoints.OAUTH_TOKEN_KILL_MULTIPLE}?killType=OTHERS_ACCOUNT_CLIENT_SERVICE`, 'fortnite');
+      await this.client.http.sendEpicgamesRequest(
+        false,
+        'DELETE',
+        `${Endpoints.OAUTH_TOKEN_KILL_MULTIPLE}?killType=OTHERS_ACCOUNT_CLIENT_SERVICE`,
+        'fortnite',
+      );
     }
 
     if (this.client.config.auth.checkEULA) {
@@ -130,7 +135,11 @@ class Auth extends Base {
     if (!authCreds.deviceAuth && this.client.listenerCount('deviceauth:created') > 0) {
       const deviceauth = await this.createDeviceAuth();
       if (deviceauth.response) {
-        const deviceAuth = { accountId: deviceauth.response.accountId, deviceId: deviceauth.response.deviceId, secret: deviceauth.response.secret };
+        const deviceAuth = {
+          accountId: deviceauth.response.accountId,
+          deviceId: deviceauth.response.deviceId,
+          secret: deviceauth.response.secret,
+        };
         this.client.emit('deviceauth:created', deviceAuth);
         this.client.config.auth.deviceAuth = deviceAuth;
       } else this.client.debug(`[AUTH] Couldn't create device auth: ${deviceauth.error?.message} (${deviceauth.error?.code})`);
@@ -306,15 +315,32 @@ class Auth extends Base {
    * Accepts the Fortnite End User License Agreement (EULA)
    */
   private async acceptEULA() {
-    const EULAdata = await this.client.http.sendEpicgamesRequest(false, 'GET', `${Endpoints.INIT_EULA}/account/${this.auths.get('fortnite')?.account_id}`, 'fortnite');
+    const EULAdata = await this.client.http.sendEpicgamesRequest(
+      false,
+      'GET',
+
+      `${Endpoints.INIT_EULA}/account/${this.auths.get('fortnite')?.account_id}`,
+
+      'fortnite',
+    );
     if (EULAdata.error) return EULAdata;
     if (!EULAdata.response) return { response: { alreadyAccepted: true } };
 
-    const EULAaccepted = await this.client.http.sendEpicgamesRequest(false, 'POST',
-      `${Endpoints.INIT_EULA}/version/${EULAdata.response.version}/account/${this.auths.get('fortnite')?.account_id}/accept?locale=${EULAdata.response.locale}`, 'fortnite');
+    const EULAaccepted = await this.client.http.sendEpicgamesRequest(
+      false,
+      'POST',
+      `${Endpoints.INIT_EULA}/version/${EULAdata.response.version}/account/`
+        + `${this.auths.get('fortnite')?.account_id}/accept?locale=${EULAdata.response.locale}`,
+      'fortnite',
+    );
     if (EULAaccepted.error) return EULAaccepted;
 
-    const fortniteAccess = await this.client.http.sendEpicgamesRequest(false, 'POST', `${Endpoints.INIT_GRANTACCESS}/${this.auths.get('fortnite')?.account_id}`, 'fortnite');
+    const fortniteAccess = await this.client.http.sendEpicgamesRequest(
+      false,
+      'POST',
+      `${Endpoints.INIT_GRANTACCESS}/${this.auths.get('fortnite')?.account_id}`,
+      'fortnite',
+    );
     if (fortniteAccess.error) {
       if (fortniteAccess.error.message !== 'Client requested access grant but already has the requested access entitlement') {
         return fortniteAccess;
@@ -328,7 +354,12 @@ class Auth extends Base {
    * Creates a device auth
    */
   private async createDeviceAuth() {
-    return this.client.http.sendEpicgamesRequest(true, 'POST', `${Endpoints.OAUTH_DEVICE_AUTH}/${this.auths.get('fortnite')?.account_id}/deviceAuth`, 'fortnite');
+    return this.client.http.sendEpicgamesRequest(
+      true,
+      'POST',
+      `${Endpoints.OAUTH_DEVICE_AUTH}/${this.auths.get('fortnite')?.account_id}/deviceAuth`,
+      'fortnite',
+    );
   }
 
   private async exchangeAuth(authType: AuthType, targetClient: AuthClient) {

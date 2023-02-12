@@ -1,8 +1,8 @@
 import defaultPartyMemberMeta from '../../../resources/defaultPartyMemberMeta.json';
-import { PartyMemberSchema } from '../../../resources/structs';
 import { getRandomDefaultCharacter } from '../../util/Util';
-import PartyMember from './PartyMember';
 import PartyMemberMeta from './PartyMemberMeta';
+import type { PartyMemberSchema } from '../../../resources/structs';
+import type PartyMember from './PartyMember';
 
 /**
  * Represents the client's party member meta

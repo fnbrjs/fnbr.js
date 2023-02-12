@@ -1,30 +1,29 @@
 /* eslint-disable camelcase */
-/* eslint-disable no-unused-vars */
-import { AxiosRequestConfig, RawAxiosRequestConfig } from 'axios';
-import { PathLike } from 'fs';
-import defaultPartyMeta from './defaultPartyMeta.json';
-import defaultPartyMemberMeta from './defaultPartyMemberMeta.json';
-import EpicgamesAPIError from '../src/exceptions/EpicgamesAPIError';
-import BlockedUser from '../src/structures/user/BlockedUser';
-import ClientParty from '../src/structures/party/ClientParty';
-import ClientPartyMember from '../src/structures/party/ClientPartyMember';
-import ClientUser from '../src/structures/user/ClientUser';
-import Friend from '../src/structures/friend/Friend';
-import FriendPresence from '../src/structures/friend/FriendPresence';
-import IncomingPendingFriend from '../src/structures/friend/IncomingPendingFriend';
-import OutgoingPendingFriend from '../src/structures/friend/OutgoingPendingFriend';
-import ReceivedPartyJoinRequest from '../src/structures/party/ReceivedPartyJoinRequest';
-import PartyMember from '../src/structures/party/PartyMember';
-import PartyMemberConfirmation from '../src/structures/party/PartyMemberConfirmation';
-import PartyMessage from '../src/structures/party/PartyMessage';
-import ReceivedPartyInvitation from '../src/structures/party/ReceivedPartyInvitation';
-import User from '../src/structures/user/User';
-import {
+import type { RawAxiosRequestConfig } from 'axios';
+import type { PathLike } from 'fs';
+import type defaultPartyMeta from './defaultPartyMeta.json';
+import type defaultPartyMemberMeta from './defaultPartyMemberMeta.json';
+import type EpicgamesAPIError from '../src/exceptions/EpicgamesAPIError';
+import type BlockedUser from '../src/structures/user/BlockedUser';
+import type ClientParty from '../src/structures/party/ClientParty';
+import type ClientPartyMember from '../src/structures/party/ClientPartyMember';
+import type ClientUser from '../src/structures/user/ClientUser';
+import type Friend from '../src/structures/friend/Friend';
+import type FriendPresence from '../src/structures/friend/FriendPresence';
+import type IncomingPendingFriend from '../src/structures/friend/IncomingPendingFriend';
+import type OutgoingPendingFriend from '../src/structures/friend/OutgoingPendingFriend';
+import type ReceivedPartyJoinRequest from '../src/structures/party/ReceivedPartyJoinRequest';
+import type PartyMember from '../src/structures/party/PartyMember';
+import type PartyMemberConfirmation from '../src/structures/party/PartyMemberConfirmation';
+import type PartyMessage from '../src/structures/party/PartyMessage';
+import type ReceivedPartyInvitation from '../src/structures/party/ReceivedPartyInvitation';
+import type User from '../src/structures/user/User';
+import type {
   EpicgamesOAuthData, STWMissionAlertData, STWMissionData, STWProfileLockerSlotData,
   STWTheaterData, TournamentWindowTemplateData,
 } from './httpResponses';
-import ReceivedFriendMessage from '../src/structures/friend/ReceivedFriendMessage';
-import STWSurvivor from '../src/structures/stw/STWSurvivor';
+import type ReceivedFriendMessage from '../src/structures/friend/ReceivedFriendMessage';
+import type STWSurvivor from '../src/structures/stw/STWSurvivor';
 
 export type PartyMemberSchema = Partial<typeof defaultPartyMemberMeta>;
 export type PartySchema = Partial<typeof defaultPartyMeta> & {
@@ -33,11 +32,12 @@ export type PartySchema = Partial<typeof defaultPartyMeta> & {
   'urn:epic:cfg:invite-perm_s'?: string;
   'urn:epic:cfg:not-accepting-members'?: string;
   'urn:epic:cfg:not-accepting-members-reason_i'?: string;
-}
+};
 
 export type Schema = Record<string, string | undefined>;
 
-export type Language = 'de' | 'ru' | 'ko' |'zh-hant' | 'pt-br' | 'en' | 'it' | 'fr' | 'zh-cn' | 'es' | 'ar' | 'ja' | 'pl' | 'es-419' | 'tr';
+export type Language = 'de' | 'ru' | 'ko' | 'zh-hant' | 'pt-br' | 'en'
+| 'it' | 'fr' | 'zh-cn' | 'es' | 'ar' | 'ja' | 'pl' | 'es-419' | 'tr';
 
 export type StringFunction = () => string;
 
@@ -83,7 +83,7 @@ export type AuthStringResolveable = string | PathLike | StringFunction | StringF
 export type Platform = 'WIN' | 'MAC' | 'PSN' | 'XBL' | 'SWT' | 'IOS' | 'AND' | 'PS5' | 'XSX';
 
 export type AuthClient = 'fortnitePCGameClient' | 'fortniteIOSGameClient' | 'fortniteAndroidGameClient'
-  | 'fortniteSwitchGameClient' | 'fortniteCNGameClient' | 'launcherAppClient2' | 'Diesel - Dauntless';
+| 'fortniteSwitchGameClient' | 'fortniteCNGameClient' | 'launcherAppClient2' | 'Diesel - Dauntless';
 
 export interface RefreshTokenData {
   /**

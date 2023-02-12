@@ -1,7 +1,8 @@
 import HomebaseRatingMapping from './HomebaseRatingMapping.json';
 import BaseItemRating from './BaseItemRating.json';
 import SurvivorItemRating from './SurvivorItemRating.json';
-import CurveTable, { CurveKey } from '../src/util/CurveTable';
+import CurveTable from '../src/util/CurveTable';
+import type { CurveKey } from '../src/util/CurveTable';
 
 function mapCurveTables<T extends { [k: keyof any]: { Keys: CurveKey[] } }>(struc: T) {
   const entries1 = Object.entries(struc);

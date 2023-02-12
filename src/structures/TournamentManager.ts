@@ -1,20 +1,20 @@
-import { ResponseType } from 'axios';
 import Endpoints from '../../resources/Endpoints';
-import {
-  TournamentData, TournamentDisplayData, TournamentWindowResults, TournamentWindowTemplateData,
-} from '../../resources/httpResponses';
-import {
-  FullPlatform, Region, TournamentSessionMetadata, TournamentWindowTemplate,
-} from '../../resources/structs';
 import Base from '../client/Base';
 import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
 import MatchNotFoundError from '../exceptions/MatchNotFoundError';
 import EventTokens from './EventTokens';
 import Tournament from './Tournament';
+import type {
+  FullPlatform, Region, TournamentSessionMetadata, TournamentWindowTemplate,
+} from '../../resources/structs';
+import type {
+  TournamentData, TournamentDisplayData, TournamentWindowResults, TournamentWindowTemplateData,
+} from '../../resources/httpResponses';
+import type { ResponseType } from 'axios';
 
 /**
  * Represent's the client's tournament manager.
-*/
+ */
 class TournamentManager extends Base {
   /**
    * Downloads a file from the CDN (used for replays)
@@ -25,7 +25,14 @@ class TournamentManager extends Base {
     const fileLocationInfo = await this.client.http.sendEpicgamesRequest(true, 'GET', url, 'fortnite');
     if (fileLocationInfo.error) return fileLocationInfo;
 
-    const file = await this.client.http.send('GET', (Object.values(fileLocationInfo.response.files)[0] as any).readLink, undefined, undefined, undefined, responseType);
+    const file = await this.client.http.send(
+      'GET',
+      (Object.values(fileLocationInfo.response.files)[0] as any).readLink,
+      undefined,
+      undefined,
+      undefined,
+      responseType,
+    );
 
     if (file.response) return { response: file.response.data };
     return file;
@@ -52,8 +59,12 @@ class TournamentManager extends Base {
       return resArr;
     }, []);
 
-    const statsResponses = await Promise.all(userChunks.map((c) => this.client.http.sendEpicgamesRequest(true, 'GET',
-      `${Endpoints.BR_TOURNAMENT_TOKENS}?teamAccountIds=${c.join(',')}`, 'fortnite')));
+    const statsResponses = await Promise.all(userChunks.map((c) => this.client.http.sendEpicgamesRequest(
+      true,
+      'GET',
+      `${Endpoints.BR_TOURNAMENT_TOKENS}?teamAccountIds=${c.join(',')}`,
+      'fortnite',
+    )));
 
     return statsResponses.map((r) => r.response.accounts).flat(1)
       .map((r) => new EventTokens(this.client, r.tokens, resolvedUsers.find((u) => u.id === r.accountId)!));
@@ -67,8 +78,13 @@ class TournamentManager extends Base {
    */
   public async get(region: Region = 'EU', platform: FullPlatform = 'Windows') {
     const [tournaments, tournamentsInfo] = await Promise.all([
-      this.client.http.sendEpicgamesRequest(true, 'GET',
-        `${Endpoints.BR_TOURNAMENTS_DOWNLOAD}/${this.client.user?.id}?region=${region}&platform=${platform}&teamAccountIds=${this.client.user?.id}`, 'fortnite'),
+      this.client.http.sendEpicgamesRequest(
+        true,
+        'GET',
+        `${Endpoints.BR_TOURNAMENTS_DOWNLOAD}/${this.client.user?.id}?region=${region}`
+          + `&platform=${platform}&teamAccountIds=${this.client.user?.id}`,
+        'fortnite',
+      ),
       this.client.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_NEWS}/tournamentinformation`, 'fortnite'),
     ]);
 
@@ -93,7 +109,8 @@ class TournamentManager extends Base {
       const templates: TournamentWindowTemplate[] = [];
 
       t.eventWindows.forEach((w) => {
-        const template = tournaments.response.templates.find((tt: TournamentWindowTemplateData) => tt.eventTemplateId === w.eventTemplateId);
+        const template = tournaments.response.templates
+          .find((tt: TournamentWindowTemplateData) => tt.eventTemplateId === w.eventTemplateId);
         if (template) templates.push({ windowId: w.eventWindowId, templateData: template });
       });
 
@@ -104,9 +121,14 @@ class TournamentManager extends Base {
   }
 
   public async getData() {
-    const tournaments = await this.client.http.sendEpicgamesRequest(true, 'GET',
-      `${Endpoints.BR_TOURNAMENTS}/${this.client.user?.id}`, 'fortnite');
-    const tournamentsInfo = await this.client.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_NEWS}/tournamentinformation`, 'fortnite');
+    const tournaments = await this.client.http.sendEpicgamesRequest(
+      true,
+      'GET',
+      `${Endpoints.BR_TOURNAMENTS}/${this.client.user?.id}`,
+      'fortnite',
+    );
+    const tournamentsInfo = await this.client.http
+      .sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_NEWS}/tournamentinformation`, 'fortnite');
     if (tournaments.error) throw tournaments.error;
     if (tournamentsInfo.error) throw tournamentsInfo.error;
 
@@ -128,7 +150,8 @@ class TournamentManager extends Base {
       const templates: TournamentWindowTemplate[] = [];
 
       t.eventWindows.forEach((w) => {
-        const template = tournaments.response.templates.find((tt: TournamentWindowTemplateData) => tt.eventTemplateId === w.eventTemplateId);
+        const template = tournaments.response.templates
+          .find((tt: TournamentWindowTemplateData) => tt.eventTemplateId === w.eventTemplateId);
         if (template) templates.push({ windowId: w.eventWindowId, templateData: template });
       });
 
@@ -180,10 +203,19 @@ class TournamentManager extends Base {
    * @param page The results page index
    * @throws {EpicgamesAPIError}
    */
-  public async getWindowResults(eventId: string, eventWindowId: string, showLiveSessions = false, page = 0): Promise<TournamentWindowResults> {
-    const window = await this.client.http.sendEpicgamesRequest(true, 'GET', `${Endpoints.BR_TOURNAMENT_WINDOW}/${eventId}/${eventWindowId}/`
+  public async getWindowResults(
+    eventId: string,
+    eventWindowId: string,
+    showLiveSessions = false,
+    page = 0,
+  ): Promise<TournamentWindowResults> {
+    const window = await this.client.http.sendEpicgamesRequest(
+      true,
+      'GET',
+      `${Endpoints.BR_TOURNAMENT_WINDOW}/${eventId}/${eventWindowId}/`
       + `${this.client.user?.id}?page=${page}&rank=0&teamAccountIds=&appId=Fortnite&showLiveSessions=${showLiveSessions}`,
-    'fortnite');
+      'fortnite',
+    );
     if (window.error) throw window.error;
 
     return window.response;

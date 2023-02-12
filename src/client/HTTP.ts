@@ -1,14 +1,15 @@
 /* eslint-disable no-restricted-syntax */
-import axios, {
-  AxiosError, AxiosInstance, AxiosResponse, HeadersDefaults, Method, RawAxiosRequestConfig, ResponseType,
-} from 'axios';
+import axios from 'axios';
 import { URLSearchParams } from 'url';
-import { EpicgamesAPIResponse, EpicgamesGraphQLResponse, HTTPResponse } from '../../resources/httpResponses';
-import { AuthType } from '../../resources/structs';
 import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
 import EpicgamesGraphQLError from '../exceptions/EpicgamesGraphQLError';
 import Base from './Base';
-import Client from './Client';
+import type { AuthType } from '../../resources/structs';
+import type { EpicgamesAPIResponse, EpicgamesGraphQLResponse, HTTPResponse } from '../../resources/httpResponses';
+import type {
+  AxiosError, AxiosInstance, AxiosResponse, HeadersDefaults, Method, RawAxiosRequestConfig, ResponseType,
+} from 'axios';
+import type Client from './Client';
 
 interface KeyValuePair {
   [key: string]: any;
@@ -58,7 +59,15 @@ class HTTP extends Base {
    * @param responseType The axios response type
    * @param retries How many times this request has been retried
    */
-  public async send(method: Method, url: string, headers: KeyValuePair = {}, body?: any, form?: KeyValuePair, responseType?: ResponseType, retries = 0): Promise<HTTPResponse> {
+  public async send(
+    method: Method,
+    url: string,
+    headers: KeyValuePair = {},
+    body?: any,
+    form?: KeyValuePair,
+    responseType?: ResponseType,
+    retries = 0,
+  ): Promise<HTTPResponse> {
     let data;
 
     if (body) data = body;
@@ -128,8 +137,16 @@ class HTTP extends Base {
    * @param form The form
    * @param ignoreLocks Where the request should ignore locks such as the reauth lock
    */
-  public async sendEpicgamesRequest(checkToken: boolean, method: Method, url: string,
-    auth?: AuthType, headers: KeyValuePair = {}, data?: any, form?: KeyValuePair, ignoreLocks = false): Promise<EpicgamesAPIResponse> {
+  public async sendEpicgamesRequest(
+    checkToken: boolean,
+    method: Method,
+    url: string,
+    auth?: AuthType,
+    headers: KeyValuePair = {},
+    data?: any,
+    form?: KeyValuePair,
+    ignoreLocks = false,
+  ): Promise<EpicgamesAPIResponse> {
     if (!ignoreLocks) await this.client.reauthLock.wait();
 
     const finalHeaders = headers;
@@ -161,8 +178,11 @@ class HTTP extends Base {
 
     return {
       response: request.response?.data,
-      error: request.error && request.error.response
-        && new EpicgamesAPIError(request.error.response?.data as any, request.error?.config as any, request.error.response.status as number),
+      error: request.error && request.error.response && new EpicgamesAPIError(
+        request.error.response?.data as any,
+        request.error?.config as any,
+        request.error.response.status as number,
+      ),
     };
   }
 
@@ -176,8 +196,15 @@ class HTTP extends Base {
    * @param operationName The GraphQL operation name (optional, will be auto set)
    * @param ignoreLocks Where the request should ignore locks such as the reauth lock
    */
-  public async sendEpicgamesGraphQLRequest(checkToken: boolean, url: string, query: string, variables: KeyValuePair = {},
-    auth?: AuthType, operationName?: string, ignoreLocks = false): Promise<EpicgamesGraphQLResponse> {
+  public async sendEpicgamesGraphQLRequest(
+    checkToken: boolean,
+    url: string,
+    query: string,
+    variables: KeyValuePair = {},
+    auth?: AuthType,
+    operationName?: string,
+    ignoreLocks = false,
+  ): Promise<EpicgamesGraphQLResponse> {
     if (!ignoreLocks) await this.client.reauthLock.wait();
 
     const headers: KeyValuePair = {

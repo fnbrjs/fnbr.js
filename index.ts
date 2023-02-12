@@ -43,7 +43,6 @@ export { default as EpicgamesServerStatusIncident } from './src/structures/Epicg
 export { default as EpicgamesServerStatusScheduledMainteance } from './src/structures/EpicgamesServerStatusScheduledMainteance';
 export { default as EventTokens } from './src/structures/EventTokens';
 export { default as FortniteServerStatus } from './src/structures/FortniteServerStatus';
-export { default as FriendManager } from './src/structures/FriendManager';
 export { default as GlobalProfile } from './src/structures/GlobalProfile';
 export { default as Image } from './src/structures/Image';
 export { default as NewsMessage } from './src/structures/NewsMessage';

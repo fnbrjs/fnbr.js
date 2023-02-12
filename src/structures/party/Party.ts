@@ -1,17 +1,17 @@
 import { Collection } from '@discordjs/collection';
 import Endpoints from '../../../resources/Endpoints';
 import { PartyPrivacy } from '../../../enums/Enums';
-import {
-  PartyConfig, PartyData, PartySchema, PartyUpdateData,
-} from '../../../resources/structs';
 import Base from '../../client/Base';
-import Client from '../../client/Client';
 import PartyAlreadyJoinedError from '../../exceptions/PartyAlreadyJoinedError';
 import { makeCamelCase, makeSnakeCase } from '../../util/Util';
 import ClientPartyMember from './ClientPartyMember';
-import ClientUser from '../user/ClientUser';
 import PartyMember from './PartyMember';
 import PartyMeta from './PartyMeta';
+import type ClientUser from '../user/ClientUser';
+import type Client from '../../client/Client';
+import type {
+  PartyConfig, PartyData, PartySchema, PartyUpdateData,
+} from '../../../resources/structs';
 
 /**
  * Represents a party that the client is not a member of
@@ -128,10 +128,15 @@ class Party extends Base {
     this.client.partyLock.lock();
     if (this.client.party) await this.client.party.leave(false);
 
-    const joinParty = await this.client.http.sendEpicgamesRequest(true, 'POST',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.client.user?.id}/join`, 'fortnite', {
+    const joinParty = await this.client.http.sendEpicgamesRequest(
+      true,
+      'POST',
+      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.client.user?.id}/join`,
+      'fortnite',
+      {
         'Content-Type': 'application/json',
-      }, {
+      },
+      {
         connection: {
           id: this.client.xmpp.JID,
           meta: {
@@ -156,7 +161,8 @@ class Party extends Base {
             ],
           }),
         },
-      });
+      },
+    );
 
     if (joinParty.error) {
       this.client.partyLock.unlock();

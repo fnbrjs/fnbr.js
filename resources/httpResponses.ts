@@ -1,8 +1,8 @@
 /* eslint-disable camelcase */
-import { AxiosError } from 'axios';
-import EpicgamesAPIError from '../src/exceptions/EpicgamesAPIError';
-import EpicgamesGraphQLError from '../src/exceptions/EpicgamesGraphQLError';
-import { FullPlatform, Region, STWSchematicAlterationRarity } from './structs';
+import type { AxiosError } from 'axios';
+import type EpicgamesAPIError from '../src/exceptions/EpicgamesAPIError';
+import type EpicgamesGraphQLError from '../src/exceptions/EpicgamesGraphQLError';
+import type { FullPlatform, Region, STWSchematicAlterationRarity } from './structs';
 
 export interface HTTPResponse {
   response?: any;
@@ -70,12 +70,12 @@ export interface EpicgamesOAuthResponse extends EpicgamesAPIResponse {
 export type PlatformMappings = {
   // eslint-disable-next-line no-unused-vars
   [key in FullPlatform]?: string;
-}
+};
 
 export type RegionMappings = {
   // eslint-disable-next-line no-unused-vars
   [key in Region]?: string;
-}
+};
 
 export interface TournamentMetadata {
   minimumAccountLevel: number;
@@ -281,7 +281,7 @@ export interface BlurlStreamVariantPlaylistData {
 }
 
 export interface BlurlStreamData {
-  playlists: (BlurlStreamMasterPlaylistData|BlurlStreamVariantPlaylistData)[];
+  playlists: (BlurlStreamMasterPlaylistData | BlurlStreamVariantPlaylistData)[];
   subtitles: string;
   ucp?: string;
   audioonly?: boolean;

@@ -1,6 +1,6 @@
 import BaseMessage from '../BaseMessage';
-import ClientUser from '../user/ClientUser';
-import Friend from './Friend';
+import type ClientUser from '../user/ClientUser';
+import type Friend from './Friend';
 
 /**
  * Represents a friend whisper message
@@ -22,7 +22,7 @@ class BaseFriendMessage extends BaseMessage {
    * @throws {FriendNotFoundError} The user is not friends with the client
    */
   public reply(content: string) {
-    return this.client.friends.sendMessage(this.author.id, content);
+    return this.client.friend.sendMessage(this.author.id, content);
   }
 }
 

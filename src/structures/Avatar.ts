@@ -1,6 +1,6 @@
-import User from './user/User';
-import Client from '../client/Client';
 import Base from '../client/Base';
+import type User from './user/User';
+import type Client from '../client/Client';
 
 /**
  * Represents a user's avatar

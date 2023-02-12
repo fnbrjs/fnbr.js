@@ -1,12 +1,7 @@
 import { Collection } from '@discordjs/collection';
-import { PresenceShow } from 'stanza/Constants';
-import Base from '../client/Base';
-import Friend from './friend/Friend';
-import IncomingPendingFriend from './friend/IncomingPendingFriend';
-import OutgoingPendingFriend from './friend/OutgoingPendingFriend';
+import Friend from '../structures/friend/Friend';
 import FriendNotFoundError from '../exceptions/FriendNotFoundError';
 import Endpoints from '../../resources/Endpoints';
-import { PresenceOnlineType } from '../../resources/structs';
 import UserNotFoundError from '../exceptions/UserNotFoundError';
 import DuplicateFriendshipError from '../exceptions/DuplicateFriendshipError';
 import FriendshipRequestAlreadySentError from '../exceptions/FriendshipRequestAlreadySentError';
@@ -15,13 +10,18 @@ import InviteeFriendshipRequestLimitExceededError from '../exceptions/InviteeFri
 import InviteeFriendshipSettingsError from '../exceptions/InviteeFriendshipSettingsError';
 import OfferNotFoundError from '../exceptions/OfferNotFoundError';
 import SendMessageError from '../exceptions/SendMessageError';
-import SentFriendMessage from './friend/SentFriendMessage';
-import ClientUser from './user/ClientUser';
-import Client from '../client/Client';
-import BlockedUser from './user/BlockedUser';
-import BasePendingFriend from './friend/BasePendingFriend';
+import SentFriendMessage from '../structures/friend/SentFriendMessage';
+import BasePendingFriend from '../structures/friend/BasePendingFriend';
+import Base from '../client/Base';
+import type ClientUser from '../structures/user/ClientUser';
+import type Client from '../client/Client';
+import type BlockedUser from '../structures/user/BlockedUser';
+import type { PresenceOnlineType } from '../../resources/structs';
+import type OutgoingPendingFriend from '../structures/friend/OutgoingPendingFriend';
+import type IncomingPendingFriend from '../structures/friend/IncomingPendingFriend';
+import type { PresenceShow } from 'stanza/Constants';
 
-class FriendsManager extends Base {
+class FriendManager extends Base {
   /**
    * Friend list
    */
@@ -30,15 +30,39 @@ class FriendsManager extends Base {
   /**
    * Pending friend requests (incoming or outgoing)
    */
-  public pendingFriends: Collection<
-    string,
-    IncomingPendingFriend | OutgoingPendingFriend
+  public pendingList: Collection<
+  string,
+  IncomingPendingFriend | OutgoingPendingFriend
   >;
 
   constructor(constr: Client) {
     super(constr);
     this.list = new Collection();
-    this.pendingFriends = new Collection();
+    this.pendingList = new Collection();
+  }
+
+  public resolve(friend: string | Friend) {
+    if (friend instanceof Friend) {
+      return this.list.get(friend.id);
+    }
+
+    if (friend.length === 32) {
+      return this.list.get(friend);
+    }
+
+    return this.list.find((f) => f.displayName === friend);
+  }
+
+  public resolvePending(pendingFriend: string | BasePendingFriend) {
+    if (pendingFriend instanceof BasePendingFriend) {
+      return this.pendingList.get(pendingFriend.id);
+    }
+
+    if (pendingFriend.length === 32) {
+      return this.pendingList.get(pendingFriend);
+    }
+
+    return this.pendingList.find((f) => f.displayName === pendingFriend);
   }
 
   /**
@@ -48,17 +72,10 @@ class FriendsManager extends Base {
    * @param friend A specific friend you want to send this status to
    * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    */
-  public setStatus(
-    status?: string,
-    onlineType?: PresenceOnlineType,
-    friend?: string,
-  ) {
-    // eslint-disable-next-line no-undef-init
-    let toJID: string | undefined = undefined;
+  public setStatus(status?: string, onlineType?: PresenceOnlineType, friend?: string) {
+    let toJID: string | undefined;
     if (friend) {
-      const resolvedFriend = this.list.find(
-        (f: Friend) => f.displayName === friend || f.id === friend,
-      );
+      const resolvedFriend = this.resolve(friend);
       if (!resolvedFriend) throw new FriendNotFoundError(friend);
       toJID = `${resolvedFriend.id}@${Endpoints.EPIC_PROD_ENV}`;
     }
@@ -202,15 +219,15 @@ class FriendsManager extends Base {
    */
   public async remove(friend: string) {
     let resolvedFriend:
-      | Friend
-      | OutgoingPendingFriend
-      | IncomingPendingFriend
-      | undefined;
+    | Friend
+    | OutgoingPendingFriend
+    | IncomingPendingFriend
+    | undefined;
     resolvedFriend = this.list.find(
       (f: Friend) => f.displayName === friend || f.id === friend,
     );
     if (!resolvedFriend) {
-      resolvedFriend = this.pendingFriends.find(
+      resolvedFriend = this.pendingList.find(
         (f: BasePendingFriend) => f.displayName === friend || f.id === friend,
       );
     }
@@ -381,4 +398,4 @@ class FriendsManager extends Base {
   }
 }
 
-export default FriendsManager;
+export default FriendManager;

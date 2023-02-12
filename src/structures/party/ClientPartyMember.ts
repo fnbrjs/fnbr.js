@@ -1,11 +1,11 @@
 import { AsyncQueue } from '@sapphire/async-queue';
 import Endpoints from '../../../resources/Endpoints';
-import {
+import ClientPartyMemberMeta from './ClientPartyMemberMeta';
+import PartyMember from './PartyMember';
+import type {
   CosmeticEnlightment, CosmeticsVariantMeta, CosmeticVariant, PartyMemberData, PartyMemberSchema, Schema,
 } from '../../../resources/structs';
-import ClientPartyMemberMeta from './ClientPartyMemberMeta';
-import Party from './Party';
-import PartyMember from './PartyMember';
+import type Party from './Party';
 
 /**
  * Represents the client's party member
@@ -44,13 +44,20 @@ class ClientPartyMember extends PartyMember {
   public async sendPatch(updated: PartyMemberSchema): Promise<void> {
     await this.patchQueue.wait();
 
-    const patch = await this.client.http.sendEpicgamesRequest(true, 'PATCH', `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.id}/meta`, 'fortnite', {
-      'Content-Type': 'application/json',
-    }, {
-      delete: [],
-      revision: this.revision,
-      update: updated,
-    });
+    const patch = await this.client.http.sendEpicgamesRequest(
+      true,
+      'PATCH',
+      `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.id}/meta`,
+      'fortnite',
+      {
+        'Content-Type': 'application/json',
+      },
+      {
+        delete: [],
+        revision: this.revision,
+        update: updated,
+      },
+    );
 
     if (patch.error) {
       if (patch.error.code === 'errors.com.epicgames.social.party.stale_revision') {

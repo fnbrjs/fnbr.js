@@ -1,13 +1,12 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
-import Client from '../client/Client';
 import Base from '../client/Base';
-import { StatsData, StatsPlaylistTypeData, StatsLevelData } from '../../resources/structs';
-import User from './user/User';
 import { createDefaultInputTypeStats, parseStatKey } from '../util/Util';
-import { RawStatsData } from '../../resources/httpResponses';
-
-const statsKeyRegex = /^br_.*(lastmodified|playersoutlived|kills|matchesplayed|minutesplayed|placetop\d\d?|score)_(gamepad|keyboardmouse|touch)_m0_(.+)$/;
+import { statsKeyRegex } from '../../resources/constants';
+import type Client from '../client/Client';
+import type { StatsData, StatsPlaylistTypeData, StatsLevelData } from '../../resources/structs';
+import type User from './user/User';
+import type { RawStatsData } from '../../resources/httpResponses';
 
 /**
  * Represents a user's battle royale stats
@@ -67,7 +66,8 @@ class Stats extends Base {
 
     for (const key of Object.keys(data.stats)) {
       if (statsKeyRegex.test(key)) {
-        const [, statKey, inputType, playlistId]: [string, string, 'keyboardmouse' | 'gamepad' | 'touch', string] = key.match(statsKeyRegex) as any;
+        const [, statKey, inputType, playlistId]: [string, string, 'keyboardmouse' | 'gamepad' | 'touch', string] = key
+          .match(statsKeyRegex) as any;
 
         const playlistType = typeof this.client.config.statsPlaylistTypeParser === 'function'
           ? this.client.config.statsPlaylistTypeParser(playlistId)
@@ -134,7 +134,8 @@ class Stats extends Base {
 
     if (['creative', 'respawn', '16'].some((s) => playlist.includes(s))) return 'other';
 
-    if (!['default', 'classic', 'showdown', 'vamp', 'unvaulted', 'toss', 'fill', 'heavy', 'tank', 'melt'].some((s) => playlist.includes(s))) return 'ltm';
+    if (!['default', 'classic', 'showdown', 'vamp',
+      'unvaulted', 'toss', 'fill', 'heavy', 'tank', 'melt'].some((s) => playlist.includes(s))) return 'ltm';
 
     if (playlist.includes('solo')) return 'solo';
     if (playlist.includes('duo')) return 'duo';

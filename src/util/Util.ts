@@ -2,7 +2,10 @@
 import readline from 'readline';
 import zlib from 'zlib';
 import crypto from 'crypto';
-import {
+import { STWLeadSynergy } from '../../enums/Enums';
+import BinaryWriter from './BinaryWriter';
+import PowerLevelCurves from '../../resources/PowerLevelCurves';
+import type {
   Schema, ReplayData, ReplayDataChunk, ReplayEvent,
   STWItemRarity, STWSurvivorType, STWSurvivorSquads,
   STWHeroType,
@@ -12,9 +15,6 @@ import {
   STWSchematicEvoType,
   STWSchematicSubType,
 } from '../../resources/structs';
-import { STWLeadSynergy } from '../../enums/Enums';
-import BinaryWriter from './BinaryWriter';
-import PowerLevelCurves from '../../resources/PowerLevelCurves';
 
 const defaultCharacters = [
   'CID_556_Athena_Commando_F_RebirthDefaultA',
@@ -302,7 +302,12 @@ export const calcSTWSurvivorPowerLevel = (rarity: STWItemRarity, isLeader: boole
   return PowerLevelCurves.survivorItemRating[key].eval(level);
 };
 
-export const calcSTWSurvivorBonus = (leaderPersonality: string, leaderRarity: string, survivorPersonality: string, survivorPowerLevel: number) => {
+export const calcSTWSurvivorBonus = (
+  leaderPersonality: string,
+  leaderRarity: string,
+  survivorPersonality: string,
+  survivorPowerLevel: number,
+) => {
   if (survivorPersonality === leaderPersonality) {
     if (leaderRarity === 'sr') return 8;
     if (leaderRarity === 'vr') return 5;

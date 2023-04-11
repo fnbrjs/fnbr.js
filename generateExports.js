@@ -25,7 +25,7 @@ const recursiveReaddir = async (folder) => {
 (async () => {
   let output = '';
 
-  output += '// main exports\nexport { default as Client } from \'./src/client/Client\';\n'
+  output += '// main exports\nexport { default as Client } from \'./src/Client\';\n'
   + 'export { default as Enums } from \'./enums/Enums\';\n\n// types and interfaces\nexport * from \'./resources/structs\';\n'
   + '\n// endpoints\nexport { default as Endpoints } from \'./resources/Endpoints\';\n';
 

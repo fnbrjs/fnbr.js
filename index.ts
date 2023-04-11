@@ -32,6 +32,8 @@ export { default as PartyPermissionError } from './src/exceptions/PartyPermissio
 export { default as SendMessageError } from './src/exceptions/SendMessageError';
 export { default as StatsPrivacyError } from './src/exceptions/StatsPrivacyError';
 export { default as UserNotFoundError } from './src/exceptions/UserNotFoundError';
+export { default as XMPPConnectionError } from './src/exceptions/XMPPConnectionError';
+export { default as XMPPConnectionTimeoutError } from './src/exceptions/XMPPConnectionTimeoutError';
 
 // structures
 export { default as Avatar } from './src/structures/Avatar';

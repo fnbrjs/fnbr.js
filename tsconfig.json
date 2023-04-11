@@ -4,13 +4,7 @@
     "moduleResolution": "node",
     "module": "commonjs",
     "target": "es2019",
-    "lib": [
-      "esnext",
-      "esnext.array",
-      "esnext.asynciterable",
-      "esnext.intl",
-      "esnext.symbol"
-    ],
+    "lib": ["ESNext"],
     "declaration": true,
     "sourceMap": true,
     "removeComments": false,

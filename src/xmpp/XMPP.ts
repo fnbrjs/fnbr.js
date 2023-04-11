@@ -425,7 +425,7 @@ class XMPP extends Base {
             if (!member) break;
             if (!member.displayName) await member.fetch();
 
-            this.client.friend.setStatus();
+            this.client.setStatus();
             if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
 
             try {
@@ -500,7 +500,7 @@ class XMPP extends Base {
             }
 
             this.client.party.members.delete(member.id);
-            this.client.friend.setStatus();
+            this.client.setStatus();
             if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
 
             this.client.emit('party:member:left', member);
@@ -516,7 +516,7 @@ class XMPP extends Base {
             if (!member) return;
 
             this.client.party.members.delete(member.id);
-            this.client.friend.setStatus();
+            this.client.setStatus();
             if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
 
             this.client.emit('party:member:expired', member);
@@ -535,7 +535,7 @@ class XMPP extends Base {
               await this.client.initParty(true, false);
             } else {
               this.client.party.members.delete(member.id);
-              this.client.friend.setStatus();
+              this.client.setStatus();
               if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
             }
 
@@ -551,7 +551,7 @@ class XMPP extends Base {
             if (!member) throw new PartyMemberNotFoundError(memberId);
 
             this.client.party.members.delete(member.id);
-            this.client.friend.setStatus();
+            this.client.setStatus();
             if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
             this.client.emit('party:member:disconnected', member);
           } break;
@@ -567,7 +567,7 @@ class XMPP extends Base {
             if (!member) throw new PartyMemberNotFoundError(memberId);
 
             member.role = 'CAPTAIN';
-            this.client.friend.setStatus();
+            this.client.setStatus();
 
             this.client.emit('party:member:promoted', member);
           } break;
@@ -577,7 +577,7 @@ class XMPP extends Base {
             if (!this.client.party || this.client.party.id !== body.party_id) break;
 
             this.client.party.updateData(body);
-            this.client.friend.setStatus();
+            this.client.setStatus();
 
             this.client.emit('party:updated', this.client.party);
             break;

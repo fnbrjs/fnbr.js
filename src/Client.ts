@@ -40,6 +40,7 @@ import TournamentManager from './structures/TournamentManager';
 import FriendsManager from './managers/FriendManager';
 import { AuthSessionStoreKey } from '../resources/enums';
 import EpicgamesAPIError from './exceptions/EpicgamesAPIError';
+import type { PresenceShow } from 'stanza/Constants';
 import type {
   BlurlStreamData, CreativeIslandData,
   BlurlStreamMasterPlaylistData, CreativeDiscoveryPanel,
@@ -48,7 +49,7 @@ import type {
   ClientOptions, ClientConfig, ClientEvents,
   PartyConfig, Schema, Region,
   UserSearchPlatform, BlurlStream, STWWorldInfoData,
-  BRAccountLevelData, Language, PartyData, PartySchema,
+  BRAccountLevelData, Language, PartyData, PartySchema, PresenceOnlineType,
 } from '../resources/structs';
 
 /**
@@ -256,7 +257,7 @@ class Client extends EventEmitter {
     }
 
     await this.initParty(this.config.createParty, this.config.forceNewParty);
-    if (this.xmpp.isConnected) this.friend.setStatus();
+    if (this.xmpp.isConnected) this.setStatus();
 
     this.isReady = true;
     this.emit('ready');
@@ -527,6 +528,111 @@ class Client extends EventEmitter {
         if (typeof this.config.xmppDebug === 'function') { this.config.xmppDebug(message); }
         break;
     }
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                                   STATUS                                   */
+  /* -------------------------------------------------------------------------- */
+
+  /**
+   * Sets the clients XMPP status
+   * @param status The status
+   * @param onlineType The presence's online type (eg "away")
+   * @param friend A specific friend you want to send this status to
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
+   */
+  public setStatus(status?: string, onlineType?: PresenceOnlineType, friend?: string) {
+    let toJID: string | undefined;
+    if (friend) {
+      const resolvedFriend = this.friend.resolve(friend);
+      if (!resolvedFriend) throw new FriendNotFoundError(friend);
+      toJID = `${resolvedFriend.id}@${Endpoints.EPIC_PROD_ENV}`;
+    }
+
+    // eslint-disable-next-line no-undef-init
+    let partyJoinInfoData: { [key: string]: any } | undefined = undefined;
+    if (this.party) {
+      const partyPrivacy = this.party.config.privacy;
+      if (
+        partyPrivacy.presencePermission === 'Noone'
+        || (partyPrivacy.presencePermission === 'Leader'
+          && !this.party.me?.isLeader)
+      ) {
+        partyJoinInfoData = {
+          isPrivate: true,
+        };
+      } else {
+        partyJoinInfoData = {
+          sourceId: this.user?.id,
+          sourceDisplayName: this.user?.displayName,
+          sourcePlatform: this.config.platform,
+          partyId: this.party.id,
+          partyTypeId: 286331153,
+          key: 'k',
+          appId: 'Fortnite',
+          buildId: this.config.partyBuildId,
+          partyFlags: -2024557306,
+          notAcceptingReason: 0,
+          pc: this.party.size,
+        };
+      }
+    }
+
+    if (status && !toJID) this.config.defaultStatus = status;
+    if (onlineType && !toJID) this.config.defaultOnlineType = onlineType;
+
+    const rawStatus = {
+      Status:
+        status
+        || this.config.defaultStatus
+        || (this.party
+          && `Battle Royale Lobby - ${this.party.size} / ${this.party.maxSize}`)
+        || 'Playing Battle Royale',
+      bIsPlaying: false,
+      bIsJoinable:
+        this.party
+        && !this.party.isPrivate
+        && this.party.size !== this.party.maxSize,
+      bHasVoiceSupport: false,
+      SessionId: '',
+      ProductName: 'Fortnite',
+      Properties: {
+        'party.joininfodata.286331153_j': partyJoinInfoData,
+        FortBasicInfo_j: {
+          homeBaseRating: 0,
+        },
+        FortLFG_I: '0',
+        FortPartySize_i: 1,
+        FortSubGame_i: 1,
+        InUnjoinableMatch_b: false,
+        FortGameplayStats_j: {
+          state: '',
+          playlist: 'None',
+          numKills: 0,
+          bFellToDeath: false,
+        },
+      },
+    };
+
+    const rawOnlineType = (onlineType || this.config.defaultOnlineType) === 'online'
+      ? undefined
+      : onlineType || this.config.defaultOnlineType;
+
+    return this.xmpp.sendStatus(
+      rawStatus,
+      rawOnlineType as PresenceShow | undefined,
+      toJID,
+    );
+  }
+
+  /**
+   * Resets the client's XMPP status and online type
+   */
+  public async resetStatus() {
+    this.config.defaultStatus = undefined;
+    this.config.defaultOnlineType = 'online';
+
+    return this.setStatus();
   }
 
   /* -------------------------------------------------------------------------- */

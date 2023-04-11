@@ -18,10 +18,8 @@ import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
 import type ClientUser from '../structures/user/ClientUser';
 import type Client from '../Client';
 import type BlockedUser from '../structures/user/BlockedUser';
-import type { PresenceOnlineType } from '../../resources/structs';
 import type OutgoingPendingFriend from '../structures/friend/OutgoingPendingFriend';
 import type IncomingPendingFriend from '../structures/friend/IncomingPendingFriend';
-import type { PresenceShow } from 'stanza/Constants';
 
 class FriendManager extends Base {
   /**
@@ -62,107 +60,6 @@ class FriendManager extends Base {
     }
 
     return this.pendingList.find((f) => f.displayName === pendingFriend);
-  }
-
-  /**
-   * Sets the clients XMPP status
-   * @param status The status
-   * @param onlineType The presence's online type (eg "away")
-   * @param friend A specific friend you want to send this status to
-   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
-   */
-  public setStatus(status?: string, onlineType?: PresenceOnlineType, friend?: string) {
-    let toJID: string | undefined;
-    if (friend) {
-      const resolvedFriend = this.resolve(friend);
-      if (!resolvedFriend) throw new FriendNotFoundError(friend);
-      toJID = `${resolvedFriend.id}@${Endpoints.EPIC_PROD_ENV}`;
-    }
-
-    // eslint-disable-next-line no-undef-init
-    let partyJoinInfoData: { [key: string]: any } | undefined = undefined;
-    if (this.client.party) {
-      const partyPrivacy = this.client.party.config.privacy;
-      if (
-        partyPrivacy.presencePermission === 'Noone'
-        || (partyPrivacy.presencePermission === 'Leader'
-          && !this.client.party.me?.isLeader)
-      ) {
-        partyJoinInfoData = {
-          isPrivate: true,
-        };
-      } else {
-        partyJoinInfoData = {
-          sourceId: this.client.user?.id,
-          sourceDisplayName: this.client.user?.displayName,
-          sourcePlatform: this.client.config.platform,
-          partyId: this.client.party.id,
-          partyTypeId: 286331153,
-          key: 'k',
-          appId: 'Fortnite',
-          buildId: this.client.config.partyBuildId,
-          partyFlags: -2024557306,
-          notAcceptingReason: 0,
-          pc: this.client.party.size,
-        };
-      }
-    }
-
-    if (status && !toJID) this.client.config.defaultStatus = status;
-    if (onlineType && !toJID) this.client.config.defaultOnlineType = onlineType;
-
-    const rawStatus = {
-      Status:
-        status
-        || this.client.config.defaultStatus
-        || (this.client.party
-          && `Battle Royale Lobby - ${this.client.party.size} / ${this.client.party.maxSize}`)
-        || 'Playing Battle Royale',
-      bIsPlaying: false,
-      bIsJoinable:
-        this.client.party
-        && !this.client.party.isPrivate
-        && this.client.party.size !== this.client.party.maxSize,
-      bHasVoiceSupport: false,
-      SessionId: '',
-      ProductName: 'Fortnite',
-      Properties: {
-        'party.joininfodata.286331153_j': partyJoinInfoData,
-        FortBasicInfo_j: {
-          homeBaseRating: 0,
-        },
-        FortLFG_I: '0',
-        FortPartySize_i: 1,
-        FortSubGame_i: 1,
-        InUnjoinableMatch_b: false,
-        FortGameplayStats_j: {
-          state: '',
-          playlist: 'None',
-          numKills: 0,
-          bFellToDeath: false,
-        },
-      },
-    };
-
-    const rawOnlineType = (onlineType || this.client.config.defaultOnlineType) === 'online'
-      ? undefined
-      : onlineType || this.client.config.defaultOnlineType;
-
-    return this.client.xmpp.sendStatus(
-      rawStatus,
-      rawOnlineType as PresenceShow | undefined,
-      toJID,
-    );
-  }
-
-  /**
-   * Resets the client's XMPP status and online type
-   */
-  public async resetStatus() {
-    this.client.config.defaultStatus = undefined;
-    this.client.config.defaultOnlineType = 'online';
-
-    return this.setStatus();
   }
 
   /**

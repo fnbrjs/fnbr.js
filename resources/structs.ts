@@ -946,6 +946,9 @@ export interface Playlist {
   eventWindowId?: string;
   regionId?: string;
   mnemonic?: string;
+  linkId?: {
+    mnemonic?: string;
+  };
 }
 
 export interface CosmeticVariant {

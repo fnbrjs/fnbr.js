@@ -165,7 +165,7 @@ class XMPP extends Base {
 
         await this.connect();
         if (this.client.config.fetchFriends) await this.client.updateCaches();
-        await this.client.initParty(this.client.config.createParty, this.client.config.forceNewParty);
+        if (!this.client.config.disablePartyService) await this.client.initParty(this.client.config.createParty, this.client.config.forceNewParty);
       } else {
         this.client.debug('[XMPP] Disconnected, retry limit reached');
 

@@ -237,7 +237,7 @@ class Client extends EventEmitter {
       this.cacheLock.unlock();
     }
 
-    await this.initParty(this.config.createParty, this.config.forceNewParty);
+    if (!this.config.disablePartyService) await this.initParty(this.config.createParty, this.config.forceNewParty);
     if (this.xmpp.isConnected) this.setStatus();
 
     this.isReady = true;

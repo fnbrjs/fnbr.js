@@ -43,7 +43,6 @@ import EpicgamesAPIError from './exceptions/EpicgamesAPIError';
 import type {
   BlurlStreamData, CreativeIslandData,
   BlurlStreamMasterPlaylistData, CreativeDiscoveryPanel,
-  EpicgamesAPIResponse,
 } from '../resources/httpResponses';
 import type {
   ClientOptions, ClientConfig, ClientEvents,
@@ -547,7 +546,7 @@ class Client extends EventEmitter {
    */
   public async getProfile(query: string | string[]): Promise<User | User[] | undefined> {
     if (typeof query === 'string') {
-      let user: EpicgamesAPIResponse | undefined;
+      let user;
 
       try {
         if (query.length === 32) {

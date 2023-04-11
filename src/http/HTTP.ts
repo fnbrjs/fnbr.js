@@ -7,11 +7,11 @@ import type { AuthSessionStoreKey } from '../../resources/enums';
 import type Client from '../Client';
 import type { AxiosInstance, HeadersDefaults, AxiosRequestConfig } from 'axios';
 
-export interface RequestHeaders {
+interface RequestHeaders {
   [key: string]: any;
 }
 
-export type RequestConfig = Omit<AxiosRequestConfig, 'headers'> & {
+type RequestConfig = Omit<AxiosRequestConfig, 'headers'> & {
   headers?: RequestHeaders;
 };
 

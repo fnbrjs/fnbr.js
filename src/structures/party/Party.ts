@@ -180,8 +180,8 @@ class Party extends Base {
    */
   public updateData(data: PartyUpdateData) {
     if (data.revision > this.revision) this.revision = data.revision;
-    this.meta.update(data.party_state_updated, true);
-    this.meta.remove(data.party_state_removed as (keyof PartySchema & string)[]);
+    this.meta.update(data.party_state_updated ?? {}, true);
+    this.meta.remove(data.party_state_removed as (keyof PartySchema & string)[] ?? []);
 
     this.config.joinability = data.party_privacy_type;
     this.config.maxSize = data.max_number_of_members;

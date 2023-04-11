@@ -1,12 +1,4 @@
-/* eslint-disable camelcase */
-import type { AxiosError } from 'axios';
-import type EpicgamesAPIError from '../src/exceptions/EpicgamesAPIError';
 import type { FullPlatform, Region, STWSchematicAlterationRarity } from './structs';
-
-export interface HTTPResponse {
-  response?: any;
-  error?: AxiosError;
-}
 
 export interface EpicgamesAPIErrorData {
   errorCode: string;
@@ -18,25 +10,6 @@ export interface EpicgamesAPIErrorData {
   error_description: string;
   error: string;
   errorStatus?: number;
-}
-
-export interface EpicgamesGraphQLErrorLocation {
-  line: number;
-  column: number;
-}
-
-export interface EpicgamesGraphQLErrorData {
-  message: string;
-  locations: EpicgamesGraphQLErrorLocation[];
-  correlationId: string;
-  serviceResponse?: string;
-  stack?: string;
-  path: string[];
-}
-
-export interface EpicgamesAPIResponse {
-  error?: EpicgamesAPIError;
-  response?: any;
 }
 
 export interface EpicgamesOAuthData {
@@ -55,10 +28,6 @@ export interface EpicgamesOAuthData {
   app: string;
   in_app_id: string;
   device_id: string;
-}
-
-export interface EpicgamesOAuthResponse extends EpicgamesAPIResponse {
-  response?: EpicgamesOAuthData;
 }
 
 export type PlatformMappings = {

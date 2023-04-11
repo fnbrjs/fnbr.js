@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.0.0
+
+### Changes
+* *WIP*
+
+### Fixes
+* *WIP*
+
+<hr>
+
 ## 3.1.5
 
 ### Fixes

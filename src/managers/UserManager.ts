@@ -10,9 +10,9 @@ import AuthenticationMissingError from '../exceptions/AuthenticationMissingError
 import User from '../structures/user/User';
 import Avatar from '../structures/Avatar';
 import GlobalProfile from '../structures/GlobalProfile';
+import ClientUser from '../structures/user/ClientUser';
 import type BlockedUser from '../structures/user/BlockedUser';
 import type { UserSearchPlatform } from '../../resources/structs';
-import type ClientUser from '../structures/user/ClientUser';
 import type Client from '../Client';
 
 class UserManager extends Base {
@@ -83,7 +83,12 @@ class UserManager extends Base {
       throw new AuthenticationMissingError(AuthSessionStoreKey.Fortnite);
     }
 
-    this.self = await this.fetch(this.client.auth.sessions.get(AuthSessionStoreKey.Fortnite)!.accountId) as ClientUser;
+    const self = await this.client.http.epicgamesRequest({
+      method: 'GET',
+      url: `${Endpoints.ACCOUNT_ID}/${this.client.auth.sessions.get(AuthSessionStoreKey.Fortnite)!.accountId}`,
+    }, AuthSessionStoreKey.Fortnite);
+
+    this.self = new ClientUser(this.client, self);
   }
 
   public async search(prefix: string, platform: UserSearchPlatform = 'epic'): Promise<UserSearchResult[]> {

@@ -86,7 +86,7 @@ class UserManager extends Base {
     this.self = await this.fetch(this.client.auth.sessions.get(AuthSessionStoreKey.Fortnite)!.accountId) as ClientUser;
   }
 
-  public async search(prefix: string, platform: UserSearchPlatform = 'epic') {
+  public async search(prefix: string, platform: UserSearchPlatform = 'epic'): Promise<UserSearchResult[]> {
     const results = await this.client.http.epicgamesRequest({
       method: 'GET',
       url: `${Endpoints.ACCOUNT_SEARCH}/${this.self!.id}?prefix=${encodeURIComponent(prefix)}&platform=${platform}`,
@@ -120,7 +120,7 @@ class UserManager extends Base {
    * @param user The ids and/or display names of the users
    * @throws {EpicgamesAPIError}
    */
-  public async fetchAvatarMultiple(idsOrDisplayNames: string[]) {
+  public async fetchAvatarMultiple(idsOrDisplayNames: string[]): Promise<Avatar[]> {
     const users = await this.fetchMultiple(idsOrDisplayNames);
 
     const userChunks = chunk(users, 100);
@@ -156,7 +156,7 @@ class UserManager extends Base {
    * @param user The ids and/or display names of the users
    * @throws {EpicgamesAPIError}
    */
-  public async fetchGlobalProfileMultiple(idsOrDisplayNames: string[]) {
+  public async fetchGlobalProfileMultiple(idsOrDisplayNames: string[]): Promise<GlobalProfile[]> {
     const users = await this.fetchMultiple(idsOrDisplayNames);
 
     const userChunks = chunk(users, 100);

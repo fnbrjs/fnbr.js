@@ -113,7 +113,7 @@ class User extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async getAvatar(): Promise<Avatar | undefined> {
-    return (await this.client.getUserAvatar(this.id))[0];
+    return this.client.user.fetchAvatar(this.id);
   }
 
   /**
@@ -121,7 +121,7 @@ class User extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async getGlobalProfile(): Promise<GlobalProfile | undefined> {
-    return (await this.client.getGlobalProfile(this.id))[0];
+    return this.client.user.fetchGlobalProfile(this.id);
   }
 
   /**

@@ -8,6 +8,8 @@ import { AuthSessionStoreKey } from '../../resources/enums';
 import UserSearchResult from '../structures/user/UserSearchResult';
 import AuthenticationMissingError from '../exceptions/AuthenticationMissingError';
 import User from '../structures/user/User';
+import Avatar from '../structures/Avatar';
+import GlobalProfile from '../structures/GlobalProfile';
 import type BlockedUser from '../structures/user/BlockedUser';
 import type { UserSearchPlatform } from '../../resources/structs';
 import type ClientUser from '../structures/user/ClientUser';
@@ -95,6 +97,85 @@ class UserManager extends Base {
     return results
       .filter((r: any) => users.some((u) => u.id === r.accountId))
       .map((r: any) => new UserSearchResult(this.client, users.find((u) => u.id === r.accountId)!, r));
+  }
+
+  /**
+   * Fetches the avatar of a user
+   * @param user The id or display name of the user
+   * @throws {EpicgamesAPIError}
+   * @throws {UserNotFoundError} The user wasn't found
+   */
+  public async fetchAvatar(idOrDisplayName: string) {
+    const [avatar] = await this.fetchAvatarMultiple([idOrDisplayName]);
+
+    if (!avatar) {
+      throw new UserNotFoundError(idOrDisplayName);
+    }
+
+    return avatar;
+  }
+
+  /**
+   * Fetches the avatar of multiple users
+   * @param user The ids and/or display names of the users
+   * @throws {EpicgamesAPIError}
+   */
+  public async fetchAvatarMultiple(idsOrDisplayNames: string[]) {
+    const users = await this.fetchMultiple(idsOrDisplayNames);
+
+    const userChunks = chunk(users, 100);
+
+    const avatars = await Promise.all(userChunks.map((uc) => this.client.http.epicgamesRequest({
+      method: 'GET',
+      url: `${Endpoints.ACCOUNT_AVATAR}/fortnite/ids?accountIds=${uc.map((u) => u.id).join(',')}`,
+    }, AuthSessionStoreKey.Fortnite)));
+
+    return avatars
+      .map((a) => a.map((ar: any) => new Avatar(this.client, ar, users.find((u) => u.id === ar.accountId)!)))
+      .flat(1);
+  }
+
+  /**
+   * Fetches the global profile of a user
+   * @param user The id or display name of the user
+   * @throws {EpicgamesAPIError}
+   * @throws {UserNotFoundError} The user wasn't found
+   */
+  public async fetchGlobalProfile(idOrDisplayName: string) {
+    const [profile] = await this.fetchGlobalProfileMultiple([idOrDisplayName]);
+
+    if (!profile) {
+      throw new UserNotFoundError(idOrDisplayName);
+    }
+
+    return profile;
+  }
+
+  /**
+   * Fetches the global profile for multiple users
+   * @param user The ids and/or display names of the users
+   * @throws {EpicgamesAPIError}
+   */
+  public async fetchGlobalProfileMultiple(idsOrDisplayNames: string[]) {
+    const users = await this.fetchMultiple(idsOrDisplayNames);
+
+    const userChunks = chunk(users, 100);
+
+    const globalProfiles = await Promise.all(userChunks.map((uc) => this.client.http.epicgamesRequest({
+      method: 'PUT',
+      url: Endpoints.ACCOUNT_GLOBAL_PROFILE,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: {
+        namespace: 'Fortnite',
+        accountIds: uc.map((u) => u.id),
+      },
+    }, AuthSessionStoreKey.Fortnite)));
+
+    return globalProfiles
+      .map((a) => a.profiles.map((ar: any) => new GlobalProfile(this.client, ar, users.find((u) => u.id === ar.accountId)!)))
+      .flat(1);
   }
 
   /**

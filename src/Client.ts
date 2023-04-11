@@ -23,8 +23,6 @@ import PartyPermissionError from './exceptions/PartyPermissionError';
 import SentPartyJoinRequest from './structures/party/SentPartyJoinRequest';
 import RadioStation from './structures/RadioStation';
 import CreativeIslandNotFoundError from './exceptions/CreativeIslandNotFoundError';
-import Avatar from './structures/Avatar';
-import GlobalProfile from './structures/GlobalProfile';
 import STWProfile from './structures/stw/STWProfile';
 import Stats from './structures/Stats';
 import NewsMessage from './structures/NewsMessage';
@@ -32,12 +30,11 @@ import STWNewsMessage from './structures/stw/STWNewsMessage';
 import EventTimeoutError from './exceptions/EventTimeoutError';
 import FortniteServerStatus from './structures/FortniteServerStatus';
 import EpicgamesServerStatus from './structures/EpicgamesServerStatus';
-import TournamentManager from './structures/TournamentManager';
+import TournamentManager from './managers/TournamentManager';
 import { AuthSessionStoreKey } from '../resources/enums';
 import EpicgamesAPIError from './exceptions/EpicgamesAPIError';
 import UserManager from './managers/UserManager';
 import FriendManager from './managers/FriendManager';
-import type User from './structures/user/User';
 import type { PresenceShow } from 'stanza/Constants';
 import type {
   BlurlStreamData, CreativeIslandData,
@@ -953,64 +950,6 @@ class Client extends EventEmitter {
     };
   }
 
-  /**
-   * Fetches the avatar for one or more users
-   * @param user The id(s) or display name(s) of the user(s)
-   * @throws {EpicgamesAPIError}
-   */
-  public async getUserAvatar(user: string | string[]): Promise<Avatar[]> {
-    const users = await this.user.fetchMultiple(Array.isArray(user) ? user : [user]);
-
-    const userChunks: User[][] = users.reduce((resArr: any[], u, i) => {
-      const chunkIndex = Math.floor(i / 100);
-      // eslint-disable-next-line no-param-reassign
-      if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
-      resArr[chunkIndex].push(u);
-      return resArr;
-    }, []);
-
-    const avatars = await Promise.all(userChunks.map((uc) => this.http.epicgamesRequest({
-      method: 'GET',
-      url: `${Endpoints.ACCOUNT_AVATAR}/fortnite/ids?accountIds=${uc.map((u) => u.id).join(',')}`,
-    }, AuthSessionStoreKey.Fortnite)));
-
-    return avatars
-      .map((a) => a.map((ar: any) => new Avatar(this, ar, users.find((u) => u.id === ar.accountId)!)))
-      .flat(1);
-  }
-
-  /**
-   * Fetches the global profile for one or more users
-   * @param user The id(s) or display name(s) of the user(s)
-   * @throws {EpicgamesAPIError}
-   */
-  public async getGlobalProfile(user: string | string[]): Promise<GlobalProfile[]> {
-    const users = await this.user.fetchMultiple(Array.isArray(user) ? user : [user]);
-
-    const userChunks: User[][] = users.reduce((resArr: any[], u, i) => {
-      const chunkIndex = Math.floor(i / 100);
-      // eslint-disable-next-line no-param-reassign
-      if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
-      resArr[chunkIndex].push(u);
-      return resArr;
-    }, []);
-
-    const globalProfiles = await Promise.all(userChunks.map((uc) => this.http.epicgamesRequest({
-      method: 'PUT',
-      url: Endpoints.ACCOUNT_GLOBAL_PROFILE,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      data: {
-        namespace: 'Fortnite',
-        accountIds: uc.map((u) => u.id),
-      },
-    }, AuthSessionStoreKey.Fortnite)));
-
-    return globalProfiles
-      .map((a) => a.profiles.map((ar: any) => new GlobalProfile(this, ar, users.find((u) => u.id === ar.accountId)!)))
-      .flat(1);
-  }
   /* -------------------------------------------------------------------------- */
   /*                           FORTNITE BATTLE ROYALE                           */
   /* -------------------------------------------------------------------------- */

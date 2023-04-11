@@ -2,8 +2,8 @@ import { AxiosError } from 'axios';
 import Endpoints from '../../resources/Endpoints';
 import Base from '../Base';
 import MatchNotFoundError from '../exceptions/MatchNotFoundError';
-import EventTokens from './EventTokens';
-import Tournament from './Tournament';
+import EventTokens from '../structures/EventTokens';
+import Tournament from '../structures/Tournament';
 import { AuthSessionStoreKey } from '../../resources/enums';
 import type { ResponseType } from 'axios';
 import type {

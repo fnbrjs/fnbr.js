@@ -7,11 +7,11 @@ import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
 import { AuthSessionStoreKey } from '../../resources/enums';
 import UserSearchResult from '../structures/user/UserSearchResult';
 import AuthenticationMissingError from '../exceptions/AuthenticationMissingError';
+import User from '../structures/user/User';
 import type BlockedUser from '../structures/user/BlockedUser';
 import type { UserSearchPlatform } from '../../resources/structs';
 import type ClientUser from '../structures/user/ClientUser';
 import type Client from '../Client';
-import type User from '../structures/user/User';
 
 class UserManager extends Base {
   public blocklist: Collection<string, BlockedUser>;
@@ -33,13 +33,13 @@ class UserManager extends Base {
   }
 
   public async fetch(idOrDisplayName: string) {
-    const users = await this.fetchMultiple([idOrDisplayName]);
+    const [user] = await this.fetchMultiple([idOrDisplayName]);
 
-    if (!users[0]) {
+    if (!user) {
       throw new UserNotFoundError(idOrDisplayName);
     }
 
-    return users[0];
+    return user;
   }
 
   public async fetchMultiple(idsOrDisplayNames: string[]): Promise<User[]> {
@@ -60,11 +60,11 @@ class UserManager extends Base {
       ...idChunks.map((c) => this.client.http.epicgamesRequest({
         method: 'GET',
         url: `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${c.join('&accountId=')}`,
-      })),
+      }, AuthSessionStoreKey.Fortnite)),
       ...displayNames.map((d) => this.client.http.epicgamesRequest({
         method: 'GET',
         url: `${Endpoints.ACCOUNT_DISPLAYNAME}/${d}`,
-      }).catch((e) => {
+      }, AuthSessionStoreKey.Fortnite).catch((e) => {
         if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.account.account_not_found') {
           return undefined;
         }
@@ -73,7 +73,7 @@ class UserManager extends Base {
       })),
     ]);
 
-    return users;
+    return users.flat(1).filter((u) => !!u).map((u) => new User(this.client, u));
   }
 
   public async fetchSelf() {
@@ -93,8 +93,8 @@ class UserManager extends Base {
     const users = await this.fetchMultiple(results.map((r: any) => r.accountId) as string[]);
 
     return results
-      .filter((r: any) => users.find((u) => u.id === r.accountId))
-      .map((r: any) => new UserSearchResult(this.client, users.find((u) => u.id === r.accountId) as User, r));
+      .filter((r: any) => users.some((u) => u.id === r.accountId))
+      .map((r: any) => new UserSearchResult(this.client, users.find((u) => u.id === r.accountId)!, r));
   }
 
   /**

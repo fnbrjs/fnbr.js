@@ -228,7 +228,6 @@ class Client extends EventEmitter {
    */
   public async login() {
     await this.auth.authenticate();
-
     await this.user.fetchSelf();
 
     this.initCacheSweeping();

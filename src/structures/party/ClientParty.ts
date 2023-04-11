@@ -10,10 +10,12 @@ import ClientPartyMeta from './ClientPartyMeta';
 import Party from './Party';
 import PartyChat from './PartyChat';
 import SentPartyInvitation from './SentPartyInvitation';
+import { AuthSessionStoreKey } from '../../../resources/enums';
+import EpicgamesAPIError from '../../exceptions/EpicgamesAPIError';
 import type PartyMemberConfirmation from './PartyMemberConfirmation';
 import type ClientUser from '../user/ClientUser';
 import type ClientPartyMember from './ClientPartyMember';
-import type Client from '../../client/Client';
+import type Client from '../../Client';
 import type {
   PartyData, PartyPrivacy, PartySchema, Playlist,
 } from '../../../resources/structs';
@@ -87,16 +89,15 @@ class ClientParty extends Party {
 
     if (this.chat.isConnected) await this.chat.leave();
 
-    const partyLeave = await this.client.http.sendEpicgamesRequest(
-      true,
-      'DELETE',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.me?.id}`,
-      'fortnite',
-    );
-
-    if (partyLeave.error && partyLeave.error?.code !== 'errors.com.epicgames.social.party.party_not_found') {
+    try {
+      await this.client.http.epicgamesRequest({
+        method: 'DELETE',
+        url: `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.me?.id}`,
+      }, AuthSessionStoreKey.Fortnite);
+    } catch (e) {
       this.client.partyLock.unlock();
-      throw partyLeave.error;
+
+      throw e;
     }
 
     this.client.party = undefined;
@@ -115,42 +116,47 @@ class ClientParty extends Party {
   public async sendPatch(updated: PartySchema, deleted: (keyof PartySchema & string)[] = []): Promise<void> {
     await this.patchQueue.wait();
 
-    const patch = await this.client.http.sendEpicgamesRequest(true, 'PATCH', `${Endpoints.BR_PARTY}/parties/${this.id}`, 'fortnite', {
-      'Content-Type': 'application/json',
-    }, {
-      config: {
-        join_confirmation: this.config.joinConfirmation,
-        joinability: this.config.joinability,
-        max_size: this.config.maxSize,
-        discoverability: this.config.discoverability,
-      },
-      meta: {
-        delete: deleted,
-        update: updated || this.meta.schema,
-      },
-      party_state_overridden: {},
-      party_privacy_type: this.config.joinability,
-      party_type: this.config.type,
-      party_sub_type: this.config.subType,
-      max_number_of_members: this.config.maxSize,
-      invite_ttl_seconds: this.config.inviteTtl,
-      revision: this.revision,
-    });
-
-    if (patch.error) {
-      if (patch.error.code === 'errors.com.epicgames.social.party.stale_revision') {
-        this.revision = parseInt(patch.error.messageVars[1], 10);
+    try {
+      await this.client.http.epicgamesRequest({
+        method: 'PATCH',
+        url: `${Endpoints.BR_PARTY}/parties/${this.id}`,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: {
+          config: {
+            join_confirmation: this.config.joinConfirmation,
+            joinability: this.config.joinability,
+            max_size: this.config.maxSize,
+            discoverability: this.config.discoverability,
+          },
+          meta: {
+            delete: deleted,
+            update: updated || this.meta.schema,
+          },
+          party_state_overridden: {},
+          party_privacy_type: this.config.joinability,
+          party_type: this.config.type,
+          party_sub_type: this.config.subType,
+          max_number_of_members: this.config.maxSize,
+          invite_ttl_seconds: this.config.inviteTtl,
+          revision: this.revision,
+        },
+      }, AuthSessionStoreKey.Fortnite);
+    } catch (e) {
+      if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.social.party.stale_revision') {
+        this.revision = parseInt(e.messageVars[1], 10);
         this.patchQueue.shift();
         return this.sendPatch(updated);
       }
 
       this.patchQueue.shift();
 
-      if (patch.error.code === 'errors.com.epicgames.social.party.party_change_forbidden') {
+      if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.social.party.party_change_forbidden') {
         throw new PartyPermissionError();
       }
 
-      throw patch.error;
+      throw e;
     }
 
     this.revision += 1;
@@ -172,15 +178,17 @@ class ClientParty extends Party {
     const partyMember = this.members.find((m: PartyMember) => m.displayName === member || m.id === member);
     if (!partyMember) throw new PartyMemberNotFoundError(member);
 
-    const kick = await this.client.http.sendEpicgamesRequest(
-      true,
-      'DELETE',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}`,
-      'fortnite',
-    );
-    if (kick.error) {
-      if (kick.error.code === 'errors.com.epicgames.social.party.party_change_forbidden') throw new PartyPermissionError();
-      throw kick.error;
+    try {
+      await this.client.http.epicgamesRequest({
+        method: 'DELETE',
+        url: `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}`,
+      }, AuthSessionStoreKey.Fortnite);
+    } catch (e) {
+      if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.social.party.party_change_forbidden') {
+        throw new PartyPermissionError();
+      }
+
+      throw e;
     }
   }
 
@@ -201,37 +209,32 @@ class ClientParty extends Party {
 
     let invite;
     if (this.isPrivate) {
-      invite = await this.client.http.sendEpicgamesRequest(
-        true,
-        'POST',
-        `${Endpoints.BR_PARTY}/parties/${this.id}/invites/${resolvedFriend.id}?sendPing=true`,
-        'fortnite',
-        {
+      invite = await this.client.http.epicgamesRequest({
+        method: 'POST',
+        url: `${Endpoints.BR_PARTY}/parties/${this.id}/invites/${resolvedFriend.id}?sendPing=true`,
+        headers: {
           'Content-Type': 'application/json',
         },
-        {
+        data: {
           'urn:epic:cfg:build-id_s': this.client.config.partyBuildId,
           'urn:epic:conn:platform_s': this.client.config.platform,
           'urn:epic:conn:type_s': 'game',
           'urn:epic:invite:platformdata_s': '',
           'urn:epic:member:dn_s': this.client.user?.displayName,
         },
-      );
+      }, AuthSessionStoreKey.Fortnite);
     } else {
-      invite = await this.client.http.sendEpicgamesRequest(
-        true,
-        'POST',
-        `${Endpoints.BR_PARTY}/user/${resolvedFriend.id}/pings/${this.client.user?.id}`,
-        'fortnite',
-        {
+      invite = await this.client.http.epicgamesRequest({
+        method: 'POST',
+        url: `${Endpoints.BR_PARTY}/user/${resolvedFriend.id}/pings/${this.client.user?.id}`,
+        headers: {
           'Content-Type': 'application/json',
         },
-        {
+        data: {
           'urn:epic:invite:platformdata_s': '',
         },
-      );
+      }, AuthSessionStoreKey.Fortnite);
     }
-    if (invite.error) throw invite.error;
 
     return new SentPartyInvitation(this.client, this, this.client.user as ClientUser, resolvedFriend, invite);
   }
@@ -335,15 +338,17 @@ class ClientParty extends Party {
     const partyMember = this.members.find((m: PartyMember) => m.displayName === member || m.id === member);
     if (!partyMember) throw new PartyMemberNotFoundError(member);
 
-    const promote = await this.client.http.sendEpicgamesRequest(
-      true,
-      'POST',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}/promote`,
-      'fortnite',
-    );
-    if (promote.error) {
-      if (promote.error.code === 'errors.com.epicgames.social.party.party_change_forbidden') throw new PartyPermissionError();
-      throw promote.error;
+    try {
+      await this.client.http.epicgamesRequest({
+        method: 'POST',
+        url: `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}/promote`,
+      }, AuthSessionStoreKey.Fortnite);
+    } catch (e) {
+      if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.social.party.party_change_forbidden') {
+        throw new PartyPermissionError();
+      }
+
+      throw e;
     }
   }
 

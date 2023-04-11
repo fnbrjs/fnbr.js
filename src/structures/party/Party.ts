@@ -1,14 +1,15 @@
 import { Collection } from '@discordjs/collection';
 import Endpoints from '../../../resources/Endpoints';
 import { PartyPrivacy } from '../../../enums/Enums';
-import Base from '../../client/Base';
+import Base from '../../Base';
 import PartyAlreadyJoinedError from '../../exceptions/PartyAlreadyJoinedError';
 import { makeCamelCase, makeSnakeCase } from '../../util/Util';
 import ClientPartyMember from './ClientPartyMember';
 import PartyMember from './PartyMember';
 import PartyMeta from './PartyMeta';
+import { AuthSessionStoreKey } from '../../../resources/enums';
 import type ClientUser from '../user/ClientUser';
-import type Client from '../../client/Client';
+import type Client from '../../Client';
 import type {
   PartyConfig, PartyData, PartySchema, PartyUpdateData,
 } from '../../../resources/structs';
@@ -128,50 +129,47 @@ class Party extends Base {
     this.client.partyLock.lock();
     if (this.client.party) await this.client.party.leave(false);
 
-    const joinParty = await this.client.http.sendEpicgamesRequest(
-      true,
-      'POST',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.client.user?.id}/join`,
-      'fortnite',
-      {
-        'Content-Type': 'application/json',
-      },
-      {
-        connection: {
-          id: this.client.xmpp.JID,
-          meta: {
-            'urn:epic:conn:platform_s': this.client.config.platform,
-            'urn:epic:conn:type_s': 'game',
+    try {
+      await this.client.http.epicgamesRequest({
+        method: 'POST',
+        url: `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.client.user?.id}/join`,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: {
+          connection: {
+            id: this.client.xmpp.JID,
+            meta: {
+              'urn:epic:conn:platform_s': this.client.config.platform,
+              'urn:epic:conn:type_s': 'game',
+            },
+            yield_leadership: false,
           },
-          yield_leadership: false,
+          meta: {
+            'urn:epic:member:dn_s': this.client.user!.displayName,
+            'urn:epic:member:joinrequestusers_j': JSON.stringify({
+              users: [
+                {
+                  id: this.client.user!.id,
+                  dn: this.client.user!.displayName,
+                  plat: this.client.config.platform,
+                  data: JSON.stringify({
+                    CrossplayPreference: '1',
+                    SubGame_u: '1',
+                  }),
+                },
+              ],
+            }),
+          },
         },
-        meta: {
-          'urn:epic:member:dn_s': this.client.user!.displayName,
-          'urn:epic:member:joinrequestusers_j': JSON.stringify({
-            users: [
-              {
-                id: this.client.user!.id,
-                dn: this.client.user!.displayName,
-                plat: this.client.config.platform,
-                data: JSON.stringify({
-                  CrossplayPreference: '1',
-                  SubGame_u: '1',
-                }),
-              },
-            ],
-          }),
-        },
-      },
-    );
-
-    if (joinParty.error) {
+      }, AuthSessionStoreKey.Fortnite);
+    } catch (e) {
       this.client.partyLock.unlock();
       await this.client.initParty(true, false);
 
-      throw joinParty.error;
+      throw e;
     }
 
-    // eslint-disable-next-line new-cap
     this.client.setClientParty(this);
     await this.client.party!.chat.join();
     this.client.partyLock.unlock();

@@ -1,5 +1,5 @@
-import Base from '../client/Base';
-import type Client from '../client/Client';
+import Base from '../Base';
+import type Client from '../Client';
 import type User from './user/User';
 import type { CreatorCodeData } from '../../resources/structs';
 

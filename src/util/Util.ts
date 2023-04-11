@@ -2,6 +2,7 @@
 import readline from 'readline';
 import zlib from 'zlib';
 import crypto from 'crypto';
+import { promises as fs } from 'fs';
 import { STWLeadSynergy } from '../../enums/Enums';
 import BinaryWriter from './BinaryWriter';
 import PowerLevelCurves from '../../resources/PowerLevelCurves';
@@ -14,6 +15,8 @@ import type {
   STWSchematicType,
   STWSchematicEvoType,
   STWSchematicSubType,
+  AuthStringResolveable,
+  DeviceAuthResolveable,
 } from '../../resources/structs';
 
 const defaultCharacters = [
@@ -539,5 +542,33 @@ export const parseStatKey = (key: string, value: number): [keyof StatsPlaylistTy
       return ['matches', value];
     default:
       return [key as keyof StatsPlaylistTypeData, value];
+  }
+};
+
+export const resolveAuthString = async (str: AuthStringResolveable) => {
+  switch (typeof str) {
+    case 'function':
+      return str();
+    case 'string':
+      if (str.length === 32 || str.startsWith('eg1')) {
+        return str;
+      }
+
+      return fs.readFile(str, 'utf8');
+    default:
+      throw new TypeError(`The type "${typeof str}" does not resolve to a valid auth string`);
+  }
+};
+
+export const resolveAuthObject = async (obj: DeviceAuthResolveable) => {
+  switch (typeof obj) {
+    case 'function':
+      return obj();
+    case 'string':
+      return JSON.parse(await fs.readFile(obj, 'utf8'));
+    case 'object':
+      return obj;
+    default:
+      throw new TypeError(`The type "${typeof obj}" does not resolve to a valid auth object`);
   }
 };

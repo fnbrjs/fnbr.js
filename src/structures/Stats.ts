@@ -1,9 +1,9 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
-import Base from '../client/Base';
+import Base from '../Base';
 import { createDefaultInputTypeStats, parseStatKey } from '../util/Util';
 import { statsKeyRegex } from '../../resources/constants';
-import type Client from '../client/Client';
+import type Client from '../Client';
 import type { StatsData, StatsPlaylistTypeData, StatsLevelData } from '../../resources/structs';
 import type User from './user/User';
 import type { RawStatsData } from '../../resources/httpResponses';

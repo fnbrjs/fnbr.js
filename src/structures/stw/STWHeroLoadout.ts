@@ -1,6 +1,6 @@
 import STWItem from './STWItem';
 import type { STWProfileHeroLoadoutData } from '../../../resources/httpResponses';
-import type Client from '../../client/Client';
+import type Client from '../../Client';
 
 /**
  * Represents a Save The World profile's hero loadout

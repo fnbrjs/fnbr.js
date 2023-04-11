@@ -1,6 +1,6 @@
-import Base from '../client/Base';
+import Base from '../Base';
 import type User from './user/User';
-import type Client from '../client/Client';
+import type Client from '../Client';
 
 /**
  * Represents a user's global profile.

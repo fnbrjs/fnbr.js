@@ -1,8 +1,8 @@
-import Base from '../../client/Base';
+import Base from '../../Base';
 import SendMessageError from '../../exceptions/SendMessageError';
 import AsyncLock from '../../util/AsyncLock';
 import PartyMessage from './PartyMessage';
-import type Client from '../../client/Client';
+import type Client from '../../Client';
 import type ClientParty from './ClientParty';
 import type ClientPartyMember from './ClientPartyMember';
 

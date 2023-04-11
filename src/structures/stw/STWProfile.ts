@@ -16,7 +16,7 @@ import STWTeamPerk from './STWTeamPerk';
 import STWTrapSchematic from './STWTrapSchematic';
 import STWWeaponSchematic from './STWWeaponSchematic';
 import User from '../user/User';
-import type Client from '../../client/Client';
+import type Client from '../../Client';
 import type {
   STWFORTStats,
   STWSurvivorSquads,

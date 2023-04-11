@@ -1,6 +1,6 @@
 import BaseMessage from '../BaseMessage';
 import type { PartyMessageData } from '../../../resources/structs';
-import type Client from '../../client/Client';
+import type Client from '../../Client';
 import type ClientParty from './ClientParty';
 import type PartyMember from './PartyMember';
 

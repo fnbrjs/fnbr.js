@@ -1,7 +1,7 @@
-import Base from '../client/Base';
+import Base from '../Base';
 import Image from './Image';
 import NewsMessageVideo from './NewsMessageVideo';
-import type Client from '../client/Client';
+import type Client from '../Client';
 import type { NewsMessageOffer, NewsMessagePlaylist } from '../../resources/structs';
 
 /**

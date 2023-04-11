@@ -12,9 +12,11 @@ import OfferNotFoundError from '../exceptions/OfferNotFoundError';
 import SendMessageError from '../exceptions/SendMessageError';
 import SentFriendMessage from '../structures/friend/SentFriendMessage';
 import BasePendingFriend from '../structures/friend/BasePendingFriend';
-import Base from '../client/Base';
+import Base from '../Base';
+import { AuthSessionStoreKey } from '../../resources/enums';
+import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
 import type ClientUser from '../structures/user/ClientUser';
-import type Client from '../client/Client';
+import type Client from '../Client';
 import type BlockedUser from '../structures/user/BlockedUser';
 import type { PresenceOnlineType } from '../../resources/structs';
 import type OutgoingPendingFriend from '../structures/friend/OutgoingPendingFriend';
@@ -30,10 +32,7 @@ class FriendManager extends Base {
   /**
    * Pending friend requests (incoming or outgoing)
    */
-  public pendingList: Collection<
-  string,
-  IncomingPendingFriend | OutgoingPendingFriend
-  >;
+  public pendingList: Collection<string, IncomingPendingFriend | OutgoingPendingFriend>;
 
   constructor(constr: Client) {
     super(constr);
@@ -182,32 +181,32 @@ class FriendManager extends Base {
     const userID = await this.resolveUserId(friend);
     if (!userID) throw new UserNotFoundError(friend);
 
-    const addFriend = await this.client.http.sendEpicgamesRequest(
-      true,
-      'POST',
-      `${Endpoints.FRIEND_ADD}/${this.client.user?.id}/${userID}`,
-      'fortnite',
-    );
-
-    if (addFriend.error) {
-      switch (addFriend.error.code) {
-        case 'errors.com.epicgames.friends.duplicate_friendship':
-          throw new DuplicateFriendshipError(friend);
-        case 'errors.com.epicgames.friends.friend_request_already_sent':
-          throw new FriendshipRequestAlreadySentError(friend);
-        case 'errors.com.epicgames.friends.inviter_friendships_limit_exceeded':
-          throw new InviteeFriendshipsLimitExceededError(friend);
-        case 'errors.com.epicgames.friends.invitee_friendships_limit_exceeded':
-          throw new InviteeFriendshipsLimitExceededError(friend);
-        case 'errors.com.epicgames.friends.incoming_friendships_limit_exceeded':
-          throw new InviteeFriendshipRequestLimitExceededError(friend);
-        case 'errors.com.epicgames.friends.cannot_friend_due_to_target_settings':
-          throw new InviteeFriendshipSettingsError(friend);
-        case 'errors.com.epicgames.friends.account_not_found':
-          throw new UserNotFoundError(friend);
-        default:
-          throw addFriend.error;
+    try {
+      await this.client.http.epicgamesRequest({
+        method: 'POST',
+        url: `${Endpoints.FRIEND_ADD}/${this.client.user?.id}/${userID}`,
+      }, AuthSessionStoreKey.Fortnite);
+    } catch (e) {
+      if (e instanceof EpicgamesAPIError) {
+        switch (e.code) {
+          case 'errors.com.epicgames.friends.duplicate_friendship':
+            throw new DuplicateFriendshipError(friend);
+          case 'errors.com.epicgames.friends.friend_request_already_sent':
+            throw new FriendshipRequestAlreadySentError(friend);
+          case 'errors.com.epicgames.friends.inviter_friendships_limit_exceeded':
+            throw new InviteeFriendshipsLimitExceededError(friend);
+          case 'errors.com.epicgames.friends.invitee_friendships_limit_exceeded':
+            throw new InviteeFriendshipsLimitExceededError(friend);
+          case 'errors.com.epicgames.friends.incoming_friendships_limit_exceeded':
+            throw new InviteeFriendshipRequestLimitExceededError(friend);
+          case 'errors.com.epicgames.friends.cannot_friend_due_to_target_settings':
+            throw new InviteeFriendshipSettingsError(friend);
+          case 'errors.com.epicgames.friends.account_not_found':
+            throw new UserNotFoundError(friend);
+        }
       }
+
+      throw e;
     }
   }
 
@@ -218,29 +217,13 @@ class FriendManager extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async remove(friend: string) {
-    let resolvedFriend:
-    | Friend
-    | OutgoingPendingFriend
-    | IncomingPendingFriend
-    | undefined;
-    resolvedFriend = this.list.find(
-      (f: Friend) => f.displayName === friend || f.id === friend,
-    );
-    if (!resolvedFriend) {
-      resolvedFriend = this.pendingList.find(
-        (f: BasePendingFriend) => f.displayName === friend || f.id === friend,
-      );
-    }
-
+    const resolvedFriend = this.resolve(friend) ?? this.resolvePending(friend);
     if (!resolvedFriend) throw new FriendNotFoundError(friend);
 
-    const removeFriend = await this.client.http.sendEpicgamesRequest(
-      true,
-      'DELETE',
-      `${Endpoints.FRIEND_DELETE}/${this.client.user?.id}/friends/${resolvedFriend.id}`,
-      'fortnite',
-    );
-    if (removeFriend.error) throw removeFriend.error;
+    await this.client.http.epicgamesRequest({
+      method: 'DELETE',
+      url: `${Endpoints.FRIEND_DELETE}/${this.client.user?.id}/friends/${resolvedFriend.id}`,
+    }, AuthSessionStoreKey.Fortnite);
   }
 
   /**
@@ -250,22 +233,18 @@ class FriendManager extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async getMutual(friend: string): Promise<Friend[]> {
-    const resolvedFriend = this.list.find(
-      (f: Friend) => f.displayName === friend || f.id === friend,
-    );
+    const resolvedFriend = this.resolve(friend);
+
     if (!resolvedFriend) throw new FriendNotFoundError(friend);
 
-    const mutualFriends = await this.client.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      `${Endpoints.FRIENDS}/${this.client.user?.id}/friends/${resolvedFriend.id}/mutual`,
-      'fortnite',
-    );
-    if (mutualFriends.error) throw mutualFriends.error;
+    const mutualFriends = await this.client.http.epicgamesRequest({
+      method: 'GET',
+      url: `${Endpoints.FRIENDS}/${this.client.user?.id}/friends/${resolvedFriend.id}/mutual`,
+    }, AuthSessionStoreKey.Fortnite);
 
-    return mutualFriends.response
-      .map((f: string) => this.list.get(f))
-      .filter((f: Friend | undefined) => !!f);
+    return (mutualFriends as string[])
+      .map((f) => this.list.get(f))
+      .filter((f) => !!f) as Friend[];
   }
 
   /**
@@ -277,33 +256,29 @@ class FriendManager extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async checkOfferOwnership(friend: string, offerId: string) {
-    const resolvedFriend = this.list.find(
-      (f: Friend) => f.displayName === friend || f.id === friend,
-    );
+    const resolvedFriend = this.resolve(friend);
     if (!resolvedFriend) throw new FriendNotFoundError(friend);
 
-    const giftData = await this.client.http.sendEpicgamesRequest(
-      true,
-      'GET',
-      `${Endpoints.BR_GIFT_ELIGIBILITY}/recipient/${resolvedFriend.id}`
-        + `/offer/${encodeURIComponent(offerId)}`,
-      'fortnite',
-    );
+    try {
+      await this.client.http.epicgamesRequest({
+        method: 'GET',
+        url: `${Endpoints.BR_GIFT_ELIGIBILITY}/recipient/${resolvedFriend.id}/offer/${encodeURIComponent(offerId)}`,
+      }, AuthSessionStoreKey.Fortnite);
 
-    if (giftData.error) {
-      if (
-        giftData.error.code
-        === 'errors.com.epicgames.modules.gamesubcatalog.catalog_out_of_date'
-      ) { throw new OfferNotFoundError(offerId); }
-      if (
-        giftData.error.code
-        === 'errors.com.epicgames.modules.gamesubcatalog.purchase_not_allowed'
-      ) { return true; }
+      return false;
+    } catch (e) {
+      if (e instanceof EpicgamesAPIError) {
+        if (e.code === 'errors.com.epicgames.modules.gamesubcatalog.catalog_out_of_date') {
+          throw new OfferNotFoundError(offerId);
+        }
 
-      throw giftData.error;
+        if (e.code === 'errors.com.epicgames.modules.gamesubcatalog.purchase_not_allowed') {
+          return true;
+        }
+      }
+
+      throw e;
     }
-
-    return false;
   }
 
   /**
@@ -316,13 +291,10 @@ class FriendManager extends Base {
     const userID = await this.resolveUserId(user);
     if (!userID) throw new UserNotFoundError(user);
 
-    const blockUser = await this.client.http.sendEpicgamesRequest(
-      true,
-      'POST',
-      `${Endpoints.FRIEND_BLOCK}/${this.client.user?.id}/${userID}`,
-      'fortnite',
-    );
-    if (blockUser.error) throw blockUser.error;
+    await this.client.http.epicgamesRequest({
+      method: 'POST',
+      url: `${Endpoints.FRIEND_BLOCK}/${this.client.user?.id}/${userID}`,
+    }, AuthSessionStoreKey.Fortnite);
   }
 
   /**
@@ -337,13 +309,10 @@ class FriendManager extends Base {
     );
     if (!blockedUser) throw new UserNotFoundError(user);
 
-    const unblockUser = await this.client.http.sendEpicgamesRequest(
-      true,
-      'DELETE',
-      `${Endpoints.FRIEND_BLOCK}/${this.client.user?.id}/${blockedUser.id}`,
-      'fortnite',
-    );
-    if (unblockUser.error) throw unblockUser.error;
+    await this.client.http.epicgamesRequest({
+      method: 'DELETE',
+      url: `${Endpoints.FRIEND_BLOCK}/${this.client.user?.id}/${blockedUser.id}`,
+    }, AuthSessionStoreKey.Fortnite);
   }
 
   /**
@@ -354,17 +323,11 @@ class FriendManager extends Base {
    * @throws {SendMessageError} The messant could not be sent
    */
   public async sendMessage(friend: string, content: string) {
-    const resolvedFriend = this.list.find(
-      (f: Friend) => f.displayName === friend || f.id === friend,
-    );
+    const resolvedFriend = this.resolve(friend);
     if (!resolvedFriend) throw new FriendNotFoundError(friend);
 
     if (!this.client.xmpp.isConnected) {
-      throw new SendMessageError(
-        "You're not connected via XMPP",
-        'FRIEND',
-        resolvedFriend,
-      );
+      throw new SendMessageError('You\'re not connected via XMPP', 'FRIEND', resolvedFriend);
     }
 
     const message = await this.client.xmpp.sendMessage(
@@ -373,11 +336,7 @@ class FriendManager extends Base {
     );
 
     if (!message) {
-      throw new SendMessageError(
-        'Message timeout exceeded',
-        'FRIEND',
-        resolvedFriend,
-      );
+      throw new SendMessageError('Message timeout exceeded', 'FRIEND', resolvedFriend);
     }
 
     return new SentFriendMessage(this.client, {

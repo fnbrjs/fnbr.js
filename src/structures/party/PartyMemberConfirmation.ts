@@ -1,6 +1,7 @@
 import Endpoints from '../../../resources/Endpoints';
-import Base from '../../client/Base';
-import type Client from '../../client/Client';
+import Base from '../../Base';
+import { AuthSessionStoreKey } from '../../../resources/enums';
+import type Client from '../../Client';
 import type ClientParty from './ClientParty';
 import type User from '../user/User';
 
@@ -49,13 +50,10 @@ class PartyMemberConfirmation extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async confirm() {
-    const confirm = await this.client.http.sendEpicgamesRequest(
-      true,
-      'POST',
-      `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.user.id}/confirm`,
-      'fortnite',
-    );
-    if (confirm.error) throw confirm.error;
+    await this.client.http.epicgamesRequest({
+      method: 'POST',
+      url: `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.user.id}/confirm`,
+    }, AuthSessionStoreKey.Fortnite);
 
     this.party.pendingMemberConfirmations.delete(this.user.id);
   }
@@ -65,13 +63,10 @@ class PartyMemberConfirmation extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async reject() {
-    const reject = await this.client.http.sendEpicgamesRequest(
-      true,
-      'POST',
-      `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.user.id}/reject`,
-      'fortnite',
-    );
-    if (reject.error) throw reject.error;
+    await this.client.http.epicgamesRequest({
+      method: 'POST',
+      url: `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.user.id}/reject`,
+    }, AuthSessionStoreKey.Fortnite);
 
     this.party.pendingMemberConfirmations.delete(this.user.id);
   }

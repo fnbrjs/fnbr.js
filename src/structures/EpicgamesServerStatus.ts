@@ -1,8 +1,8 @@
-import Base from '../client/Base';
+import Base from '../Base';
 import EpicgamesServerStatusComponent from './EpicgamesServerStatusComponent';
 import EpicgamesServerStatusIncident from './EpicgamesServerStatusIncident';
 import type { EpicgamesServerStatusData } from '../../resources/structs';
-import type Client from '../client/Client';
+import type Client from '../Client';
 
 /**
  * Represents an Epicgames server status

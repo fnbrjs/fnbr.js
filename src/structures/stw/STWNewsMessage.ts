@@ -1,6 +1,6 @@
-import Base from '../../client/Base';
+import Base from '../../Base';
 import Image from '../Image';
-import type Client from '../../client/Client';
+import type Client from '../../Client';
 
 /**
  * Represents a fortnite save the world news message

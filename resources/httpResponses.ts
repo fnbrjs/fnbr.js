@@ -1,7 +1,6 @@
 /* eslint-disable camelcase */
 import type { AxiosError } from 'axios';
 import type EpicgamesAPIError from '../src/exceptions/EpicgamesAPIError';
-import type EpicgamesGraphQLError from '../src/exceptions/EpicgamesGraphQLError';
 import type { FullPlatform, Region, STWSchematicAlterationRarity } from './structs';
 
 export interface HTTPResponse {
@@ -37,11 +36,6 @@ export interface EpicgamesGraphQLErrorData {
 
 export interface EpicgamesAPIResponse {
   error?: EpicgamesAPIError;
-  response?: any;
-}
-
-export interface EpicgamesGraphQLResponse {
-  error?: EpicgamesGraphQLError | EpicgamesAPIError | AxiosError;
   response?: any;
 }
 

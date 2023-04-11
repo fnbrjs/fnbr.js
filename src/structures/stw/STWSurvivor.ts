@@ -4,7 +4,7 @@ import {
   calcSTWSurvivorPowerLevel, calcSTWSurvivorLeadBonus,
   calcSTWSurvivorBonus,
 } from '../../util/Util';
-import type Client from '../../client/Client';
+import type Client from '../../Client';
 import type {
   STWSurvivorSquadData, STWSurvivorType, STWItemRarity,
   STWSurvivorSquads, STWSurvivorSquadType, STWSurvivorGender, STWItemTier,

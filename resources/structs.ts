@@ -1,4 +1,5 @@
 /* eslint-disable camelcase */
+import type { Collection } from '@discordjs/collection';
 import type { RawAxiosRequestConfig } from 'axios';
 import type { PathLike } from 'fs';
 import type defaultPartyMeta from './defaultPartyMeta.json';
@@ -24,6 +25,10 @@ import type {
 } from './httpResponses';
 import type ReceivedFriendMessage from '../src/structures/friend/ReceivedFriendMessage';
 import type STWSurvivor from '../src/structures/stw/STWSurvivor';
+import type { AuthSessionStoreKey } from './enums';
+import type FortniteAuthSession from '../src/auth/FortniteAuthSession';
+import type LauncherAuthSession from '../src/auth/LauncherAuthSession';
+import type FortniteClientCredentialsAuthSession from '../src/auth/FortniteClientCredentialsAuthSession';
 
 export type PartyMemberSchema = Partial<typeof defaultPartyMemberMeta>;
 export type PartySchema = Partial<typeof defaultPartyMeta> & {
@@ -272,6 +277,11 @@ export interface ClientConfig {
    * You should lower this value if the client randomly reconnects
    */
   xmppKeepAliveInterval: number;
+
+  /**
+   * The maximum amount of times the client should try to reconnect to XMPP before giving up
+   */
+  xmppMaxConnectionRetries: number;
 
   /**
    * Settings that affect the way the client caches certain data
@@ -597,14 +607,6 @@ export interface ClientEvents {
   'party:member:matchstate:updated': (member: PartyMember | ClientPartyMember, value?: MatchMeta, previousValue?: MatchMeta) => void;
 }
 
-export interface AuthData {
-  token: string;
-  expires_at: string;
-  refresh_token: string;
-  client: AuthClient;
-  account_id?: string;
-}
-
 export type AuthType = 'fortnite' | 'fortniteClientCredentials' | 'launcher';
 
 export interface AuthResponse {
@@ -700,7 +702,7 @@ export interface NewsMOTD {
   playlistId?: string;
 }
 
-export interface NewsMessage {
+export interface NewsMessageData {
   image: string;
   hidden: boolean;
   _type: string;
@@ -1360,4 +1362,55 @@ export interface STWWorldInfoData {
   theaters: STWTheaterData[];
   missions: STWMissionData[];
   missionAlerts: STWMissionAlertData[];
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                    Auth                                    */
+/* -------------------------------------------------------------------------- */
+
+export interface AuthData {
+  access_token: string;
+  account_id: string;
+  client_id: string;
+  expires_at: string;
+  expires_in: number;
+  token_type: string;
+}
+
+export interface LauncherAuthData extends AuthData {
+  refresh_expires: number;
+  refresh_expires_at: string;
+  refresh_token: string;
+  internal_client: boolean;
+  client_service: string;
+  scope: string[];
+  displayName: string;
+  app: string;
+  in_app_id: string;
+}
+
+export interface FortniteAuthData extends AuthData {
+  refresh_expires: number;
+  refresh_expires_at: string;
+  refresh_token: string;
+  internal_client: boolean;
+  client_service: string;
+  displayName: string;
+  app: string;
+  in_app_id: string;
+  device_id: string;
+}
+
+export interface FortniteClientCredentialsAuthData extends AuthData {
+  internal_client: boolean;
+  client_service: string;
+  product_id: string;
+  application_id: string;
+}
+
+export interface AuthSessionStore<K, V> extends Collection<K, V> {
+  get(key: AuthSessionStoreKey.Fortnite): FortniteAuthSession | undefined;
+  get(key: AuthSessionStoreKey.Launcher): LauncherAuthSession | undefined;
+  get(key: AuthSessionStoreKey.FortniteClientCredentials): FortniteClientCredentialsAuthSession | undefined;
+  get(key: K): V | undefined;
 }

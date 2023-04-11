@@ -1,6 +1,6 @@
 import BasePendingFriend from './BasePendingFriend';
 import type { PendingFriendData } from '../../../resources/structs';
-import type Client from '../../client/Client';
+import type Client from '../../Client';
 
 /**
  * Represents an outgoing pending friendship request

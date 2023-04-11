@@ -1,5 +1,5 @@
 // main exports
-export { default as Client } from './src/client/Client';
+export { default as Client } from './src/Client';
 export { default as Enums } from './enums/Enums';
 
 // types and interfaces
@@ -9,11 +9,11 @@ export * from './resources/structs';
 export { default as Endpoints } from './resources/Endpoints';
 
 // exceptions
+export { default as AuthenticationMissingError } from './src/exceptions/AuthenticationMissingError';
 export { default as CreativeIslandNotFoundError } from './src/exceptions/CreativeIslandNotFoundError';
 export { default as CreatorCodeNotFoundError } from './src/exceptions/CreatorCodeNotFoundError';
 export { default as DuplicateFriendshipError } from './src/exceptions/DuplicateFriendshipError';
 export { default as EpicgamesAPIError } from './src/exceptions/EpicgamesAPIError';
-export { default as EpicgamesGraphQLError } from './src/exceptions/EpicgamesGraphQLError';
 export { default as EventTimeoutError } from './src/exceptions/EventTimeoutError';
 export { default as FriendNotFoundError } from './src/exceptions/FriendNotFoundError';
 export { default as FriendshipRequestAlreadySentError } from './src/exceptions/FriendshipRequestAlreadySentError';

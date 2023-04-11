@@ -1,6 +1,6 @@
 import path from 'path';
-import Base from '../client/Base';
-import type Client from '../client/Client';
+import Base from '../Base';
+import type Client from '../Client';
 import type { ImageData } from '../../resources/structs';
 
 /**
@@ -45,10 +45,13 @@ class Image extends Base {
    * @throws {AxiosError}
    */
   public async download(): Promise<Buffer> {
-    const res = await this.client.http.send('GET', this.url, undefined, undefined, undefined, 'arraybuffer');
-    if (res.error) throw res.error;
+    const res = await this.client.http.request({
+      method: 'GET',
+      url: this.url,
+      responseType: 'arraybuffer',
+    });
 
-    return res.response.data;
+    return res;
   }
 
   public toString() {

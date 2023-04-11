@@ -1,5 +1,5 @@
-import Base from '../../client/Base';
-import type Client from '../../client/Client';
+import Base from '../../Base';
+import type Client from '../../Client';
 import type ClientParty from './ClientParty';
 import type ClientUser from '../user/ClientUser';
 import type Friend from '../friend/Friend';

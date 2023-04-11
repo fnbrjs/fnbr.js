@@ -1,6 +1,6 @@
-import Base from '../client/Base';
+import Base from '../Base';
 import type { MessageData } from '../../resources/structs';
-import type Client from '../client/Client';
+import type Client from '../Client';
 import type ClientPartyMember from './party/ClientPartyMember';
 import type ClientUser from './user/ClientUser';
 import type Friend from './friend/Friend';

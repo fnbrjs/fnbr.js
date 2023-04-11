@@ -1,4 +1,4 @@
-import Base from '../client/Base';
+import Base from '../Base';
 import TournamentWindow from './TournamentWindow';
 import type {
   PlatformMappings, RegionMappings, TournamentData, TournamentDisplayData, TournamentMetadata,
@@ -6,7 +6,7 @@ import type {
 import type {
   FullPlatform, Region, TournamentColors, TournamentImages, TournamentTexts, TournamentWindowTemplate,
 } from '../../resources/structs';
-import type Client from '../client/Client';
+import type Client from '../Client';
 
 /**
  * Represents a Fortnite tournament

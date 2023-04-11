@@ -2,7 +2,7 @@ import User from '../user/User';
 import type { FriendConnections, FriendData } from '../../../resources/structs';
 import type FriendPresence from './FriendPresence';
 import type PresenceParty from '../party/PresenceParty';
-import type Client from '../../client/Client';
+import type Client from '../../Client';
 
 /**
  * Represents a friend

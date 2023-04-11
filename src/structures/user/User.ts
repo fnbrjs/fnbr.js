@@ -1,11 +1,11 @@
 /* eslint-disable no-underscore-dangle */
-import Base from '../../client/Base';
+import Base from '../../Base';
 import UserNotFoundError from '../../exceptions/UserNotFoundError';
 import type { BRAccountLevel, ExternalAuths, UserData } from '../../../resources/structs';
 import type Avatar from '../Avatar';
 import type GlobalProfile from '../GlobalProfile';
 import type EventTokens from '../EventTokens';
-import type Client from '../../client/Client';
+import type Client from '../../Client';
 
 /**
  * Represents a user

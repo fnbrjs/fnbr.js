@@ -7,7 +7,7 @@ import type {
   STWSchematicMeleeSubType, STWSchematicRangedSubType, STWSchematicTrapSubType,
   STWSchematicType,
 } from '../../../resources/structs';
-import type Client from '../../client/Client';
+import type Client from '../../Client';
 
 /**
  * Represents a Save The World profile's schematic

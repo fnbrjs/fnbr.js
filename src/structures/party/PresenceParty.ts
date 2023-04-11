@@ -1,7 +1,7 @@
-import Base from '../../client/Base';
+import Base from '../../Base';
 import PartyPermissionError from '../../exceptions/PartyPermissionError';
 import type { PresencePartyData } from '../../../resources/structs';
-import type Client from '../../client/Client';
+import type Client from '../../Client';
 import type Party from './Party';
 
 /**

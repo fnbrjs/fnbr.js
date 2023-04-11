@@ -1,6 +1,6 @@
 import User from './User';
 import type { UserSearchMatchType, UserSearchResultMatch } from '../../../resources/structs';
-import type Client from '../../client/Client';
+import type Client from '../../Client';
 
 /**
  * Represents a user search result entry

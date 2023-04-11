@@ -1,5 +1,5 @@
 import STWItem from './STWItem';
-import type Client from '../../client/Client';
+import type Client from '../../Client';
 import type { STWProfileLockerData } from '../../../resources/httpResponses';
 import type { STWLockerBannerData, STWLockerSlotsData } from '../../../resources/structs';
 

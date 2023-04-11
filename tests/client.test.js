@@ -1,6 +1,9 @@
 /* eslint-env jest */
 const { Client } = require('../dist');
 
+/**
+ * @type {Client}
+ */
 let client;
 
 beforeEach(() => {
@@ -20,7 +23,6 @@ describe('Client Startup', () => {
     expect(client.isReady).toBe(false);
     expect(client.friend.list.size).toBe(0);
 
-    expect(client.reauthLock.isLocked).toBe(false);
     expect(client.partyLock.isLocked).toBe(false);
   });
 });

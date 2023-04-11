@@ -76,7 +76,7 @@ class User extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async block() {
-    return this.client.friend.block(this.id);
+    return this.client.user.block(this.id);
   }
 
   /**
@@ -84,7 +84,7 @@ class User extends Base {
    * @throws {UserNotFoundError} The user wasn't found
    */
   public async fetch() {
-    const user = await this.client.getProfile(this.id);
+    const user = await this.client.user.fetch(this.id);
     if (!user) throw new UserNotFoundError(this.id);
 
     this.update(user);

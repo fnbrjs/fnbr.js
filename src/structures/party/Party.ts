@@ -8,7 +8,6 @@ import ClientPartyMember from './ClientPartyMember';
 import PartyMember from './PartyMember';
 import PartyMeta from './PartyMeta';
 import { AuthSessionStoreKey } from '../../../resources/enums';
-import type ClientUser from '../user/ClientUser';
 import type Client from '../../Client';
 import type {
   PartyConfig, PartyData, PartySchema, PartyUpdateData,
@@ -63,7 +62,7 @@ class Party extends Base {
     this.revision = data.revision || 0;
 
     this.members = new Collection(data.members.map((m) => {
-      if (m.account_id === this.client.user?.id) return [m.account_id, new ClientPartyMember(this, m)];
+      if (m.account_id === this.client.user.self!.id) return [m.account_id, new ClientPartyMember(this, m)];
       return [m.account_id, new PartyMember(this, m)];
     }));
   }
@@ -124,7 +123,7 @@ class Party extends Base {
       await this.fetch();
     }
 
-    if (this.members.get((this.client.user as ClientUser).id)) throw new PartyAlreadyJoinedError();
+    if (this.members.get(this.client.user.self!.id)) throw new PartyAlreadyJoinedError();
 
     this.client.partyLock.lock();
     if (this.client.party) await this.client.party.leave(false);
@@ -132,7 +131,7 @@ class Party extends Base {
     try {
       await this.client.http.epicgamesRequest({
         method: 'POST',
-        url: `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.client.user?.id}/join`,
+        url: `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.client.user.self!.id}/join`,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -146,12 +145,12 @@ class Party extends Base {
             yield_leadership: false,
           },
           meta: {
-            'urn:epic:member:dn_s': this.client.user!.displayName,
+            'urn:epic:member:dn_s': this.client.user.self!.displayName,
             'urn:epic:member:joinrequestusers_j': JSON.stringify({
               users: [
                 {
-                  id: this.client.user!.id,
-                  dn: this.client.user!.displayName,
+                  id: this.client.user.self!.id,
+                  dn: this.client.user.self!.displayName,
                   plat: this.client.config.platform,
                   data: JSON.stringify({
                     CrossplayPreference: '1',
@@ -202,7 +201,7 @@ class Party extends Base {
    * Updates the basic user information (display name and external auths) of all party members
    */
   public async updateMemberBasicInfo() {
-    const users = await this.client.getProfile(this.members.map((m: PartyMember) => m.id));
+    const users = await this.client.user.fetchMultiple(this.members.map((m: PartyMember) => m.id));
     users.forEach((u) => this.members.get(u.id)?.update(u));
   }
 
@@ -223,7 +222,7 @@ class Party extends Base {
 
     // eslint-disable-next-line arrow-body-style
     this.members = new Collection(partyData.members.map((m) => {
-      if (m.account_id === this.client.user?.id) return [m.account_id, new ClientPartyMember(this, m)];
+      if (m.account_id === this.client.user.self!.id) return [m.account_id, new ClientPartyMember(this, m)];
       return [m.account_id, new PartyMember(this, m)];
     }));
   }

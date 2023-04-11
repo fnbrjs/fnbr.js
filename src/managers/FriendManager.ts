@@ -15,9 +15,7 @@ import BasePendingFriend from '../structures/friend/BasePendingFriend';
 import Base from '../Base';
 import { AuthSessionStoreKey } from '../../resources/enums';
 import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
-import type ClientUser from '../structures/user/ClientUser';
 import type Client from '../Client';
-import type BlockedUser from '../structures/user/BlockedUser';
 import type OutgoingPendingFriend from '../structures/friend/OutgoingPendingFriend';
 import type IncomingPendingFriend from '../structures/friend/IncomingPendingFriend';
 
@@ -75,13 +73,13 @@ class FriendManager extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async add(friend: string) {
-    const userID = await this.resolveUserId(friend);
+    const userID = await this.client.user.resolveId(friend);
     if (!userID) throw new UserNotFoundError(friend);
 
     try {
       await this.client.http.epicgamesRequest({
         method: 'POST',
-        url: `${Endpoints.FRIEND_ADD}/${this.client.user?.id}/${userID}`,
+        url: `${Endpoints.FRIEND_ADD}/${this.client.user.self!.id}/${userID}`,
       }, AuthSessionStoreKey.Fortnite);
     } catch (e) {
       if (e instanceof EpicgamesAPIError) {
@@ -119,7 +117,7 @@ class FriendManager extends Base {
 
     await this.client.http.epicgamesRequest({
       method: 'DELETE',
-      url: `${Endpoints.FRIEND_DELETE}/${this.client.user?.id}/friends/${resolvedFriend.id}`,
+      url: `${Endpoints.FRIEND_DELETE}/${this.client.user.self!.id}/friends/${resolvedFriend.id}`,
     }, AuthSessionStoreKey.Fortnite);
   }
 
@@ -136,7 +134,7 @@ class FriendManager extends Base {
 
     const mutualFriends = await this.client.http.epicgamesRequest({
       method: 'GET',
-      url: `${Endpoints.FRIENDS}/${this.client.user?.id}/friends/${resolvedFriend.id}/mutual`,
+      url: `${Endpoints.FRIENDS}/${this.client.user.self!.id}/friends/${resolvedFriend.id}/mutual`,
     }, AuthSessionStoreKey.Fortnite);
 
     return (mutualFriends as string[])
@@ -179,40 +177,6 @@ class FriendManager extends Base {
   }
 
   /**
-   * Blocks a user
-   * @param user The id or display name of the user
-   * @throws {UserNotFoundError} The user wasn't found
-   * @throws {EpicgamesAPIError}
-   */
-  public async block(user: string) {
-    const userID = await this.resolveUserId(user);
-    if (!userID) throw new UserNotFoundError(user);
-
-    await this.client.http.epicgamesRequest({
-      method: 'POST',
-      url: `${Endpoints.FRIEND_BLOCK}/${this.client.user?.id}/${userID}`,
-    }, AuthSessionStoreKey.Fortnite);
-  }
-
-  /**
-   * Unblocks a user
-   * @param user The id or display name of the user
-   * @throws {UserNotFoundError} The user wasn't found
-   * @throws {EpicgamesAPIError}
-   */
-  public async unblock(user: string) {
-    const blockedUser = this.client.blockedUsers.find(
-      (u: BlockedUser) => u.displayName === user || u.id === user,
-    );
-    if (!blockedUser) throw new UserNotFoundError(user);
-
-    await this.client.http.epicgamesRequest({
-      method: 'DELETE',
-      url: `${Endpoints.FRIEND_BLOCK}/${this.client.user?.id}/${blockedUser.id}`,
-    }, AuthSessionStoreKey.Fortnite);
-  }
-
-  /**
    * Sends a message to a friend
    * @param friend The id or display name of the friend
    * @param content The message that will be sent
@@ -237,20 +201,11 @@ class FriendManager extends Base {
     }
 
     return new SentFriendMessage(this.client, {
-      author: this.client.user as ClientUser,
+      author: this.client.user.self!,
       content,
       id: message.id as string,
       sentAt: new Date(),
     });
-  }
-
-  /**
-   * Resolves a single user id
-   * @param query Display name or id of the account's id to resolve
-   */
-  private async resolveUserId(query: string) {
-    if (query.length === 32) return query;
-    return (await this.client.getProfile(query))?.id;
   }
 }
 

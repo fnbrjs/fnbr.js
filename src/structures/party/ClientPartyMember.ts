@@ -33,7 +33,7 @@ class ClientPartyMember extends PartyMember {
     this.meta = new ClientPartyMemberMeta(this, data.meta);
     this.patchQueue = new AsyncQueue();
 
-    this.update({ id: this.id, displayName: this.client.user?.displayName, externalAuths: this.client.user?.externalAuths });
+    this.update({ id: this.id, displayName: this.client.user.self!.displayName, externalAuths: this.client.user.self!.externalAuths });
 
     if (this.client.lastPartyMemberMeta) this.meta.update(this.client.lastPartyMemberMeta, true);
   }

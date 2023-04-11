@@ -36,14 +36,14 @@ class ClientPartyMeta extends PartyMeta {
 
     if (this.party.me && !this.party.hiddenMemberIds.has(this.party.me.id)) {
       assignments.push({
-        memberId: this.party.client.user?.id,
+        memberId: this.party.client.user.self!.id,
         absoluteMemberIdx: 0,
       });
       i += 1;
     }
 
     this.party.members.forEach((m: PartyMember) => {
-      if (m.id !== this.party.client.user?.id && !this.party.hiddenMemberIds.has(m.id)) {
+      if (m.id !== this.party.client.user.self!.id && !this.party.hiddenMemberIds.has(m.id)) {
         assignments.push({
           memberId: m.id,
           absoluteMemberIdx: i,

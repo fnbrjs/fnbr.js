@@ -13,7 +13,6 @@ import SentPartyInvitation from './SentPartyInvitation';
 import { AuthSessionStoreKey } from '../../../resources/enums';
 import EpicgamesAPIError from '../../exceptions/EpicgamesAPIError';
 import type PartyMemberConfirmation from './PartyMemberConfirmation';
-import type ClientUser from '../user/ClientUser';
 import type ClientPartyMember from './ClientPartyMember';
 import type Client from '../../Client';
 import type {
@@ -69,7 +68,7 @@ class ClientParty extends Party {
    * Returns the client's party member
    */
   public get me() {
-    return this.members.get(this.client.user?.id as string) as ClientPartyMember;
+    return this.members.get(this.client.user.self!.id) as ClientPartyMember;
   }
 
   /**
@@ -220,13 +219,13 @@ class ClientParty extends Party {
           'urn:epic:conn:platform_s': this.client.config.platform,
           'urn:epic:conn:type_s': 'game',
           'urn:epic:invite:platformdata_s': '',
-          'urn:epic:member:dn_s': this.client.user?.displayName,
+          'urn:epic:member:dn_s': this.client.user.self!.displayName,
         },
       }, AuthSessionStoreKey.Fortnite);
     } else {
       invite = await this.client.http.epicgamesRequest({
         method: 'POST',
-        url: `${Endpoints.BR_PARTY}/user/${resolvedFriend.id}/pings/${this.client.user?.id}`,
+        url: `${Endpoints.BR_PARTY}/user/${resolvedFriend.id}/pings/${this.client.user.self!.id}`,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -236,7 +235,7 @@ class ClientParty extends Party {
       }, AuthSessionStoreKey.Fortnite);
     }
 
-    return new SentPartyInvitation(this.client, this, this.client.user as ClientUser, resolvedFriend, invite);
+    return new SentPartyInvitation(this.client, this, this.client.user.self!, resolvedFriend, invite);
   }
 
   /**

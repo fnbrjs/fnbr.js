@@ -47,7 +47,7 @@ class PartyChat extends Base {
 
     this.party = party;
     this.jid = `Party-${this.party?.id}@muc.prod.ol.epicgames.com`;
-    this.nick = `${this.client.user?.displayName}:${this.client.user?.id}:${this.client.xmpp.resource}`;
+    this.nick = `${this.client.user.self!.displayName}:${this.client.user.self!.id}:${this.client.xmpp.resource}`;
     this.isConnected = false;
   }
 

@@ -309,6 +309,11 @@ export interface ClientConfig {
   forceNewParty: boolean;
 
   /**
+   * Whether to completely disable all party related functionality
+   */
+  disablePartyService: boolean;
+
+  /**
    * Whether the client should connect via XMPP.
    * NOTE: If you disable this, almost all features related to friend caching will no longer work.
    * Do not disable this unless you know what you're doing

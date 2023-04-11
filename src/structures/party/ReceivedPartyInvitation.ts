@@ -25,7 +25,7 @@ class ReceivedPartyInvitation extends BasePartyInvitation {
 
     await this.client.http.epicgamesRequest({
       method: 'DELETE',
-      url: `${Endpoints.BR_PARTY}/user/${this.client.user?.id}/pings/${this.sender.id}`,
+      url: `${Endpoints.BR_PARTY}/user/${this.client.user.self!.id}/pings/${this.sender.id}`,
     }, AuthSessionStoreKey.Fortnite);
   }
 
@@ -38,7 +38,7 @@ class ReceivedPartyInvitation extends BasePartyInvitation {
 
     await this.client.http.epicgamesRequest({
       method: 'DELETE',
-      url: `${Endpoints.BR_PARTY}/user/${this.client.user?.id}/pings/${this.sender.id}`,
+      url: `${Endpoints.BR_PARTY}/user/${this.client.user.self!.id}/pings/${this.sender.id}`,
     }, AuthSessionStoreKey.Fortnite);
 
     this.isHandled = true;

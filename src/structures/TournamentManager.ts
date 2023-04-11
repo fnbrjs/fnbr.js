@@ -48,7 +48,7 @@ class TournamentManager extends Base {
   public async getEventTokens(user: string | string[]): Promise<EventTokens[]> {
     const users = typeof user === 'string' ? [user] : user;
 
-    const resolvedUsers = await this.client.getProfile(users);
+    const resolvedUsers = await this.client.user.fetchMultiple(users);
 
     const userChunks: string[][] = resolvedUsers.map((u) => u.id).reduce((resArr: any[], usr, i) => {
       const chunkIndex = Math.floor(i / 16);
@@ -77,8 +77,8 @@ class TournamentManager extends Base {
     const [tournaments, tournamentsInfo] = await Promise.all([
       this.client.http.epicgamesRequest({
         method: 'GET',
-        url: `${Endpoints.BR_TOURNAMENTS_DOWNLOAD}/${this.client.user?.id}?region=${region}`
-          + `&platform=${platform}&teamAccountIds=${this.client.user?.id}`,
+        url: `${Endpoints.BR_TOURNAMENTS_DOWNLOAD}/${this.client.user.self!.id}?region=${region}`
+          + `&platform=${platform}&teamAccountIds=${this.client.user.self!.id}`,
       }, AuthSessionStoreKey.Fortnite),
       this.client.http.epicgamesRequest({
         method: 'GET',
@@ -118,7 +118,7 @@ class TournamentManager extends Base {
   public async getData() {
     const tournaments = await this.client.http.epicgamesRequest({
       method: 'GET',
-      url: `${Endpoints.BR_TOURNAMENTS}/${this.client.user?.id}`,
+      url: `${Endpoints.BR_TOURNAMENTS}/${this.client.user.self!.id}`,
     }, AuthSessionStoreKey.Fortnite);
 
     const tournamentsInfo = await this.client.http.epicgamesRequest({
@@ -208,7 +208,7 @@ class TournamentManager extends Base {
     const window = await this.client.http.epicgamesRequest({
       method: 'GET',
       url: `${Endpoints.BR_TOURNAMENT_WINDOW}/${eventId}/${eventWindowId}/`
-        + `${this.client.user?.id}?page=${page}&rank=0&teamAccountIds=&appId=Fortnite&showLiveSessions=${showLiveSessions}`,
+        + `${this.client.user.self!.id}?page=${page}&rank=0&teamAccountIds=&appId=Fortnite&showLiveSessions=${showLiveSessions}`,
     }, AuthSessionStoreKey.Fortnite);
 
     return window;

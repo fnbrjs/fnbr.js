@@ -1,16 +1,13 @@
 /* eslint-disable no-restricted-syntax */
 import { EventEmitter } from 'events';
-import { Collection } from '@discordjs/collection';
 import Enums from '../enums/Enums';
 import { consoleQuestion, parseBlurlStream, parseM3U8File } from './util/Util';
 import Auth from './auth/Auth';
 import Http from './http/HTTP';
 import AsyncLock from './util/AsyncLock';
 import Endpoints from '../resources/Endpoints';
-import ClientUser from './structures/user/ClientUser';
 import XMPP from './xmpp/XMPP';
 import Friend from './structures/friend/Friend';
-import User from './structures/user/User';
 import UserNotFoundError from './exceptions/UserNotFoundError';
 import StatsPrivacyError from './exceptions/StatsPrivacyError';
 import CreatorCode from './structures/CreatorCode';
@@ -24,7 +21,6 @@ import Party from './structures/party/Party';
 import PartyNotFoundError from './exceptions/PartyNotFoundError';
 import PartyPermissionError from './exceptions/PartyPermissionError';
 import SentPartyJoinRequest from './structures/party/SentPartyJoinRequest';
-import UserSearchResult from './structures/user/UserSearchResult';
 import RadioStation from './structures/RadioStation';
 import CreativeIslandNotFoundError from './exceptions/CreativeIslandNotFoundError';
 import Avatar from './structures/Avatar';
@@ -37,19 +33,20 @@ import EventTimeoutError from './exceptions/EventTimeoutError';
 import FortniteServerStatus from './structures/FortniteServerStatus';
 import EpicgamesServerStatus from './structures/EpicgamesServerStatus';
 import TournamentManager from './structures/TournamentManager';
-import FriendsManager from './managers/FriendManager';
 import { AuthSessionStoreKey } from '../resources/enums';
 import EpicgamesAPIError from './exceptions/EpicgamesAPIError';
+import UserManager from './managers/UserManager';
+import FriendManager from './managers/FriendManager';
+import type User from './structures/user/User';
 import type { PresenceShow } from 'stanza/Constants';
 import type {
   BlurlStreamData, CreativeIslandData,
   BlurlStreamMasterPlaylistData, CreativeDiscoveryPanel,
 } from '../resources/httpResponses';
 import type {
-  ClientOptions, ClientConfig, ClientEvents,
-  PartyConfig, Schema, Region,
-  UserSearchPlatform, BlurlStream, STWWorldInfoData,
-  BRAccountLevelData, Language, PartyData, PartySchema, PresenceOnlineType,
+  ClientOptions, ClientConfig, ClientEvents, PartyConfig, Schema,
+  Region, BlurlStream, STWWorldInfoData, Language, PartyData,
+  PartySchema, PresenceOnlineType, BRAccountLevelData,
 } from '../resources/structs';
 
 /**
@@ -94,9 +91,9 @@ class Client extends EventEmitter {
   public http: Http;
 
   /**
-   * Epicgames account of the client
+   * User manager
    */
-  public user?: ClientUser;
+  public user: UserManager;
 
   /**
    * Whether the client is fully started
@@ -109,14 +106,9 @@ class Client extends EventEmitter {
   public xmpp: XMPP;
 
   /**
-   * Friends manager
+   * Friend manager
    */
-  public friend: FriendsManager;
-
-  /**
-   * User blocklist
-   */
-  public blockedUsers: Collection<string, BlockedUser>;
+  public friend: FriendManager;
 
   /**
    * The client's current party
@@ -153,6 +145,7 @@ class Client extends EventEmitter {
       xmppMaxConnectionRetries: 2,
       createParty: true,
       forceNewParty: true,
+      disablePartyService: false,
       connectToXMPP: true,
       fetchFriends: true,
       restRetryLimit: 1,
@@ -199,11 +192,10 @@ class Client extends EventEmitter {
     this.partyLock = new AsyncLock();
     this.cacheLock = new AsyncLock();
 
-    this.user = undefined;
     this.isReady = false;
 
-    this.friend = new FriendsManager(this);
-    this.blockedUsers = new Collection();
+    this.friend = new FriendManager(this);
+    this.user = new UserManager(this);
 
     this.party = undefined;
     this.tournaments = new TournamentManager(this);
@@ -237,20 +229,13 @@ class Client extends EventEmitter {
   public async login() {
     await this.auth.authenticate();
 
-    const clientInfo = await this.http.epicgamesRequest({
-      url: `${Endpoints.ACCOUNT_ID}/${this.auth.sessions.get(AuthSessionStoreKey.Fortnite)!.accountId}`,
-    }, AuthSessionStoreKey.Fortnite);
-
-    this.user = new ClientUser(this, clientInfo);
-    await this.user.fetch();
+    await this.user.fetchSelf();
 
     this.initCacheSweeping();
 
     this.cacheLock.lock();
-
     try {
       if (this.config.connectToXMPP) await this.xmpp.connect();
-
       if (this.config.fetchFriends) await this.updateCaches();
     } finally {
       this.cacheLock.unlock();
@@ -337,7 +322,7 @@ class Client extends EventEmitter {
     // Clear remaining caches
     this.friend.list.clear();
     this.friend.pendingList.clear();
-    this.blockedUsers.clear();
+    this.user.blocklist.clear();
   }
 
   /**
@@ -361,12 +346,12 @@ class Client extends EventEmitter {
    */
   public async updateCaches() {
     const friendsSummary = await this.http.epicgamesRequest({
-      url: `${Endpoints.FRIENDS}/${this.user?.id}/summary`,
+      url: `${Endpoints.FRIENDS}/${this.user.self!.id}/summary`,
     }, AuthSessionStoreKey.Fortnite);
 
     this.friend.list.clear();
     this.friend.pendingList.clear();
-    this.blockedUsers.clear();
+    this.user.blocklist.clear();
 
     friendsSummary.friends.forEach((f: any) => {
       this.friend.list.set(f.accountId, new Friend(this, { ...f, id: f.accountId }));
@@ -381,13 +366,13 @@ class Client extends EventEmitter {
     });
 
     friendsSummary.blocklist.forEach((u: any) => {
-      this.blockedUsers.set(u.accountId, new BlockedUser(this, { ...u, id: u.accountId }));
+      this.user.blocklist.set(u.accountId, new BlockedUser(this, { ...u, id: u.accountId }));
     });
 
-    const users = await this.getProfile([
+    const users = await this.user.fetchMultiple([
       ...this.friend.list.values(),
       ...this.friend.pendingList.values(),
-      ...this.blockedUsers.values(),
+      ...this.user.blocklist.values(),
     ]
       .filter((u) => !!u.id)
       .map((u) => u.id));
@@ -395,7 +380,7 @@ class Client extends EventEmitter {
     users.forEach((u) => {
       this.friend.list.get(u.id)?.update(u);
       this.friend.pendingList.get(u.id)?.update(u);
-      this.blockedUsers.get(u.id)?.update(u);
+      this.user.blocklist.get(u.id)?.update(u);
     });
   }
 
@@ -563,8 +548,8 @@ class Client extends EventEmitter {
         };
       } else {
         partyJoinInfoData = {
-          sourceId: this.user?.id,
-          sourceDisplayName: this.user?.displayName,
+          sourceId: this.user.self!.displayName,
+          sourceDisplayName: this.user.self!.displayName,
           sourcePlatform: this.config.platform,
           partyId: this.party.id,
           partyTypeId: 286331153,
@@ -636,107 +621,6 @@ class Client extends EventEmitter {
   }
 
   /* -------------------------------------------------------------------------- */
-  /*                                  ACCOUNTS                                  */
-  /* -------------------------------------------------------------------------- */
-
-  // eslint-disable-next-line no-unused-vars
-  public async getProfile(query: string): Promise<User | undefined>;
-  // eslint-disable-next-line no-unused-vars
-  public async getProfile(query: string[]): Promise<User[]>;
-
-  /**
-   * Fetches one or multiple Epicgames accounts by id or display name
-   * Returns undefined if the user(s) wasn't/weren't found
-   * @param query An array of display names and/or account ids
-   * @throws {EpicgamesAPIError}
-   */
-  public async getProfile(query: string | string[]): Promise<User | User[] | undefined> {
-    if (typeof query === 'string') {
-      let user;
-
-      try {
-        if (query.length === 32) {
-          user = await this.http.epicgamesRequest({
-            url: `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${query}`,
-          }, AuthSessionStoreKey.Fortnite);
-        } else if (query.length >= 3 && query.length <= 16) {
-          user = await this.http.epicgamesRequest({
-            url: `${Endpoints.ACCOUNT_DISPLAYNAME}/${encodeURIComponent(query)}`,
-          }, AuthSessionStoreKey.Fortnite);
-        } else {
-          return undefined;
-        }
-      } catch (e) {
-        if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.account.account_not_found') {
-          return undefined;
-        }
-
-        throw e;
-      }
-
-      if (Array.isArray(user) && !user[0]) return undefined;
-
-      return new User(this, Array.isArray(user) ? user?.[0] : user);
-    }
-
-    const displayNames: string[] = [];
-    const ids: string[] = [];
-
-    query.forEach((q) => {
-      if (q.length === 32) ids.push(q);
-      else if (q.length >= 3 && q.length <= 16) displayNames.push(q);
-    });
-
-    const proms = [];
-
-    proms.push(...displayNames.map((dn) => this.getProfile(dn)));
-
-    const idChunks: string[][] = ids.reduce((resArr: any[], id, i) => {
-      const chunkIndex = Math.floor(i / 100);
-      // eslint-disable-next-line no-param-reassign
-      if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
-      resArr[chunkIndex].push(id);
-      return resArr;
-    }, []);
-
-    proms.push(...idChunks.map((ic) => this.http.epicgamesRequest({
-      method: 'GET',
-      url: `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${ic.join('&accountId=')}`,
-    }, AuthSessionStoreKey.Fortnite)));
-
-    const users = await Promise.all(proms);
-
-    return users
-      .map((u) => {
-        if (Array.isArray(u)) {
-          return u.map((ur: any) => new User(this, ur));
-        }
-
-        return u;
-      })
-      .filter((u) => !!u)
-      .flat(1) as User[];
-  }
-
-  /**
-   * Fetches users that match a prefix
-   * @param prefix The prefix (a string that the user's display names start with)
-   * @param platform The search platform. Other platform's accounts will still be searched with a lower priority
-   */
-  public async searchProfiles(prefix: string, platform: UserSearchPlatform = 'epic'): Promise<UserSearchResult[]> {
-    const results = await this.http.epicgamesRequest({
-      method: 'GET',
-      url: `${Endpoints.ACCOUNT_SEARCH}/${this.user?.id}?prefix=${encodeURIComponent(prefix)}&platform=${platform}`,
-    }, AuthSessionStoreKey.Fortnite);
-
-    const users = await this.getProfile(results.map((r: any) => r.accountId) as string[]);
-
-    return results
-      .filter((r: any) => users.find((u) => u.id === r.accountId))
-      .map((r: any) => new UserSearchResult(this, users.find((u) => u.id === r.accountId) as User, r));
-  }
-
-  /* -------------------------------------------------------------------------- */
   /*                                   PARTIES                                  */
   /* -------------------------------------------------------------------------- */
 
@@ -804,7 +688,7 @@ class Client extends EventEmitter {
               yield_leadership: false,
             },
             meta: {
-              'urn:epic:member:dn_s': this.user?.displayName,
+              'urn:epic:member:dn_s': this.user.self!.displayName,
             },
           },
           meta: {
@@ -874,7 +758,7 @@ class Client extends EventEmitter {
     try {
       intention = await this.http.epicgamesRequest({
         method: 'POST',
-        url: `${Endpoints.BR_PARTY}/members/${resolvedFriend.id}/intentions/${this.user?.id}`,
+        url: `${Endpoints.BR_PARTY}/members/${resolvedFriend.id}/intentions/${this.user.self!.displayName}`,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -890,7 +774,7 @@ class Client extends EventEmitter {
       throw e;
     }
 
-    return new SentPartyJoinRequest(this, this.user as ClientUser, resolvedFriend, intention);
+    return new SentPartyJoinRequest(this, this.user.self!, resolvedFriend, intention);
   }
 
   /**
@@ -900,7 +784,7 @@ class Client extends EventEmitter {
   public async getClientParty() {
     const party = await this.http.epicgamesRequest({
       method: 'GET',
-      url: `${Endpoints.BR_PARTY}/user/${this.user?.id}`,
+      url: `${Endpoints.BR_PARTY}/user/${this.user.self!.id}`,
     }, AuthSessionStoreKey.Fortnite);
 
     if (!party?.current[0]) return undefined;
@@ -1076,7 +960,7 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async getUserAvatar(user: string | string[]): Promise<Avatar[]> {
-    const users = await this.getProfile(Array.isArray(user) ? user : [user]);
+    const users = await this.user.fetchMultiple(Array.isArray(user) ? user : [user]);
 
     const userChunks: User[][] = users.reduce((resArr: any[], u, i) => {
       const chunkIndex = Math.floor(i / 100);
@@ -1102,7 +986,7 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async getGlobalProfile(user: string | string[]): Promise<GlobalProfile[]> {
-    const users = await this.getProfile(Array.isArray(user) ? user : [user]);
+    const users = await this.user.fetchMultiple(Array.isArray(user) ? user : [user]);
 
     const userChunks: User[][] = users.reduce((resArr: any[], u, i) => {
       const chunkIndex = Math.floor(i / 100);
@@ -1160,7 +1044,7 @@ class Client extends EventEmitter {
     const query = params[0] ? `?${params.join('&')}` : '';
 
     if (typeof user === 'string') {
-      const resolvedUser = await this.getProfile(user);
+      const resolvedUser = await this.user.fetch(user);
       if (!resolvedUser) throw new UserNotFoundError(user);
 
       let statsResponse;
@@ -1184,7 +1068,7 @@ class Client extends EventEmitter {
       throw new TypeError('You need to provide an array of stats keys to fetch multiple user\'s stats');
     }
 
-    const resolvedUsers = await this.getProfile(user);
+    const resolvedUsers = await this.user.fetchMultiple(user);
 
     const idChunks: string[][] = resolvedUsers
       .map((u) => u.id)
@@ -1264,7 +1148,7 @@ class Client extends EventEmitter {
       throw e;
     }
 
-    const owner = await this.getProfile(codeResponse.id);
+    const owner = await this.user.fetch(codeResponse.id);
     return new CreatorCode(this, { ...codeResponse, owner });
   }
 
@@ -1367,7 +1251,7 @@ class Client extends EventEmitter {
   public async getCreativeDiscoveryPanels(gameVersion = '19.40', region: Region): Promise<CreativeDiscoveryPanel[]> {
     const creativeDiscovery = await this.http.epicgamesRequest({
       method: 'POST',
-      url: `${Endpoints.CREATIVE_DISCOVERY}/${this.user?.id}?appId=Fortnite`,
+      url: `${Endpoints.CREATIVE_DISCOVERY}/${this.user.self!.id}?appId=Fortnite`,
       headers: {
         'Content-Type': 'application/json',
         'User-Agent': `Fortnite/++Fortnite+Release-${gameVersion}-CL-00000000 Windows/10.0.19044.1.768.64bit`,
@@ -1375,7 +1259,7 @@ class Client extends EventEmitter {
       data: {
         surfaceName: 'CreativeDiscoverySurface_Frontend',
         revision: -1,
-        partyMemberIds: [this.user?.id],
+        partyMemberIds: [this.user.self!.id],
         matchmakingRegion: region,
       },
     }, AuthSessionStoreKey.Fortnite);
@@ -1394,7 +1278,7 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async getSTWProfile(user: string) {
-    const resolvedUser = await this.getProfile(user);
+    const resolvedUser = await this.user.fetch(user);
     if (!resolvedUser) throw new UserNotFoundError(user);
 
     let queryProfileResponse;

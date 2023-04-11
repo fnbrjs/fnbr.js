@@ -572,3 +572,13 @@ export const resolveAuthObject = async (obj: DeviceAuthResolveable) => {
       throw new TypeError(`The type "${typeof obj}" does not resolve to a valid auth object`);
   }
 };
+
+export const chunk = <T extends any>(array: T[], maxSize: number): T[][] => {
+  const chunkedArray: T[][] = [];
+
+  for (let i = 0; i < array.length; i += maxSize) {
+    chunkedArray.push(array.slice(i, i + maxSize));
+  }
+
+  return chunkedArray;
+};

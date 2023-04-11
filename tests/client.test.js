@@ -17,9 +17,10 @@ describe('Client Startup', () => {
     expect(client.auth).toBeDefined();
     expect(client.xmpp).toBeDefined();
     expect(client.http).toBeDefined();
+    expect(client.user).toBeDefined();
+    expect(client.friend).toBeDefined();
 
     expect(client.config).toBeDefined();
-    expect(client.user).toBeUndefined();
     expect(client.isReady).toBe(false);
     expect(client.friend.list.size).toBe(0);
 

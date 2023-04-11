@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.1.5
+
+### Fixes
+* Party
+  * Fixed an issue that caused all party members to be invisible if the bot created the party
+
+<hr>
+
 ## 3.1.4
 
 ### Fixes

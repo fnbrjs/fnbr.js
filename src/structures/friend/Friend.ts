@@ -79,7 +79,7 @@ class Friend extends User {
    * @readonly
    */
   public get isOnline() {
-    return !!this.lastAvailableTimestamp && Date.now() - this.lastAvailableTimestamp < 300000;
+    return !!this.lastAvailableTimestamp && Date.now() - this.lastAvailableTimestamp < this.client.config.friendOfflineTimeout;
   }
 
   /**

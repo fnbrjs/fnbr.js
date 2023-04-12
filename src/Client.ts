@@ -151,6 +151,7 @@ class Client extends EventEmitter {
       restartOnInvalidRefresh: false,
       language: 'en',
       friendOnlineConnectionTimeout: 30000,
+      friendOfflineTimeout: 300000,
       ...config,
       cacheSettings: {
         ...config.cacheSettings,

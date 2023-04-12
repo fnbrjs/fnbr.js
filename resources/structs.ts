@@ -328,6 +328,12 @@ export interface ClientConfig {
   fetchFriends: boolean;
 
   /**
+   * Timeout (in ms) for how long a friend is considered online after the last presence was received.
+   * Note: Usually the client will receive a presence when the friend goes offline, when that does not happen, this timeout will be used
+   */
+  friendOfflineTimeout: number;
+
+  /**
    * How many times to retry on HTTP 5xx errors
    */
   restRetryLimit: number;

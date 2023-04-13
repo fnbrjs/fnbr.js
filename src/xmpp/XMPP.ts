@@ -81,8 +81,9 @@ class XMPP extends Base {
 
   /**
    * Connects the XMPP agent to Epicgames' XMPP servers
+   * @param sendStatusWhenConnected Whether to send an empty status status when connected
    */
-  public async connect() {
+  public async connect(sendStatusWhenConnected = true) {
     if (!this.client.auth.sessions.has(AuthSessionStoreKey.Fortnite)) {
       throw new AuthenticationMissingError(AuthSessionStoreKey.Fortnite);
     }
@@ -122,7 +123,7 @@ class XMPP extends Base {
 
         this.connectedAt = Date.now();
 
-        this.sendStatus();
+        if (sendStatusWhenConnected) this.sendStatus();
 
         res();
       });

@@ -123,7 +123,7 @@ class Auth extends Base {
    * Kills all active auth sessions
    */
   public async revokeAllTokens() {
-    await Promise.all([...this.sessions.values()].map((s) => s.revoke()));
+    await Promise.all([...this.sessions.filter((s, k) => k !== AuthSessionStoreKey.Launcher).values()].map((s) => s.revoke()));
   }
 
   /**

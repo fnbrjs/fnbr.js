@@ -160,6 +160,11 @@ class Client extends EventEmitter {
           sweepInterval: 0,
           ...config.cacheSettings?.presences,
         },
+        users: {
+          maxLifetime: 0,
+          sweepInterval: 0,
+          ...config.cacheSettings?.users,
+        },
       },
       auth: {
         authorizationCode: async () => consoleQuestion('Please enter an authorization code: '),
@@ -336,6 +341,15 @@ class Client extends EventEmitter {
         presenceCacheSettings.sweepInterval,
       );
     }
+
+    const userCacheSettings = cacheSettings.users;
+    if (userCacheSettings && userCacheSettings.sweepInterval && userCacheSettings.sweepInterval > 0
+      && userCacheSettings.maxLifetime > 0 && userCacheSettings.maxLifetime !== Infinity) {
+      this.setInterval(
+        this.sweepUsers.bind(this),
+        userCacheSettings.sweepInterval,
+      );
+    }
   }
 
   /**
@@ -382,8 +396,8 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Removes presences from the clients cache that are older than the max lifetime
-   * @param maxLifetime How old a presence must be before it can be sweeped (in seconds)
+   * Removes presences from the client's cache that are older than the max lifetime
+   * @param maxLifetime How old a presence cache entry must be before it can be sweeped (in seconds)
    * @returns The amount of presences sweeped
    */
   public sweepPresences(maxLifetime = this.config.cacheSettings.presences?.maxLifetime) {
@@ -400,6 +414,27 @@ class Client extends EventEmitter {
     }
 
     return presences;
+  }
+
+  /**
+   * Removes users from the client's cache that are older than the max lifetime
+   * @param maxLifetime How old a user cache entry must be before it can be sweeped (in seconds)
+   * @returns The amount of users sweeped
+   */
+  public sweepUsers(maxLifetime = this.config.cacheSettings.users?.maxLifetime) {
+    if (typeof maxLifetime !== 'number') {
+      throw new TypeError('maxLifetime must be typeof number');
+    }
+
+    let users = 0;
+    for (const user of this.user.cache.values()) {
+      if (Date.now() - user.cachedAt > maxLifetime * 1000) {
+        this.user.cache.delete(user.id);
+        users += 1;
+      }
+    }
+
+    return users;
   }
 
   /* -------------------------------------------------------------------------- */

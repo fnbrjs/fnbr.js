@@ -139,6 +139,11 @@ export interface CacheSettings {
    * The presence cache settings
    */
   presences?: CacheSetting;
+
+  /**
+   * The user cache settings
+   */
+  users?: CacheSetting;
 }
 
 export interface AuthOptions {

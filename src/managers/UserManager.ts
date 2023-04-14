@@ -16,18 +16,41 @@ import type { UserSearchPlatform } from '../../resources/structs';
 import type Client from '../Client';
 
 class UserManager extends Base {
+  /**
+   * The client's blocklist
+   */
   public blocklist: Collection<string, BlockedUser>;
+
+  /**
+   * The client's user cache
+   * @private
+   */
+  public cache: Collection<string, User & { cachedAt: number }>;
+
+  /**
+   * The client's user
+   */
   public self?: ClientUser;
   constructor(client: Client) {
     super(client);
 
     this.blocklist = new Collection();
+    this.cache = new Collection();
     this.self = undefined;
   }
 
+  /**
+   * Resolves a user's ID from the cache or via the API
+   * @param idOrDisplayName The user's ID or display name
+   */
   public async resolveId(idOrDisplayName: string) {
     if (idOrDisplayName.length === 32) {
       return idOrDisplayName;
+    }
+
+    const cachedUser = this.cache.find((u) => u.displayName === idOrDisplayName);
+    if (cachedUser) {
+      return cachedUser.id;
     }
 
     const user = await this.fetch(idOrDisplayName);
@@ -48,17 +71,31 @@ class UserManager extends Base {
     const ids = [];
     const displayNames = [];
 
+    const users = [];
+
     for (const idOrDisplayName of idsOrDisplayNames) {
       if (idOrDisplayName.length === 32) {
-        ids.push(idOrDisplayName);
+        const cachedUser = this.cache.get(idOrDisplayName);
+        if (cachedUser) {
+          const cachedUserClone = new User(this.client, cachedUser.toObject());
+          users.push(cachedUserClone);
+        } else {
+          ids.push(idOrDisplayName);
+        }
       } else if (idOrDisplayName.length > 3 && idOrDisplayName.length < 16) {
-        displayNames.push(idOrDisplayName);
+        const cachedUser = this.cache.find((u) => u.displayName === idOrDisplayName);
+        if (cachedUser) {
+          const cachedUserClone = new User(this.client, cachedUser.toObject());
+          users.push(cachedUserClone);
+        } else {
+          displayNames.push(idOrDisplayName);
+        }
       }
     }
 
     const idChunks = chunk(ids, 100);
 
-    const users = await Promise.all([
+    const fetchedUsers = await Promise.all([
       ...idChunks.map((c) => this.client.http.epicgamesRequest({
         method: 'GET',
         url: `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${c.join('&accountId=')}`,
@@ -75,7 +112,7 @@ class UserManager extends Base {
       })),
     ]);
 
-    return users.flat(1).filter((u) => !!u).map((u) => new User(this.client, u));
+    return [...users, ...fetchedUsers.flat(1).filter((u) => !!u).map((u) => new User(this.client, u))];
   }
 
   public async fetchSelf() {

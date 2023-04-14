@@ -325,6 +325,7 @@ class Client extends EventEmitter {
     this.friend.list.clear();
     this.friend.pendingList.clear();
     this.user.blocklist.clear();
+    this.user.cache.clear();
   }
 
   /**

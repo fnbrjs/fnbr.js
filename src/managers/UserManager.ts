@@ -95,7 +95,7 @@ class UserManager extends Base {
 
     const idChunks = chunk(ids, 100);
 
-    const fetchedUsers = await Promise.all([
+    const fetchedUserData = await Promise.all([
       ...idChunks.map((c) => this.client.http.epicgamesRequest({
         method: 'GET',
         url: `${Endpoints.ACCOUNT_MULTIPLE}?accountId=${c.join('&accountId=')}`,
@@ -112,7 +112,17 @@ class UserManager extends Base {
       })),
     ]);
 
-    return [...users, ...fetchedUsers.flat(1).filter((u) => !!u).map((u) => new User(this.client, u))];
+    const fetchedUsers = fetchedUserData.flat(1).filter((u) => !!u).map((u) => new User(this.client, u));
+
+    if ((this.client.config.cacheSettings.users?.maxLifetime ?? 0) > 0) {
+      for (const user of fetchedUsers) {
+        const userClone: User & { cachedAt?: number } = new User(this.client, user.toObject());
+        userClone.cachedAt = Date.now();
+        this.cache.set(user.id, userClone as User & { cachedAt: number });
+      }
+    }
+
+    return [...users, ...fetchedUsers];
   }
 
   public async fetchSelf() {

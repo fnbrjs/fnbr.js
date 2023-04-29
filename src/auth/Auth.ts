@@ -175,7 +175,7 @@ class Auth extends Base {
 
     const fortniteSession = await FortniteAuthSession.create(this.client, AuthClients[authClient].clientId, AuthClients[authClient].secret, {
       grant_type: 'device_auth',
-      device_id: deviceAuth.deviceId ?? deviceAuth.deviceId,
+      device_id: deviceAuth.deviceId ?? deviceAuth.device_id,
       account_id: deviceAuth.accountId ?? deviceAuth.account_id,
       secret: deviceAuth.secret,
       token_type: 'eg1',

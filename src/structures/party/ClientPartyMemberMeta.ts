@@ -27,11 +27,11 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
     this.update({
       'Default:AthenaCosmeticLoadout_j': JSON.stringify({
         AthenaCosmeticLoadout: {
-          characterDef: `AthenaCharacterItemDefinition'/Game/Athena/Items/Cosmetics/Characters/${defaultCharacter}.${defaultCharacter}'`,
+          characterDef: `AthenaCharacterItemDefinition'/BRCosmetics/Athena/Items/Cosmetics/Characters/${defaultCharacter}.${defaultCharacter}'`,
           characterEKey: '',
           backpackDef: 'None',
           backpackEKey: '',
-          pickaxeDef: 'AthenaPickaxeItemDefinition\'/Game/Athena/Items/Cosmetics/Pickaxes/DefaultPickaxe.DefaultPickaxe\'',
+          pickaxeDef: 'AthenaPickaxeItemDefinition\'/BRCosmetics/Athena/Items/Cosmetics/Pickaxes/DefaultPickaxe.DefaultPickaxe\'',
           pickaxeEKey: '',
           contrailDef: 'None',
           contrailEKey: '',

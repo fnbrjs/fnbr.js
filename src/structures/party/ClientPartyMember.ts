@@ -1,7 +1,12 @@
 import { AsyncQueue } from '@sapphire/async-queue';
 import Endpoints from '../../../resources/Endpoints';
 import {
-  CosmeticEnlightment, CosmeticsVariantMeta, CosmeticVariant, PartyMemberData, PartyMemberSchema, Schema,
+  CosmeticEnlightment,
+  CosmeticsVariantMeta,
+  CosmeticVariant,
+  PartyMemberData,
+  PartyMemberSchema,
+  Schema,
 } from '../../../resources/structs';
 import ClientPartyMemberMeta from './ClientPartyMemberMeta';
 import Party from './Party';
@@ -31,9 +36,14 @@ class ClientPartyMember extends PartyMember {
     this.meta = new ClientPartyMemberMeta(this, data.meta);
     this.patchQueue = new AsyncQueue();
 
-    this.update({ id: this.id, displayName: this.client.user?.displayName, externalAuths: this.client.user?.externalAuths });
+    this.update({
+      id: this.id,
+      displayName: this.client.user?.displayName,
+      externalAuths: this.client.user?.externalAuths,
+    });
 
-    if (this.client.lastPartyMemberMeta) this.meta.update(this.client.lastPartyMemberMeta, true);
+    if (this.client.lastPartyMemberMeta)
+      this.meta.update(this.client.lastPartyMemberMeta, true);
   }
 
   /**
@@ -44,16 +54,25 @@ class ClientPartyMember extends PartyMember {
   public async sendPatch(updated: PartyMemberSchema): Promise<void> {
     await this.patchQueue.wait();
 
-    const patch = await this.client.http.sendEpicgamesRequest(true, 'PATCH', `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.id}/meta`, 'fortnite', {
-      'Content-Type': 'application/json',
-    }, {
-      delete: [],
-      revision: this.revision,
-      update: updated,
-    });
+    const patch = await this.client.http.sendEpicgamesRequest(
+      true,
+      'PATCH',
+      `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.id}/meta`,
+      'fortnite',
+      {
+        'Content-Type': 'application/json',
+      },
+      {
+        delete: [],
+        revision: this.revision,
+        update: updated,
+      }
+    );
 
     if (patch.error) {
-      if (patch.error.code === 'errors.com.epicgames.social.party.stale_revision') {
+      if (
+        patch.error.code === 'errors.com.epicgames.social.party.stale_revision'
+      ) {
         this.revision = parseInt(patch.error.messageVars[1], 10);
         this.patchQueue.shift();
         return this.sendPatch(updated);
@@ -67,7 +86,8 @@ class ClientPartyMember extends PartyMember {
     this.revision += 1;
     this.patchQueue.shift();
 
-    if (this.client.config.savePartyMemberMeta) this.client.lastPartyMemberMeta = this.meta.schema;
+    if (this.client.config.savePartyMemberMeta)
+      this.client.lastPartyMemberMeta = this.meta.schema;
 
     return undefined;
   }
@@ -138,16 +158,31 @@ class ClientPartyMember extends PartyMember {
    * @param friendBoost The battle pass friend boost percentage
    * @throws {EpicgamesAPIError}
    */
-  public async setBattlePass(isPurchased: boolean, level: number, selfBoost: number, friendBoost: number) {
+  public async setBattlePass(
+    isPurchased: boolean,
+    level: number,
+    selfBoost: number,
+    friendBoost: number
+  ) {
     let data = this.meta.get('Default:BattlePassInfo_j');
     data = this.meta.set('Default:BattlePassInfo_j', {
       ...data,
       BattlePassInfo: {
         ...data.BattlePassInfo,
-        bHasPurchasedPass: typeof isPurchased === 'boolean' ? isPurchased : data.BattlePassInfo.bHasPurchasedPass,
-        passLevel: typeof level === 'number' ? level : data.BattlePassInfo.passLevel,
-        selfBoostXp: typeof selfBoost === 'number' ? selfBoost : data.BattlePassInfo.selfBoostXp,
-        friendBoostXp: typeof friendBoost === 'number' ? friendBoost : data.BattlePassInfo.friendBoostXp,
+        bHasPurchasedPass:
+          typeof isPurchased === 'boolean'
+            ? isPurchased
+            : data.BattlePassInfo.bHasPurchasedPass,
+        passLevel:
+          typeof level === 'number' ? level : data.BattlePassInfo.passLevel,
+        selfBoostXp:
+          typeof selfBoost === 'number'
+            ? selfBoost
+            : data.BattlePassInfo.selfBoostXp,
+        friendBoostXp:
+          typeof friendBoost === 'number'
+            ? friendBoost
+            : data.BattlePassInfo.friendBoostXp,
       },
     });
 
@@ -177,15 +212,20 @@ class ClientPartyMember extends PartyMember {
       'Default:AthenaBannerInfo_j': data,
     });
   }
-
   /**
    * Updates the client party member's outfit
-   * @param cid The outfit's CID
+   * @param id The outfit's ID
    * @param variants The outfit's variants
    * @param enlightment The outfit's enlighment
+   * @param path The outfit's path in the game files
    * @throws {EpicgamesAPIError}
    */
-  public async setOutfit(cid: string, variants: CosmeticVariant[] = [], enlightment: CosmeticEnlightment | [] = []) {
+  public async setOutfit(
+    id: string,
+    variants: CosmeticVariant[] = [],
+    enlightment?: CosmeticEnlightment,
+    path?: string
+  ) {
     let data = this.meta.get('Default:AthenaCosmeticLoadout_j');
     let variantData = this.meta.get('Default:AthenaCosmeticLoadoutVariants_j');
 
@@ -202,7 +242,7 @@ class ClientPartyMember extends PartyMember {
     };
 
     const scratchpad = [];
-    if (enlightment.length === 2) {
+    if (enlightment?.length === 2) {
       scratchpad.push({
         t: enlightment[0],
         v: enlightment[1],
@@ -213,7 +253,10 @@ class ClientPartyMember extends PartyMember {
       ...data,
       AthenaCosmeticLoadout: {
         ...data.AthenaCosmeticLoadout,
-        characterDef: `/Game/Athena/Items/Cosmetics/Characters/${cid}.${cid}`,
+        characterDef: `${
+          path?.replace(/\/$/, '') ??
+          '/BRCosmetics/Athena/Items/Cosmetics/Characters'
+        }/${id}.${id}`,
         scratchpad,
       },
     });
@@ -239,11 +282,16 @@ class ClientPartyMember extends PartyMember {
 
   /**
    * Updates the client party member's backpack
-   * @param bid The backpack's BID
+   * @param id The backpack's ID
    * @param variants The backpack's variants
+   * @param path The backpack's path in the game files
    * @throws {EpicgamesAPIError}
    */
-  public async setBackpack(bid: string, variants: CosmeticVariant[] = []) {
+  public async setBackpack(
+    id: string,
+    variants: CosmeticVariant[] = [],
+    path?: string
+  ) {
     let data = this.meta.get('Default:AthenaCosmeticLoadout_j');
     let variantData = this.meta.get('Default:AthenaCosmeticLoadoutVariants_j');
 
@@ -263,7 +311,10 @@ class ClientPartyMember extends PartyMember {
       ...data,
       AthenaCosmeticLoadout: {
         ...data.AthenaCosmeticLoadout,
-        backpackDef: `/Game/Athena/Items/Cosmetics/Backpacks/${bid}.${bid}`,
+        backpackDef: `${
+          path?.replace(/\/$/, '') ??
+          '/BRCosmetics/Athena/Items/Cosmetics/Backpacks'
+        }/${id}.${id}`,
       },
     });
 
@@ -290,57 +341,32 @@ class ClientPartyMember extends PartyMember {
    * Updates the client party member's pet
    * @param id The pet's ID
    * @param variants The pet's variants
+   * @param path The pet's path in the game files
    */
-  public async setPet(id: string, variants: CosmeticVariant[] = []) {
-    let data = this.meta.get('Default:AthenaCosmeticLoadout_j');
-    let variantData = this.meta.get('Default:AthenaCosmeticLoadoutVariants_j');
-
-    const patches: Schema = {};
-
-    const parsedVariants: CosmeticsVariantMeta = {
-      AthenaBackpack: {
-        i: variants.map((v) => ({
-          v: v.variant,
-          c: v.channel,
-          dE: v.dE || 0,
-        })),
-      },
-    };
-
-    data = this.meta.set('Default:AthenaCosmeticLoadout_j', {
-      ...data,
-      AthenaCosmeticLoadout: {
-        ...data.AthenaCosmeticLoadout,
-        backpackDef: `/Game/Athena/Items/Cosmetics/PetCarriers/${id}.${id}`,
-      },
-    });
-
-    patches['Default:AthenaCosmeticLoadout_j'] = data;
-
-    delete variantData.AthenaCosmeticLoadoutVariants.vL.AthenaBackpack;
-    if (parsedVariants.AthenaBackpack?.i[0]) {
-      variantData = this.meta.set('Default:AthenaCosmeticLoadoutVariants_j', {
-        AthenaCosmeticLoadoutVariants: {
-          vL: {
-            ...variantData.AthenaCosmeticLoadoutVariants.vL,
-            ...parsedVariants,
-          },
-        },
-      });
-
-      patches['Default:AthenaCosmeticLoadoutVariants_j'] = variantData;
-    }
-
-    await this.sendPatch(patches);
+  public async setPet(
+    id: string,
+    variants: CosmeticVariant[] = [],
+    path?: string
+  ) {
+    return this.setBackpack(
+      id,
+      variants,
+      path ?? '/BRCosmetics/Athena/Items/Cosmetics/PetCarriers'
+    );
   }
 
   /**
    * Updates the client party member's pickaxe
    * @param id The pickaxe's ID
    * @param variants The pickaxe's variants
+   * @param path The pickaxe's path in the game files
    * @throws {EpicgamesAPIError}
    */
-  public async setPickaxe(id: string, variants: CosmeticVariant[] = []) {
+  public async setPickaxe(
+    id: string,
+    variants: CosmeticVariant[] = [],
+    path?: string
+  ) {
     let data = this.meta.get('Default:AthenaCosmeticLoadout_j');
     let variantData = this.meta.get('Default:AthenaCosmeticLoadoutVariants_j');
 
@@ -360,7 +386,10 @@ class ClientPartyMember extends PartyMember {
       ...data,
       AthenaCosmeticLoadout: {
         ...data.AthenaCosmeticLoadout,
-        pickaxeDef: `/Game/Athena/Items/Cosmetics/Pickaxes/${id}.${id}`,
+        pickaxeDef: `${
+          path?.replace(/\/$/, '') ??
+          '/BRCosmetics/Athena/Items/Cosmetics/Pickaxes'
+        }/${id}.${id}`,
       },
     });
 
@@ -385,18 +414,26 @@ class ClientPartyMember extends PartyMember {
 
   /**
    * Updates the client party member's emote
-   * @param eid The emote's EID
+   * @param id The emote's ID
+   * @param path The emote's path in the game files
    * @throws {EpicgamesAPIError}
    */
-  public async setEmote(eid: string) {
-    if (this.meta.get('Default:FrontendEmote_j').FrontendEmote.emoteItemDef !== 'None') await this.clearEmote();
+  public async setEmote(id: string, path?: string) {
+    if (
+      this.meta.get('Default:FrontendEmote_j').FrontendEmote.emoteItemDef !==
+      'None'
+    )
+      await this.clearEmote();
 
     let data = this.meta.get('Default:FrontendEmote_j');
     data = this.meta.set('Default:FrontendEmote_j', {
       ...data,
       FrontendEmote: {
         ...data.FrontendEmote,
-        emoteItemDef: `/Game/Athena/Items/Cosmetics/Dances/${eid}.${eid}`,
+        emoteItemDef: `${
+          path?.replace(/\/$/, '') ??
+          '/BRCosmetics/Athena/Items/Cosmetics/Dances'
+        }/${id}.${id}`,
         emoteSection: -2,
       },
     });
@@ -409,23 +446,14 @@ class ClientPartyMember extends PartyMember {
   /**
    * Updates the client party member's emoji
    * @param id The emoji's ID
+   * @param path The emoji's path in the game files
    * @throws {EpicgamesAPIError}
    */
-  public async setEmoji(id: string) {
-    if (this.meta.get('Default:FrontendEmote_j').FrontendEmote.emoteItemDef !== 'None') await this.clearEmote();
-
-    let data = this.meta.get('Default:FrontendEmote_j');
-    data = this.meta.set('Default:FrontendEmote_j', {
-      ...data,
-      FrontendEmote: {
-        ...data.FrontendEmote,
-        emoteItemDef: `/Game/Athena/Items/Cosmetics/Dances/Emoji/${id}.${id}`,
-        emoteSection: -2,
-      },
-    });
-    await this.sendPatch({
-      'Default:FrontendEmote_j': data,
-    });
+  public async setEmoji(id: string, path?: string) {
+    return this.setEmote(
+      id,
+      path ?? '/BRCosmetics/Athena/Items/Cosmetics/Dances/Emoji'
+    );
   }
 
   /**
@@ -477,9 +505,16 @@ class ClientPartyMember extends PartyMember {
    * @param startedAt The start date of the match
    * @throws {EpicgamesAPIError}
    */
-  public async setPlaying(isPlaying = true, playerCount = 100, startedAt = new Date()) {
+  public async setPlaying(
+    isPlaying = true,
+    playerCount = 100,
+    startedAt = new Date()
+  ) {
     await this.sendPatch({
-      'Default:Location_s': this.meta.set('Default:Location_s', isPlaying ? 'InGame' : 'PreLobby'),
+      'Default:Location_s': this.meta.set(
+        'Default:Location_s',
+        isPlaying ? 'InGame' : 'PreLobby'
+      ),
       'Default:LobbyState_j': this.meta.set('Default:LobbyState_j', {
         ...this.meta.get('Default:LobbyState_j'),
         LobbyState: {
@@ -487,9 +522,18 @@ class ClientPartyMember extends PartyMember {
           hasPreloadedAthena: isPlaying,
         },
       }),
-      'Default:SpectateAPartyMemberAvailable_b': this.meta.set('Default:SpectateAPartyMemberAvailable_b', isPlaying),
-      'Default:NumAthenaPlayersLeft_U': this.meta.set('Default:NumAthenaPlayersLeft_U', playerCount),
-      'Default:UtcTimeStartedMatchAthena_s': this.meta.set('Default:UtcTimeStartedMatchAthena_s', startedAt.toISOString()),
+      'Default:SpectateAPartyMemberAvailable_b': this.meta.set(
+        'Default:SpectateAPartyMemberAvailable_b',
+        isPlaying
+      ),
+      'Default:NumAthenaPlayersLeft_U': this.meta.set(
+        'Default:NumAthenaPlayersLeft_U',
+        playerCount
+      ),
+      'Default:UtcTimeStartedMatchAthena_s': this.meta.set(
+        'Default:UtcTimeStartedMatchAthena_s',
+        startedAt.toISOString()
+      ),
     });
   }
 
@@ -501,7 +545,11 @@ class ClientPartyMember extends PartyMember {
    * @param locationY The marker y location
    * @throws {EpicgamesAPIError}
    */
-  public async setMarker(isSet: boolean, locationX?: number, locationY?: number) {
+  public async setMarker(
+    isSet: boolean,
+    locationX?: number,
+    locationY?: number
+  ) {
     let data = this.meta.get('Default:FrontEndMapMarker_j');
 
     data = this.meta.set('Default:FrontEndMapMarker_j', {
@@ -528,7 +576,10 @@ class ClientPartyMember extends PartyMember {
    * @param objectivesCompleted The quest progress (number of completed objectives)
    * @throws {EpicgamesAPIError}
    */
-  public async setAssistedChallenge(questItemDef?: string, objectivesCompleted?: number) {
+  public async setAssistedChallenge(
+    questItemDef?: string,
+    objectivesCompleted?: number
+  ) {
     let data = this.meta.get('Default:AssistedChallengeInfo_j');
 
     data = this.meta.set('Default:AssistedChallengeInfo_j', {
@@ -558,16 +609,20 @@ class ClientPartyMember extends PartyMember {
       ...data,
       AthenaCosmeticLoadout: {
         ...data.AthenaCosmeticLoadout,
-        cosmeticStats: [{
-          statName: 'TotalVictoryCrowns',
-          statValue: 0,
-        }, {
-          statName: 'TotalRoyalRoyales',
-          statValue: crowns,
-        }, {
-          statName: 'HasCrown',
-          statValue: 0,
-        }],
+        cosmeticStats: [
+          {
+            statName: 'TotalVictoryCrowns',
+            statValue: 0,
+          },
+          {
+            statName: 'TotalRoyalRoyales',
+            statValue: crowns,
+          },
+          {
+            statName: 'HasCrown',
+            statValue: 0,
+          },
+        ],
       },
     });
 

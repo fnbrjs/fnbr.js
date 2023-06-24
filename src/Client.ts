@@ -791,7 +791,7 @@ class Client extends EventEmitter {
     try {
       intention = await this.http.epicgamesRequest({
         method: 'POST',
-        url: `${Endpoints.BR_PARTY}/members/${resolvedFriend.id}/intentions/${this.user.self!.displayName}`,
+        url: `${Endpoints.BR_PARTY}/members/${resolvedFriend.id}/intentions/${this.user.self!.id}`,
         headers: {
           'Content-Type': 'application/json',
         },

@@ -27,7 +27,7 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
     this.update({
       'Default:AthenaCosmeticLoadout_j': JSON.stringify({
         AthenaCosmeticLoadout: {
-          characterDef: `AthenaCharacterItemDefinition'/Game/Athena/Items/Cosmetics/Characters/${defaultCharacter}.${defaultCharacter}'`,
+          characterDef: `AthenaCharacterItemDefinition'/BRCosmetics/Athena/Items/Cosmetics/Characters/${defaultCharacter}.${defaultCharacter}'`,
           characterEKey: '',
           backpackDef: 'None',
           backpackEKey: '',

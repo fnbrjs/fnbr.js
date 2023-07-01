@@ -10,6 +10,18 @@
 
 <hr>
 
+## 3.1.6
+
+### Additions
+* Party
+  * Added a `path` property to `ClientPartyMember#setOutfit()`, `ClientPartyMember#setBackpack()`, `ClientPartyMember#setPet()`, `ClientPartyMember#setPickaxe()`, `ClientPartyMember#setEmote()` and `ClientPartyMember#setEmoji()`
+
+### Fixes
+* Endpoints
+  * Updated hosts
+
+<hr>
+
 ## 3.1.5
 
 ### Fixes

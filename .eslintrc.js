@@ -21,7 +21,7 @@ module.exports = {
       groups: [['builtin', 'external'], ['internal', 'parent', 'sibling', 'index', 'object'], 'type'],
       'newlines-between': 'never',
     }],
-    'max-len': ['error', { code: 160 }],
+    'max-len': ['error', { code: 150 }],
     'no-restricted-syntax': 'off',
     'no-promise-executor-return': 'off',
     'default-case': 'off',

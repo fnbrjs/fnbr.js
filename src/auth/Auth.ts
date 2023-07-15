@@ -257,11 +257,16 @@ class Auth extends Base {
   private async launcherRefreshTokenAuthenticate(refreshTokenResolvable: AuthStringResolveable, authClient: AuthClient) {
     const refreshToken = await resolveAuthString(refreshTokenResolvable);
 
-    const launcherSession = await LauncherAuthSession.create(this.client, AuthClients.launcherAppClient2.clientId, AuthClients.launcherAppClient2.secret, {
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-      token_type: 'eg1',
-    });
+    const launcherSession = await LauncherAuthSession.create(
+      this.client,
+      AuthClients.launcherAppClient2.clientId,
+      AuthClients.launcherAppClient2.secret,
+      {
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        token_type: 'eg1',
+      },
+    );
 
     this.sessions.set(AuthSessionStoreKey.Launcher, launcherSession);
 

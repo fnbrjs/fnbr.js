@@ -93,7 +93,8 @@ class HTTP extends Base {
           }
         }
       } else {
-        this.client.debug(`${config.method?.toUpperCase() ?? 'GET'} ${config.url} (${reqDuration.toFixed(2)}s): ${err.name} - ${err.message}`, 'http');
+        this.client.debug(`${config.method?.toUpperCase() ?? 'GET'} ${config.url} `
+          + `(${reqDuration.toFixed(2)}s): ${err.name} - ${err.message}`, 'http');
       }
 
       throw err;

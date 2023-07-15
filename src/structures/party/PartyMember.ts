@@ -172,13 +172,6 @@ class PartyMember extends User {
   }
 
   /**
-   * The member's assisted challenge
-   */
-  public get assistedChallenge() {
-    return this.meta.assistedChallenge;
-  }
-
-  /**
    * Kicks this member from the client's party.
    * @throws {PartyPermissionError} The client is not a member or not the leader of the party
    */

@@ -963,9 +963,9 @@ export interface Playlist {
   tournamentId?: string;
   eventWindowId?: string;
   regionId?: string;
-  mnemonic?: string;
   linkId?: {
-    mnemonic?: string;
+    mnemonic: string;
+    version: number;
   };
 }
 

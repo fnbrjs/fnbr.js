@@ -621,6 +621,43 @@ class XMPP extends Base {
 
             this.client.emit('party:joinrequest', request);
           } break;
+
+          case 'com.epicgames.valkyrie.launch-data': {
+            await this.client.partyLock.wait();
+            if (!this.client.party || !this.client.party.me.isLeader || !body.payload) {
+              return;
+            }
+
+            const { payload } = body;
+            const operation = payload.$op;
+            if (!operation) {
+              return;
+            }
+
+            switch (operation) {
+              case 'LAUNCH_LINK_CODE': {
+                const { linkCode } = payload;
+                await this.client.party.setPlaylist({
+                  playlistName: 'Playlist_PlaygroundV2',
+                  linkId: {
+                    mnemonic: linkCode,
+                    version: -1,
+                  },
+                });
+              }
+                break;
+
+              case 'JOIN_MM_SESSION': {
+                const { sessionId } = payload;
+                await this.client.party.sendPatch({
+                  'Default:PrimaryGameSessionId_s': sessionId,
+                });
+              } break;
+
+              default:
+                throw new Error('Unsupported VK Launch Operation');
+            }
+          } break;
         }
       } catch (err: any) {
         this.client.debug(`[XMPP] Error while processing ${body.type}: ${err.name} - ${err.message}`);

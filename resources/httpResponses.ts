@@ -1,13 +1,4 @@
-/* eslint-disable camelcase */
-import { AxiosError } from 'axios';
-import EpicgamesAPIError from '../src/exceptions/EpicgamesAPIError';
-import EpicgamesGraphQLError from '../src/exceptions/EpicgamesGraphQLError';
-import { FullPlatform, Region, STWSchematicAlterationRarity } from './structs';
-
-export interface HTTPResponse {
-  response?: any;
-  error?: AxiosError;
-}
+import type { FullPlatform, Region, STWSchematicAlterationRarity } from './structs';
 
 export interface EpicgamesAPIErrorData {
   errorCode: string;
@@ -19,30 +10,6 @@ export interface EpicgamesAPIErrorData {
   error_description: string;
   error: string;
   errorStatus?: number;
-}
-
-export interface EpicgamesGraphQLErrorLocation {
-  line: number;
-  column: number;
-}
-
-export interface EpicgamesGraphQLErrorData {
-  message: string;
-  locations: EpicgamesGraphQLErrorLocation[];
-  correlationId: string;
-  serviceResponse?: string;
-  stack?: string;
-  path: string[];
-}
-
-export interface EpicgamesAPIResponse {
-  error?: EpicgamesAPIError;
-  response?: any;
-}
-
-export interface EpicgamesGraphQLResponse {
-  error?: EpicgamesGraphQLError | EpicgamesAPIError | AxiosError;
-  response?: any;
 }
 
 export interface EpicgamesOAuthData {
@@ -63,19 +30,15 @@ export interface EpicgamesOAuthData {
   device_id: string;
 }
 
-export interface EpicgamesOAuthResponse extends EpicgamesAPIResponse {
-  response?: EpicgamesOAuthData;
-}
-
 export type PlatformMappings = {
   // eslint-disable-next-line no-unused-vars
   [key in FullPlatform]?: string;
-}
+};
 
 export type RegionMappings = {
   // eslint-disable-next-line no-unused-vars
   [key in Region]?: string;
-}
+};
 
 export interface TournamentMetadata {
   minimumAccountLevel: number;
@@ -281,7 +244,7 @@ export interface BlurlStreamVariantPlaylistData {
 }
 
 export interface BlurlStreamData {
-  playlists: (BlurlStreamMasterPlaylistData|BlurlStreamVariantPlaylistData)[];
+  playlists: (BlurlStreamMasterPlaylistData | BlurlStreamVariantPlaylistData)[];
   subtitles: string;
   ucp?: string;
   audioonly?: boolean;

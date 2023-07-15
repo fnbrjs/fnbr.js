@@ -53,5 +53,5 @@ const handleCommand = async (m) => {
   client.on('friend:message', handleCommand);
 
   await client.login();
-  console.log(`Logged in as ${client.user.displayName}`);
+  console.log(`Logged in as ${client.user.self.displayName}`);
 })();

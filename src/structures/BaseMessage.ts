@@ -1,10 +1,10 @@
-import { MessageData } from '../../resources/structs';
-import Base from '../client/Base';
-import Client from '../client/Client';
-import ClientPartyMember from './party/ClientPartyMember';
-import ClientUser from './user/ClientUser';
-import Friend from './friend/Friend';
-import PartyMember from './party/PartyMember';
+import Base from '../Base';
+import type { MessageData } from '../../resources/structs';
+import type Client from '../Client';
+import type ClientPartyMember from './party/ClientPartyMember';
+import type ClientUser from './user/ClientUser';
+import type Friend from './friend/Friend';
+import type PartyMember from './party/PartyMember';
 
 /**
  * Represents a message

@@ -1,8 +1,9 @@
 import Endpoints from '../../../resources/Endpoints';
 import PartyInvitationExpiredError from '../../exceptions/PartyInvitationExpiredError';
 import BasePartyInvitation from './BasePartyInvitation';
-import ClientUser from '../user/ClientUser';
-import Friend from '../friend/Friend';
+import { AuthSessionStoreKey } from '../../../resources/enums';
+import type ClientUser from '../user/ClientUser';
+import type Friend from '../friend/Friend';
 
 /**
  * Represents a sent party invitation
@@ -18,8 +19,11 @@ class SentPartyInvitation extends BasePartyInvitation {
   public async abort() {
     if (this.isExpired || this.isHandled) throw new PartyInvitationExpiredError();
 
-    await this.client.http.sendEpicgamesRequest(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/parties/${this.party.id}/invites/${this.receiver.id}`, 'fortnite');
+    await this.client.http.epicgamesRequest({
+      method: 'DELETE',
+      url: `${Endpoints.BR_PARTY}/parties/${this.party.id}/invites/${this.receiver.id}`,
+    }, AuthSessionStoreKey.Fortnite);
+
     this.isHandled = true;
   }
 }

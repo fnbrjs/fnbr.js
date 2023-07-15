@@ -1,8 +1,8 @@
 import defaultPartyMemberMeta from '../../../resources/defaultPartyMemberMeta.json';
-import { PartyMemberSchema } from '../../../resources/structs';
 import { getRandomDefaultCharacter } from '../../util/Util';
-import PartyMember from './PartyMember';
 import PartyMemberMeta from './PartyMemberMeta';
+import type { PartyMemberSchema } from '../../../resources/structs';
+import type PartyMember from './PartyMember';
 
 /**
  * Represents the client's party member meta
@@ -31,7 +31,7 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
           characterEKey: '',
           backpackDef: 'None',
           backpackEKey: '',
-          pickaxeDef: 'AthenaPickaxeItemDefinition\'/Game/Athena/Items/Cosmetics/Pickaxes/DefaultPickaxe.DefaultPickaxe\'',
+          pickaxeDef: 'AthenaPickaxeItemDefinition\'/BRCosmetics/Athena/Items/Cosmetics/Pickaxes/DefaultPickaxe.DefaultPickaxe\'',
           pickaxeEKey: '',
           contrailDef: 'None',
           contrailEKey: '',

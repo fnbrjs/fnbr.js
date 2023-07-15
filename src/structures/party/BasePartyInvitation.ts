@@ -1,9 +1,9 @@
-import Base from '../../client/Base';
-import Client from '../../client/Client';
-import ClientParty from './ClientParty';
-import ClientUser from '../user/ClientUser';
-import Friend from '../friend/Friend';
-import Party from './Party';
+import Base from '../../Base';
+import type Client from '../../Client';
+import type ClientParty from './ClientParty';
+import type ClientUser from '../user/ClientUser';
+import type Friend from '../friend/Friend';
+import type Party from './Party';
 
 /**
  * Represents a party invitation (either incoming or outgoing)

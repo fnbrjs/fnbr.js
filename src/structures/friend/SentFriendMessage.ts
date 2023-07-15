@@ -1,5 +1,5 @@
 import BaseFriendMessage from './BaseFriendMessage';
-import ClientUser from '../user/ClientUser';
+import type ClientUser from '../user/ClientUser';
 
 /**
  * Represents a sent friend whisper message

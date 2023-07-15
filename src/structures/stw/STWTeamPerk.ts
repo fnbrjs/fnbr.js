@@ -1,6 +1,6 @@
-import { STWProfileItemData } from '../../../resources/httpResponses';
-import Client from '../../client/Client';
 import STWItem from './STWItem';
+import type { STWProfileItemData } from '../../../resources/httpResponses';
+import type Client from '../../Client';
 
 /**
  * Represents a Save The World profile's team perk

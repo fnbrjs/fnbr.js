@@ -1,10 +1,11 @@
-import Client from '../../client/Client';
-import Base from '../../client/Base';
+/* eslint-disable no-underscore-dangle */
+import Base from '../../Base';
 import UserNotFoundError from '../../exceptions/UserNotFoundError';
-import { BRAccountLevel, ExternalAuths, UserData } from '../../../resources/structs';
-import Avatar from '../Avatar';
-import GlobalProfile from '../GlobalProfile';
-import EventTokens from '../EventTokens';
+import type { BRAccountLevel, ExternalAuths, UserData } from '../../../resources/structs';
+import type Avatar from '../Avatar';
+import type GlobalProfile from '../GlobalProfile';
+import type EventTokens from '../EventTokens';
+import type Client from '../../Client';
 
 /**
  * Represents a user
@@ -66,7 +67,7 @@ class User extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async addFriend() {
-    return this.client.addFriend(this.id);
+    return this.client.friend.add(this.id);
   }
 
   /**
@@ -75,7 +76,7 @@ class User extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async block() {
-    return this.client.blockUser(this.id);
+    return this.client.user.block(this.id);
   }
 
   /**
@@ -83,7 +84,7 @@ class User extends Base {
    * @throws {UserNotFoundError} The user wasn't found
    */
   public async fetch() {
-    const user = await this.client.getProfile(this.id);
+    const user = await this.client.user.fetch(this.id);
     if (!user) throw new UserNotFoundError(this.id);
 
     this.update(user);
@@ -112,7 +113,7 @@ class User extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async getAvatar(): Promise<Avatar | undefined> {
-    return (await this.client.getUserAvatar(this.id))[0];
+    return this.client.user.fetchAvatar(this.id);
   }
 
   /**
@@ -120,7 +121,7 @@ class User extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async getGlobalProfile(): Promise<GlobalProfile | undefined> {
-    return (await this.client.getGlobalProfile(this.id))[0];
+    return this.client.user.fetchGlobalProfile(this.id);
   }
 
   /**
@@ -130,7 +131,7 @@ class User extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async getEventTokens(): Promise<EventTokens | undefined> {
-    return (await this.client.getEventTokens(this.id))[0];
+    return (await this.client.tournaments.getEventTokens(this.id))[0];
   }
 
   /**

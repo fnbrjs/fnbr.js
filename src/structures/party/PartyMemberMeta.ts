@@ -1,8 +1,8 @@
-import {
+import Meta from '../../util/Meta';
+import type {
   AssistedChallengeMeta,
   BannerMeta, BattlePassMeta, CosmeticsVariantMeta, MatchMeta, PartyMemberSchema, Platform,
 } from '../../../resources/structs';
-import Meta from '../../util/Meta';
 
 /**
  * Represents a party member meta

@@ -1,6 +1,6 @@
-import Base from '../../client/Base';
-import Client from '../../client/Client';
+import Base from '../../Base';
 import Image from '../Image';
+import type Client from '../../Client';
 
 /**
  * Represents a fortnite save the world news message
@@ -51,6 +51,7 @@ class STWNewsMessage extends Base {
     this.title = data.title;
     this.body = data.body;
     this.image = new Image(this.client, { url: data.image });
+    // eslint-disable-next-line no-underscore-dangle
     this.type = data._type;
     this.adspace = data.adspace;
     this.isHidden = data.hidden;

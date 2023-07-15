@@ -1,7 +1,7 @@
-import Client from '../client/Client';
-import Base from '../client/Base';
-import User from './user/User';
-import { CreatorCodeData } from '../../resources/structs';
+import Base from '../Base';
+import type Client from '../Client';
+import type User from './user/User';
+import type { CreatorCodeData } from '../../resources/structs';
 
 /**
  * Represents a Support-A-Creator code

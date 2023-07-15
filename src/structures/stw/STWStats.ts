@@ -1,7 +1,7 @@
-import Client from '../../client/Client';
-import Base from '../../client/Base';
-import { STWProfileStatsData } from '../../../resources/httpResponses';
-import {
+import Base from '../../Base';
+import type Client from '../../Client';
+import type { STWProfileStatsData } from '../../../resources/httpResponses';
+import type {
   STWStatsNodeCostsData, STWStatsBRLoadoutData, STWStatsSTWLoadoutData,
   STWStatsMissionAlertRedemptionData, STWStatsQuestData, STWStatsGameplayStatData,
   STWStatsClientSettingsData, STWStatsResearchLevelsData, STWStatsDailyRewardsData,

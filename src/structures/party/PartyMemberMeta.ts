@@ -45,6 +45,14 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
     return this.get('Default:LobbyState_j')?.LobbyState?.gameReadiness === 'Ready';
   }
 
+
+  /**
+   * Whether the member is sitting out
+   */
+  public get isSittingOut() {
+    return this.get('Default:LobbyState_j')?.LobbyState?.gameReadiness === 'SittingOut';
+  }
+
   /**
    * The current input method
    */

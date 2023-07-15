@@ -138,26 +138,33 @@ export const Playlist = Object.freeze({
     playlistName: 'Playlist_DefaultSolo',
     tournamentId: '',
     eventWindowId: '',
+    linkId: {
+      mnemonic: 'playlist_defaultsolo',
+    },
   },
   DUO: {
     playlistName: 'Playlist_DefaultDuo',
     tournamentId: '',
     eventWindowId: '',
+    linkId: {
+      mnemonic: 'playlist_defaultduo',
+    },
   },
   SQUAD: {
     playlistName: 'Playlist_DefaultSquad',
     tournamentId: '',
     eventWindowId: '',
+    linkId: {
+      mnemonic: 'playlist_defaultsquad',
+    },
   },
   CREATIVE: {
     playlistName: 'Playlist_PlaygroundV2',
     tournamentId: '',
     eventWindowId: '',
-  },
-  CREATIVE_PLAY: {
-    playlistName: 'Playlist_Creative_PlayOnly',
-    tournamentId: '',
-    eventWindowId: '',
+    linkId: {
+      mnemonic: 'playlist_playgroundv2',
+    },
   },
 });
 

@@ -27,22 +27,8 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
     this.update({
       'Default:AthenaCosmeticLoadout_j': JSON.stringify({
         AthenaCosmeticLoadout: {
+          ...JSON.parse(defaultPartyMemberMeta['Default:AthenaCosmeticLoadout_j']).AthenaCosmeticLoadout,
           characterDef: `AthenaCharacterItemDefinition'/BRCosmetics/Athena/Items/Cosmetics/Characters/${defaultCharacter}.${defaultCharacter}'`,
-          characterEKey: '',
-          backpackDef: 'None',
-          backpackEKey: '',
-          pickaxeDef: 'AthenaPickaxeItemDefinition\'/BRCosmetics/Athena/Items/Cosmetics/Pickaxes/DefaultPickaxe.DefaultPickaxe\'',
-          pickaxeEKey: '',
-          contrailDef: 'None',
-          contrailEKey: '',
-          scratchpad: [],
-          cosmeticStats: [{
-            statName: 'TotalVictoryCrowns',
-            statValue: 0,
-          }, {
-            statName: 'TotalRoyalRoyales',
-            statValue: 0,
-          }],
         },
       }),
       'Default:CampaignHero_j': JSON.stringify({

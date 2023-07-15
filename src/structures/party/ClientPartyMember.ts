@@ -90,6 +90,7 @@ class ClientPartyMember extends PartyMember {
       ...data,
       LobbyState: {
         gameReadiness: ready ? 'Ready' : 'NotReady',
+        readyInputType: ready ? 'MouseAndKeyboard' : 'Count',
       },
     });
 
@@ -109,6 +110,7 @@ class ClientPartyMember extends PartyMember {
       ...data,
       LobbyState: {
         gameReadiness: sittingOut ? 'SittingOut' : 'NotReady',
+        readyInputType: 'Count',
       },
     });
 
@@ -200,10 +202,10 @@ class ClientPartyMember extends PartyMember {
     const patches: Schema = {};
 
     const parsedVariants: CosmeticsVariantMeta = {
-      AthenaCharacter: {
+      athenaCharacter: {
         i: variants.map((v) => ({
-          v: v.variant,
           c: v.channel,
+          v: v.variant,
           dE: v.dE || 0,
         })),
       },
@@ -229,7 +231,7 @@ class ClientPartyMember extends PartyMember {
     patches['Default:AthenaCosmeticLoadout_j'] = data;
 
     delete variantData.AthenaCosmeticLoadoutVariants.vL.AthenaCharacter;
-    if (parsedVariants.AthenaCharacter?.i[0]) {
+    if (parsedVariants.athenaCharacter?.i[0]) {
       variantData = this.meta.set('Default:AthenaCosmeticLoadoutVariants_j', {
         AthenaCosmeticLoadoutVariants: {
           vL: {
@@ -259,10 +261,10 @@ class ClientPartyMember extends PartyMember {
     const patches: Schema = {};
 
     const parsedVariants: CosmeticsVariantMeta = {
-      AthenaBackpack: {
+      athenaBackpack: {
         i: variants.map((v) => ({
-          v: v.variant,
           c: v.channel,
+          v: v.variant,
           dE: v.dE || 0,
         })),
       },
@@ -279,7 +281,7 @@ class ClientPartyMember extends PartyMember {
     patches['Default:AthenaCosmeticLoadout_j'] = data;
 
     delete variantData.AthenaCosmeticLoadoutVariants.vL.AthenaBackpack;
-    if (parsedVariants.AthenaBackpack?.i[0]) {
+    if (parsedVariants.athenaBackpack?.i[0]) {
       variantData = this.meta.set('Default:AthenaCosmeticLoadoutVariants_j', {
         AthenaCosmeticLoadoutVariants: {
           vL: {
@@ -319,10 +321,10 @@ class ClientPartyMember extends PartyMember {
     const patches: Schema = {};
 
     const parsedVariants: CosmeticsVariantMeta = {
-      AthenaPickaxe: {
+      athenaPickaxe: {
         i: variants.map((v) => ({
-          v: v.variant,
           c: v.channel,
+          v: v.variant,
           dE: v.dE || 0,
         })),
       },
@@ -339,7 +341,7 @@ class ClientPartyMember extends PartyMember {
     patches['Default:AthenaCosmeticLoadout_j'] = data;
 
     delete variantData.AthenaCosmeticLoadoutVariants.vL.AthenaPickaxe;
-    if (parsedVariants.AthenaPickaxe?.i[0]) {
+    if (parsedVariants.athenaPickaxe?.i[0]) {
       variantData = this.meta.set('Default:AthenaCosmeticLoadoutVariants_j', {
         AthenaCosmeticLoadoutVariants: {
           vL: {
@@ -440,7 +442,15 @@ class ClientPartyMember extends PartyMember {
    */
   public async setPlaying(isPlaying = true, playerCount = 100, startedAt = new Date()) {
     await this.sendPatch({
-      'Default:Location_s': this.meta.set('Default:Location_s', isPlaying ? 'InGame' : 'PreLobby'),
+      'Default:DownloadOnDemandProgress_d': this.meta.set('Default:DownloadOnDemandProgress_d', isPlaying ? '1.000000' : '0.000000'),
+      'Default:PackedState_j': this.meta.set('Default:PackedState_j', {
+        ...this.meta.get('Default:PackedState_j'),
+        PackedState: {
+          ...this.meta.get('Default:PackedState_j').PackedState,
+          location: isPlaying ? 'InGame' : 'PreLobby',
+          gameMode: isPlaying ? 'InBattleRoyale' : 'None',
+        },
+      }),
       'Default:LobbyState_j': this.meta.set('Default:LobbyState_j', {
         ...this.meta.get('Default:LobbyState_j'),
         LobbyState: {
@@ -448,7 +458,6 @@ class ClientPartyMember extends PartyMember {
           hasPreloadedAthena: isPlaying,
         },
       }),
-      'Default:SpectateAPartyMemberAvailable_b': this.meta.set('Default:SpectateAPartyMemberAvailable_b', isPlaying),
       'Default:NumAthenaPlayersLeft_U': this.meta.set('Default:NumAthenaPlayersLeft_U', playerCount),
       'Default:UtcTimeStartedMatchAthena_s': this.meta.set('Default:UtcTimeStartedMatchAthena_s', startedAt.toISOString()),
     });
@@ -484,35 +493,13 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
-   * Updates the client party member's assisted challenge info
-   * @param questItemDef The quest item definition
-   * @param objectivesCompleted The quest progress (number of completed objectives)
-   * @throws {EpicgamesAPIError}
-   */
-  public async setAssistedChallenge(questItemDef?: string, objectivesCompleted?: number) {
-    let data = this.meta.get('Default:AssistedChallengeInfo_j');
-
-    data = this.meta.set('Default:AssistedChallengeInfo_j', {
-      ...data,
-      AssistedChallengeInfo: {
-        ...data.AssistedChallengeInfo,
-        questItemDef: questItemDef || 'None',
-        objectivesCompleted: objectivesCompleted || 0,
-      },
-    });
-
-    await this.sendPatch({
-      'Default:AssistedChallengeInfo_j': data,
-    });
-  }
-
-  /**
-   * Updates the client party member's crowns.
-   * Shown when using the EID_Coronet emote
+   * Updates the client party member's cosmetic stats.
+   * Crowns are shown when using the EID_Coronet emote
    * @param crowns The amount of crowns / "Royal Royales"
+   * @param rankedProgression The ranked progression
    * @throws {EpicgamesAPIError}
    */
-  public async setCrowns(crowns: number) {
+  public async setCosmeticStats(crowns: number, rankedProgression: number) {
     let data = this.meta.get('Default:AthenaCosmeticLoadout_j');
 
     data = this.meta.set('Default:AthenaCosmeticLoadout_j', {
@@ -520,6 +507,9 @@ class ClientPartyMember extends PartyMember {
       AthenaCosmeticLoadout: {
         ...data.AthenaCosmeticLoadout,
         cosmeticStats: [{
+          statName: 'HabaneroProgression',
+          statValue: rankedProgression,
+        }, {
           statName: 'TotalVictoryCrowns',
           statValue: 0,
         }, {

@@ -963,9 +963,9 @@ export interface Playlist {
   tournamentId?: string;
   eventWindowId?: string;
   regionId?: string;
-  mnemonic?: string;
   linkId?: {
     mnemonic?: string;
+    version?: number;
   };
 }
 
@@ -984,10 +984,10 @@ export interface CosmeticVariantMeta {
 }
 
 export interface CosmeticsVariantMeta {
-  AthenaCharacter?: CosmeticVariantMeta;
-  AthenaBackpack?: CosmeticVariantMeta;
-  AthenaPickaxe?: CosmeticVariantMeta;
-  AthenaSkyDiveContrail?: CosmeticVariantMeta;
+  athenaCharacter?: CosmeticVariantMeta;
+  athenaBackpack?: CosmeticVariantMeta;
+  athenaPickaxe?: CosmeticVariantMeta;
+  athenaSkyDiveContrail?: CosmeticVariantMeta;
 }
 
 export type CosmeticEnlightment = [number, number];

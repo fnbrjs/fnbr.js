@@ -19,6 +19,10 @@ export default Object.freeze({
     clientId: '5229dcd3ac3845208b496649092f251b',
     secret: 'e3bd2d3e-bf8c-4857-9e7d-f3d947d220c7',
   },
+  fortniteNewSwitchGameClient: {
+    clientId: '98f7e42c2e3a4f86a74eb43fbb41ed39',
+    secret: '0a2449a2-001a-451e-afec-3e812901c4d7',
+  },
   fortniteCNGameClient: {
     clientId: 'efe3cbb938804c74b20e109d0efc1548',
     secret: '6e31bdbae6a44f258474733db74f39ba',

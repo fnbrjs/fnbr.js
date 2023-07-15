@@ -101,6 +101,13 @@ class PartyMember extends User {
   }
 
   /**
+   * Whether the member is sitting out
+   */
+  public get isSittingOut() {
+    return this.meta.isSittingOut;
+  }
+
+  /**
    * The member's current input method
    */
   public get inputMethod() {

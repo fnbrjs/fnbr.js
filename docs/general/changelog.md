@@ -2,8 +2,12 @@
 
 ## 4.0.0
 
-### Changes
+### Additions
 * *WIP*
+
+### Changes
+* Documentation
+  * Updated examples
 
 ### Fixes
 * *WIP*

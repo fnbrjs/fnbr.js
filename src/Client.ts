@@ -337,19 +337,13 @@ class Client extends EventEmitter {
     const presenceCacheSettings = cacheSettings.presences;
     if (presenceCacheSettings && presenceCacheSettings.sweepInterval && presenceCacheSettings.sweepInterval > 0
       && presenceCacheSettings.maxLifetime > 0 && presenceCacheSettings.maxLifetime !== Infinity) {
-      this.setInterval(
-        this.sweepPresences.bind(this),
-        presenceCacheSettings.sweepInterval,
-      );
+      this.setInterval(this.sweepPresences.bind(this), presenceCacheSettings.sweepInterval);
     }
 
     const userCacheSettings = cacheSettings.users;
     if (userCacheSettings && userCacheSettings.sweepInterval && userCacheSettings.sweepInterval > 0
       && userCacheSettings.maxLifetime > 0 && userCacheSettings.maxLifetime !== Infinity) {
-      this.setInterval(
-        this.sweepUsers.bind(this),
-        userCacheSettings.sweepInterval,
-      );
+      this.setInterval(this.sweepUsers.bind(this), userCacheSettings.sweepInterval);
     }
   }
 

@@ -191,7 +191,7 @@ class ClientPartyMember extends PartyMember {
    * Updates the client party member's outfit
    * @param id The outfit's ID
    * @param variants The outfit's variants
-   * @param enlightment The outfit's enlighment
+   * @param enlightment The outfit's enlightment
    * @param path The outfit's path in the game files
    * @throws {EpicgamesAPIError}
    */

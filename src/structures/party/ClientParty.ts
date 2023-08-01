@@ -395,11 +395,17 @@ class ClientParty extends Party {
   /**
    * Updates the party's playlist
    * @param playlist The new playlist
+   * @param regionId The new region id
    * @throws {PartyPermissionError} The client is not the leader of the party
    * @throws {EpicgamesAPIError}
    */
-  public async setPlaylist(playlist: Playlist) {
+  public async setPlaylist(playlist: Playlist, regionId?: string) {
     if (!this.me.isLeader) throw new PartyPermissionError();
+
+    let regionIdData = this.meta.get('Default:RegionID_s');
+    if (regionId) {
+      regionIdData = this.meta.set('Default:RegionID_s', regionId);
+    }
 
     let data = this.meta.get('Default:PlaylistData_j');
     data = this.meta.set('Default:PlaylistData_j', {
@@ -412,6 +418,7 @@ class ClientParty extends Party {
 
     await this.sendPatch({
       'Default:PlaylistData_j': data,
+      'Default:RegionID_s': regionIdData,
     });
   }
 

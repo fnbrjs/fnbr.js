@@ -962,7 +962,6 @@ export interface Playlist {
   playlistName: string;
   tournamentId?: string;
   eventWindowId?: string;
-  regionId?: string;
   linkId?: {
     mnemonic?: string;
     version?: number;

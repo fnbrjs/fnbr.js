@@ -20,14 +20,20 @@ import type {
 } from '../../resources/structs';
 
 const defaultCharacters = [
-  'CID_556_Athena_Commando_F_RebirthDefaultA',
-  'CID_557_Athena_Commando_F_RebirthDefaultB',
-  'CID_558_Athena_Commando_F_RebirthDefaultC',
-  'CID_559_Athena_Commando_F_RebirthDefaultD',
-  'CID_560_Athena_Commando_M_RebirthDefaultA',
-  'CID_561_Athena_Commando_M_RebirthDefaultB',
-  'CID_562_Athena_Commando_M_RebirthDefaultC',
-  'CID_563_Athena_Commando_M_RebirthDefaultD',
+  'CID_A_272_Athena_Commando_F_Prime',
+  'CID_A_273_Athena_Commando_F_Prime_B',
+  'CID_A_274_Athena_Commando_F_Prime_C',
+  'CID_A_275_Athena_Commando_F_Prime_D',
+  'CID_A_276_Athena_Commando_F_Prime_E',
+  'CID_A_277_Athena_Commando_F_Prime_F',
+  'CID_A_278_Athena_Commando_F_Prime_G',
+  'CID_A_279_Athena_Commando_M_Prime',
+  'CID_A_280_Athena_Commando_M_Prime_B',
+  'CID_A_281_Athena_Commando_M_Prime_C',
+  'CID_A_282_Athena_Commando_M_Prime_D',
+  'CID_A_283_Athena_Commando_M_Prime_E',
+  'CID_A_284_Athena_Commando_M_Prime_F',
+  'CID_A_285_Athena_Commando_M_Prime_G',
 ];
 
 export const consoleQuestion = (question: string) => new Promise<string>((resolve) => {

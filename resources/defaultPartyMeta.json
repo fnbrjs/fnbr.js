@@ -10,7 +10,7 @@
   "Default:CurrentRegionId_s": "EU",
   "Default:CustomMatchKey_s": "",
   "Default:FortCommonMatchmakingData_j": "{\"FortCommonMatchmakingData\":{\"current\":{\"linkId\":{\"mnemonic\":\"\",\"version\":-1},\"matchmakingTransaction\":\"NotReady\",\"requester\":\"INVALID\",\"version\":29981},\"phaseUsedForCommit\":\"One\",\"participantData\":{\"requested\":{\"linkId\":{\"mnemonic\":\"\",\"version\":-1},\"matchmakingTransaction\":\"NotReady\",\"requester\":\"INVALID\",\"version\":29981},\"broadcast\":\"ReadyForRequests\",\"version\":1}}}",
-  "Default:FortMatchmakingMemberData_j": "{\"FortMatchmakingMemberData\":{\"current\":{\"members\":[],\"requester\":\"INVALID\",\"version\":1},\"broadcast\":\"ReadyForRequests\",\"version\":1}}}",
+  "Default:FortMatchmakingMemberData_j": "{\"FortMatchmakingMemberData\":{\"current\":{\"members\":[],\"requester\":\"INVALID\",\"version\":1},\"broadcast\":\"ReadyForRequests\",\"version\":1}}",
   "Default:GameSessionKey_s": "",
   "Default:LFGTime_s": "0001-01-01T00:00:00.000Z",
   "Default:MatchmakingInfoString_s": "",

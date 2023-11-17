@@ -49,7 +49,7 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "@discordjs/collection": "^1.5.0",
+    "@discordjs/collection": "^2.0.0",
     "@sapphire/async-queue": "^1.5.0",
     "axios": "^1.3.5",
     "stanza": "^12.18.0",

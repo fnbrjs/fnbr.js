@@ -594,7 +594,7 @@ class Client extends EventEmitter {
     if (onlineType && !toJID) this.config.defaultOnlineType = onlineType;
 
     const rawStatus = {
-      Status: status || this.config.defaultStatus || (this.party && `Battle Royale Lobby - ${this.party.size} / ${this.party.maxSize}`)
+      Status: status || this.config.defaultStatus || (this.party && `Lobby - ${this.party.size} / ${this.party.maxSize}`)
         || 'Playing Battle Royale',
       bIsPlaying: false,
       bIsJoinable: this.party && !this.party.isPrivate && this.party.size !== this.party.maxSize,

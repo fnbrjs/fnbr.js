@@ -711,7 +711,7 @@ class Client extends EventEmitter {
           },
           meta: {
             'urn:epic:cfg:party-type-id_s': 'default',
-            'urn:epic:cfg:build-id_s': '1:3:',
+            'urn:epic:cfg:build-id_s': this.config.partyBuildId,
             'urn:epic:cfg:join-request-action_s': 'Manual',
             'urn:epic:cfg:chat-enabled_b':
               partyConfig.chatEnabled?.toString() || 'true',

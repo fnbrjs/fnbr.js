@@ -11,7 +11,7 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
    * The currently equipped outfit CID
    */
   public get outfit(): string | undefined {
-    return (this.get('Default:AthenaCosmeticLoadout_j')?.AthenaCosmeticLoadout?.characterDef as string)?.match(/(?<=\w*\.)\w*/)?.shift();
+    return (this.get('Default:AthenaCosmeticLoadout_j')?.AthenaCosmeticLoadout?.characterPrimaryAssetId as string)?.replace('AthenaCharacter:', '');
   }
 
   /**

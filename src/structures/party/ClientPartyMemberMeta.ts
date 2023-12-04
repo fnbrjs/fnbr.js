@@ -28,7 +28,7 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
       'Default:AthenaCosmeticLoadout_j': JSON.stringify({
         AthenaCosmeticLoadout: {
           ...JSON.parse(defaultPartyMemberMeta['Default:AthenaCosmeticLoadout_j']).AthenaCosmeticLoadout,
-          characterDef: `AthenaCharacterItemDefinition'/BRCosmetics/Athena/Items/Cosmetics/Characters/${defaultCharacter}.${defaultCharacter}'`,
+          characterPrimaryAssetId: `AthenaCharacter:${defaultCharacter}`,
         },
       }),
       'Default:CampaignHero_j': JSON.stringify({

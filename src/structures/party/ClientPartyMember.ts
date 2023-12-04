@@ -195,7 +195,7 @@ class ClientPartyMember extends PartyMember {
    * @param path The outfit's path in the game files
    * @throws {EpicgamesAPIError}
    */
-  public async setOutfit(id: string, variants: CosmeticVariant[] = [], enlightment?: CosmeticEnlightment, path?: string) {
+  public async setOutfit(id: string, variants: CosmeticVariant[] = [], enlightment?: CosmeticEnlightment) {
     let data = this.meta.get('Default:AthenaCosmeticLoadout_j');
     let variantData = this.meta.get('Default:AthenaCosmeticLoadoutVariants_j');
 
@@ -223,7 +223,7 @@ class ClientPartyMember extends PartyMember {
       ...data,
       AthenaCosmeticLoadout: {
         ...data.AthenaCosmeticLoadout,
-        characterDef: `${path?.replace(/\/$/, '') ?? '/BRCosmetics/Athena/Items/Cosmetics/Characters'}/${id}.${id}`,
+        characterPrimaryAssetId: `AthenaCharacter:${id}`,
         scratchpad,
       },
     });

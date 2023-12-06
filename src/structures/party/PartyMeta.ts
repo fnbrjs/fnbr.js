@@ -23,7 +23,7 @@ class PartyMeta extends Meta<PartySchema> {
    * The region ID (EU, NAE, NAW, etc.)
    */
   public get regionId(): string | undefined {
-    const regionId = this.get('Default:RegionID_s');
+    const regionId = this.get('Default:RegionId_s');
     if (typeof regionId !== 'string' || regionId.length === 0) {
       return undefined;
     }

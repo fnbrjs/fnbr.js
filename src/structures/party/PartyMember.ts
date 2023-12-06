@@ -157,9 +157,9 @@ class PartyMember extends User {
   }
 
   /**
-   * The member's current island
+   * The member's current playlist
    */
-  public get island() {
+  public get playlist() {
     return this.meta.island;
   }
 

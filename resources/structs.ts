@@ -981,6 +981,7 @@ export interface Island {
   sessionId?: string;
   joinInfo?: {
     islandJoinability?: string;
+    bIsWorldJoinable?: boolean;
     sessionKey?: string;
   };
 }

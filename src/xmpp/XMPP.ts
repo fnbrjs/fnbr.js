@@ -723,6 +723,14 @@ class XMPP extends Base {
   public async leaveMUC(jid: string, nick: string) {
     return this.connection!.leaveRoom(jid, nick);
   }
+
+  /**
+   * Bans a member from a multi user chat room
+   * @param member The member that should be banned
+   */
+  public async ban(jid: string, member: string) {
+    return this.connection!.ban(jid, `${member}@${Endpoints.EPIC_PROD_ENV}`);
+  }
 }
 
 export default XMPP;

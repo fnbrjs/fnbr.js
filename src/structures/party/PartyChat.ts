@@ -85,6 +85,17 @@ class PartyChat extends Base {
     await this.client.xmpp.leaveMUC(this.jid, this.nick);
     this.isConnected = false;
   }
+
+  /**
+   * Ban a member from this party chat
+   * @param member The member that should be banned
+   */
+  public async ban(member: string) {
+    await this.joinLock.wait();
+    if (!this.isConnected) await this.join();
+
+    return this.client.xmpp?.ban(this.jid, member);
+  }
 }
 
 export default PartyChat;

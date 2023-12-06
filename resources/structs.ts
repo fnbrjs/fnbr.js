@@ -973,6 +973,11 @@ export interface Island {
     mnemonic?: string;
     version?: number;
   };
+  woldId?: {
+    iD?: string,
+    ownerId?: string;
+    name?: string;
+  };
   sessionId?: string;
   joinInfo?: {
     islandJoinability?: string;

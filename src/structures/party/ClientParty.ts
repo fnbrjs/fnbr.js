@@ -16,7 +16,7 @@ import type PartyMemberConfirmation from './PartyMemberConfirmation';
 import type ClientPartyMember from './ClientPartyMember';
 import type Client from '../../Client';
 import type {
-  PartyData, PartyPrivacy, PartySchema, Playlist,
+  Island, PartyData, PartyPrivacy, PartySchema,
 } from '../../../resources/structs';
 import type PartyMember from './PartyMember';
 import type Friend from '../friend/Friend';

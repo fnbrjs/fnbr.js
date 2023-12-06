@@ -402,9 +402,9 @@ class ClientParty extends Party {
   public async setPlaylist(playlist: Playlist, regionId?: string) {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
-    let regionIdData = this.meta.get('Default:RegionID_s');
+    let regionIdData = this.meta.get('Default:RegionId_s');
     if (regionId) {
-      regionIdData = this.meta.set('Default:RegionID_s', regionId);
+      regionIdData = this.meta.set('Default:RegionId_s', regionId);
     }
 
     let data = this.meta.get('Default:PlaylistData_j');
@@ -418,7 +418,7 @@ class ClientParty extends Party {
 
     await this.sendPatch({
       'Default:PlaylistData_j': data,
-      'Default:RegionID_s': regionIdData,
+      'Default:RegionId_s': regionIdData,
     });
   }
 

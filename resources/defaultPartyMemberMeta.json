@@ -1,4 +1,5 @@
 {
+  "Default:CurrentIsland_j": "{\"CurrentIsland\":{\"linkId\":{\"mnemonic\":\"\",\"version\":-1},\"worldId\":{\"iD\":\"\",\"ownerId\":\"INVALID\",\"name\":\"\"},\"sessionId\":\"\",\"joinInfo\":{\"islandJoinability\":\"CanNotBeJoinedOrWatched\",\"bIsWorldJoinable\":false,\"sessionKey\":\"\"}}}",
   "Default:ArbitraryCustomDataStore_j": "{\"ArbitraryCustomDataStore\":[]}",
   "Default:AthenaBannerInfo_j": "{\"AthenaBannerInfo\":{\"bannerIconId\":\"standardbanner15\",\"bannerColorId\":\"defaultcolor15\",\"seasonLevel\":1}}",
   "Default:AthenaCosmeticLoadoutVariants_j": "{\"AthenaCosmeticLoadoutVariants\":{\"vL\":{},\"fT\":false}}",
@@ -23,6 +24,5 @@
   "Default:PlatformData_j": "{\"PlatformData\":{\"platform\":{\"platformDescription\":{\"name\":\"\",\"platformType\":\"DESKTOP\",\"onlineSubsystem\":\"None\",\"sessionType\":\"\",\"externalAccountType\":\"\",\"crossplayPool\":\"DESKTOP\"}},\"uniqueId\":\"INVALID\",\"sessionId\":\"\"}}",
   "Default:SharedQuests_j": "{\"SharedQuests\":{\"bcktMap\":{},\"pndQst\":\"\"}}",
   "Default:SpectateInfo_j": "{\"SpectateInfo\":{\"gameSessionId\":\"\",\"gameSessionKey\":\"\"}}",
-  "Default:UtcTimeStartedMatchAthena_s": "0001-01-01T00:00:00.000Z",
-  "Default:CurrentIsland_j": "{}"
+  "Default:UtcTimeStartedMatchAthena_s": "0001-01-01T00:00:00.000Z"
 }

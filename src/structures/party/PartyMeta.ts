@@ -1,5 +1,5 @@
 import Meta from '../../util/Meta';
-import type { PartySchema, Playlist } from '../../../resources/structs';
+import type { Island, PartySchema, Playlist } from '../../../resources/structs';
 
 /**
  * Represents a party's meta
@@ -10,6 +10,13 @@ class PartyMeta extends Meta<PartySchema> {
    */
   public get playlist(): Playlist | undefined {
     return this.get('Default:PlaylistData_j')?.PlaylistData;
+  }
+
+  /**
+   * The currently selected island
+   */
+  public get island(): Island | undefined {
+    return this.get('Default:SelectedIsland_j')?.SelectedIsland;
   }
 
   /**

@@ -96,6 +96,13 @@ class Party extends Base {
   }
 
   /**
+   * The currently selected island
+   */
+  public get island() {
+    return this.meta.island;
+  }
+
+  /**
    * The custom matchmaking key
    */
   public get customMatchmakingKey() {

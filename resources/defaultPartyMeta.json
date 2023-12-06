@@ -33,5 +33,6 @@
   "urn:epic:cfg:join-request-action_s": "Manual",
   "urn:epic:cfg:party-type-id_s": "default",
   "urn:epic:cfg:presence-perm_s": "Anyone",
-  "VoiceChat:implementation_s": "VivoxVoiceChat"
+  "VoiceChat:implementation_s": "VivoxVoiceChat",
+  "Default:SelectedIsland_j": "{}"
 }

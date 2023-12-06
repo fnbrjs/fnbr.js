@@ -1,6 +1,6 @@
 import Meta from '../../util/Meta';
 import type {
-  BannerMeta, BattlePassMeta, CosmeticsVariantMeta, MatchMeta, PartyMemberSchema, Platform,
+  BannerMeta, BattlePassMeta, CosmeticsVariantMeta, Island, MatchMeta, PartyMemberSchema, Platform,
 } from '../../../resources/structs';
 
 /**
@@ -116,6 +116,13 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
       matchStartedAt: matchStartedAt && new Date(matchStartedAt),
       playerCount,
     };
+  }
+
+  /**
+   * The current island info
+   */
+  public get island(): Island {
+    return this.get('Default:CurrentIsland_j')?.SelectedIsland;
   }
 
   /**

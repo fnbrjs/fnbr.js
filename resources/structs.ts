@@ -968,6 +968,18 @@ export interface Playlist {
   };
 }
 
+export interface Island {
+  linkId?: {
+    mnemonic?: string;
+    version?: number;
+  };
+  sessionId?: string;
+  joinInfo?: {
+    islandJoinability?: string;
+    sessionKey?: string;
+  };
+}
+
 export interface CosmeticVariant {
   channel: string;
   variant: string;

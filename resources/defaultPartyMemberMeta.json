@@ -23,5 +23,6 @@
   "Default:PlatformData_j": "{\"PlatformData\":{\"platform\":{\"platformDescription\":{\"name\":\"\",\"platformType\":\"DESKTOP\",\"onlineSubsystem\":\"None\",\"sessionType\":\"\",\"externalAccountType\":\"\",\"crossplayPool\":\"DESKTOP\"}},\"uniqueId\":\"INVALID\",\"sessionId\":\"\"}}",
   "Default:SharedQuests_j": "{\"SharedQuests\":{\"bcktMap\":{},\"pndQst\":\"\"}}",
   "Default:SpectateInfo_j": "{\"SpectateInfo\":{\"gameSessionId\":\"\",\"gameSessionKey\":\"\"}}",
-  "Default:UtcTimeStartedMatchAthena_s": "0001-01-01T00:00:00.000Z"
+  "Default:UtcTimeStartedMatchAthena_s": "0001-01-01T00:00:00.000Z",
+  "Default:CurrentIsland_j": "{}"
 }

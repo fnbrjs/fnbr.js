@@ -23,6 +23,7 @@
   "Default:PrivacySettings_j": "{\"PrivacySettings\":{\"partyType\":\"Public\",\"partyInviteRestriction\":\"AnyMember\",\"bOnlyLeaderFriendsCanJoin\":false}}",
   "Default:RawSquadAssignments_j": "{\"RawSquadAssignments\":[]}",
   "Default:RegionID_s": "EU",
+  "Default:SelectedIsland_j": "{\"SelectedIsland\":{\"linkId\":{\"mnemonic\":\"playlist_defaultsquad\",\"version\":-1},\"worldId\":{\"iD\":\"\",\"ownerId\":\"INVALID\",\"name\":\"\"},\"sessionId\":\"\",\"joinInfo\":{\"islandJoinability\":\"CanNotBeJoinedOrWatched\",\"bIsWorldJoinable\":false,\"sessionKey\":\"\"}}}",
   "Default:TileStates_j": "{\"TileStates\":[]}",
   "Default:ZoneInstanceId_s": "",
   "urn:epic:cfg:accepting-members_b": "true",
@@ -33,6 +34,5 @@
   "urn:epic:cfg:join-request-action_s": "Manual",
   "urn:epic:cfg:party-type-id_s": "default",
   "urn:epic:cfg:presence-perm_s": "Anyone",
-  "VoiceChat:implementation_s": "VivoxVoiceChat",
-  "Default:SelectedIsland_j": "{}"
+  "VoiceChat:implementation_s": "VivoxVoiceChat"
 }

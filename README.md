@@ -22,22 +22,20 @@ npm install fnbr
 ```javascript
 const { Client } = require('fnbr');
 
-const client = new Client({
-  auth: {
-    authorizationCode: '',
-  },
-});
+const client = new Client();
 
-client.on('friend:message', (msg) => {
-  console.log(`Message from ${msg.author.displayName}: ${msg.content}`);
-  if (msg.content.toLowerCase().startsWith('ping')) {
-    msg.author.sendMessage('Pong!');
+client.on('friend:message', (message) => {
+  console.log(`Message from ${message.author.displayName}: ${message.content}`);
+  if (message.content.toLowerCase().startsWith('ping')) {
+    message.reply('Pong!');
   }
 });
 
-client.login().then(() => {
-  console.log(`Logged in as ${client.user.displayName}`);
+client.on('ready', () => {
+  console.log(`Logged in as ${client.user.self.displayName}`);
 });
+
+client.login();
 ```
 
 <h2>Links</h2>

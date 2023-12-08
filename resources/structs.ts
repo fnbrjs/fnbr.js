@@ -958,13 +958,21 @@ export interface PartyUpdateData {
   discoverability: 'ALL' | 'INVITED_ONLY';
 }
 
-export interface Playlist {
-  playlistName: string;
-  tournamentId?: string;
-  eventWindowId?: string;
+export interface Island {
   linkId?: {
     mnemonic?: string;
     version?: number;
+  };
+  woldId?: {
+    iD?: string,
+    ownerId?: string;
+    name?: string;
+  };
+  sessionId?: string;
+  joinInfo?: {
+    islandJoinability?: string;
+    bIsWorldJoinable?: boolean;
+    sessionKey?: string;
   };
 }
 

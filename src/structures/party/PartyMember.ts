@@ -157,6 +157,13 @@ class PartyMember extends User {
   }
 
   /**
+   * The member's current playlist
+   */
+  public get playlist() {
+    return this.meta.island;
+  }
+
+  /**
    * Whether a marker has been set
    */
   public get isMarkerSet() {

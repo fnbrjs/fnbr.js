@@ -92,7 +92,7 @@ class Party extends Base {
    * The currently selected playlist
    */
   public get playlist() {
-    return this.meta.playlist;
+    return this.meta.island;
   }
 
   /**

@@ -16,7 +16,7 @@ import type PartyMemberConfirmation from './PartyMemberConfirmation';
 import type ClientPartyMember from './ClientPartyMember';
 import type Client from '../../Client';
 import type {
-  PartyData, PartyPrivacy, PartySchema, Playlist,
+  Island, PartyData, PartyPrivacy, PartySchema,
 } from '../../../resources/structs';
 import type PartyMember from './PartyMember';
 import type Friend from '../friend/Friend';
@@ -394,31 +394,37 @@ class ClientParty extends Party {
 
   /**
    * Updates the party's playlist
-   * @param playlist The new playlist
+   * @param mnemonic The new mnemonic (Playlist id or island code, for example: playlist_defaultduo or 1111-1111-1111)
    * @param regionId The new region id
+   * @param version The new version
+   * @param options Playlist options
    * @throws {PartyPermissionError} The client is not the leader of the party
    * @throws {EpicgamesAPIError}
    */
-  public async setPlaylist(playlist: Playlist, regionId?: string) {
+  public async setPlaylist(mnemonic: string, regionId?: string, version?: number, options?: Omit<Island, 'linkId'>) {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
-    let regionIdData = this.meta.get('Default:RegionID_s');
+    let regionIdData = this.meta.get('Default:RegionId_s');
     if (regionId) {
-      regionIdData = this.meta.set('Default:RegionID_s', regionId);
+      regionIdData = this.meta.set('Default:RegionId_s', regionId);
     }
 
-    let data = this.meta.get('Default:PlaylistData_j');
-    data = this.meta.set('Default:PlaylistData_j', {
+    let data = this.meta.get('Default:SelectedIsland_j');
+    data = this.meta.set('Default:SelectedIsland_j', {
       ...data,
-      PlaylistData: {
-        ...data.PlaylistData,
-        ...playlist,
+      SelectedIsland: {
+        ...data.SelectedIsland,
+        linkId: {
+          mnemonic,
+          version: version ?? -1,
+        },
+        ...options,
       },
     });
 
     await this.sendPatch({
-      'Default:PlaylistData_j': data,
-      'Default:RegionID_s': regionIdData,
+      'Default:SelectedIsland_j': data,
+      'Default:RegionId_s': regionIdData,
     });
   }
 

@@ -1,4 +1,5 @@
 {
+  "Default:CurrentIsland_j": "{\"CurrentIsland\":{\"linkId\":{\"mnemonic\":\"\",\"version\":-1},\"worldId\":{\"iD\":\"\",\"ownerId\":\"INVALID\",\"name\":\"\"},\"sessionId\":\"\",\"joinInfo\":{\"islandJoinability\":\"CanNotBeJoinedOrWatched\",\"bIsWorldJoinable\":false,\"sessionKey\":\"\"}}}",
   "Default:ArbitraryCustomDataStore_j": "{\"ArbitraryCustomDataStore\":[]}",
   "Default:AthenaBannerInfo_j": "{\"AthenaBannerInfo\":{\"bannerIconId\":\"standardbanner15\",\"bannerColorId\":\"defaultcolor15\",\"seasonLevel\":1}}",
   "Default:AthenaCosmeticLoadoutVariants_j": "{\"AthenaCosmeticLoadoutVariants\":{\"vL\":{},\"fT\":false}}",

@@ -211,6 +211,15 @@ class PartyMember extends User {
   }
 
   /**
+   * Bans this member from the client's party.
+   */
+  public async chatBan() {
+    // This is a very hacky solution, but it's required since we cannot import ClientParty (circular dependencies)
+    if (typeof (this.party as any).chatBan !== 'function') throw new PartyPermissionError();
+    return (this.party as any).chatBan(this.id);
+  }
+
+  /**
    * Updates this members data
    * @param data The update data
    */

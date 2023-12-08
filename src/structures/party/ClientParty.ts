@@ -260,6 +260,14 @@ class ClientParty extends Party {
   }
 
   /**
+   * Ban a member from this party chat
+   * @param member The member that should be banned
+   */
+  public async chatBan(member: string) {
+    return this.chat.ban(member);
+  }
+
+  /**
    * Updates this party's privacy settings
    * @param privacy The updated party privacy
    * @param sendPatch Whether the updated privacy should be sent to epic's servers

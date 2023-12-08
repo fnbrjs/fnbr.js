@@ -958,16 +958,6 @@ export interface PartyUpdateData {
   discoverability: 'ALL' | 'INVITED_ONLY';
 }
 
-export interface Playlist {
-  playlistName: string;
-  tournamentId?: string;
-  eventWindowId?: string;
-  linkId?: {
-    mnemonic?: string;
-    version?: number;
-  };
-}
-
 export interface Island {
   linkId?: {
     mnemonic?: string;

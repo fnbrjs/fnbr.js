@@ -31,7 +31,7 @@ client.on('friend:message', (message) => {
 });
 
 client.on('ready', () => {
-  console.log(`Logged in as ${client.user.displayName}`);
+  console.log(`Logged in as ${client.user.self.displayName}`);
 });
 
 client.login();

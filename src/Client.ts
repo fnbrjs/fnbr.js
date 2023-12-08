@@ -23,10 +23,8 @@ import PartyPermissionError from './exceptions/PartyPermissionError';
 import SentPartyJoinRequest from './structures/party/SentPartyJoinRequest';
 import RadioStation from './structures/RadioStation';
 import CreativeIslandNotFoundError from './exceptions/CreativeIslandNotFoundError';
-import STWProfile from './structures/stw/STWProfile';
 import Stats from './structures/Stats';
 import NewsMessage from './structures/NewsMessage';
-import STWNewsMessage from './structures/stw/STWNewsMessage';
 import EventTimeoutError from './exceptions/EventTimeoutError';
 import FortniteServerStatus from './structures/FortniteServerStatus';
 import EpicgamesServerStatus from './structures/EpicgamesServerStatus';
@@ -35,6 +33,7 @@ import { AuthSessionStoreKey } from '../resources/enums';
 import EpicgamesAPIError from './exceptions/EpicgamesAPIError';
 import UserManager from './managers/UserManager';
 import FriendManager from './managers/FriendManager';
+import STWManager from './managers/STWManager';
 import type { PresenceShow } from 'stanza/Constants';
 import type {
   BlurlStreamData, CreativeIslandData,
@@ -42,7 +41,7 @@ import type {
 } from '../resources/httpResponses';
 import type {
   ClientOptions, ClientConfig, ClientEvents, PartyConfig, Schema,
-  Region, BlurlStream, STWWorldInfoData, Language, PartyData,
+  Region, BlurlStream, Language, PartyData,
   PartySchema, PresenceOnlineType, BRAccountLevelData,
 } from '../resources/structs';
 
@@ -121,6 +120,11 @@ class Client extends EventEmitter {
    * The last saved client party member meta
    */
   public lastPartyMemberMeta?: Schema;
+
+  /**
+   * Fortnite: Save The World manager
+   */
+  public stw: STWManager;
 
   /**
    * @param config The client's configuration options
@@ -203,6 +207,8 @@ class Client extends EventEmitter {
     this.party = undefined;
     this.tournaments = new TournamentManager(this);
     this.lastPartyMemberMeta = this.config.defaultPartyMemberMeta;
+
+    this.stw = new STWManager(this);
   }
 
   // Events
@@ -1212,79 +1218,6 @@ class Client extends EventEmitter {
     }, AuthSessionStoreKey.Fortnite);
 
     return creativeDiscovery;
-  }
-
-  /* -------------------------------------------------------------------------- */
-  /*                           FORTNITE SAVE THE WORLD                          */
-  /* -------------------------------------------------------------------------- */
-
-  /**
-   * Fetches the Save The World profile for a players
-   * @param user The id or display name of the user
-   * @throws {UserNotFoundError} The user wasn't found
-   * @throws {EpicgamesAPIError}
-   */
-  public async getSTWProfile(user: string) {
-    const resolvedUser = await this.user.fetch(user);
-    if (!resolvedUser) throw new UserNotFoundError(user);
-
-    let queryProfileResponse;
-    try {
-      queryProfileResponse = await this.http.epicgamesRequest({
-        method: 'POST',
-        url: `${Endpoints.MCP}/${resolvedUser.id}/public/QueryPublicProfile?profileId=campaign`,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        data: {},
-      }, AuthSessionStoreKey.Fortnite);
-    } catch (e) {
-      if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.modules.profiles.profile_not_found') {
-        throw new UserNotFoundError(user);
-      }
-
-      throw e;
-    }
-
-    return new STWProfile(this, queryProfileResponse.profileChanges[0].profile, resolvedUser);
-  }
-
-  /**
-   * Fetches the current Save The World news
-   * @param language The language of the news
-   * @throws {EpicgamesAPIError}
-   */
-  public async getSTWNews(language = this.config.language): Promise<STWNewsMessage[]> {
-    const newsResponse = await this.http.epicgamesRequest({
-      method: 'GET',
-      url: `${Endpoints.BR_NEWS}/savetheworldnews?lang=${language}`,
-      headers: {
-        'Accept-Language': language,
-      },
-    }, AuthSessionStoreKey.Fortnite);
-
-    return newsResponse.news.messages.map((m: any) => new STWNewsMessage(this, m));
-  }
-
-  /**
-   * Fetches the current Save The World world info
-   * @param language The language of the world info
-   * @throws {EpicgamesAPIError}
-   */
-  public async getSTWWorldInfo(language = this.config.language): Promise<STWWorldInfoData> {
-    const worldInfoResponse = await this.http.epicgamesRequest({
-      method: 'GET',
-      url: Endpoints.STW_WORLD_INFO,
-      headers: {
-        'Accept-Language': language,
-      },
-    }, AuthSessionStoreKey.Fortnite);
-
-    return {
-      theaters: worldInfoResponse.theaters,
-      missions: worldInfoResponse.missions,
-      missionAlerts: worldInfoResponse.missionAlerts,
-    };
   }
 }
 

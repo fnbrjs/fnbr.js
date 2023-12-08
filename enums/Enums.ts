@@ -25,6 +25,17 @@ export interface IPlatformEnum {
   PLAYSTATION_5: IPlatform;
 }
 
+export interface PlaylistEnum {
+  SOLO: 'playlist_defaultsolo';
+  DUO: 'playlist_defaultduo';
+  TRIOS: 'playlist_trios';
+  SQUAD: 'playlist_defaultsquad';
+  CREATIVE: 'playlist_playgroundv2';
+  LEGO: 'playlist_juno';
+  ROCKET_RACING: 'playlist_delmar';
+  FESTIVAL: 'playlist_sparksrhythm';
+}
+
 export interface IPresenceOnlineTypeEnum {
   ONLINE: IPresenceOnlineType;
   CHAT: IPresenceOnlineType;
@@ -133,39 +144,15 @@ export const Platform: Readonly<IPlatformEnum> = Object.freeze({
   PLAYSTATION_5: 'PS5',
 });
 
-export const Playlist = Object.freeze({
-  SOLO: {
-    playlistName: 'Playlist_DefaultSolo',
-    tournamentId: '',
-    eventWindowId: '',
-    linkId: {
-      mnemonic: 'playlist_defaultsolo',
-    },
-  },
-  DUO: {
-    playlistName: 'Playlist_DefaultDuo',
-    tournamentId: '',
-    eventWindowId: '',
-    linkId: {
-      mnemonic: 'playlist_defaultduo',
-    },
-  },
-  SQUAD: {
-    playlistName: 'Playlist_DefaultSquad',
-    tournamentId: '',
-    eventWindowId: '',
-    linkId: {
-      mnemonic: 'playlist_defaultsquad',
-    },
-  },
-  CREATIVE: {
-    playlistName: 'Playlist_PlaygroundV2',
-    tournamentId: '',
-    eventWindowId: '',
-    linkId: {
-      mnemonic: 'playlist_playgroundv2',
-    },
-  },
+export const Playlist : Readonly<PlaylistEnum> = Object.freeze({
+  SOLO: 'playlist_defaultsolo',
+  DUO: 'playlist_defaultduo',
+  TRIOS: 'playlist_trios',
+  SQUAD: 'playlist_defaultsquad',
+  CREATIVE: 'playlist_playgroundv2',
+  LEGO: 'playlist_juno',
+  ROCKET_RACING: 'playlist_delmar',
+  FESTIVAL: 'playlist_sparksrhythm',
 });
 
 export const Language = Object.freeze({

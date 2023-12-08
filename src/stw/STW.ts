@@ -18,7 +18,7 @@ class STW extends Base {
    * @throws {UserNotFoundError} The user wasn't found
    * @throws {EpicgamesAPIError}
    */
-  public async getSTWProfile(user: string) {
+  public async getProfile(user: string) {
     const resolvedUser = await this.client.user.fetch(user);
     if (!resolvedUser) throw new UserNotFoundError(user);
 
@@ -48,7 +48,7 @@ class STW extends Base {
    * @param language The language of the news
    * @throws {EpicgamesAPIError}
    */
-  public async getSTWNews(language = this.client.config.language): Promise<STWNewsMessage[]> {
+  public async getNews(language = this.client.config.language): Promise<STWNewsMessage[]> {
     const newsResponse = await this.client.http.epicgamesRequest({
       method: 'GET',
       url: `${Endpoints.BR_NEWS}/savetheworldnews?lang=${language}`,
@@ -65,7 +65,7 @@ class STW extends Base {
    * @param language The language of the world info
    * @throws {EpicgamesAPIError}
    */
-  public async getSTWWorldInfo(language = this.client.config.language): Promise<STWWorldInfoData> {
+  public async getWorldInfo(language = this.client.config.language): Promise<STWWorldInfoData> {
     const worldInfoResponse = await this.client.http.epicgamesRequest({
       method: 'GET',
       url: Endpoints.STW_WORLD_INFO,

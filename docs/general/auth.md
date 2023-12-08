@@ -23,7 +23,7 @@ const { Client } = require('fnbr');
   client.on('deviceauth:created', (da) => writeFile('./deviceAuth.json', JSON.stringify(da, null, 2)));
 
   await client.login();
-  console.log(`Logged in as ${client.user.displayName}`);
+  console.log(`Logged in as ${client.user.self.displayName}`);
 })();
 ```
 

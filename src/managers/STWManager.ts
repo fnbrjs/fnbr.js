@@ -9,9 +9,8 @@ import type { STWWorldInfoData } from '../../resources/structs';
 
 /**
  * Represents the client's STW manager
- * @private
  */
-class STW extends Base {
+class STWManager extends Base {
   /**
    * Fetches the Save The World profile for a players
    * @param user The id or display name of the user
@@ -82,4 +81,4 @@ class STW extends Base {
   }
 }
 
-export default STW;
+export default STWManager;

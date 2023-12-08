@@ -33,7 +33,7 @@ import { AuthSessionStoreKey } from '../resources/enums';
 import EpicgamesAPIError from './exceptions/EpicgamesAPIError';
 import UserManager from './managers/UserManager';
 import FriendManager from './managers/FriendManager';
-import STW from './stw/STW';
+import STWManager from './managers/STWManager';
 import type { PresenceShow } from 'stanza/Constants';
 import type {
   BlurlStreamData, CreativeIslandData,
@@ -124,7 +124,7 @@ class Client extends EventEmitter {
   /**
    * Fortnite: Save The World manager
    */
-  public stw: STW;
+  public stw: STWManager;
 
   /**
    * @param config The client's configuration options
@@ -208,7 +208,7 @@ class Client extends EventEmitter {
     this.tournaments = new TournamentManager(this);
     this.lastPartyMemberMeta = this.config.defaultPartyMemberMeta;
 
-    this.stw = new STW(this);
+    this.stw = new STWManager(this);
   }
 
   // Events

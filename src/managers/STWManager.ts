@@ -49,14 +49,45 @@ class STWManager extends Base {
    */
   public async getNews(language = this.client.config.language): Promise<STWNewsMessage[]> {
     const newsResponse = await this.client.http.epicgamesRequest({
-      method: 'GET',
-      url: `${Endpoints.BR_NEWS}/savetheworldnews?lang=${language}`,
+      method: 'POST',
+      url: Endpoints.STW_NEWS_MOTD,
+      data: {
+        accountLevel: 0,
+        alienArtifacts: 0,
+        battlepass: false,
+        battlepassItemsClaimed: 0,
+        battlepassLevel: 1,
+        battlepassStars: 0,
+        completedQuests: [],
+        countOfDragonBalls: 0,
+        country: 'DE',
+        dateLastPlayed: '1901-12-13T20:45:52.000Z',
+        dateLastPlayedArena: '1901-12-13T20:45:52.000Z',
+        dateLastPlayedSaveTheWorld: '2022-11-01T23:25:31.000Z',
+        dateLastPlayedTournament: '1901-12-13T20:45:52.000Z',
+        daysSinceLastSession: 44153.14098048611,
+        globalCash: 0,
+        isRestricted: true,
+        language,
+        lifetimeWins: 0,
+        onLogin: true,
+        ownsSaveTheWorld: true,
+        platform: 'Windows',
+        progressiveBackblingStage: 0,
+        seasonHoursPlayed: 0,
+        serverRegion: 'EU',
+        socialTags: [],
+        stylePoints: 0,
+        subscription: false,
+        totalHoursPlayed: 0,
+        unlockedPages: 1,
+      },
       headers: {
         'Accept-Language': language,
       },
     }, AuthSessionStoreKey.Fortnite);
 
-    return newsResponse.news.messages.map((m: any) => new STWNewsMessage(this.client, m));
+    return newsResponse?.contentItems.map((m: any) => new STWNewsMessage(this.client, m));
   }
 
   /**

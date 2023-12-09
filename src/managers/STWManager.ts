@@ -47,7 +47,7 @@ class STWManager extends Base {
    * @param language The language of the news
    * @throws {EpicgamesAPIError}
    */
-  public async getNews(language = this.client.config.language): Promise<STWNewsMessage[]> {
+  public async getNews(language = this.client.config.language, customPayload?: any): Promise<STWNewsMessage[]> {
     const newsResponse = await this.client.http.epicgamesRequest({
       method: 'POST',
       url: Endpoints.STW_NEWS_MOTD,
@@ -81,6 +81,7 @@ class STWManager extends Base {
         subscription: false,
         totalHoursPlayed: 0,
         unlockedPages: 1,
+        ...customPayload,
       },
       headers: {
         'Accept-Language': language,

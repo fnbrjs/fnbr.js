@@ -1,34 +1,37 @@
 module.exports = {
   env: {
-    es2021: true,
+    es2022: true,
     node: true,
   },
-  extends: ['airbnb-base'],
-  parser: '@typescript-eslint/parser',
+  extends: [
+    'airbnb-base',
+    'airbnb-typescript/base',
+  ],
   parserOptions: {
-    ecmaVersion: 12,
-    sourceType: 'module',
+    project: './tsconfig.eslint.json',
   },
-  plugins: ['@typescript-eslint'],
   rules: {
-    'import/extensions': 'off',
-    'lines-between-class-members': [
+    '@typescript-eslint/lines-between-class-members': [
       'error',
       'always',
       { exceptAfterSingleLine: true },
     ],
+    '@typescript-eslint/consistent-type-imports': 'error',
+    'import/order': ['error', {
+      groups: [['builtin', 'external'], ['internal', 'parent', 'sibling', 'index', 'object'], 'type'],
+      'newlines-between': 'never',
+    }],
+    'max-len': ['error', { code: 150 }],
+    'no-restricted-syntax': 'off',
+    'no-promise-executor-return': 'off',
     'default-case': 'off',
-    'max-len': 'off',
-    'no-underscore-dangle': 'off',
-    'no-dupe-class-members': 'off',
-    'function-paren-newline': 'off',
-    'function-call-argument-newline': 'off',
-    'default-param-last': 'off',
+    'no-return-await': 'off',
+    '@typescript-eslint/return-await': ['error', 'in-try-catch'],
   },
   settings: {
     'import/resolver': {
       node: {
-        extensions: ['.js', '.jsx', '.ts', '.tsx'],
+        extensions: ['.js', '.ts'],
       },
     },
   },

@@ -1,10 +1,10 @@
-import { STWProfileHeroData } from '../../../resources/httpResponses';
-import { STWItemRarity, STWHeroType, STWItemTier } from '../../../resources/structs';
-import Client from '../../client/Client';
 import {
   calcSTWNonSurvivorPowerLevel, parseSTWHeroTemplateId,
 } from '../../util/Util';
 import STWItem from './STWItem';
+import type { STWProfileHeroData } from '../../../resources/httpResponses';
+import type { STWItemRarity, STWHeroType, STWItemTier } from '../../../resources/structs';
+import type Client from '../../Client';
 
 /**
  * Represents a Save The World profile's hero

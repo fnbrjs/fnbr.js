@@ -31,7 +31,7 @@ client.on('friend:message', (message) => {
 });
 
 client.on('ready', () => {
-  console.log(`Logged in as ${client.user.displayName}`);
+  console.log(`Logged in as ${client.user.self.displayName}`);
 });
 
 client.login();
@@ -43,7 +43,7 @@ Feel free to join [this Discord server](https://discord.gg/j5xZ54RJvR)
 ## License
 MIT License
 
-Copyright (c) 2020-2021 Nils S.
+Copyright (c) 2020-2023 Nils S.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -1,8 +1,8 @@
-import { PresencePartyData } from '../../../resources/structs';
-import Base from '../../client/Base';
-import Client from '../../client/Client';
+import Base from '../../Base';
 import PartyPermissionError from '../../exceptions/PartyPermissionError';
-import Party from './Party';
+import type { PresencePartyData } from '../../../resources/structs';
+import type Client from '../../Client';
+import type Party from './Party';
 
 /**
  * Represents a party received by a friend's presence

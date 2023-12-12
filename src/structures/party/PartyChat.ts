@@ -1,10 +1,10 @@
-import Base from '../../client/Base';
-import Client from '../../client/Client';
+import Base from '../../Base';
 import SendMessageError from '../../exceptions/SendMessageError';
 import AsyncLock from '../../util/AsyncLock';
-import ClientParty from './ClientParty';
-import ClientPartyMember from './ClientPartyMember';
 import PartyMessage from './PartyMessage';
+import type Client from '../../Client';
+import type ClientParty from './ClientParty';
+import type ClientPartyMember from './ClientPartyMember';
 
 /**
  * Represents a party's multi user chat room (MUC)
@@ -47,7 +47,7 @@ class PartyChat extends Base {
 
     this.party = party;
     this.jid = `Party-${this.party?.id}@muc.prod.ol.epicgames.com`;
-    this.nick = `${this.client.user?.displayName}:${this.client.user?.id}:${this.client.xmpp.resource}`;
+    this.nick = `${this.client.user.self!.displayName}:${this.client.user.self!.id}:${this.client.xmpp.resource}`;
     this.isConnected = false;
   }
 
@@ -84,6 +84,17 @@ class PartyChat extends Base {
   public async leave() {
     await this.client.xmpp.leaveMUC(this.jid, this.nick);
     this.isConnected = false;
+  }
+
+  /**
+   * Ban a member from this party chat
+   * @param member The member that should be banned
+   */
+  public async ban(member: string) {
+    await this.joinLock.wait();
+    if (!this.isConnected) await this.join();
+
+    return this.client.xmpp?.ban(this.jid, member);
   }
 }
 

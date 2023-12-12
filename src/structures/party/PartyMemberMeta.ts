@@ -1,8 +1,7 @@
-import {
-  AssistedChallengeMeta,
-  BannerMeta, BattlePassMeta, CosmeticsVariantMeta, MatchMeta, PartyMemberSchema, Platform,
-} from '../../../resources/structs';
 import Meta from '../../util/Meta';
+import type {
+  BannerMeta, BattlePassMeta, CosmeticsVariantMeta, Island, MatchMeta, PartyMemberSchema, Platform,
+} from '../../../resources/structs';
 
 /**
  * Represents a party member meta
@@ -12,7 +11,7 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
    * The currently equipped outfit CID
    */
   public get outfit(): string | undefined {
-    return (this.get('Default:AthenaCosmeticLoadout_j')?.AthenaCosmeticLoadout?.characterDef as string)?.match(/(?<=\w*\.)\w*/)?.shift();
+    return (this.get('Default:AthenaCosmeticLoadout_j')?.AthenaCosmeticLoadout?.characterPrimaryAssetId as string)?.replace('AthenaCharacter:', '');
   }
 
   /**
@@ -43,6 +42,13 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
    */
   public get isReady() {
     return this.get('Default:LobbyState_j')?.LobbyState?.gameReadiness === 'Ready';
+  }
+
+  /**
+   * Whether the member is sitting out
+   */
+  public get isSittingOut() {
+    return this.get('Default:LobbyState_j')?.LobbyState?.gameReadiness === 'SittingOut';
   }
 
   /**
@@ -99,19 +105,24 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
    * The match info
    */
   public get match(): MatchMeta {
-    const location = this.get('Default:Location_s');
+    const location = this.get('Default:PackedState_j')?.PackedState?.location;
     const hasPreloadedAthena = this.get('Default:LobbyState_j')?.LobbyState?.hasPreloadedAthena;
-    const isSpectatable = this.get('Default:SpectateAPartyMemberAvailable_b');
     const playerCount = this.get('Default:NumAthenaPlayersLeft_U');
     const matchStartedAt = this.get('Default:UtcTimeStartedMatchAthena_s');
 
     return {
       hasPreloadedAthena,
-      isSpectatable,
       location,
       matchStartedAt: matchStartedAt && new Date(matchStartedAt),
       playerCount,
     };
+  }
+
+  /**
+   * The current island info
+   */
+  public get island(): Island {
+    return this.get('Default:CurrentIsland_j')?.SelectedIsland;
   }
 
   /**
@@ -132,23 +143,10 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
   }
 
   /**
-   * The assisted challenge
-   */
-  public get assistedChallenge(): AssistedChallengeMeta | undefined {
-    const challenge = this.get('Default:AssistedChallengeInfo_j')?.AssistedChallengeInfo;
-    if (!challenge) return undefined;
-
-    return {
-      questItemDef: challenge.questItemDef,
-      objectivesCompleted: challenge.objectivesCompleted,
-    };
-  }
-
-  /**
    * Whether the member owns Save The World
    */
   public get hasPurchasedSTW() {
-    return !!this.get('Default:HasPurchasedSTW_b');
+    return !!this.get('Default:PackedState_j').PackedState?.hasPurchasedSTW;
   }
 }
 

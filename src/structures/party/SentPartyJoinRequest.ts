@@ -1,6 +1,6 @@
 import BasePartyJoinRequest from './BasePartyJoinRequest';
-import ClientUser from '../user/ClientUser';
-import Friend from '../friend/Friend';
+import type ClientUser from '../user/ClientUser';
+import type Friend from '../friend/Friend';
 
 /**
  * Represents an outgoing party join request

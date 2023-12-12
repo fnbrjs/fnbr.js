@@ -1,5 +1,59 @@
 # Changelog
 
+## 4.0.0
+
+### Additions
+* User Cache
+  * Added a user cache that is disabled by default
+* Party
+  * Added `PartyMember#isSittingOut`
+  * Added `PartyMember#playlist`
+  * Added `PartyMember#chatBan()` and `ClientParty#chatBan()` to ban a party member from the party chat
+* Login Errors
+  * Added `AuthenticationMissingError`, `XMPPConnectionError` and `XMPPConnectionTimeoutError` to improve error handling
+* Client Config
+  * Added `ClientOptions#xmppMaxConnectionRetries`
+  * Added `ClientOptions#disablePartyService`
+  * Added `ClientSettings#friendOfflineTimeout` to define after how many ms after the last presence was received the client will consider a friend offline
+* Auth Clients
+  * Added `fortniteNewSwitchGameClient` to the list of available clients
+
+### Changes
+* Party
+  * **(Breaking)** `ClientParty#setPlaylist()` no longer accepts a `Playlist` struct
+  * **(Breaking)** Removed `PartyMember#assistedChallenge`
+* Friends
+  * **(Breaking)** Moved `Client#friends` to `FriendManager#list`
+  * **(Breaking)** Moved `Client#addFriend()`, `Client#removeFriend()`, `Client#sendFriendMessage()` and `Client#checkFriendOfferOwnership()` to `FriendManager#add()`, `FriendManager#remove()`, `FriendManager#sendMessage()` and `FriendManager#checkOfferOwnership()` respectively
+* Users
+  * **(Breaking)** Moved `Client#getProfile()` to `UserManager#fetch()` and `UserManager#fetchMultiple()`
+  * **(Breaking)** Moved `Client#blockedUsers` to `UserManager#blocklist`
+  * **(Breaking)** Moved `Client#blockUser()` and `Client#unblockUser()` to `UserManager#block()` and `UserManager#unblock()` respectively
+  * **(Breaking)** Moved `Client#searchProfiles()`, `Client#getUserAvatar()`, `Client#getGlobalProfile()` to `UserManager#search()`, `UserManager#fetchAvatar()` (and `UserManager#fetchAvatarMultiple()`) and `UserManager#fetchGlobalProfile()` (and `UserManager#fetchGlobalProfileMultiple()`) respectively
+* Tournaments
+  * **(Breaking)** Moved `Client#getTournaments()`, `Client#getTournamentSessionMetadata()`, `Client#getTournamentWindowResults()`, `Client#getEventTokens()` and `Client#downloadTournamentReplay()` to `TournamentManager#get()`, `TournamentManager#getData()`, `TournamentManager#getSessionMetadata()`, `TournamentManager#getWindowResults()` `TournamentManager#getEventTokens()` and `TournamentManager#downloadReplayCDNFile()` respectively
+* STW
+  * **(Breaking)** Moved `Client#getSTWProfile()`, `Client#getSTWNews()` and `Client#getSTWWorldInfo()` to `STWManager#getProfile()`, `STWManager#getNews()` and `STWManager#getWorldInfo()` respectively
+* Enums
+  * **(Breaking)** Updated the `Playlist` enum to include the currently available playlists
+* Structures
+  * **(Breaking)** Renamed `Playlist` interface to `Island` and updated its properties
+  * **(Breaking)** `CosmeticsVariantMeta` now has lower-case keys
+* Party Meta
+  * Removed the `path` property from `ClientPartyMember#setOutfit()` as it's no longer needed
+* Documentation
+  * Updated examples
+
+### Fixes
+* Party Meta
+  * Updated `ClientPartyMember#setOutfit()` to use the new structure
+  * Added, changed and removed various party meta keys to match what the game uses
+* Misc
+  * Removed some unused GraphQL code
+  * Minor bug fixes
+
+<hr>
+
 ## 3.1.6
 
 ### Additions

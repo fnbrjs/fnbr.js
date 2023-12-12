@@ -1,21 +1,6 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-restricted-syntax */
-import {
-  STWProfileData,
-  STWProfileHeroData,
-  STWProfileHeroLoadoutData,
-  STWProfileLockerData,
-  STWProfileResourceData,
-  STWProfileSchematicData,
-  STWProfileSurvivorData,
-} from '../../../resources/httpResponses';
 import PowerLevelCurves from '../../../resources/PowerLevelCurves';
-import {
-  STWFORTStats,
-  STWSurvivorSquads,
-  UserData,
-} from '../../../resources/structs';
-import Client from '../../client/Client';
 import { parseSTWSchematicTemplateId } from '../../util/Util';
 import STWHero from './STWHero';
 import STWHeroLoadout from './STWHeroLoadout';
@@ -31,6 +16,21 @@ import STWTeamPerk from './STWTeamPerk';
 import STWTrapSchematic from './STWTrapSchematic';
 import STWWeaponSchematic from './STWWeaponSchematic';
 import User from '../user/User';
+import type Client from '../../Client';
+import type {
+  STWFORTStats,
+  STWSurvivorSquads,
+  UserData,
+} from '../../../resources/structs';
+import type {
+  STWProfileData,
+  STWProfileHeroData,
+  STWProfileHeroLoadoutData,
+  STWProfileLockerData,
+  STWProfileResourceData,
+  STWProfileSchematicData,
+  STWProfileSurvivorData,
+} from '../../../resources/httpResponses';
 
 /**
  * Represents a Save The World profile
@@ -89,6 +89,7 @@ class STWProfile extends User {
   constructor(client: Client, data: STWProfileData, userData: UserData) {
     super(client, userData);
 
+    // eslint-disable-next-line no-underscore-dangle
     this.profileId = data._id;
     this.createdAt = new Date(data.created);
     this.updatedAt = new Date(data.updated);

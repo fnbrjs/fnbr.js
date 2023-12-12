@@ -1,13 +1,13 @@
-import { STWProfileSchematicData } from '../../../resources/httpResponses';
-import {
+import { calcSTWNonSurvivorPowerLevel, parseSTWSchematicTemplateId } from '../../util/Util';
+import STWItem from './STWItem';
+import type { STWProfileSchematicData } from '../../../resources/httpResponses';
+import type {
   STWItemRarity, STWItemTier,
   STWSchematicEvoType,
   STWSchematicMeleeSubType, STWSchematicRangedSubType, STWSchematicTrapSubType,
   STWSchematicType,
 } from '../../../resources/structs';
-import Client from '../../client/Client';
-import { calcSTWNonSurvivorPowerLevel, parseSTWSchematicTemplateId } from '../../util/Util';
-import STWItem from './STWItem';
+import type Client from '../../Client';
 
 /**
  * Represents a Save The World profile's schematic

@@ -1,8 +1,9 @@
-import {
+import type {
   TournamentWindowBlackoutPeriod, TournamentWindowData, TournamentWindowMetadata, TournamentWindowScoreLocation,
-  TournamentWindowTemplateData, TournamentWindowTemplatePayoutTable, TournamentWindowTemplateScoringRule, TournamentWindowTemplateTiebreakFormula,
+  TournamentWindowTemplateData, TournamentWindowTemplatePayoutTable, TournamentWindowTemplateScoringRule,
+  TournamentWindowTemplateTiebreakFormula,
 } from '../../resources/httpResponses';
-import Tournament from './Tournament';
+import type Tournament from './Tournament';
 
 /**
  * Represents a Fortnite tournament window
@@ -182,7 +183,7 @@ class TournamentWindow {
    * @param showLiveSessions Whether to show live sessions
    */
   public async getResults(page = 0, showLiveSessions = false) {
-    return this.tournament.client.getTournamentWindowResults(this.tournament.id, this.id, showLiveSessions, page);
+    return this.tournament.client.tournaments.getWindowResults(this.tournament.id, this.id, showLiveSessions, page);
   }
 }
 

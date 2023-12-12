@@ -1,8 +1,8 @@
-import { PartyMessageData } from '../../../resources/structs';
-import Client from '../../client/Client';
 import BaseMessage from '../BaseMessage';
-import ClientParty from './ClientParty';
-import PartyMember from './PartyMember';
+import type { PartyMessageData } from '../../../resources/structs';
+import type Client from '../../Client';
+import type ClientParty from './ClientParty';
+import type PartyMember from './PartyMember';
 
 /**
  * Represents a party chat message

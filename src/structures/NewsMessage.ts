@@ -1,8 +1,8 @@
-import Base from '../client/Base';
-import Client from '../client/Client';
+import Base from '../Base';
 import Image from './Image';
 import NewsMessageVideo from './NewsMessageVideo';
-import { NewsMessageOffer, NewsMessagePlaylist } from '../../resources/structs';
+import type Client from '../Client';
+import type { NewsMessageOffer, NewsMessagePlaylist } from '../../resources/structs';
 
 /**
  * Represents a fortnite news message

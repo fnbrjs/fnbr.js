@@ -1,7 +1,7 @@
-import Base from '../../client/Base';
-import Client from '../../client/Client';
-import ClientUser from '../user/ClientUser';
-import Friend from '../friend/Friend';
+import Base from '../../Base';
+import type Client from '../../Client';
+import type ClientUser from '../user/ClientUser';
+import type Friend from '../friend/Friend';
 
 /**
  * Represents an incoming or outgoing party join request

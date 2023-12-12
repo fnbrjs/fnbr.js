@@ -2,7 +2,11 @@
 import readline from 'readline';
 import zlib from 'zlib';
 import crypto from 'crypto';
-import {
+import { promises as fs } from 'fs';
+import { STWLeadSynergy } from '../../enums/Enums';
+import BinaryWriter from './BinaryWriter';
+import PowerLevelCurves from '../../resources/PowerLevelCurves';
+import type {
   Schema, ReplayData, ReplayDataChunk, ReplayEvent,
   STWItemRarity, STWSurvivorType, STWSurvivorSquads,
   STWHeroType,
@@ -11,20 +15,25 @@ import {
   STWSchematicType,
   STWSchematicEvoType,
   STWSchematicSubType,
+  AuthStringResolveable,
+  DeviceAuthResolveable,
 } from '../../resources/structs';
-import { STWLeadSynergy } from '../../enums/Enums';
-import BinaryWriter from './BinaryWriter';
-import PowerLevelCurves from '../../resources/PowerLevelCurves';
 
 const defaultCharacters = [
-  'CID_556_Athena_Commando_F_RebirthDefaultA',
-  'CID_557_Athena_Commando_F_RebirthDefaultB',
-  'CID_558_Athena_Commando_F_RebirthDefaultC',
-  'CID_559_Athena_Commando_F_RebirthDefaultD',
-  'CID_560_Athena_Commando_M_RebirthDefaultA',
-  'CID_561_Athena_Commando_M_RebirthDefaultB',
-  'CID_562_Athena_Commando_M_RebirthDefaultC',
-  'CID_563_Athena_Commando_M_RebirthDefaultD',
+  'CID_A_272_Athena_Commando_F_Prime',
+  'CID_A_273_Athena_Commando_F_Prime_B',
+  'CID_A_274_Athena_Commando_F_Prime_C',
+  'CID_A_275_Athena_Commando_F_Prime_D',
+  'CID_A_276_Athena_Commando_F_Prime_E',
+  'CID_A_277_Athena_Commando_F_Prime_F',
+  'CID_A_278_Athena_Commando_F_Prime_G',
+  'CID_A_279_Athena_Commando_M_Prime',
+  'CID_A_280_Athena_Commando_M_Prime_B',
+  'CID_A_281_Athena_Commando_M_Prime_C',
+  'CID_A_282_Athena_Commando_M_Prime_D',
+  'CID_A_283_Athena_Commando_M_Prime_E',
+  'CID_A_284_Athena_Commando_M_Prime_F',
+  'CID_A_285_Athena_Commando_M_Prime_G',
 ];
 
 export const consoleQuestion = (question: string) => new Promise<string>((resolve) => {
@@ -302,7 +311,12 @@ export const calcSTWSurvivorPowerLevel = (rarity: STWItemRarity, isLeader: boole
   return PowerLevelCurves.survivorItemRating[key].eval(level);
 };
 
-export const calcSTWSurvivorBonus = (leaderPersonality: string, leaderRarity: string, survivorPersonality: string, survivorPowerLevel: number) => {
+export const calcSTWSurvivorBonus = (
+  leaderPersonality: string,
+  leaderRarity: string,
+  survivorPersonality: string,
+  survivorPowerLevel: number,
+) => {
   if (survivorPersonality === leaderPersonality) {
     if (leaderRarity === 'sr') return 8;
     if (leaderRarity === 'vr') return 5;
@@ -535,4 +549,42 @@ export const parseStatKey = (key: string, value: number): [keyof StatsPlaylistTy
     default:
       return [key as keyof StatsPlaylistTypeData, value];
   }
+};
+
+export const resolveAuthString = async (str: AuthStringResolveable) => {
+  switch (typeof str) {
+    case 'function':
+      return str();
+    case 'string':
+      if (str.length === 32 || str.startsWith('eg1')) {
+        return str;
+      }
+
+      return fs.readFile(str, 'utf8');
+    default:
+      throw new TypeError(`The type "${typeof str}" does not resolve to a valid auth string`);
+  }
+};
+
+export const resolveAuthObject = async (obj: DeviceAuthResolveable) => {
+  switch (typeof obj) {
+    case 'function':
+      return obj();
+    case 'string':
+      return JSON.parse(await fs.readFile(obj, 'utf8'));
+    case 'object':
+      return obj;
+    default:
+      throw new TypeError(`The type "${typeof obj}" does not resolve to a valid auth object`);
+  }
+};
+
+export const chunk = <T extends any>(array: T[], maxSize: number): T[][] => {
+  const chunkedArray: T[][] = [];
+
+  for (let i = 0; i < array.length; i += maxSize) {
+    chunkedArray.push(array.slice(i, i + maxSize));
+  }
+
+  return chunkedArray;
 };

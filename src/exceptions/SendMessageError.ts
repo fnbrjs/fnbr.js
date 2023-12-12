@@ -1,6 +1,6 @@
-import { SentMessageType } from '../../resources/structs';
-import ClientParty from '../structures/party/ClientParty';
-import Friend from '../structures/friend/Friend';
+import type { SentMessageType } from '../../resources/structs';
+import type ClientParty from '../structures/party/ClientParty';
+import type Friend from '../structures/friend/Friend';
 
 /**
  * Represets an error thrown because a user does not exist

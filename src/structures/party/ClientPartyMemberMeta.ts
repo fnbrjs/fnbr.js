@@ -1,8 +1,8 @@
 import defaultPartyMemberMeta from '../../../resources/defaultPartyMemberMeta.json';
-import { PartyMemberSchema } from '../../../resources/structs';
 import { getRandomDefaultCharacter } from '../../util/Util';
-import PartyMember from './PartyMember';
 import PartyMemberMeta from './PartyMemberMeta';
+import type { PartyMemberSchema } from '../../../resources/structs';
+import type PartyMember from './PartyMember';
 
 /**
  * Represents the client's party member meta
@@ -27,22 +27,8 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
     this.update({
       'Default:AthenaCosmeticLoadout_j': JSON.stringify({
         AthenaCosmeticLoadout: {
-          characterDef: `AthenaCharacterItemDefinition'/BRCosmetics/Athena/Items/Cosmetics/Characters/${defaultCharacter}.${defaultCharacter}'`,
-          characterEKey: '',
-          backpackDef: 'None',
-          backpackEKey: '',
-          pickaxeDef: 'AthenaPickaxeItemDefinition\'/Game/Athena/Items/Cosmetics/Pickaxes/DefaultPickaxe.DefaultPickaxe\'',
-          pickaxeEKey: '',
-          contrailDef: 'None',
-          contrailEKey: '',
-          scratchpad: [],
-          cosmeticStats: [{
-            statName: 'TotalVictoryCrowns',
-            statValue: 0,
-          }, {
-            statName: 'TotalRoyalRoyales',
-            statValue: 0,
-          }],
+          ...JSON.parse(defaultPartyMemberMeta['Default:AthenaCosmeticLoadout_j']).AthenaCosmeticLoadout,
+          characterPrimaryAssetId: `AthenaCharacter:${defaultCharacter}`,
         },
       }),
       'Default:CampaignHero_j': JSON.stringify({

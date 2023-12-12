@@ -1,4 +1,4 @@
-import Client from './Client';
+import type Client from './Client';
 
 /**
  * Represents the base class of many other classes

@@ -1,6 +1,6 @@
-import { PendingFriendData } from '../../../resources/structs';
-import Client from '../../client/Client';
 import BasePendingFriend from './BasePendingFriend';
+import type { PendingFriendData } from '../../../resources/structs';
+import type Client from '../../Client';
 
 /**
  * Represents an outgoing pending friendship request
@@ -19,7 +19,7 @@ class OutgoingPendingFriend extends BasePendingFriend {
    * @throws {EpicgamesAPIError}
    */
   public async abort() {
-    return this.client.removeFriend(this.id);
+    return this.client.friend.remove(this.id);
   }
 }
 

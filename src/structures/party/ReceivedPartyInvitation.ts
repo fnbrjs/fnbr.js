@@ -1,8 +1,9 @@
 import Endpoints from '../../../resources/Endpoints';
 import PartyInvitationExpiredError from '../../exceptions/PartyInvitationExpiredError';
 import BasePartyInvitation from './BasePartyInvitation';
-import ClientUser from '../user/ClientUser';
-import Friend from '../friend/Friend';
+import { AuthSessionStoreKey } from '../../../resources/enums';
+import type ClientUser from '../user/ClientUser';
+import type Friend from '../friend/Friend';
 
 /**
  * Represents a recieved party invitation
@@ -21,8 +22,11 @@ class ReceivedPartyInvitation extends BasePartyInvitation {
 
     await this.party.join();
     this.isHandled = true;
-    await this.client.http.sendEpicgamesRequest(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/user/${this.client.user?.id}/pings/${this.sender.id}`, 'fortnite');
+
+    await this.client.http.epicgamesRequest({
+      method: 'DELETE',
+      url: `${Endpoints.BR_PARTY}/user/${this.client.user.self!.id}/pings/${this.sender.id}`,
+    }, AuthSessionStoreKey.Fortnite);
   }
 
   /**
@@ -32,8 +36,11 @@ class ReceivedPartyInvitation extends BasePartyInvitation {
   public async decline() {
     if (this.isExpired || this.isHandled) throw new PartyInvitationExpiredError();
 
-    await this.client.http.sendEpicgamesRequest(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/user/${this.client.user?.id}/pings/${this.sender.id}`, 'fortnite');
+    await this.client.http.epicgamesRequest({
+      method: 'DELETE',
+      url: `${Endpoints.BR_PARTY}/user/${this.client.user.self!.id}/pings/${this.sender.id}`,
+    }, AuthSessionStoreKey.Fortnite);
+
     this.isHandled = true;
   }
 }

@@ -1,5 +1,5 @@
-import Client from '../client/Client';
 import EpicgamesServerStatusIncident from './EpicgamesServerStatusIncident';
+import type Client from '../Client';
 
 /**
  * Represents an Epicgames server status

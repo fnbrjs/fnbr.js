@@ -1,6 +1,9 @@
 /* eslint-env jest */
 const { Client } = require('../dist');
 
+/**
+ * @type {Client}
+ */
 let client;
 
 beforeEach(() => {
@@ -14,13 +17,13 @@ describe('Client Startup', () => {
     expect(client.auth).toBeDefined();
     expect(client.xmpp).toBeDefined();
     expect(client.http).toBeDefined();
+    expect(client.user).toBeDefined();
+    expect(client.friend).toBeDefined();
 
     expect(client.config).toBeDefined();
-    expect(client.user).toBeUndefined();
     expect(client.isReady).toBe(false);
-    expect(client.friends.size).toBe(0);
+    expect(client.friend.list.size).toBe(0);
 
-    expect(client.reauthLock.isLocked).toBe(false);
     expect(client.partyLock.isLocked).toBe(false);
   });
 });

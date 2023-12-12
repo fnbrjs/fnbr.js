@@ -1,6 +1,6 @@
-import Base from '../client/Base';
-import Client from '../client/Client';
+import Base from '../Base';
 import Image from './Image';
+import type Client from '../Client';
 
 /**
  * Represents a battle royale ingame radio station

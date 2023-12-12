@@ -1,4 +1,4 @@
-import {
+import type {
   PartyPrivacy as IPartyPrivacy, Platform as IPlatform, PresenceOnlineType as IPresenceOnlineType,
   STWHeroType as ISTWHeroType, STWSchematicRangedSubType as ISTWSchematicRangedSubType,
   STWSchematicMeleeSubType as ISTWSchematicMeleeSubType, STWSchematicTrapSubType as ISTWSchematicTrapSubType,
@@ -23,6 +23,17 @@ export interface IPlatformEnum {
   ANDROID: IPlatform;
   XBOX_SERIES_X: IPlatform;
   PLAYSTATION_5: IPlatform;
+}
+
+export interface PlaylistEnum {
+  SOLO: 'playlist_defaultsolo';
+  DUO: 'playlist_defaultduo';
+  TRIOS: 'playlist_trios';
+  SQUAD: 'playlist_defaultsquad';
+  CREATIVE: 'playlist_playgroundv2';
+  LEGO: 'playlist_juno';
+  ROCKET_RACING: 'playlist_delmar';
+  FESTIVAL: 'playlist_sparksrhythm';
 }
 
 export interface IPresenceOnlineTypeEnum {
@@ -133,32 +144,15 @@ export const Platform: Readonly<IPlatformEnum> = Object.freeze({
   PLAYSTATION_5: 'PS5',
 });
 
-export const Playlist = Object.freeze({
-  SOLO: {
-    playlistName: 'Playlist_DefaultSolo',
-    tournamentId: '',
-    eventWindowId: '',
-  },
-  DUO: {
-    playlistName: 'Playlist_DefaultDuo',
-    tournamentId: '',
-    eventWindowId: '',
-  },
-  SQUAD: {
-    playlistName: 'Playlist_DefaultSquad',
-    tournamentId: '',
-    eventWindowId: '',
-  },
-  CREATIVE: {
-    playlistName: 'Playlist_PlaygroundV2',
-    tournamentId: '',
-    eventWindowId: '',
-  },
-  CREATIVE_PLAY: {
-    playlistName: 'Playlist_Creative_PlayOnly',
-    tournamentId: '',
-    eventWindowId: '',
-  },
+export const Playlist : Readonly<PlaylistEnum> = Object.freeze({
+  SOLO: 'playlist_defaultsolo',
+  DUO: 'playlist_defaultduo',
+  TRIOS: 'playlist_trios',
+  SQUAD: 'playlist_defaultsquad',
+  CREATIVE: 'playlist_playgroundv2',
+  LEGO: 'playlist_juno',
+  ROCKET_RACING: 'playlist_delmar',
+  FESTIVAL: 'playlist_sparksrhythm',
 });
 
 export const Language = Object.freeze({

@@ -1,5 +1,5 @@
-import { AxiosRequestConfig } from 'axios';
-import { EpicgamesAPIErrorData } from '../../resources/httpResponses';
+import type { AxiosRequestConfig } from 'axios';
+import type { EpicgamesAPIErrorData } from '../../resources/httpResponses';
 
 /**
  * Represets an HTTP error from the Epicgames API

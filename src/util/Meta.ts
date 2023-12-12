@@ -1,4 +1,4 @@
-import { Schema } from '../../resources/structs';
+import type { Schema } from '../../resources/structs';
 
 /**
  * Represents a key-value-based meta structure used for parties and party members

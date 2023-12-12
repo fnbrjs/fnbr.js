@@ -1,7 +1,9 @@
-import { PartyMemberData, PartyMemberSchema, PartyMemberUpdateData } from '../../../resources/structs';
 import PartyPermissionError from '../../exceptions/PartyPermissionError';
 import PartyMemberMeta from './PartyMemberMeta';
 import User from '../user/User';
+import type Party from './Party';
+import type ClientParty from './ClientParty';
+import type { PartyMemberData, PartyMemberSchema, PartyMemberUpdateData } from '../../../resources/structs';
 
 /**
  * Represents a party member
@@ -25,7 +27,7 @@ class PartyMember extends User {
   /**
    * The party this member belongs to
    */
-  public party: import('./Party').default | import('./ClientParty').default;
+  public party: Party | ClientParty;
 
   /**
    * The member's revision
@@ -41,7 +43,7 @@ class PartyMember extends User {
    * @param party The party this member belongs to
    * @param data The member's data
    */
-  constructor(party: import('./Party').default | import('./ClientParty').default, data: PartyMemberData) {
+  constructor(party: Party | ClientParty, data: PartyMemberData) {
     super(party.client, {
       ...data,
       displayName: data.account_dn,
@@ -99,6 +101,13 @@ class PartyMember extends User {
   }
 
   /**
+   * Whether the member is sitting out
+   */
+  public get isSittingOut() {
+    return this.meta.isSittingOut;
+  }
+
+  /**
    * The member's current input method
    */
   public get inputMethod() {
@@ -148,6 +157,13 @@ class PartyMember extends User {
   }
 
   /**
+   * The member's current playlist
+   */
+  public get playlist() {
+    return this.meta.island;
+  }
+
+  /**
    * Whether a marker has been set
    */
   public get isMarkerSet() {
@@ -160,13 +176,6 @@ class PartyMember extends User {
    */
   public get markerLocation() {
     return this.meta.markerLocation;
-  }
-
-  /**
-   * The member's assisted challenge
-   */
-  public get assistedChallenge() {
-    return this.meta.assistedChallenge;
   }
 
   /**
@@ -199,6 +208,15 @@ class PartyMember extends User {
     // This is a very hacky solution, but it's required since we cannot import ClientParty (circular dependencies)
     if (typeof (this.party as any).hideMember !== 'function') throw new PartyPermissionError();
     return (this.party as any).hideMember(this.id, hide);
+  }
+
+  /**
+   * Bans this member from the client's party.
+   */
+  public async chatBan() {
+    // This is a very hacky solution, but it's required since we cannot import ClientParty (circular dependencies)
+    if (typeof (this.party as any).chatBan !== 'function') throw new PartyPermissionError();
+    return (this.party as any).chatBan(this.id);
   }
 
   /**

@@ -1,13 +1,24 @@
 /* eslint-disable */
 const { readFile, writeFile } = require('fs').promises;
-const axios = require('axios').default;
+const { default: axios, AxiosError } = require('axios');
 const { Client } = require('fnbr');
+
+const getCosmeticPath = (path) => path
+  .replace(/^FortniteGame\/Content/, '/Game')
+  .replace(/FortniteGame\/Plugins\/GameFeatures\/BRCosmetics\/Content/, '/BRCosmetics')
+  .split('/')
+  .slice(0, -1)
+  .join('/');
 
 const fetchCosmetic = async (name, type) => {
   try {
-    const { data: cosmetic } = (await axios(`https://fortnite-api.com/v2/cosmetics/br/search?name=${encodeURI(name)}&type=${type}`)).data;
-    return cosmetic;
+    const { data } = await axios(`https://fortnite-api.com/v2/cosmetics/br/search?name=${encodeURI(name)}&type=${type}`);
+    return data.data;
   } catch (err) {
+    if (!(err instanceof AxiosError) || err.status !== 404) {
+      throw err;
+    }
+
     return undefined;
   }
 };
@@ -19,16 +30,22 @@ const handleCommand = async (m) => {
 
   if (command === 'outfit' || command === 'skin') {
     const skin = await fetchCosmetic(args.join(' '), 'outfit');
-    if (skin) {
-      m.client.party.me.setOutfit(skin.id);
-      m.reply(`Set the skin to ${skin.name}!`);
-    } else m.reply(`The skin ${args.join(' ')} wasn't found!`);
+    if (!skin) {
+      await m.reply(`The skin ${args.join(' ')} wasn't found!`);
+      return;
+    }
+
+    await m.client.party.me.setOutfit(skin.id, undefined, undefined);
+    await m.reply(`Set the skin to ${skin.name}!`);
   } else if (command === 'emote' || command === 'dance') {
     const emote = await fetchCosmetic(args.join(' '), 'emote');
-    if (emote) {
-      m.client.party.me.setEmote(emote.id);
-      m.reply(`Set the emote to ${emote.name}!`);
-    } else m.reply(`The emote ${args.join(' ')} wasn't found!`);
+    if (!emote) {
+      await m.reply(`The emote ${args.join(' ')} wasn't found!`);
+      return;
+    }
+
+    await m.client.party.me.setEmote(emote.id, getCosmeticPath(emote.path));
+    await m.reply(`Set the emote to ${emote.name}!`);
   }
 };
 
@@ -47,5 +64,5 @@ const handleCommand = async (m) => {
   client.on('friend:message', handleCommand);
 
   await client.login();
-  console.log(`Logged in as ${client.user.displayName}`);
+  console.log(`Logged in as ${client.user.self.displayName}`);
 })();

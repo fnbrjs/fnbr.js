@@ -1,22 +1,25 @@
 import { Collection } from '@discordjs/collection';
 import { AsyncQueue } from '@sapphire/async-queue';
 import Endpoints from '../../../resources/Endpoints';
-import {
-  PartyData, PartyPrivacy, PartySchema, Playlist,
-} from '../../../resources/structs';
-import Client from '../../client/Client';
 import FriendNotFoundError from '../../exceptions/FriendNotFoundError';
 import PartyAlreadyJoinedError from '../../exceptions/PartyAlreadyJoinedError';
 import PartyMaxSizeReachedError from '../../exceptions/PartyMaxSizeReachedError';
 import PartyMemberNotFoundError from '../../exceptions/PartyMemberNotFoundError';
 import PartyPermissionError from '../../exceptions/PartyPermissionError';
-import ClientPartyMember from './ClientPartyMember';
 import ClientPartyMeta from './ClientPartyMeta';
-import ClientUser from '../user/ClientUser';
 import Party from './Party';
 import PartyChat from './PartyChat';
-import PartyMemberConfirmation from './PartyMemberConfirmation';
 import SentPartyInvitation from './SentPartyInvitation';
+import { AuthSessionStoreKey } from '../../../resources/enums';
+import EpicgamesAPIError from '../../exceptions/EpicgamesAPIError';
+import type PartyMemberConfirmation from './PartyMemberConfirmation';
+import type ClientPartyMember from './ClientPartyMember';
+import type Client from '../../Client';
+import type {
+  Island, PartyData, PartyPrivacy, PartySchema,
+} from '../../../resources/structs';
+import type PartyMember from './PartyMember';
+import type Friend from '../friend/Friend';
 
 /**
  * Represents a party that the client is a member of
@@ -65,7 +68,7 @@ class ClientParty extends Party {
    * Returns the client's party member
    */
   public get me() {
-    return this.members.get(this.client.user?.id as string) as ClientPartyMember;
+    return this.members.get(this.client.user.self!.id) as ClientPartyMember;
   }
 
   /**
@@ -85,12 +88,15 @@ class ClientParty extends Party {
 
     if (this.chat.isConnected) await this.chat.leave();
 
-    const partyLeave = await this.client.http.sendEpicgamesRequest(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.me?.id}`, 'fortnite');
-
-    if (partyLeave.error && partyLeave.error?.code !== 'errors.com.epicgames.social.party.party_not_found') {
+    try {
+      await this.client.http.epicgamesRequest({
+        method: 'DELETE',
+        url: `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.me?.id}`,
+      }, AuthSessionStoreKey.Fortnite);
+    } catch (e) {
       this.client.partyLock.unlock();
-      throw partyLeave.error;
+
+      throw e;
     }
 
     this.client.party = undefined;
@@ -109,42 +115,47 @@ class ClientParty extends Party {
   public async sendPatch(updated: PartySchema, deleted: (keyof PartySchema & string)[] = []): Promise<void> {
     await this.patchQueue.wait();
 
-    const patch = await this.client.http.sendEpicgamesRequest(true, 'PATCH', `${Endpoints.BR_PARTY}/parties/${this.id}`, 'fortnite', {
-      'Content-Type': 'application/json',
-    }, {
-      config: {
-        join_confirmation: this.config.joinConfirmation,
-        joinability: this.config.joinability,
-        max_size: this.config.maxSize,
-        discoverability: this.config.discoverability,
-      },
-      meta: {
-        delete: deleted,
-        update: updated || this.meta.schema,
-      },
-      party_state_overridden: {},
-      party_privacy_type: this.config.joinability,
-      party_type: this.config.type,
-      party_sub_type: this.config.subType,
-      max_number_of_members: this.config.maxSize,
-      invite_ttl_seconds: this.config.inviteTtl,
-      revision: this.revision,
-    });
-
-    if (patch.error) {
-      if (patch.error.code === 'errors.com.epicgames.social.party.stale_revision') {
-        this.revision = parseInt(patch.error.messageVars[1], 10);
+    try {
+      await this.client.http.epicgamesRequest({
+        method: 'PATCH',
+        url: `${Endpoints.BR_PARTY}/parties/${this.id}`,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: {
+          config: {
+            join_confirmation: this.config.joinConfirmation,
+            joinability: this.config.joinability,
+            max_size: this.config.maxSize,
+            discoverability: this.config.discoverability,
+          },
+          meta: {
+            delete: deleted,
+            update: updated || this.meta.schema,
+          },
+          party_state_overridden: {},
+          party_privacy_type: this.config.joinability,
+          party_type: this.config.type,
+          party_sub_type: this.config.subType,
+          max_number_of_members: this.config.maxSize,
+          invite_ttl_seconds: this.config.inviteTtl,
+          revision: this.revision,
+        },
+      }, AuthSessionStoreKey.Fortnite);
+    } catch (e) {
+      if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.social.party.stale_revision') {
+        this.revision = parseInt(e.messageVars[1], 10);
         this.patchQueue.shift();
         return this.sendPatch(updated);
       }
 
       this.patchQueue.shift();
 
-      if (patch.error.code === 'errors.com.epicgames.social.party.party_change_forbidden') {
+      if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.social.party.party_change_forbidden') {
         throw new PartyPermissionError();
       }
 
-      throw patch.error;
+      throw e;
     }
 
     this.revision += 1;
@@ -163,14 +174,20 @@ class ClientParty extends Party {
   public async kick(member: string) {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
-    const partyMember = this.members.find((m) => m.displayName === member || m.id === member);
+    const partyMember = this.members.find((m: PartyMember) => m.displayName === member || m.id === member);
     if (!partyMember) throw new PartyMemberNotFoundError(member);
 
-    const kick = await this.client.http.sendEpicgamesRequest(true, 'DELETE',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}`, 'fortnite');
-    if (kick.error) {
-      if (kick.error.code === 'errors.com.epicgames.social.party.party_change_forbidden') throw new PartyPermissionError();
-      throw kick.error;
+    try {
+      await this.client.http.epicgamesRequest({
+        method: 'DELETE',
+        url: `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}`,
+      }, AuthSessionStoreKey.Fortnite);
+    } catch (e) {
+      if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.social.party.party_change_forbidden') {
+        throw new PartyPermissionError();
+      }
+
+      throw e;
     }
   }
 
@@ -183,7 +200,7 @@ class ClientParty extends Party {
    * @throws {EpicgamesAPIError}
    */
   public async invite(friend: string) {
-    const resolvedFriend = this.client.friends.find((f) => f.id === friend || f.displayName === friend);
+    const resolvedFriend = this.client.friend.list.find((f: Friend) => f.id === friend || f.displayName === friend);
     if (!resolvedFriend) throw new FriendNotFoundError(friend);
 
     if (this.members.has(resolvedFriend.id)) throw new PartyAlreadyJoinedError();
@@ -191,27 +208,34 @@ class ClientParty extends Party {
 
     let invite;
     if (this.isPrivate) {
-      invite = await this.client.http.sendEpicgamesRequest(true, 'POST',
-        `${Endpoints.BR_PARTY}/parties/${this.id}/invites/${resolvedFriend.id}?sendPing=true`, 'fortnite', {
+      invite = await this.client.http.epicgamesRequest({
+        method: 'POST',
+        url: `${Endpoints.BR_PARTY}/parties/${this.id}/invites/${resolvedFriend.id}?sendPing=true`,
+        headers: {
           'Content-Type': 'application/json',
-        }, {
+        },
+        data: {
           'urn:epic:cfg:build-id_s': this.client.config.partyBuildId,
           'urn:epic:conn:platform_s': this.client.config.platform,
           'urn:epic:conn:type_s': 'game',
           'urn:epic:invite:platformdata_s': '',
-          'urn:epic:member:dn_s': this.client.user?.displayName,
-        });
+          'urn:epic:member:dn_s': this.client.user.self!.displayName,
+        },
+      }, AuthSessionStoreKey.Fortnite);
     } else {
-      invite = await this.client.http.sendEpicgamesRequest(true, 'POST',
-        `${Endpoints.BR_PARTY}/user/${resolvedFriend.id}/pings/${this.client.user?.id}`, 'fortnite', {
+      invite = await this.client.http.epicgamesRequest({
+        method: 'POST',
+        url: `${Endpoints.BR_PARTY}/user/${resolvedFriend.id}/pings/${this.client.user.self!.id}`,
+        headers: {
           'Content-Type': 'application/json',
-        }, {
+        },
+        data: {
           'urn:epic:invite:platformdata_s': '',
-        });
+        },
+      }, AuthSessionStoreKey.Fortnite);
     }
-    if (invite.error) throw invite.error;
 
-    return new SentPartyInvitation(this.client, this, this.client.user as ClientUser, resolvedFriend, invite);
+    return new SentPartyInvitation(this.client, this, this.client.user.self!, resolvedFriend, invite);
   }
 
   /**
@@ -233,6 +257,14 @@ class ClientParty extends Party {
    */
   public async sendMessage(content: string) {
     return this.chat.send(content);
+  }
+
+  /**
+   * Ban a member from this party chat
+   * @param member The member that should be banned
+   */
+  public async chatBan(member: string) {
+    return this.chat.ban(member);
   }
 
   /**
@@ -310,14 +342,20 @@ class ClientParty extends Party {
   public async promote(member: string) {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
-    const partyMember = this.members.find((m) => m.displayName === member || m.id === member);
+    const partyMember = this.members.find((m: PartyMember) => m.displayName === member || m.id === member);
     if (!partyMember) throw new PartyMemberNotFoundError(member);
 
-    const promote = await this.client.http.sendEpicgamesRequest(true, 'POST',
-      `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}/promote`, 'fortnite');
-    if (promote.error) {
-      if (promote.error.code === 'errors.com.epicgames.social.party.party_change_forbidden') throw new PartyPermissionError();
-      throw promote.error;
+    try {
+      await this.client.http.epicgamesRequest({
+        method: 'POST',
+        url: `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}/promote`,
+      }, AuthSessionStoreKey.Fortnite);
+    } catch (e) {
+      if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.social.party.party_change_forbidden') {
+        throw new PartyPermissionError();
+      }
+
+      throw e;
     }
   }
 
@@ -332,7 +370,7 @@ class ClientParty extends Party {
   public async hideMember(member: string, hide = true) {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
-    const partyMember = this.members.find((m) => m.displayName === member || m.id === member);
+    const partyMember = this.members.find((m: PartyMember) => m.displayName === member || m.id === member);
     if (!partyMember) throw new PartyMemberNotFoundError(member);
 
     if (hide) {
@@ -354,7 +392,7 @@ class ClientParty extends Party {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
     if (hide) {
-      this.members.filter((m) => m.id !== this.me.id).forEach((m) => this.hiddenMemberIds.add(m.id));
+      this.members.filter((m: PartyMember) => m.id !== this.me.id).forEach((m: PartyMember) => this.hiddenMemberIds.add(m.id));
     } else {
       this.hiddenMemberIds.clear();
     }
@@ -364,24 +402,37 @@ class ClientParty extends Party {
 
   /**
    * Updates the party's playlist
-   * @param playlist The new playlist
+   * @param mnemonic The new mnemonic (Playlist id or island code, for example: playlist_defaultduo or 1111-1111-1111)
+   * @param regionId The new region id
+   * @param version The new version
+   * @param options Playlist options
    * @throws {PartyPermissionError} The client is not the leader of the party
    * @throws {EpicgamesAPIError}
    */
-  public async setPlaylist(playlist: Playlist) {
+  public async setPlaylist(mnemonic: string, regionId?: string, version?: number, options?: Omit<Island, 'linkId'>) {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
-    let data = this.meta.get('Default:PlaylistData_j');
-    data = this.meta.set('Default:PlaylistData_j', {
+    let regionIdData = this.meta.get('Default:RegionId_s');
+    if (regionId) {
+      regionIdData = this.meta.set('Default:RegionId_s', regionId);
+    }
+
+    let data = this.meta.get('Default:SelectedIsland_j');
+    data = this.meta.set('Default:SelectedIsland_j', {
       ...data,
-      PlaylistData: {
-        ...data.PlaylistData,
-        ...playlist,
+      SelectedIsland: {
+        ...data.SelectedIsland,
+        linkId: {
+          mnemonic,
+          version: version ?? -1,
+        },
+        ...options,
       },
     });
 
     await this.sendPatch({
-      'Default:PlaylistData_j': data,
+      'Default:SelectedIsland_j': data,
+      'Default:RegionId_s': regionIdData,
     });
   }
 

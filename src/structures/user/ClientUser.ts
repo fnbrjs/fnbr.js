@@ -1,6 +1,6 @@
-import { ClientUserData } from '../../../resources/structs';
-import Client from '../../client/Client';
 import User from './User';
+import type { ClientUserData } from '../../../resources/structs';
+import type Client from '../../Client';
 
 /**
  * Represents the user of a client

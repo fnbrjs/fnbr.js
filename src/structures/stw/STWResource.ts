@@ -1,6 +1,6 @@
-import Client from '../../client/Client';
 import STWItem from './STWItem';
-import { STWProfileResourceData } from '../../../resources/httpResponses';
+import type Client from '../../Client';
+import type { STWProfileResourceData } from '../../../resources/httpResponses';
 
 /**
  * Represents a Save The World profile's resource

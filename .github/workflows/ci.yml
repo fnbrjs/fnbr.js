@@ -7,7 +7,7 @@ jobs:
 
     strategy:
       matrix:
-        node: ["14", "16", "18"]
+        node: ["16", "18", "20"]
       fail-fast: false
 
     steps:

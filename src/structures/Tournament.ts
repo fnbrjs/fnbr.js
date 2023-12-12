@@ -1,12 +1,12 @@
-import {
+import Base from '../Base';
+import TournamentWindow from './TournamentWindow';
+import type {
   PlatformMappings, RegionMappings, TournamentData, TournamentDisplayData, TournamentMetadata,
 } from '../../resources/httpResponses';
-import {
+import type {
   FullPlatform, Region, TournamentColors, TournamentImages, TournamentTexts, TournamentWindowTemplate,
 } from '../../resources/structs';
-import Base from '../client/Base';
-import Client from '../client/Client';
-import TournamentWindow from './TournamentWindow';
+import type Client from '../Client';
 
 /**
  * Represents a Fortnite tournament
@@ -103,7 +103,12 @@ class Tournament extends Base {
    * @param tournamentDisplayData The tournament display data
    * @param templates The tournament template
    */
-  constructor(client: Client, tournamentData: TournamentData, tournamentDisplayData: TournamentDisplayData, templates: TournamentWindowTemplate[]) {
+  constructor(
+    client: Client,
+    tournamentData: TournamentData,
+    tournamentDisplayData: TournamentDisplayData,
+    templates: TournamentWindowTemplate[],
+  ) {
     super(client);
 
     this.id = tournamentData.eventId;

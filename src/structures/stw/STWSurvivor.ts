@@ -1,15 +1,15 @@
-import Client from '../../client/Client';
 import STWItem from './STWItem';
 import {
   parseSTWSurvivorTemplateId,
   calcSTWSurvivorPowerLevel, calcSTWSurvivorLeadBonus,
   calcSTWSurvivorBonus,
 } from '../../util/Util';
-import {
+import type Client from '../../Client';
+import type {
   STWSurvivorSquadData, STWSurvivorType, STWItemRarity,
   STWSurvivorSquads, STWSurvivorSquadType, STWSurvivorGender, STWItemTier,
 } from '../../../resources/structs';
-import { STWProfileSurvivorData } from '../../../resources/httpResponses';
+import type { STWProfileSurvivorData } from '../../../resources/httpResponses';
 
 /**
  * Represents a Save The World profile's survivor

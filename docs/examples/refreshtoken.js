@@ -15,5 +15,5 @@ const { Client } = require('fnbr');
   client.on('refreshtoken:created', (refreshTokenData) => writeFile('./refreshToken', refreshTokenData.token));
 
   await client.login();
-  console.log(`Logged in as ${client.user.displayName}`);
+  console.log(`Logged in as ${client.user.self.displayName}`);
 })();

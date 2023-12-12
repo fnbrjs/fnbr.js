@@ -1,7 +1,7 @@
-import Client from '../../client/Client';
-import Base from '../../client/Base';
-import Friend from './Friend';
-import {
+import Base from '../../Base';
+import type Client from '../../Client';
+import type Friend from './Friend';
+import type {
   FriendPresenceData, PresenceGameplayStats, Platform, PresenceOnlineType,
 } from '../../../resources/structs';
 
@@ -116,10 +116,12 @@ class FriendPresence extends Base {
     this.isInUnjoinableMatch = data.Properties ? data.Properties.InUnjoinableMatch_b : false;
     this.playlist = data.Properties ? data.Properties.GamePlaylistName_s : undefined;
     this.partySize = data.Properties && data.Properties.Event_PartySize_s ? parseInt(data.Properties.Event_PartySize_s, 10) : undefined;
-    this.partyMaxSize = data.Properties && data.Properties.Event_PartyMaxSize_s ? parseInt(data.Properties.Event_PartyMaxSize_s, 10) : undefined;
+    this.partyMaxSize = data.Properties && data.Properties.Event_PartyMaxSize_s
+      ? parseInt(data.Properties.Event_PartyMaxSize_s, 10) : undefined;
     this.gameSessionJoinKey = data.Properties ? data.Properties.GameSessionJoinKey_s : undefined;
 
-    const serverPlayerCount = data.Properties && data.Properties.ServerPlayerCount_i ? parseInt(data.Properties.ServerPlayerCount_i, 10) : undefined;
+    const serverPlayerCount = data.Properties && data.Properties.ServerPlayerCount_i
+      ? parseInt(data.Properties.ServerPlayerCount_i, 10) : undefined;
     this.gameplayStats = undefined;
 
     if (data.Properties && data.Properties.FortGameplayStats_j) {

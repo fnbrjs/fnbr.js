@@ -41,7 +41,7 @@ const handleCommand = async (m) => {
       return;
     }
 
-    await m.client.party.me.setOutfit(skin.id, undefined, undefined, getCosmeticPath(skin.path));
+    await m.client.party.me.setOutfit(skin.id, undefined, undefined);
     await m.reply(`Set the skin to ${skin.name}!`);
   } else if (command === 'emote' || command === 'dance') {
     const emote = await fetchCosmetic(args.join(' '), 'emote');

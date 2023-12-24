@@ -62,15 +62,7 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
    * The cosmetic variants
    */
   public get variants(): CosmeticsVariantMeta {
-    const variants = this.get('Default:AthenaCosmeticLoadoutVariants_j')?.AthenaCosmeticLoadoutVariants?.vL;
-    if (!variants) return {};
-
-    const camelCaseVariants: any = {};
-    Object.keys(variants).forEach((k) => {
-      camelCaseVariants[`${k.charAt(0).toLocaleLowerCase()}${k.slice(1)}`] = variants[k];
-    });
-
-    return camelCaseVariants;
+    return this.get('Default:AthenaCosmeticLoadoutVariants_j')?.AthenaCosmeticLoadoutVariants?.vL || {};
   }
 
   /**

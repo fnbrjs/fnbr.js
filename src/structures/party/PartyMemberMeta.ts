@@ -65,12 +65,12 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
     const variants = this.get('Default:AthenaCosmeticLoadoutVariants_j')?.AthenaCosmeticLoadoutVariants?.vL;
     if (!variants) return {};
 
-    const pascalCaseVariants: any = {};
+    const camelCaseVariants: any = {};
     Object.keys(variants).forEach((k) => {
-      pascalCaseVariants[`${k.charAt(0).toUpperCase()}${k.slice(1)}`] = variants[k];
+      camelCaseVariants[`${k.charAt(0).toLocaleLowerCase()}${k.slice(1)}`] = variants[k];
     });
 
-    return pascalCaseVariants;
+    return camelCaseVariants;
   }
 
   /**

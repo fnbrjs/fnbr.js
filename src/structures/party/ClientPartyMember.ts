@@ -192,7 +192,6 @@ class ClientPartyMember extends PartyMember {
    * @param id The outfit's ID
    * @param variants The outfit's variants
    * @param enlightment The outfit's enlightment
-   * @param path The outfit's path in the game files
    * @throws {EpicgamesAPIError}
    */
   public async setOutfit(id: string, variants: CosmeticVariant[] = [], enlightment?: CosmeticEnlightment) {

@@ -8,6 +8,7 @@ on:
       - '*'
 jobs:
   docgen:
+    if: github.repository_owner == 'fnbrjs'
     name: Documentation
     runs-on: ubuntu-latest
     steps:
@@ -31,14 +32,14 @@ jobs:
         with:
           path: docs
           ref: docs
-      
+
       - name: Checkout DocGen Repository
         uses: actions/checkout@v2
         with:
           repository: fnbrjs/docgen
           token: ${{ secrets.BOT_PAT }}
           path: docgen
-      
+
       - name: Install Main Repository Dependencies
         working-directory: ./main
         run: npm ci

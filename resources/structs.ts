@@ -88,7 +88,7 @@ export type AuthStringResolveable = string | PathLike | StringFunction | StringF
 export type Platform = 'WIN' | 'MAC' | 'PSN' | 'XBL' | 'SWT' | 'IOS' | 'AND' | 'PS5' | 'XSX';
 
 export type AuthClient = 'fortnitePCGameClient' | 'fortniteIOSGameClient' | 'fortniteAndroidGameClient'
-| 'fortniteSwitchGameClient' | 'fortniteCNGameClient' | 'launcherAppClient2' | 'Diesel - Dauntless';
+| 'fortniteSwitchGameClient' | 'fortniteNewSwitchGameClient' | 'fortniteCNGameClient' | 'launcherAppClient2' | 'Diesel - Dauntless';
 
 export interface RefreshTokenData {
   /**

@@ -20,6 +20,9 @@ export default Object.freeze({
   XMPP_SERVER: 'xmpp-service-prod.ol.epicgames.com',
   EPIC_PROD_ENV: 'prod.ol.epicgames.com',
 
+  // EOS CONNECT STOMP
+  STOMP_EOS_CONNECT_SERVER: 'connect.epicgames.dev',
+
   // BATTLE ROYALE
   BR_STATS_V2: 'https://statsproxy-public-service-live.ol.epicgames.com/statsproxy/api/statsv2',
   BR_SERVER_STATUS: 'https://lightswitch-public-service-prod06.ol.epicgames.com/lightswitch/api/service/bulk/status?serviceId=Fortnite',

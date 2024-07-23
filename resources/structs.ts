@@ -42,7 +42,7 @@ export type PartySchema = Partial<typeof defaultPartyMeta> & {
 export type Schema = Record<string, string | undefined>;
 
 export type Language = 'de' | 'ru' | 'ko' | 'zh-hant' | 'pt-br' | 'en'
-| 'it' | 'fr' | 'zh-cn' | 'es' | 'ar' | 'ja' | 'pl' | 'es-419' | 'tr';
+  | 'it' | 'fr' | 'zh-cn' | 'es' | 'ar' | 'ja' | 'pl' | 'es-419' | 'tr';
 
 export type StringFunction = () => string;
 
@@ -88,7 +88,7 @@ export type AuthStringResolveable = string | PathLike | StringFunction | StringF
 export type Platform = 'WIN' | 'MAC' | 'PSN' | 'XBL' | 'SWT' | 'IOS' | 'AND' | 'PS5' | 'XSX';
 
 export type AuthClient = 'fortnitePCGameClient' | 'fortniteIOSGameClient' | 'fortniteAndroidGameClient'
-| 'fortniteSwitchGameClient' | 'fortniteCNGameClient' | 'launcherAppClient2' | 'Diesel - Dauntless';
+  | 'fortniteSwitchGameClient' | 'fortniteCNGameClient' | 'launcherAppClient2' | 'Diesel - Dauntless';
 
 export interface RefreshTokenData {
   /**
@@ -258,6 +258,11 @@ export interface ClientConfig {
   xmppDebug?: (message: string) => void;
 
   /**
+   * Debug function used for incoming and outgoing eos connect messages
+   */
+  eosConnectDebug?: (message: string) => void;
+
+  /**
    * Default friend presence of the bot (eg. "Playing Battle Royale")
    */
   defaultStatus?: string;
@@ -326,6 +331,11 @@ export interface ClientConfig {
   connectToXMPP: boolean;
 
   /**
+   * WIP - disable if you dont care about dms or group messages
+   */
+  connectToEOSConnect: boolean;
+
+  /**
    * Whether the client should fetch all friends on startup.
    * NOTE: If you disable this, almost all features related to friend caching will no longer work.
    * Do not disable this unless you know what you're doing
@@ -376,6 +386,11 @@ export interface ClientConfig {
    * Can be useful if you want to use data in the game files to determine the stats playlist type
    */
   statsPlaylistTypeParser?: (playlistId: string) => StatsPlaylistType;
+
+  /**
+   * fortnite deployment id (eos)
+   */
+  eosDeploymentId: string;
 }
 
 export interface MatchMeta {
@@ -386,7 +401,7 @@ export interface MatchMeta {
   matchStartedAt?: Date;
 }
 
-export interface ClientOptions extends Partial<ClientConfig> {}
+export interface ClientOptions extends Partial<ClientConfig> { }
 
 export interface ClientEvents {
   /**
@@ -1170,7 +1185,7 @@ export interface ReplayDownloadConfig {
   addStatsPlaceholder: boolean;
 }
 
-export interface ReplayDownloadOptions extends Partial<ReplayDownloadConfig> {}
+export interface ReplayDownloadOptions extends Partial<ReplayDownloadConfig> { }
 
 export interface EventTokensResponse {
   user: User;

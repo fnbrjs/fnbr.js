@@ -1,5 +1,5 @@
 /* eslint-disable */
-const { Client } = require('fnbr');
+const { Client } = require('../../');
 
 const client = new Client();
 

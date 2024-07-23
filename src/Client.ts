@@ -34,6 +34,7 @@ import EpicgamesAPIError from './exceptions/EpicgamesAPIError';
 import UserManager from './managers/UserManager';
 import FriendManager from './managers/FriendManager';
 import STWManager from './managers/STWManager';
+import EOSConnect from './xmpp/EOSConnect';
 import type { PresenceShow } from 'stanza/Constants';
 import type {
   BlurlStreamData, CreativeIslandData,
@@ -102,6 +103,11 @@ class Client extends EventEmitter {
   public xmpp: XMPP;
 
   /**
+   * EOS Connect STOMP manager
+   */
+  public eosConnect: EOSConnect;
+
+  /**
    * Friend manager
    */
   public friend: FriendManager;
@@ -148,6 +154,7 @@ class Client extends EventEmitter {
       forceNewParty: true,
       disablePartyService: false,
       connectToXMPP: true,
+      connectToEOSConnect: true,
       fetchFriends: true,
       restRetryLimit: 1,
       handleRatelimits: true,
@@ -156,6 +163,7 @@ class Client extends EventEmitter {
       language: 'en',
       friendOnlineConnectionTimeout: 30000,
       friendOfflineTimeout: 300000,
+      eosDeploymentId: '62a9473a2dca46b29ccf17577fcf42d7',
       ...config,
       cacheSettings: {
         ...config.cacheSettings,
@@ -195,6 +203,7 @@ class Client extends EventEmitter {
     this.auth = new Auth(this);
     this.http = new Http(this);
     this.xmpp = new XMPP(this);
+    this.eosConnect = new EOSConnect(this);
 
     this.partyLock = new AsyncLock();
     this.cacheLock = new AsyncLock();
@@ -244,6 +253,7 @@ class Client extends EventEmitter {
     this.cacheLock.lock();
     try {
       if (this.config.connectToXMPP) await this.xmpp.connect();
+      if (this.config.connectToEOSConnect) await this.eosConnect.connect();
       if (this.config.fetchFriends) await this.updateCaches();
     } finally {
       this.cacheLock.unlock();
@@ -534,7 +544,7 @@ class Client extends EventEmitter {
    * @param message Text to debug
    * @param type Debug type (regular, http or xmpp)
    */
-  public debug(message: string, type: 'regular' | 'http' | 'xmpp' = 'regular') {
+  public debug(message: string, type: 'regular' | 'http' | 'xmpp' | 'eos-connect' = 'regular') {
     switch (type) {
       case 'regular':
         if (typeof this.config.debug === 'function') this.config.debug(message);
@@ -544,6 +554,9 @@ class Client extends EventEmitter {
         break;
       case 'xmpp':
         if (typeof this.config.xmppDebug === 'function') { this.config.xmppDebug(message); }
+        break;
+      case 'eos-connect':
+        if (typeof this.config.eosConnectDebug === 'function') { this.config.eosConnectDebug(message); }
         break;
     }
   }

@@ -76,3 +76,5 @@ export type EOSConnectMessage =
   | EOSConnectChatNewMsgMessage
   | EOSConnectChatMemberLeftMessage
   | EOSConnectChatNewWhisperMessage;
+
+export default {};

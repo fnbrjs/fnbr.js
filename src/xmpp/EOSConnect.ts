@@ -6,16 +6,19 @@ import AuthenticationMissingError from '../exceptions/AuthenticationMissingError
 import Endpoints from '../../resources/Endpoints';
 import AuthClients from '../../resources/AuthClients';
 import ReceivedFriendMessage from '../structures/friend/ReceivedFriendMessage';
+import PartyMessage from '../structures/party/PartyMessage';
 import type { EOSConnectMessage } from '../structures/eos/connect';
 import type { IMessage } from '@stomp/stompjs';
 import type Client from '../Client';
-import type Friend from '../structures/friend/Friend';
 
 /**
  * Represents the client's EOS Connect STOMP manager (i.e. chat messages)
  */
 class EOSConnect extends Base {
-  private wsConnection?: StompClient;
+  /**
+   * private stomp connection
+   */
+  private stompConnection?: StompClient;
 
   /**
    * @param client The main client
@@ -23,7 +26,7 @@ class EOSConnect extends Base {
   constructor(client: Client) {
     super(client);
 
-    this.wsConnection = undefined;
+    this.stompConnection = undefined;
   }
 
   public async connect() {
@@ -60,7 +63,7 @@ class EOSConnect extends Base {
 
     const brokerURL = `wss://${Endpoints.STOMP_EOS_CONNECT_SERVER}`;
 
-    this.wsConnection = new StompClient({
+    this.stompConnection = new StompClient({
       brokerURL,
       stompVersions: new Versions([Versions.V1_0, Versions.V1_1, Versions.V1_2]),
       heartbeatOutgoing: 30_000,
@@ -108,22 +111,19 @@ class EOSConnect extends Base {
       },
     });
 
-    console.log(this.wsConnection);
-
-    this.wsConnection.activate();
+    this.stompConnection.activate();
   }
 
   private setupSubscription() {
-    this.wsConnection!.subscribe(
+    this.stompConnection!.subscribe(
       `${this.client.config.eosDeploymentId}/account/${this.client.user.self!.id}`,
-      this.subscriptionCallback,
+      (message) => this.subscriptionCallback(message),
       {
         id: 'sub-0',
       },
     );
   }
 
-  // eslint-disable-next-line class-methods-use-this
   private async subscriptionCallback(message: IMessage) {
     const isJson = message.headers['content-type']?.includes('application/json');
 
@@ -139,15 +139,60 @@ class EOSConnect extends Base {
 
     switch (messageData.type) {
       case 'social.chat.v1.NEW_WHISPER': {
-        // const friend = await this.client.xmpp.waitForFriend(m.from.split('@')[0]);
-        // if (!friend) return;
+        const friend = this.client.friend.list.get(messageData.payload.message.senderId);
+
+        if (!friend) {
+          return;
+        }
 
         const friendMessage = new ReceivedFriendMessage(this.client, {
-          // TODO: FRIEND via xmpp???
-          content: messageData.payload.message.body || '', author: <Friend>{}, id: messageData.id!, sentAt: new Date(),
+          content: messageData.payload.message.body || '',
+          author: friend,
+          id: messageData.id!,
+          sentAt: new Date(messageData.payload.message.time),
         });
 
         this.client.emit('friend:message', friendMessage);
+        break;
+      }
+
+      case 'social.chat.v1.NEW_MESSAGE': {
+        if (messageData.payload.conversation.type !== 'party') {
+          return;
+        }
+
+        await this.client.partyLock.wait();
+
+        const partyId = messageData.payload.conversation.conversationId.replace('p-', '');
+        const authorId = messageData.payload.message.senderId;
+
+        if (!this.client.party
+          || this.client.party.id !== partyId
+          || authorId === this.client.user.self!.id
+        ) {
+          return;
+        }
+
+        const authorMember = this.client.party.members.get(authorId);
+
+        if (!authorMember) {
+          return;
+        }
+
+        const partyMessage = new PartyMessage(this.client, {
+          content: messageData.payload.message.body || '',
+          author: authorMember,
+          sentAt: new Date(messageData.payload.message.time),
+          id: messageData.id!,
+          party: this.client.party,
+        });
+
+        this.client.emit('party:member:message', partyMessage);
+        break;
+      }
+
+      case 'core.connect.v1.connect-failed': {
+        this.client.debug(`failed connecting to eos connect: ${messageData.statusCode} - ${messageData.message}`);
         break;
       }
     }

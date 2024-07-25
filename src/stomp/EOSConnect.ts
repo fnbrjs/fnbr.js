@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { Client as StompClient, Versions } from '@stomp/stompjs';
 import WebSocket, { type ErrorEvent } from 'ws';
 import Base from '../Base';
@@ -50,6 +49,9 @@ class EOSConnect extends Base {
     return this.stompConnectionId;
   }
 
+  /**
+   * connect to the eos connect stomp server
+   */
   public async connect() {
     if (!this.client.auth.sessions.has(AuthSessionStoreKey.FortniteEOS)) {
       throw new AuthenticationMissingError(AuthSessionStoreKey.FortniteEOS);
@@ -123,6 +125,11 @@ class EOSConnect extends Base {
     this.client.debug('[STOMP EOS Connect] Disconnected');
   }
 
+  /**
+   * Sets up the subscription for the deployment
+   * @param connectionResolve connect promise resolve
+   * @param connectionReject connect promise reject
+   */
   private setupSubscription(connectionResolve: (value: unknown) => void, connectionReject: (reason?: unknown) => void) {
     this.stompConnection!.subscribe(
       `${this.client.config.eosDeploymentId}/account/${this.client.user.self!.id}`,

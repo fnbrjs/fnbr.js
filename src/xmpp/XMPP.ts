@@ -671,6 +671,7 @@ class XMPP extends Base {
    * @param to The message receiver's JID
    * @param content The message that will be sent
    * @param type The message type (eg "chat" or "groupchat")
+   * @deprecated this is useless now, since chat messages are handeled via an rest api now see {@link Client#chat}
    */
   public async sendMessage(to: string, content: string, type: Constants.MessageType = 'chat') {
     return this.waitForSentMessage(this.connection!.sendMessage({
@@ -684,6 +685,7 @@ class XMPP extends Base {
    * Wait until a message is sent
    * @param id The message id
    * @param timeout How long to wait for the message
+   * @deprecated this is useless now, since chat messages are handeled via an rest api now see {@link Client#chat}
    */
   public waitForSentMessage(id: string, timeout = 1000) {
     return new Promise<Stanzas.Message | undefined>((res) => {
@@ -710,6 +712,7 @@ class XMPP extends Base {
    * Joins a multi user chat room (MUC)
    * @param jid The room's JID
    * @param nick The client's nickname
+   * @deprecated this is useless now, since chat messages are handeled via an rest api now see {@link Client#chat}
    */
   public async joinMUC(jid: string, nick: string) {
     return this.connection!.joinRoom(jid, nick);
@@ -719,6 +722,7 @@ class XMPP extends Base {
    * Leaves a multi user chat room (MUC)
    * @param jid The room's JID
    * @param nick The client's nickname
+   * @deprecated this is useless now, since chat messages are handeled via an rest api now see {@link Client#chat}
    */
   public async leaveMUC(jid: string, nick: string) {
     return this.connection!.leaveRoom(jid, nick);
@@ -727,6 +731,7 @@ class XMPP extends Base {
   /**
    * Bans a member from a multi user chat room
    * @param member The member that should be banned
+   * @deprecated this is useless now, since chat messages are handeled via an rest api now see {@link Client#chat}
    */
   public async ban(jid: string, member: string) {
     return this.connection!.ban(jid, `${member}@${Endpoints.EPIC_PROD_ENV}`);

@@ -5,13 +5,26 @@ import Base from '../Base';
 import UserNotFoundError from '../exceptions/UserNotFoundError';
 import type { ChatMessagePayload } from '../../resources/structs';
 
+// private scope
 const generateCustomCorrelationId = () => `EOS-${Date.now()}-${randomUUID()}`;
 
+/**
+ * Represent's the client's chat manager (dm, party chat) via eos.
+ */
 class ChatManager extends Base {
-  private get namespace() {
+  /**
+   * Returns the chat namespace, this is the eos deployment id
+   */
+  public get namespace() {
     return this.client.config.eosDeploymentId;
   }
 
+  /**
+   * Sends a private message to the specified user
+   * @param user the account id or displayname
+   * @param message the message object
+   * @returns the message id
+   */
   public async whisperUser(user: string, message: ChatMessagePayload) {
     const accountId = await this.client.user.resolveId(user);
 
@@ -36,6 +49,13 @@ class ChatManager extends Base {
     return correlationId;
   }
 
+  /**
+   * Sends a message in the specified conversation (party chat)
+   * @param conversationId the conversation id, usually `p-[PARTYID]`
+   * @param message the message object
+   * @param allowedRecipients the account ids, that should receive the message
+   * @returns the message id
+   */
   public async sendMessageInConversation(conversationId: string, message: ChatMessagePayload, allowedRecipients: string[]) {
     const correlationId = generateCustomCorrelationId();
 

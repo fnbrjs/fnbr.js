@@ -1473,7 +1473,13 @@ export interface AuthSessionStore<K, V> extends Collection<K, V> {
 /*                                    EOS CHAT                                    */
 /* ------------------------------------------------------------------------------ */
 
+/**
+ * Represents a chat message data
+ */
 export interface ChatMessagePayload {
+  /**
+   * The message body, should not be empty and not exceeed the limit of 256 characters
+   */
   body: string;
 }
 
@@ -1513,7 +1519,7 @@ export interface EOSConnectChatNewMsgMessage extends BaseEOSConnectMessage {
     namespace: string;
     conversation: {
       conversationId: string;
-      type: string; // i.e. 'party
+      type: string; // i.e. 'party'
     };
     message: {
       body: string;

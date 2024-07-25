@@ -18,7 +18,9 @@ class PartyChat extends Base {
   /**
    * the party chats conversation id
    */
-  public conversationId: string;
+  public get conversationId() {
+    return `p-${this.party.id}`;
+  }
 
   /**
    * The client's chat room nickname
@@ -62,7 +64,6 @@ class PartyChat extends Base {
     this.isConnected = true;
 
     this.party = party;
-    this.conversationId = `p-${party.id}`;
     this.bannedAccountIds = new Set<string>();
   }
 

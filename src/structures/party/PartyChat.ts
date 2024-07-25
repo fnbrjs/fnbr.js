@@ -1,5 +1,4 @@
 import Base from '../../Base';
-import SendMessageError from '../../exceptions/SendMessageError';
 import AsyncLock from '../../util/AsyncLock';
 import PartyMessage from './PartyMessage';
 import type Client from '../../Client';
@@ -7,21 +6,29 @@ import type ClientParty from './ClientParty';
 import type ClientPartyMember from './ClientPartyMember';
 
 /**
- * Represents a party's multi user chat room (MUC)
+ * Represents a party's conversation
  */
 class PartyChat extends Base {
   /**
    * The chat room's JID
+   * @deprecated since chat is not done over xmpp anymore, this property will always be an empty string
    */
   public jid: string;
 
   /**
+   * the party chats conversation id
+   */
+  public conversationId: string;
+
+  /**
    * The client's chat room nickname
+   * @deprecated since chat is not done over xmpp anymore, this property will always be an empty string
    */
   public nick: string;
 
   /**
    * The chat room's join lock
+   * @deprecated since chat is not done over xmpp anymore, this is not used anymore
    */
   public joinLock: AsyncLock;
 
@@ -32,8 +39,14 @@ class PartyChat extends Base {
 
   /**
    * Whether the client is connected to the party chat
+   * @deprecated since chat is not done over xmpp anymore, this property will always be true
    */
   public isConnected: boolean;
+
+  /**
+   * Holds the account ids, which will not receive party messages anymore from the currently logged in user
+   */
+  public bannedAccountIds: Set<string>;
 
   /**
    * @param client The main client
@@ -42,13 +55,15 @@ class PartyChat extends Base {
   constructor(client: Client, party: ClientParty) {
     super(client);
 
+    // xmpp legacy (only here for backwards compatibility)
     this.joinLock = new AsyncLock();
-    this.joinLock.lock();
+    this.nick = '';
+    this.jid = '';
+    this.isConnected = true;
 
     this.party = party;
-    this.jid = `Party-${this.party?.id}@muc.prod.ol.epicgames.com`;
-    this.nick = `${this.client.user.self!.displayName}:${this.client.user.self!.id}:${this.client.xmpp.resource}`;
-    this.isConnected = false;
+    this.conversationId = `p-${party.id}`;
+    this.bannedAccountIds = new Set<string>();
   }
 
   /**
@@ -56,45 +71,52 @@ class PartyChat extends Base {
    * @param content The message that will be sent
    */
   public async send(content: string) {
-    await this.joinLock.wait();
-    if (!this.isConnected) await this.join();
-
-    const message = await this.client.xmpp.sendMessage(this.jid, content, 'groupchat');
-
-    if (!message) throw new SendMessageError('Message timeout exceeded', 'PARTY', this.party);
+    const messageId = await this.client.chat.sendMessageInConversation(
+      this.conversationId,
+      {
+        body: content,
+      },
+      this.party.members
+        .filter((x) => !this.bannedAccountIds.has(x.id))
+        .map((x) => x.id),
+    );
 
     return new PartyMessage(this.client, {
-      author: this.party.me as ClientPartyMember, content, party: this.party, id: message.id as string,
+      author: this.party.me as ClientPartyMember,
+      content,
+      party: this.party,
+      id: messageId,
     });
   }
 
   /**
    * Joins this party chat
+   * @deprecated since chat is not done over xmpp anymore, this function will do nothing
    */
-  public async join() {
-    this.joinLock.lock();
-    await this.client.xmpp.joinMUC(this.jid, this.nick);
-    this.isConnected = true;
-    this.joinLock.unlock();
-  }
+  // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-empty-function
+  public async join() { }
 
   /**
    * Leaves this party chat
+   * @deprecated since chat is not done over xmpp anymore, this function will do nothing
    */
-  public async leave() {
-    await this.client.xmpp.leaveMUC(this.jid, this.nick);
-    this.isConnected = false;
-  }
+  // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-empty-function
+  public async leave() { }
 
   /**
-   * Ban a member from this party chat
+   * Ban a member from receiving party messages from the logged in user
    * @param member The member that should be banned
    */
   public async ban(member: string) {
-    await this.joinLock.wait();
-    if (!this.isConnected) await this.join();
+    this.bannedAccountIds.add(member);
+  }
 
-    return this.client.xmpp?.ban(this.jid, member);
+  /**
+   * Unban a member from receiving party messages from the logged in user
+   * @param member The member that should be unbanned
+   */
+  public async unban(member: string) {
+    this.bannedAccountIds.delete(member);
   }
 }
 

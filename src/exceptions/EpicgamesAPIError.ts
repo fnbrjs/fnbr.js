@@ -21,6 +21,11 @@ class EpicgamesAPIError extends Error {
   public code: string;
 
   /**
+   * The Epicgames numeric error code (defaults to null)
+   */
+  public numericCode: number | null;
+
+  /**
    * The HTTP status code
    */
   public httpStatus: number;
@@ -48,6 +53,7 @@ class EpicgamesAPIError extends Error {
     this.method = request.method?.toUpperCase() || 'GET';
     this.url = request.url || '';
     this.code = error.errorCode;
+    this.numericCode = typeof error.numericErrorCode === 'number' ? error.numericErrorCode : null;
     this.messageVars = error.messageVars || [];
     this.httpStatus = status;
     this.requestData = request.data;

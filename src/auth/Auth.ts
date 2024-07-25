@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/indent */
 /* eslint-disable no-restricted-syntax */
 import { Collection } from '@discordjs/collection';
 import { promises as fs } from 'fs';
@@ -11,13 +12,18 @@ import AuthClients from '../../resources/AuthClients';
 import { resolveAuthObject, resolveAuthString } from '../util/Util';
 import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
 import FortniteClientCredentialsAuthSession from './FortniteClientCredentialsAuthSession';
+import EOSAuthSession from './EOSAuthSession';
 import type {
   AuthClient, AuthStringResolveable, DeviceAuthResolveable,
   DeviceAuthWithSnakeCaseSupport, AuthSessionStore,
 } from '../../resources/structs';
 import type Client from '../Client';
 
-type AuthSessionStoreType = AuthSessionStore<AuthSessionStoreKey, FortniteAuthSession | LauncherAuthSession | FortniteClientCredentialsAuthSession>;
+type AuthSessionStoreType = AuthSessionStore<AuthSessionStoreKey,
+  FortniteAuthSession
+  | LauncherAuthSession
+  | FortniteClientCredentialsAuthSession
+  | EOSAuthSession>;
 
 /**
  * Represents the client's authentication manager
@@ -115,6 +121,11 @@ class Auth extends Base {
     );
 
     this.sessions.set(AuthSessionStoreKey.FortniteClientCredentials, fortniteClientCredsSession);
+
+    // only create eos token if we connect to stomp
+    if (this.client.config.connectToStompEOSConnect) {
+      await this.fortniteEOSAuthenticate();
+    }
 
     this.client.debug(`[AUTH] Authentification successful (${((Date.now() - authStartTime) / 1000).toFixed(2)}s)`);
   }
@@ -279,6 +290,25 @@ class Auth extends Base {
     });
 
     this.sessions.set(AuthSessionStoreKey.Fortnite, fortniteSession);
+  }
+
+  private async fortniteEOSAuthenticate() {
+    const exchangeCode = await this.sessions.get(AuthSessionStoreKey.Fortnite)!.createExchangeCode();
+    const authClient = this.client.config.auth.authClient!;
+
+    const eosSession = await EOSAuthSession.create(
+      this.client,
+      AuthClients[authClient].clientId,
+      AuthClients[authClient].secret,
+      {
+        grant_type: 'exchange_code',
+        exchange_code: exchangeCode,
+        token_type: 'epic_id',
+        deployment_id: this.client.config.eosDeploymentId,
+      },
+    );
+
+    this.sessions.set(AuthSessionStoreKey.FortniteEOS, eosSession);
   }
 }
 

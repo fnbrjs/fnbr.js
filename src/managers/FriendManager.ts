@@ -9,7 +9,6 @@ import InviteeFriendshipsLimitExceededError from '../exceptions/InviteeFriendshi
 import InviteeFriendshipRequestLimitExceededError from '../exceptions/InviteeFriendshipRequestLimitExceededError';
 import InviteeFriendshipSettingsError from '../exceptions/InviteeFriendshipSettingsError';
 import OfferNotFoundError from '../exceptions/OfferNotFoundError';
-import SendMessageError from '../exceptions/SendMessageError';
 import SentFriendMessage from '../structures/friend/SentFriendMessage';
 import BasePendingFriend from '../structures/friend/BasePendingFriend';
 import Base from '../Base';
@@ -185,25 +184,17 @@ class FriendManager extends Base {
    */
   public async sendMessage(friend: string, content: string) {
     const resolvedFriend = this.resolve(friend);
-    if (!resolvedFriend) throw new FriendNotFoundError(friend);
 
-    if (!this.client.xmpp.isConnected) {
-      throw new SendMessageError('You\'re not connected via XMPP', 'FRIEND', resolvedFriend);
+    if (!resolvedFriend) {
+      throw new FriendNotFoundError(friend);
     }
 
-    const message = await this.client.xmpp.sendMessage(
-      `${resolvedFriend.id}@${Endpoints.EPIC_PROD_ENV}`,
-      content,
-    );
-
-    if (!message) {
-      throw new SendMessageError('Message timeout exceeded', 'FRIEND', resolvedFriend);
-    }
+    const messageId = await this.client.chat.whisperUser(resolvedFriend.id, { body: content });
 
     return new SentFriendMessage(this.client, {
       author: this.client.user.self!,
       content,
-      id: message.id as string,
+      id: messageId,
       sentAt: new Date(),
     });
   }

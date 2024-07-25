@@ -31,6 +31,7 @@ export { default as PartyNotFoundError } from './src/exceptions/PartyNotFoundErr
 export { default as PartyPermissionError } from './src/exceptions/PartyPermissionError';
 export { default as SendMessageError } from './src/exceptions/SendMessageError';
 export { default as StatsPrivacyError } from './src/exceptions/StatsPrivacyError';
+export { default as StompConnectionError } from './src/exceptions/StompConnectionError';
 export { default as UserNotFoundError } from './src/exceptions/UserNotFoundError';
 export { default as XMPPConnectionError } from './src/exceptions/XMPPConnectionError';
 export { default as XMPPConnectionTimeoutError } from './src/exceptions/XMPPConnectionTimeoutError';
@@ -53,7 +54,6 @@ export { default as RadioStation } from './src/structures/RadioStation';
 export { default as Stats } from './src/structures/Stats';
 export { default as Tournament } from './src/structures/Tournament';
 export { default as TournamentWindow } from './src/structures/TournamentWindow';
-export { default as connect } from './src/structures/eos/connect';
 export { default as BaseFriendMessage } from './src/structures/friend/BaseFriendMessage';
 export { default as BasePendingFriend } from './src/structures/friend/BasePendingFriend';
 export { default as Friend } from './src/structures/friend/Friend';

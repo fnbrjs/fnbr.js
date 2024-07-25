@@ -170,7 +170,6 @@ class Party extends Base {
     }
 
     this.client.setClientParty(this);
-    await this.client.party!.chat.join();
     this.client.partyLock.unlock();
   }
 

@@ -20,8 +20,12 @@ export default Object.freeze({
   XMPP_SERVER: 'xmpp-service-prod.ol.epicgames.com',
   EPIC_PROD_ENV: 'prod.ol.epicgames.com',
 
-  // EOS CONNECT STOMP
-  STOMP_EOS_CONNECT_SERVER: 'connect.epicgames.dev',
+  // EOS
+  EOS_STOMP: 'connect.epicgames.dev',
+  EOS_TOKEN: 'https://api.epicgames.dev/epic/oauth/v2/token',
+  EOS_TOKEN_INFO: 'https://api.epicgames.dev/epic/oauth/v2/tokenInfo',
+  EOS_TOKEN_REVOKE: 'https://api.epicgames.dev/epic/oauth/v2/revoke',
+  EOS_CHAT: 'https://api.epicgames.dev/epic/chat',
 
   // BATTLE ROYALE
   BR_STATS_V2: 'https://statsproxy-public-service-live.ol.epicgames.com/statsproxy/api/statsv2',

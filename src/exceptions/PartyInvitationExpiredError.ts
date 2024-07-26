@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because the client does not have permission to perform a certain action
+ * Represents an error thrown because the client does not have permission to perform a certain action
  */
 class PartyInvitationExpiredError extends Error {
   constructor() {

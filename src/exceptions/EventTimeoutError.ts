@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because an event timeout was exceeded
+ * Represents an error thrown because an event timeout was exceeded
  */
 class EventTimeoutError extends Error {
   /**

@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because a party member does not exist
+ * Represents an error thrown because a party member does not exist
  */
 class PartyMemberNotFoundError extends Error {
   /**

@@ -2,7 +2,7 @@ import type { AxiosRequestConfig } from 'axios';
 import type { EpicgamesAPIErrorData } from '../../resources/httpResponses';
 
 /**
- * Represets an HTTP error from the Epicgames API
+ * Represents an HTTP error from the Epicgames API
  */
 class EpicgamesAPIError extends Error {
   /**

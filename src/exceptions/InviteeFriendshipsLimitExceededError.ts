@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because the friendship invitee reached their friendships limit
+ * Represents an error thrown because the friendship invitee reached their friendships limit
  */
 class InviteeFriendshipsLimitExceededError extends Error {
   /**

@@ -3,6 +3,7 @@ import Endpoints from '../../resources/Endpoints';
 import { AuthSessionStoreKey } from '../../resources/enums';
 import Base from '../Base';
 import UserNotFoundError from '../exceptions/UserNotFoundError';
+import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
 import type { ChatMessagePayload } from '../../resources/structs';
 
 // private scope
@@ -24,6 +25,8 @@ class ChatManager extends Base {
    * @param user the account id or displayname
    * @param message the message object
    * @returns the message id
+   * @throws {UserNotFoundError} When the specified user was not found
+   * @throws {EpicgamesAPIError} When the api request failed
    */
   public async whisperUser(user: string, message: ChatMessagePayload) {
     const accountId = await this.client.user.resolveId(user);
@@ -55,6 +58,7 @@ class ChatManager extends Base {
    * @param message the message object
    * @param allowedRecipients the account ids, that should receive the message
    * @returns the message id
+   * @throws {EpicgamesAPIError} When the api request failed
    */
   public async sendMessageInConversation(conversationId: string, message: ChatMessagePayload, allowedRecipients: string[]) {
     const correlationId = generateCustomCorrelationId();

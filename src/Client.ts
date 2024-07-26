@@ -48,7 +48,7 @@ import type {
 } from '../resources/structs';
 
 /**
- * Represets the main client
+ * Represents the main client
  */
 class Client extends EventEmitter {
   /**
@@ -771,7 +771,6 @@ class Client extends EventEmitter {
     }, newPrivacy.deleted);
 
     this.partyLock.unlock();
-    await this.party.chat.join();
     return undefined;
   }
 

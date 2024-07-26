@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because a party already reached its max member count
+ * Represents an error thrown because a party already reached its max member count
  */
 class PartyMaxSizeReachedError extends Error {
   constructor() {

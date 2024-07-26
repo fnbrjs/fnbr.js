@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because a friendship already exists
+ * Represents an error thrown because a friendship already exists
  */
 class DuplicateFriendshipError extends Error {
   /**

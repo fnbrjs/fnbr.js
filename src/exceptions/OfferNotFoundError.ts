@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because an offer does not exist (anymore)
+ * Represents an error thrown because an offer does not exist (anymore)
  */
 class OfferNotFoundError extends Error {
   /**

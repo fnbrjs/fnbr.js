@@ -51,6 +51,9 @@ class EOSConnect extends Base {
 
   /**
    * connect to the eos connect stomp server
+   * @throws {AuthenticationMissingError} When there is no eos auth to use for stomp auth
+   * @throws {StompConnectionError} When the connection failed for any reason
+   * @throws {Error} When there was an error with the underlying websocket
    */
   public async connect() {
     if (!this.client.auth.sessions.has(AuthSessionStoreKey.FortniteEOS)) {

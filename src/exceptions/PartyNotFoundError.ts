@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because a party does not exist
+ * Represents an error thrown because a party does not exist
  */
 class PartyNotFoundError extends Error {
   constructor() {

@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because a match does not exist
+ * Represents an error thrown because a match does not exist
  */
 class MatchNotFoundError extends Error {
   /**

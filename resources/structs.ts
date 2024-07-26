@@ -1478,7 +1478,7 @@ export interface AuthSessionStore<K, V> extends Collection<K, V> {
  */
 export interface ChatMessagePayload {
   /**
-   * The message body, should not be empty and not exceeed the limit of 256 characters
+   * The message body, should not be empty and not exceed the limit of 256 characters. Please note that emojis count as 2 characters.
    */
   body: string;
 }
@@ -1563,4 +1563,3 @@ export type EOSConnectMessage =
   | EOSConnectChatNewMsgMessage
   | EOSConnectChatMemberLeftMessage
   | EOSConnectChatNewWhisperMessage;
-

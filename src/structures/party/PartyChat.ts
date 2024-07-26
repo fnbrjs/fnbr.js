@@ -1,9 +1,13 @@
+import { deprecate } from 'util';
 import Base from '../../Base';
 import AsyncLock from '../../util/AsyncLock';
 import PartyMessage from './PartyMessage';
+import PartyChatConversationNotFound from '../../exceptions/PartyChatConversationNotFound';
 import type Client from '../../Client';
 import type ClientParty from './ClientParty';
 import type ClientPartyMember from './ClientPartyMember';
+
+const deprecationNotOverXmppAnymore = 'Party Chat is not done over XMPP anymore, this function will be removed in a future version';
 
 /**
  * Represents a party's conversation
@@ -11,12 +15,12 @@ import type ClientPartyMember from './ClientPartyMember';
 class PartyChat extends Base {
   /**
    * The chat room's JID
-   * @deprecated since chat is not done over xmpp anymore, this property will always be an empty string
+   * @deprecated since chat is not done over xmpp anymore, this property will always be an empty string and will be removed in a future version
    */
   public jid: string;
 
   /**
-   * the party chats conversation id
+   * the party chat's conversation id
    */
   public get conversationId() {
     return `p-${this.party.id}`;
@@ -24,13 +28,13 @@ class PartyChat extends Base {
 
   /**
    * The client's chat room nickname
-   * @deprecated since chat is not done over xmpp anymore, this property will always be an empty string
+   * @deprecated since chat is not done over xmpp anymore, this property will always be an empty string  and will be removed in a future version
    */
   public nick: string;
 
   /**
    * The chat room's join lock
-   * @deprecated since chat is not done over xmpp anymore, this is not used anymore
+   * @deprecated since chat is not done over xmpp anymore, this is not used anymore and will be removed in a future version
    */
   public joinLock: AsyncLock;
 
@@ -41,14 +45,9 @@ class PartyChat extends Base {
 
   /**
    * Whether the client is connected to the party chat
-   * @deprecated since chat is not done over xmpp anymore, this property will always be true
+   * @deprecated since chat is not done over xmpp anymore, this property will always be true and will be removed in a future version
    */
   public isConnected: boolean;
-
-  /**
-   * Holds the account ids, which will not receive party messages anymore from the currently logged in user
-   */
-  public bannedAccountIds: Set<string>;
 
   /**
    * @param client The main client
@@ -64,21 +63,24 @@ class PartyChat extends Base {
     this.isConnected = true;
 
     this.party = party;
-    this.bannedAccountIds = new Set<string>();
   }
 
   /**
    * Sends a message to this party chat
    * @param content The message that will be sent
+   * @throws {PartyChatConversationNotFound} When the client is the only party member
    */
   public async send(content: string) {
+    if (this.party.members.size < 2) {
+      throw new PartyChatConversationNotFound();
+    }
+
     const messageId = await this.client.chat.sendMessageInConversation(
       this.conversationId,
       {
         body: content,
       },
       this.party.members
-        .filter((x) => !this.bannedAccountIds.has(x.id))
         .map((x) => x.id),
     );
 
@@ -92,32 +94,36 @@ class PartyChat extends Base {
 
   /**
    * Joins this party chat
-   * @deprecated since chat is not done over xmpp anymore, this function will do nothing
+   * @deprecated since chat is not done over xmpp anymore, this function will do nothing and will be removed in a future version
    */
-  // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-empty-function
-  public async join() { }
+  // eslint-disable-next-line class-methods-use-this
+  public async join() {
+    const deprecatedFn = deprecate(() => { }, deprecationNotOverXmppAnymore);
 
-  /**
-   * Leaves this party chat
-   * @deprecated since chat is not done over xmpp anymore, this function will do nothing
-   */
-  // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-empty-function
-  public async leave() { }
-
-  /**
-   * Ban a member from receiving party messages from the logged in user
-   * @param member The member that should be banned
-   */
-  public async ban(member: string) {
-    this.bannedAccountIds.add(member);
+    return deprecatedFn();
   }
 
   /**
-   * Unban a member from receiving party messages from the logged in user
-   * @param member The member that should be unbanned
+   * Leaves this party chat
+   * @deprecated since chat is not done over xmpp anymore, this function will do nothing and will be removed in a future version
    */
-  public async unban(member: string) {
-    this.bannedAccountIds.delete(member);
+  // eslint-disable-next-line class-methods-use-this
+  public async leave() {
+    const deprecatedFn = deprecate(() => { }, deprecationNotOverXmppAnymore);
+
+    return deprecatedFn();
+  }
+
+  /**
+    * Ban a member from this party chat
+    * @param member The member that should be banned
+    * @deprecated since chat is not done over xmpp anymore, this function will do nothing and will be removed in a future version
+    */
+  // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars
+  public async ban(member: string) {
+    const deprecatedFn = deprecate(() => { }, deprecationNotOverXmppAnymore);
+
+    return deprecatedFn();
   }
 }
 

@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because a friendship request has already been sent
+ * Represents an error thrown because a friendship request has already been sent
  */
 class FriendshipRequestAlreadySentError extends Error {
   /**

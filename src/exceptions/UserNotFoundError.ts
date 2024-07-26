@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because a user does not exist
+ * Represents an error thrown because a user does not exist
  */
 class UserNotFoundError extends Error {
   /**

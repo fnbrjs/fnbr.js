@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because a friend does not exist
+ * Represents an error thrown because a friend does not exist
  */
 class FriendNotFoundError extends Error {
   /**

@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because a creator code does not exist
+ * Represents an error thrown because a creator code does not exist
  */
 class CreatorCodeNotFoundError extends Error {
   /**

@@ -2,7 +2,7 @@ import { deprecate } from 'util';
 import Base from '../../Base';
 import AsyncLock from '../../util/AsyncLock';
 import PartyMessage from './PartyMessage';
-import PartyChatConversationNotFound from '../../exceptions/PartyChatConversationNotFound';
+import PartyChatConversationNotFoundError from '../../exceptions/PartyChatConversationNotFoundError';
 import type Client from '../../Client';
 import type ClientParty from './ClientParty';
 import type ClientPartyMember from './ClientPartyMember';
@@ -68,11 +68,11 @@ class PartyChat extends Base {
   /**
    * Sends a message to this party chat
    * @param content The message that will be sent
-   * @throws {PartyChatConversationNotFound} When the client is the only party member
+   * @throws {PartyChatConversationNotFoundError} When the client is the only party member
    */
   public async send(content: string) {
     if (this.party.members.size < 2) {
-      throw new PartyChatConversationNotFound();
+      throw new PartyChatConversationNotFoundError();
     }
 
     const messageId = await this.client.chat.sendMessageInConversation(

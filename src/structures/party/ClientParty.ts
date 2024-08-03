@@ -1,5 +1,6 @@
 import { Collection } from '@discordjs/collection';
 import { AsyncQueue } from '@sapphire/async-queue';
+import { deprecate } from 'util';
 import Endpoints from '../../../resources/Endpoints';
 import FriendNotFoundError from '../../exceptions/FriendNotFoundError';
 import PartyAlreadyJoinedError from '../../exceptions/PartyAlreadyJoinedError';
@@ -20,6 +21,8 @@ import type {
 } from '../../../resources/structs';
 import type PartyMember from './PartyMember';
 import type Friend from '../friend/Friend';
+
+const deprecationNotOverXmppAnymore = 'Party Chat is not done over XMPP anymore, this function will be removed in a future version';
 
 /**
  * Represents a party that the client is a member of
@@ -85,8 +88,6 @@ class ClientParty extends Party {
    */
   public async leave(createNew = true) {
     this.client.partyLock.lock();
-
-    if (this.chat.isConnected) await this.chat.leave();
 
     try {
       await this.client.http.epicgamesRequest({
@@ -262,9 +263,13 @@ class ClientParty extends Party {
   /**
    * Ban a member from this party chat
    * @param member The member that should be banned
+   * @deprecated This feature has been deprecated since epic moved chatting away from xmpp
    */
+  // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars
   public async chatBan(member: string) {
-    return this.chat.ban(member);
+    const deprecatedFn = deprecate(() => { }, deprecationNotOverXmppAnymore);
+
+    return deprecatedFn();
   }
 
   /**

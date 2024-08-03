@@ -3,7 +3,7 @@ import type ClientParty from '../structures/party/ClientParty';
 import type Friend from '../structures/friend/Friend';
 
 /**
- * Represets an error thrown because a user does not exist
+ * Represents an error thrown because a user does not exist
  */
 class SendMessageError extends Error {
   /**

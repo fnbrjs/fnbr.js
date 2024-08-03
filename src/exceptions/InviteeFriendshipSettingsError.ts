@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because the friendship invitee does disabled friendship requests
+ * Represents an error thrown because the friendship invitee does disabled friendship requests
  */
 class InviteeFriendshipSettingsError extends Error {
   /**

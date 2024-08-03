@@ -24,6 +24,7 @@ export { default as InviterFriendshipsLimitExceededError } from './src/exception
 export { default as MatchNotFoundError } from './src/exceptions/MatchNotFoundError';
 export { default as OfferNotFoundError } from './src/exceptions/OfferNotFoundError';
 export { default as PartyAlreadyJoinedError } from './src/exceptions/PartyAlreadyJoinedError';
+export { default as PartyChatConversationNotFoundError } from './src/exceptions/PartyChatConversationNotFoundError';
 export { default as PartyInvitationExpiredError } from './src/exceptions/PartyInvitationExpiredError';
 export { default as PartyMaxSizeReachedError } from './src/exceptions/PartyMaxSizeReachedError';
 export { default as PartyMemberNotFoundError } from './src/exceptions/PartyMemberNotFoundError';
@@ -31,6 +32,7 @@ export { default as PartyNotFoundError } from './src/exceptions/PartyNotFoundErr
 export { default as PartyPermissionError } from './src/exceptions/PartyPermissionError';
 export { default as SendMessageError } from './src/exceptions/SendMessageError';
 export { default as StatsPrivacyError } from './src/exceptions/StatsPrivacyError';
+export { default as StompConnectionError } from './src/exceptions/StompConnectionError';
 export { default as UserNotFoundError } from './src/exceptions/UserNotFoundError';
 export { default as XMPPConnectionError } from './src/exceptions/XMPPConnectionError';
 export { default as XMPPConnectionTimeoutError } from './src/exceptions/XMPPConnectionTimeoutError';

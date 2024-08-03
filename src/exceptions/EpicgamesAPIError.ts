@@ -2,7 +2,7 @@ import type { AxiosRequestConfig } from 'axios';
 import type { EpicgamesAPIErrorData } from '../../resources/httpResponses';
 
 /**
- * Represets an HTTP error from the Epicgames API
+ * Represents an HTTP error from the Epicgames API
  */
 class EpicgamesAPIError extends Error {
   /**
@@ -19,6 +19,11 @@ class EpicgamesAPIError extends Error {
    * The Epicgames error code (Starts with "errors.com.epicgames")
    */
   public code: string;
+
+  /**
+   * The Epicgames numeric error code (defaults to null)
+   */
+  public numericCode: number | null;
 
   /**
    * The HTTP status code
@@ -48,6 +53,7 @@ class EpicgamesAPIError extends Error {
     this.method = request.method?.toUpperCase() || 'GET';
     this.url = request.url || '';
     this.code = error.errorCode;
+    this.numericCode = typeof error.numericErrorCode === 'number' ? error.numericErrorCode : null;
     this.messageVars = error.messageVars || [];
     this.httpStatus = status;
     this.requestData = request.data;

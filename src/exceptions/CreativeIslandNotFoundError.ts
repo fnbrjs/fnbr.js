@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because a creative island does not exist
+ * Represents an error thrown because a creative island does not exist
  */
 class CreativeIslandNotFoundError extends Error {
   /**

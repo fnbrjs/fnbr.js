@@ -34,6 +34,8 @@ import EpicgamesAPIError from './exceptions/EpicgamesAPIError';
 import UserManager from './managers/UserManager';
 import FriendManager from './managers/FriendManager';
 import STWManager from './managers/STWManager';
+import EOSConnect from './stomp/EOSConnect';
+import ChatManager from './managers/ChatManager';
 import type { PresenceShow } from 'stanza/Constants';
 import type {
   BlurlStreamData, CreativeIslandData,
@@ -46,7 +48,7 @@ import type {
 } from '../resources/structs';
 
 /**
- * Represets the main client
+ * Represents the main client
  */
 class Client extends EventEmitter {
   /**
@@ -102,6 +104,11 @@ class Client extends EventEmitter {
   public xmpp: XMPP;
 
   /**
+   * EOS Connect STOMP manager
+   */
+  public stompEOSConnect: EOSConnect;
+
+  /**
    * Friend manager
    */
   public friend: FriendManager;
@@ -127,6 +134,11 @@ class Client extends EventEmitter {
   public stw: STWManager;
 
   /**
+   * EOS: Chat Manager
+   */
+  public chat: ChatManager;
+
+  /**
    * @param config The client's configuration options
    */
   constructor(config: ClientOptions = {}) {
@@ -148,6 +160,7 @@ class Client extends EventEmitter {
       forceNewParty: true,
       disablePartyService: false,
       connectToXMPP: true,
+      connectToStompEOSConnect: true,
       fetchFriends: true,
       restRetryLimit: 1,
       handleRatelimits: true,
@@ -156,6 +169,7 @@ class Client extends EventEmitter {
       language: 'en',
       friendOnlineConnectionTimeout: 30000,
       friendOfflineTimeout: 300000,
+      eosDeploymentId: '62a9473a2dca46b29ccf17577fcf42d7',
       ...config,
       cacheSettings: {
         ...config.cacheSettings,
@@ -195,6 +209,7 @@ class Client extends EventEmitter {
     this.auth = new Auth(this);
     this.http = new Http(this);
     this.xmpp = new XMPP(this);
+    this.stompEOSConnect = new EOSConnect(this);
 
     this.partyLock = new AsyncLock();
     this.cacheLock = new AsyncLock();
@@ -205,6 +220,7 @@ class Client extends EventEmitter {
     this.user = new UserManager(this);
 
     this.party = undefined;
+    this.chat = new ChatManager(this);
     this.tournaments = new TournamentManager(this);
     this.lastPartyMemberMeta = this.config.defaultPartyMemberMeta;
 
@@ -244,6 +260,7 @@ class Client extends EventEmitter {
     this.cacheLock.lock();
     try {
       if (this.config.connectToXMPP) await this.xmpp.connect();
+      if (this.config.connectToStompEOSConnect) await this.stompEOSConnect.connect();
       if (this.config.fetchFriends) await this.updateCaches();
     } finally {
       this.cacheLock.unlock();
@@ -534,7 +551,7 @@ class Client extends EventEmitter {
    * @param message Text to debug
    * @param type Debug type (regular, http or xmpp)
    */
-  public debug(message: string, type: 'regular' | 'http' | 'xmpp' = 'regular') {
+  public debug(message: string, type: 'regular' | 'http' | 'xmpp' | 'eos-connect' = 'regular') {
     switch (type) {
       case 'regular':
         if (typeof this.config.debug === 'function') this.config.debug(message);
@@ -544,6 +561,9 @@ class Client extends EventEmitter {
         break;
       case 'xmpp':
         if (typeof this.config.xmppDebug === 'function') { this.config.xmppDebug(message); }
+        break;
+      case 'eos-connect':
+        if (typeof this.config.stompEosConnectDebug === 'function') { this.config.stompEosConnectDebug(message); }
         break;
     }
   }
@@ -751,7 +771,6 @@ class Client extends EventEmitter {
     }, newPrivacy.deleted);
 
     this.partyLock.unlock();
-    await this.party.chat.join();
     return undefined;
   }
 

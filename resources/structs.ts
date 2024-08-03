@@ -29,6 +29,7 @@ import type { AuthSessionStoreKey } from './enums';
 import type FortniteAuthSession from '../src/auth/FortniteAuthSession';
 import type LauncherAuthSession from '../src/auth/LauncherAuthSession';
 import type FortniteClientCredentialsAuthSession from '../src/auth/FortniteClientCredentialsAuthSession';
+import type EOSAuthSession from '../src/auth/EOSAuthSession';
 
 export type PartyMemberSchema = Partial<typeof defaultPartyMemberMeta>;
 export type PartySchema = Partial<typeof defaultPartyMeta> & {
@@ -42,7 +43,7 @@ export type PartySchema = Partial<typeof defaultPartyMeta> & {
 export type Schema = Record<string, string | undefined>;
 
 export type Language = 'de' | 'ru' | 'ko' | 'zh-hant' | 'pt-br' | 'en'
-| 'it' | 'fr' | 'zh-cn' | 'es' | 'ar' | 'ja' | 'pl' | 'es-419' | 'tr';
+  | 'it' | 'fr' | 'zh-cn' | 'es' | 'ar' | 'ja' | 'pl' | 'es-419' | 'tr';
 
 export type StringFunction = () => string;
 
@@ -88,7 +89,7 @@ export type AuthStringResolveable = string | PathLike | StringFunction | StringF
 export type Platform = 'WIN' | 'MAC' | 'PSN' | 'XBL' | 'SWT' | 'IOS' | 'AND' | 'PS5' | 'XSX';
 
 export type AuthClient = 'fortnitePCGameClient' | 'fortniteIOSGameClient' | 'fortniteAndroidGameClient'
-| 'fortniteSwitchGameClient' | 'fortniteCNGameClient' | 'launcherAppClient2' | 'Diesel - Dauntless';
+  | 'fortniteSwitchGameClient' | 'fortniteCNGameClient' | 'launcherAppClient2' | 'Diesel - Dauntless';
 
 export interface RefreshTokenData {
   /**
@@ -258,6 +259,11 @@ export interface ClientConfig {
   xmppDebug?: (message: string) => void;
 
   /**
+   * Debug function used for incoming and outgoing stomp eos connect messages
+   */
+  stompEosConnectDebug?: (message: string) => void;
+
+  /**
    * Default friend presence of the bot (eg. "Playing Battle Royale")
    */
   defaultStatus?: string;
@@ -326,6 +332,13 @@ export interface ClientConfig {
   connectToXMPP: boolean;
 
   /**
+   * Whether the client should connect to eos connect stomp
+   * NOTE: If you disable this, receiving party or private messages will no longer work.
+   * Do not disable this unless you know what you're doing
+   */
+  connectToStompEOSConnect: boolean;
+
+  /**
    * Whether the client should fetch all friends on startup.
    * NOTE: If you disable this, almost all features related to friend caching will no longer work.
    * Do not disable this unless you know what you're doing
@@ -376,6 +389,11 @@ export interface ClientConfig {
    * Can be useful if you want to use data in the game files to determine the stats playlist type
    */
   statsPlaylistTypeParser?: (playlistId: string) => StatsPlaylistType;
+
+  /**
+   * fortnite deployment id (eos)
+   */
+  eosDeploymentId: string;
 }
 
 export interface MatchMeta {
@@ -386,7 +404,7 @@ export interface MatchMeta {
   matchStartedAt?: Date;
 }
 
-export interface ClientOptions extends Partial<ClientConfig> {}
+export interface ClientOptions extends Partial<ClientConfig> { }
 
 export interface ClientEvents {
   /**
@@ -1170,7 +1188,7 @@ export interface ReplayDownloadConfig {
   addStatsPlaceholder: boolean;
 }
 
-export interface ReplayDownloadOptions extends Partial<ReplayDownloadConfig> {}
+export interface ReplayDownloadOptions extends Partial<ReplayDownloadConfig> { }
 
 export interface EventTokensResponse {
   user: User;
@@ -1434,9 +1452,114 @@ export interface FortniteClientCredentialsAuthData extends AuthData {
   application_id: string;
 }
 
+export interface EOSAuthData extends AuthData {
+  refresh_expires: number;
+  refresh_expires_at: string;
+  refresh_token: string;
+  application_id: string;
+  merged_accounts: string[];
+  scope: string;
+}
+
 export interface AuthSessionStore<K, V> extends Collection<K, V> {
   get(key: AuthSessionStoreKey.Fortnite): FortniteAuthSession | undefined;
   get(key: AuthSessionStoreKey.Launcher): LauncherAuthSession | undefined;
+  get(key: AuthSessionStoreKey.FortniteEOS): EOSAuthSession | undefined;
   get(key: AuthSessionStoreKey.FortniteClientCredentials): FortniteClientCredentialsAuthSession | undefined;
   get(key: K): V | undefined;
 }
+
+/* ------------------------------------------------------------------------------ */
+/*                                    EOS CHAT                                    */
+/* ------------------------------------------------------------------------------ */
+
+/**
+ * Represents a chat message data
+ */
+export interface ChatMessagePayload {
+  /**
+   * The message body, should not be empty and not exceed the limit of 256 characters. Please note that emojis count as 2 characters.
+   */
+  body: string;
+}
+
+/* --------------------------------------------------------------------------------------- */
+/*                                    EOS Connect STOMP                                    */
+/* --------------------------------------------------------------------------------------- */
+interface BaseEOSConnectMessage {
+  correlationId: string;
+  timestamp: number; // unix
+  id?: string;
+  connectionId?: string;
+}
+
+export interface EOSConnectCoreConnected extends BaseEOSConnectMessage {
+  type: 'core.connect.v1.connected';
+}
+
+export interface EOSConnectCoreConnectFailed extends BaseEOSConnectMessage {
+  message: string;
+  statusCode: number; // i.e. 4005
+  type: 'core.connect.v1.connect-failed';
+}
+
+export interface EOSConnectChatMemberLeftMessage extends BaseEOSConnectMessage {
+  payload: {
+    // deployment id
+    namespace: string;
+    conversationId: string;
+    members: string[];
+  };
+  type: 'social.chat.v1.MEMBERS_LEFT';
+}
+
+export interface EOSConnectChatNewMsgMessage extends BaseEOSConnectMessage {
+  payload: {
+    // deployment id
+    namespace: string;
+    conversation: {
+      conversationId: string;
+      type: string; // i.e. 'party'
+    };
+    message: {
+      body: string;
+      senderId: string;
+      time: number;
+    }
+  };
+  type: 'social.chat.v1.NEW_MESSAGE';
+}
+
+export interface EOSConnectChatConversionCreatedMessage extends BaseEOSConnectMessage {
+  payload: {
+    // deployment id
+    namespace: string;
+    conversationId: string;
+    type: string; // i.e. 'party'
+    members: string[];
+  };
+  type: 'social.chat.v1.CONVERSATION_CREATED';
+}
+
+export interface EOSConnectChatNewWhisperMessage extends BaseEOSConnectMessage {
+  payload: {
+    // deployment id
+    namespace: string;
+    message: {
+      body: string;
+      senderId: string;
+      time: number;
+    }
+  };
+  type: 'social.chat.v1.NEW_WHISPER';
+}
+
+export type EOSConnectMessage =
+  // Core
+  EOSConnectCoreConnected
+  | EOSConnectCoreConnectFailed
+  // Social chat
+  | EOSConnectChatConversionCreatedMessage
+  | EOSConnectChatNewMsgMessage
+  | EOSConnectChatMemberLeftMessage
+  | EOSConnectChatNewWhisperMessage;

@@ -10,6 +10,10 @@ client.on('friend:message', (message) => {
   }
 });
 
+client.on('party:member:message', (message) => {
+  console.log(`Party Message from ${message.author.displayName}: ${message.content}`);
+});
+
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.self.displayName}`);
 });

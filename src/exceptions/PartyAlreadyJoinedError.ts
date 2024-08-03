@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because a member (or the client) already joined a party
+ * Represents an error thrown because a member (or the client) already joined a party
  */
 class PartyAlreadyJoinedError extends Error {
   constructor() {

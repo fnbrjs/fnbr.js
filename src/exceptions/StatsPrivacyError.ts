@@ -1,5 +1,5 @@
 /**
- * Represets an error thrown because a user set their stats to private
+ * Represents an error thrown because a user set their stats to private
  */
 class StatsPrivacyError extends Error {
   /**

@@ -189,7 +189,7 @@ class Client extends EventEmitter {
         checkEULA: true,
         killOtherTokens: true,
         createLauncherSession: false,
-        authClient: 'fortniteIOSGameClient',
+        authClient: 'fortniteAndroidGameClient',
         ...config.auth,
       },
       partyConfig: {

@@ -20,7 +20,7 @@ jobs:
       - name: Set Up NodeJS
         uses: actions/setup-node@v2
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Checkout Main Repository
         uses: actions/checkout@v2

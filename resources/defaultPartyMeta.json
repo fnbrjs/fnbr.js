@@ -21,7 +21,7 @@
   "Default:PlaylistData_j": "{\"PlaylistData\":{\"playlistName\":\"Playlist_DefaultSquad\",\"tournamentId\":\"\",\"eventWindowId\":\"\",\"linkId\":{\"mnemonic\":\"playlist_defaultsquad\",\"version\":-1},\"bGracefullyUpgraded\":false,\"matchmakingRulePreset\":\"RespectParties\"}}",
   "Default:PrimaryGameSessionId_s": "",
   "Default:PrivacySettings_j": "{\"PrivacySettings\":{\"partyType\":\"Public\",\"partyInviteRestriction\":\"AnyMember\",\"bOnlyLeaderFriendsCanJoin\":false}}",
-  "Default:RawSquadAssignments_j": "{\"RawSquadAssignments\":[]}",
+  "Default:SquadInformation_j": "{\"SquadInformation\":{\"rawSquadAssignments\":[],\"squadData\":[{\"jamTempo\":0,\"jamKey\":0,\"jamMode\":0}]}}",
   "Default:RegionId_s": "EU",
   "Default:SelectedIsland_j": "{\"SelectedIsland\":{\"linkId\":{\"mnemonic\":\"playlist_defaultsquad\",\"version\":-1},\"worldId\":{\"iD\":\"\",\"ownerId\":\"INVALID\",\"name\":\"\"},\"sessionId\":\"\",\"joinInfo\":{\"islandJoinability\":\"CanNotBeJoinedOrWatched\",\"bIsWorldJoinable\":false,\"sessionKey\":\"\"}}}",
   "Default:TileStates_j": "{\"TileStates\":[]}",

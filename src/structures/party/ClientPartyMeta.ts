@@ -52,8 +52,14 @@ class ClientPartyMeta extends PartyMeta {
       }
     });
 
-    return this.set('Default:RawSquadAssignments_j', {
-      RawSquadAssignments: assignments,
+    const squadInformation = this.get('Default:SquadInformation_j');
+
+    return this.set('Default:SquadInformation_j', {
+      ...squadInformation,
+      SquadInformation: {
+        ...squadInformation.SquadInformation,
+        rawSquadAssignments: assignments,
+      },
     });
   }
 

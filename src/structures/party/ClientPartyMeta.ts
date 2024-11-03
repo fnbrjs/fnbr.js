@@ -51,9 +51,18 @@ class ClientPartyMeta extends PartyMeta {
         i += 1;
       }
     });
-
-    return this.set('Default:RawSquadAssignments_j', {
-      RawSquadAssignments: assignments,
+    const squadData = [
+      {
+        "jamTempo": 0,
+        "jamKey": 0,
+        "jamMode": 0
+      }
+    ]
+    return this.set('Default:SquadInformation_j', {
+      SquadInformation: {
+        "rawSquadAssignments": assignments,
+        "squadData": squadData
+      },
     });
   }
 

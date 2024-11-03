@@ -248,7 +248,7 @@ class ClientParty extends Party {
     if (!this.me.isLeader) throw new PartyPermissionError();
 
     await this.sendPatch({
-      'Default:RawSquadAssignments_j': this.meta.refreshSquadAssignments(),
+      'Default:SquadInformation_j': this.meta.refreshSquadAssignments(),
     });
   }
 

@@ -1,5 +1,18 @@
 # Changelog
 
+## 4.1.0
+
+### Changes
+* Chatting
+  * Added `Client#chat` as the client's chat manager
+  * Deprecated `ClientParty#chatBan()`
+
+### Fixes
+* Party Meta
+  *  Fixed a bug that caused party members to be invisible when the client created the party
+* Chatting
+  * Fixed an issue that caused the client to not receive chat messages
+
 ## 4.0.0
 
 ### Additions

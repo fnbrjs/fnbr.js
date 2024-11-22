@@ -357,6 +357,27 @@ class ClientPartyMember extends PartyMember {
   }
 
   /**
+   * Updates the client party member's shoes
+   * @param id The shoes's ID
+   * @throws {EpicgamesAPIError}
+   */
+  public async setShoes(id: string) {
+    let data = this.meta.get('Default:AthenaCosmeticLoadout_j');
+
+    data = this.meta.set('Default:AthenaCosmeticLoadout_j', {
+      ...data,
+      AthenaCosmeticLoadout: {
+        ...data.AthenaCosmeticLoadout,
+        shoesDef: `/CosmeticShoes/Assets/Items/Cosmetics/${id}.${id}`,
+      },
+    });
+
+    await this.sendPatch({
+      'Default:AthenaCosmeticLoadout_j': data,
+    });
+  }
+
+  /**
    * Updates the client party member's emote
    * @param id The emote's ID
    * @param path The emote's path in the game files

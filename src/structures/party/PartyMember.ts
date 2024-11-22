@@ -94,6 +94,13 @@ class PartyMember extends User {
   }
 
   /**
+   * The member's currently equipped shoes
+   */
+  public get shoes() {
+    return this.meta.shoes;
+  }
+
+  /**
    * Whether the member is ready
    */
   public get isReady() {

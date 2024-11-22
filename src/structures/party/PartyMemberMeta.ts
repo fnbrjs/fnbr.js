@@ -38,6 +38,13 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
   }
 
   /**
+   * The currently equipped shoes
+   */
+  public get shoes(): string | undefined {
+    return (this.get('Default:AthenaCosmeticLoadout_j')?.AthenaCosmeticLoadout?.shoesDef as string)?.match(/(?<=\w*\.)\w*/)?.shift();
+  }
+
+  /**
    * Whether the member is ready
    */
   public get isReady() {

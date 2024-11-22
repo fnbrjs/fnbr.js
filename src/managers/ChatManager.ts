@@ -3,7 +3,6 @@ import Endpoints from '../../resources/Endpoints';
 import { AuthSessionStoreKey } from '../../resources/enums';
 import Base from '../Base';
 import UserNotFoundError from '../exceptions/UserNotFoundError';
-import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
 import type { ChatMessagePayload } from '../../resources/structs';
 
 // private scope

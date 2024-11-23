@@ -902,7 +902,7 @@ class Client extends EventEmitter {
       throw new Error('Request returned an empty body');
     }
 
-    return new EpicgamesServerStatus(this, epicgamesServerStatus.data);
+    return new EpicgamesServerStatus(this, epicgamesServerStatus);
   }
 
   /**

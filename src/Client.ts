@@ -931,7 +931,7 @@ class Client extends EventEmitter {
       responseType: 'arraybuffer',
     });
 
-    const streamData: BlurlStreamData = await parseBlurlStream(blurlFile.data);
+    const streamData: BlurlStreamData = await parseBlurlStream(blurlFile);
 
     const streamMetaData = {
       subtitles: streamData.subtitles ? JSON.parse(streamData.subtitles) : {},

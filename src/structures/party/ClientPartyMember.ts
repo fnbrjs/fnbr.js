@@ -361,14 +361,16 @@ class ClientPartyMember extends PartyMember {
    * @param id The shoes's ID
    * @throws {EpicgamesAPIError}
    */
-  public async setShoes(id: string) {
+  public async setShoes(id: string, path?: string) {
     let data = this.meta.get('Default:AthenaCosmeticLoadout_j');
 
     data = this.meta.set('Default:AthenaCosmeticLoadout_j', {
       ...data,
       AthenaCosmeticLoadout: {
         ...data.AthenaCosmeticLoadout,
-        shoesDef: `/CosmeticShoes/Assets/Items/Cosmetics/${id}.${id}`,
+        shoesDef: `${
+          path?.replace(/\/$/, '') ?? '/CosmeticShoes/Assets/Items/Cosmetics'
+        }/${id}.${id}`,
       },
     });
 
@@ -444,6 +446,26 @@ class ClientPartyMember extends PartyMember {
       AthenaCosmeticLoadout: {
         ...data.AthenaCosmeticLoadout,
         backpackDef: '',
+      },
+    });
+
+    await this.sendPatch({
+      'Default:AthenaCosmeticLoadout_j': data,
+    });
+  }
+
+  /**
+   * Clears the client party member's shoes
+   * @throws {EpicgamesAPIError}
+   */
+  public async clearShoes() {
+    let data = this.meta.get('Default:AthenaCosmeticLoadout_j');
+
+    data = this.meta.set('Default:AthenaCosmeticLoadout_j', {
+      ...data,
+      AthenaCosmeticLoadout: {
+        ...data.AthenaCosmeticLoadout,
+        shoesDef: '',
       },
     });
 

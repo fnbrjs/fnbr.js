@@ -359,6 +359,7 @@ class ClientPartyMember extends PartyMember {
   /**
    * Updates the client party member's shoes
    * @param id The shoes's ID
+   * @param path The shoes' path in the game files
    * @throws {EpicgamesAPIError}
    */
   public async setShoes(id: string, path?: string) {

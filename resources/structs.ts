@@ -996,9 +996,9 @@ export interface Island {
 
 export interface Cosmetics {
   outfit?: { id: string; variants?: CosmeticVariant[]; enlightment?: CosmeticEnlightment };
-  backpack?: { id: string; variants?: CosmeticVariant[]; path?: string } | null;
+  backpack?: { id: string; variants?: CosmeticVariant[]; path?: string };
   pickaxe?: { id: string; variants?: CosmeticVariant[]; path?: string };
-  shoes?: { id: string; path?: string } | null;
+  shoes?: { id: string; path?: string };
 }
 
 export interface CosmeticVariant {

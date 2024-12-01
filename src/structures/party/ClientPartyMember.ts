@@ -189,27 +189,24 @@ class ClientPartyMember extends PartyMember {
 
   /**
    * Updates multiple cosmetics for the client party member.
-   * If a cosmetic is set to `null`, it will be cleared.
-   * If a cosmetic is set to `undefined` or not provided, it will remain unchanged.
-   *
+   * If a cosmetic is set to `undefined` or any falsy value, it will be cleared.
+   * If a cosmetic is not provided, it will remain unchanged.
    * @param cosmetics An object specifying the cosmetics to update. Can be outfit, backpack, pickaxe or shoes.
    * @throws {EpicgamesAPIError}
    */
-  public async setCosmetics({
-    outfit,
-    backpack,
-    pickaxe,
-    shoes,
-  }: Cosmetics = {}) {
+  public async setCosmetics(cosmetics: Cosmetics = {}) {
+    const {
+      outfit, backpack, pickaxe, shoes,
+    } = cosmetics;
     const patches: Schema = {};
 
-    if (outfit !== undefined) {
+    if (outfit) {
       let data = this.meta.get('Default:AthenaCosmeticLoadout_j');
       let variantData = this.meta.get('Default:AthenaCosmeticLoadoutVariants_j');
 
       const parsedVariants: CosmeticsVariantMeta = {
         athenaCharacter: {
-          i: outfit.variants?.map((v) => ({
+          i: outfit?.variants?.map((v) => ({
             c: v.channel,
             v: v.variant,
             dE: v.dE || 0,
@@ -251,8 +248,8 @@ class ClientPartyMember extends PartyMember {
       }
     }
 
-    if (backpack !== undefined) {
-      if (backpack === null) {
+    if (Object.hasOwn(cosmetics, 'backpack')) {
+      if (!backpack) {
         let data = this.meta.get('Default:AthenaCosmeticLoadout_j');
 
         data = this.meta.set('Default:AthenaCosmeticLoadout_j', {
@@ -304,7 +301,7 @@ class ClientPartyMember extends PartyMember {
       }
     }
 
-    if (pickaxe !== undefined) {
+    if (pickaxe) {
       let data = this.meta.get('Default:AthenaCosmeticLoadout_j');
       let variantData = this.meta.get('Default:AthenaCosmeticLoadoutVariants_j');
 
@@ -343,8 +340,8 @@ class ClientPartyMember extends PartyMember {
       }
     }
 
-    if (shoes !== undefined) {
-      if (shoes === null) {
+    if (Object.hasOwn(cosmetics, 'shoes')) {
+      if (!shoes) {
         let data = this.meta.get('Default:AthenaCosmeticLoadout_j');
 
         data = this.meta.set('Default:AthenaCosmeticLoadout_j', {

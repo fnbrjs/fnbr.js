@@ -189,9 +189,9 @@ class ClientPartyMember extends PartyMember {
 
   /**
    * Updates multiple cosmetics for the client party member.
-   * If a cosmetic is set to `undefined` or any falsy value, it will be cleared.
+   * If a cosmetic is set to `undefined` or any falsy value, it will be cleared, if possible.
    * If a cosmetic is not provided, it will remain unchanged.
-   * @param cosmetics An object specifying the cosmetics to update. Can be outfit, backpack, pickaxe or shoes.
+   * @param cosmetics An object specifying the cosmetics to update, including outfit, backpack, pickaxe and shoes.
    * @throws {EpicgamesAPIError}
    */
   public async setCosmetics(cosmetics: Cosmetics = {}) {

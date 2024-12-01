@@ -206,7 +206,7 @@ class ClientPartyMember extends PartyMember {
 
       const parsedVariants: CosmeticsVariantMeta = {
         athenaCharacter: {
-          i: outfit?.variants?.map((v) => ({
+          i: outfit.variants?.map((v) => ({
             c: v.channel,
             v: v.variant,
             dE: v.dE || 0,

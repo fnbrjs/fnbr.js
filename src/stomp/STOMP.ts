@@ -2,12 +2,12 @@ import WebSocket from 'ws';
 import Base from '../Base';
 import { AuthSessionStoreKey } from '../../resources/enums';
 import AuthenticationMissingError from '../exceptions/AuthenticationMissingError';
-import StompConnectionError from '../exceptions/STOMPConnectionError';
 import Endpoints from '../../resources/Endpoints';
 import ReceivedFriendMessage from '../structures/friend/ReceivedFriendMessage';
 import PartyMessage from '../structures/party/PartyMessage';
 import STOMPConnectionTimeoutError from '../exceptions/STOMPConnectionTimeoutError';
 import STOMPMessage from './STOMPMessage';
+import STOMPConnectionError from '../exceptions/STOMPConnectionError';
 import type { StompMessageData } from './STOMPMessage';
 import type { EOSConnectMessage } from '../../resources/structs';
 import type Client from '../Client';
@@ -56,10 +56,9 @@ class STOMP extends Base {
   }
 
   /**
-   * connect to the eos connect stomp server
-   * @throws {AuthenticationMissingError} When there is no eos auth to use for stomp auth
-   * @throws {StompConnectionError} When the connection failed for any reason
-   * @throws {Error} When there was an error with the underlying websocket
+   * Connect to the STOMP server
+   * @throws {AuthenticationMissingError} When there is no EOS auth to use for STOMP auth
+   * @throws {STOMPConnectionError} When the connection failed for any reason
    */
   public async connect() {
     if (!this.client.auth.sessions.has(AuthSessionStoreKey.FortniteEOS)) {
@@ -103,11 +102,14 @@ class STOMP extends Base {
         this.client.debug(`[STOMP] Connection failed: ${err.message}`);
 
         clearTimeout(connectionTimeout);
-        rej(new StompConnectionError(err.message));
+        rej(new STOMPConnectionError(err.message));
       });
     });
   }
 
+  /**
+   * Registers the events for the STOMP connection
+   */
   private registerEvents(resolve: () => void, reject: (reason?: unknown) => void, connectionStartTime: number) {
     this.connection!.on('close', async (code, reason) => {
       this.disconnect();
@@ -121,7 +123,7 @@ class STOMP extends Base {
       } else {
         this.client.debug('[STOMP] Disconnected, retry limit reached');
         this.connectionRetryCount = 0;
-        throw new StompConnectionError(`STOMP WS disconnected, retry limit reached. Reason: ${reason}`, code);
+        throw new STOMPConnectionError(`STOMP WS disconnected, retry limit reached. Reason: ${reason}`, code);
       }
     });
 
@@ -154,7 +156,7 @@ class STOMP extends Base {
             case 'core.connect.v1.connect-failed':
               this.client.debug(`[STOMP] Connection failed: ${data.statusCode} - ${data.message}`);
 
-              reject(new StompConnectionError(data.message, data.statusCode));
+              reject(new STOMPConnectionError(data.message, data.statusCode));
               break;
             case 'social.chat.v1.NEW_WHISPER': {
               const { senderId, body, time } = data.payload.message;

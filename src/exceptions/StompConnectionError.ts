@@ -1,7 +1,7 @@
 /**
  * Represents an error that is thrown when the stomp websocket connection fails to be established
  */
-class StompConnectionError extends Error {
+class STOMPConnectionError extends Error {
   /**
    * The error status code
    */
@@ -13,11 +13,11 @@ class StompConnectionError extends Error {
   constructor(message: string, statusCode?: number) {
     super();
 
-    this.name = 'StompConnectionError';
+    this.name = 'STOMPConnectionError';
     this.message = `Failed to connect to STOMP: ${message}`;
 
     this.statusCode = statusCode;
   }
 }
 
-export default StompConnectionError;
+export default STOMPConnectionError;

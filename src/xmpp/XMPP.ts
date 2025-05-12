@@ -124,6 +124,7 @@ class XMPP extends Base {
       this.connection!.once('session:started', () => {
         clearTimeout(timeout);
         this.client.debug(`[XMPP] Successfully connected (${((Date.now() - connectionStartTime) / 1000).toFixed(2)}s)`);
+        this.connectionRetryCount = 0;
 
         this.connectedAt = Date.now();
 

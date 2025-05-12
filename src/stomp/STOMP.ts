@@ -151,6 +151,7 @@ class STOMP extends Base {
             case 'core.connect.v1.connected':
               this.client.debug(`[STOMP] Successfully connected (${((Date.now() - connectionStartTime) / 1000).toFixed(2)}s)`);
               this.connectionId = data.connectionId;
+              this.connectionRetryCount = 0;
               resolve();
               break;
             case 'core.connect.v1.connect-failed':

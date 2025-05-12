@@ -5,16 +5,16 @@ class StompConnectionError extends Error {
   /**
    * The error status code
    */
-  public statusCode: number;
+  public statusCode?: number;
 
   /**
    * @param error The error that caused the connection to fail
    */
-  constructor(message: string, statusCode: number) {
+  constructor(message: string, statusCode?: number) {
     super();
 
     this.name = 'StompConnectionError';
-    this.message = `Failed to connect to eos connect stomp: ${message} (status code ${statusCode})`;
+    this.message = `Failed to connect to STOMP: ${message}`;
 
     this.statusCode = statusCode;
   }

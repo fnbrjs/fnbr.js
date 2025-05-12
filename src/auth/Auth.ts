@@ -122,8 +122,8 @@ class Auth extends Base {
 
     this.sessions.set(AuthSessionStoreKey.FortniteClientCredentials, fortniteClientCredsSession);
 
-    // only create eos token if we connect to stomp
-    if (this.client.config.connectToStompEOSConnect) {
+    // Only create an EOS token if we connect to STOMP
+    if (this.client.config.connectToSTOMP) {
       await this.fortniteEOSAuthenticate();
     }
 

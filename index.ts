@@ -30,9 +30,10 @@ export { default as PartyMaxSizeReachedError } from './src/exceptions/PartyMaxSi
 export { default as PartyMemberNotFoundError } from './src/exceptions/PartyMemberNotFoundError';
 export { default as PartyNotFoundError } from './src/exceptions/PartyNotFoundError';
 export { default as PartyPermissionError } from './src/exceptions/PartyPermissionError';
+export { default as STOMPConnectionError } from './src/exceptions/STOMPConnectionError';
+export { default as STOMPConnectionTimeoutError } from './src/exceptions/STOMPConnectionTimeoutError';
 export { default as SendMessageError } from './src/exceptions/SendMessageError';
 export { default as StatsPrivacyError } from './src/exceptions/StatsPrivacyError';
-export { default as StompConnectionError } from './src/exceptions/StompConnectionError';
 export { default as UserNotFoundError } from './src/exceptions/UserNotFoundError';
 export { default as XMPPConnectionError } from './src/exceptions/XMPPConnectionError';
 export { default as XMPPConnectionTimeoutError } from './src/exceptions/XMPPConnectionTimeoutError';

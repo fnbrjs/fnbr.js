@@ -303,6 +303,9 @@ class Auth extends Base {
       {
         grant_type: 'exchange_code',
         exchange_code: exchangeCode,
+      },
+      {
+        // base payload used for initial & refresh auth
         token_type: 'epic_id',
         deployment_id: this.client.config.eosDeploymentId,
       },

@@ -3,7 +3,7 @@ import AuthSession from './AuthSession';
 import { AuthSessionType } from '../../resources/enums';
 import Endpoints from '../../resources/Endpoints';
 import type Client from '../Client';
-import type { EOSAuthData } from '../../resources/structs';
+import type { EOSAuthData, EOSTokenInfo } from '../../resources/structs';
 
 class EOSAuthSession extends AuthSession<AuthSessionType.EOS> {
   public refreshToken: string;
@@ -29,15 +29,18 @@ class EOSAuthSession extends AuthSession<AuthSessionType.EOS> {
       return false;
     }
 
-    const validation = await this.client.http.epicgamesRequest({
+    const tokenInfo = await this.client.http.epicgamesRequest<EOSTokenInfo>({
       method: 'POST',
       url: Endpoints.EOS_TOKEN_INFO,
       headers: {
-        Authorization: `bearer ${this.accessToken}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
+      data: new URLSearchParams({
+        token: this.accessToken,
+      }).toString(),
     });
 
-    return validation.active === true;
+    return tokenInfo.active === true;
   }
 
   public async revoke() {

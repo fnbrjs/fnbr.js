@@ -1478,6 +1478,10 @@ export interface EOSAuthData extends AuthData {
   scope: string;
 }
 
+export interface EOSTokenInfo {
+  active: boolean;
+}
+
 export interface AuthSessionStore<K, V> extends Collection<K, V> {
   get(key: AuthSessionStoreKey.Fortnite): FortniteAuthSession | undefined;
   get(key: AuthSessionStoreKey.Launcher): LauncherAuthSession | undefined;

@@ -24,7 +24,7 @@ class EOSAuthSession extends AuthSession<AuthSessionType.EOS> {
     this.refreshTokenExpiresAt = new Date(data.refresh_expires_at);
   }
 
-  public async checkIsValid(forceVerify = false) {
+  public async verify(forceVerify = false) {
     if (!forceVerify && this.isExpired) {
       return false;
     }
@@ -57,23 +57,34 @@ class EOSAuthSession extends AuthSession<AuthSessionType.EOS> {
   }
 
   public async refresh() {
-    clearTimeout(this.refreshTimeout);
-    this.refreshTimeout = undefined;
+    this.refreshLock.lock();
 
-    const refreshedSession = await EOSAuthSession.create(this.client, this.clientId, this.clientSecret, {
-      grant_type: 'refresh_token',
-      refresh_token: this.refreshToken,
-    });
+    try {
+      clearTimeout(this.refreshTimeout);
+      this.refreshTimeout = undefined;
 
-    this.accessToken = refreshedSession.accessToken;
-    this.expiresAt = refreshedSession.expiresAt;
-    this.refreshToken = refreshedSession.refreshToken;
-    this.refreshTokenExpiresAt = refreshedSession.refreshTokenExpiresAt;
-    this.applicationId = refreshedSession.applicationId;
-    this.mergedAccounts = refreshedSession.mergedAccounts;
-    this.scope = refreshedSession.scope;
+      const response = await this.client.http.epicgamesRequest<EOSAuthData>({
+        method: 'POST',
+        url: Endpoints.EOS_TOKEN,
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        data: new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: this.refreshToken,
+        }).toString(),
+      });
 
-    this.initRefreshTimeout();
+      this.accessToken = response.access_token;
+      this.expiresAt = new Date(response.expires_at);
+      this.refreshToken = response.refresh_token;
+      this.refreshTokenExpiresAt = new Date(response.refresh_expires_at);
+
+      this.initRefreshTimeout();
+    } finally {
+      this.refreshLock.unlock();
+    }
   }
 
   public initRefreshTimeout() {
@@ -82,7 +93,7 @@ class EOSAuthSession extends AuthSession<AuthSessionType.EOS> {
   }
 
   public static async create(client: Client, clientId: string, clientSecret: string, data: Record<string, string>) {
-    const response = await client.http.epicgamesRequest({
+    const response = await client.http.epicgamesRequest<EOSAuthData>({
       method: 'POST',
       url: Endpoints.EOS_TOKEN,
       headers: {

@@ -431,14 +431,14 @@ class ClientPartyMember extends PartyMember {
    * @throws {EpicgamesAPIError}
    */
   public async setEmote(id: string, path?: string) {
-    if (this.meta.get('Default:FrontendEmote_j').FrontendEmote.emoteItemDef !== 'None') await this.clearEmote();
+    if (this.meta.get('Default:FrontendEmote_j').FrontendEmote.pickable !== 'None') await this.clearEmote();
 
     let data = this.meta.get('Default:FrontendEmote_j');
     data = this.meta.set('Default:FrontendEmote_j', {
       ...data,
       FrontendEmote: {
         ...data.FrontendEmote,
-        emoteItemDef: `${path?.replace(/\/$/, '') ?? '/BRCosmetics/Athena/Items/Cosmetics/Dances'}/${id}.${id}`,
+        pickable: `${path?.replace(/\/$/, '') ?? '/BRCosmetics/Athena/Items/Cosmetics/Dances'}/${id}.${id}`,
         emoteSection: -2,
       },
     });
@@ -469,7 +469,7 @@ class ClientPartyMember extends PartyMember {
       ...data,
       FrontendEmote: {
         ...data.FrontendEmote,
-        emoteItemDef: 'None',
+        pickable: 'None',
         emoteSection: -1,
       },
     });

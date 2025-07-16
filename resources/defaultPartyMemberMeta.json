@@ -14,7 +14,7 @@
   "Default:FortCommonMatchmakingData_j": "{\"FortCommonMatchmakingData\":{\"request\":{\"linkId\":{\"mnemonic\":\"\",\"version\":-1},\"matchmakingTransaction\":\"NotReady\",\"requester\":\"INVALID\",\"version\":0},\"response\":\"NONE\",\"version\":0}}",
   "Default:FortMatchmakingMemberData_j": "{\"FortMatchmakingMemberData\":{\"request\":{\"members\":[{\"player\":\"\",\"readiness\":\"NotReady\",\"currentGameId\":{\"mnemonic\":\"\",\"version\":-1},\"currentGameType\":\"UNDEFINED\",\"currentGameSessionId\":\"\",\"version\":101}],\"requester\":\"\",\"version\":1},\"response\":\"NONE\",\"version\":1}}",
   "Default:FrontEndMapMarker_j": "{\"FrontEndMapMarker\":{\"markerLocation\":{\"x\":0,\"y\":0},\"bIsSet\":false}}",
-  "Default:FrontendEmote_j": "{\"FrontendEmote\":{\"emoteItemDef\":\"None\",\"emoteEKey\":\"\",\"emoteSection\":-1}}",
+  "Default:FrontendEmote_j": "{\"FrontendEmote\":{\"pickable\":\"None\",\"emoteEKey\":\"\",\"emoteSection\":-1}}",
   "Default:JoinInProgressData_j": "{\"JoinInProgressData\":{\"request\":{\"target\":\"INVALID\",\"time\":0},\"responses\":[]}}",
   "Default:JoinMethod_s": "Creation",
   "Default:LobbyState_j": "{\"LobbyState\":{\"inGameReadyCheckStatus\":\"None\",\"gameReadiness\":\"NotReady\",\"readyInputType\":\"Count\",\"currentInputType\":\"MouseAndKeyboard\",\"hiddenMatchmakingDelayMax\":0,\"hasPreloadedAthena\":false}}",

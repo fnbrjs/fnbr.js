@@ -19,6 +19,7 @@ export interface IPlatformEnum {
   PLAYSTATION: IPlatform;
   XBOX: IPlatform;
   SWITCH: IPlatform;
+  SWITCH_2: IPlatform;
   IOS: IPlatform;
   ANDROID: IPlatform;
   XBOX_SERIES_X: IPlatform;
@@ -138,6 +139,7 @@ export const Platform: Readonly<IPlatformEnum> = Object.freeze({
   PLAYSTATION: 'PSN',
   XBOX: 'XBL',
   SWITCH: 'SWT',
+  SWITCH_2: 'SWT2',
   IOS: 'IOS',
   ANDROID: 'AND',
   XBOX_SERIES_X: 'XSX',

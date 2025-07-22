@@ -25,7 +25,7 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
    * The current emote EID
    */
   public get emote(): string | undefined {
-    const emoteAsset: string = this.get('Default:FrontendEmote_j')?.FrontendEmote?.emoteItemDef;
+    const emoteAsset: string = this.get('Default:FrontendEmote_j')?.FrontendEmote?.pickable;
     if (emoteAsset === 'None' || !emoteAsset) return undefined;
     return emoteAsset.match(/(?<=\w*\.)\w*/)?.shift();
   }

@@ -17,3 +17,5 @@ docs.json
 
 # Testing scripts
 test.js
+
+.DS_Store

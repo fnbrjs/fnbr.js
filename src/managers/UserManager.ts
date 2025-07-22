@@ -82,7 +82,7 @@ class UserManager extends Base {
         } else {
           ids.push(idOrDisplayName);
         }
-      } else if (idOrDisplayName.length > 3 && idOrDisplayName.length < 16) {
+      } else {
         const cachedUser = this.cache.find((u) => u.displayName === idOrDisplayName);
         if (cachedUser) {
           const cachedUserClone = new User(this.client, cachedUser.toObject());

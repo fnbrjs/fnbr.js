@@ -24,7 +24,6 @@ import SentPartyJoinRequest from './structures/party/SentPartyJoinRequest';
 import RadioStation from './structures/RadioStation';
 import CreativeIslandNotFoundError from './exceptions/CreativeIslandNotFoundError';
 import Stats from './structures/Stats';
-import NewsMessage from './structures/NewsMessage';
 import EventTimeoutError from './exceptions/EventTimeoutError';
 import FortniteServerStatus from './structures/FortniteServerStatus';
 import EpicgamesServerStatus from './structures/EpicgamesServerStatus';
@@ -283,6 +282,7 @@ class Client extends EventEmitter {
   public async logout() {
     await this.auth.revokeAllTokens();
     this.xmpp.disconnect();
+    this.stomp.disconnect();
     this.destroy();
     this.isReady = false;
     this.emit('disconnected');
@@ -1079,27 +1079,25 @@ class Client extends EventEmitter {
    * @param customPayload Extra data to send in the request body for a personalized news response (battle pass level, country, etc)
    * @throws {EpicgamesAPIError}
    */
-  public async getBRNews(language = Enums.Language.ENGLISH, customPayload?: any): Promise<NewsMessage[]> {
+  public async getBRNews(language = Enums.Language.ENGLISH, customPayload?: any): Promise<any> {
     const news = await this.http.epicgamesRequest({
       method: 'POST',
-      url: Endpoints.BR_NEWS,
+      url: Endpoints.BR_NEWS_MOTD,
       headers: {
         'Content-Type': 'application/json',
         'Accept-Language': language,
       },
       data: {
-        platform: 'Windows',
-        language,
-        country: 'US',
-        serverRegion: 'NA',
-        subscription: false,
-        battlepass: false,
-        battlepassLevel: 1,
-        ...customPayload,
+        parameters: {
+          platform: 'Windows',
+          language: 'en',
+          ...customPayload,
+        },
+        tags: ['Product.BR'],
       },
     }, AuthSessionStoreKey.Fortnite);
 
-    return news.contentItems.map((i: any) => new NewsMessage(this, i));
+    return news;
   }
 
   /**

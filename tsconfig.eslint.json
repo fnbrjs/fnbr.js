@@ -1,5 +1,15 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["index.ts", "src/**/*.ts", "resources/**/*.ts", ".eslintrc.js", "test.js", "test.ts", "generateExports.js", "tests/client.test.js"],
+  "include": [
+    "index.ts",
+    "src/**/*.ts",
+    "resources/**/*.ts",
+    "enums/**/*.ts",
+    "test.js",
+    "generateExports.js",
+    "tests/client.test.ts",
+    "tests/userManager.test.ts",
+    "jest.config.js"
+  ],
   "exclude": ["resources/**/*.json", "src/**/*.json"]
 }

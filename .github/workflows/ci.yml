@@ -7,7 +7,7 @@ jobs:
 
     strategy:
       matrix:
-        node: ["18", "20", "22"]
+        node: ["20", "22", "24"]
       fail-fast: false
 
     steps:
@@ -31,3 +31,5 @@ jobs:
 
       - name: "Run Tests"
         run: "npx jest"
+        env:
+          DEVICE_AUTH: ${{ secrets.TEST_DEVICE_AUTH }}

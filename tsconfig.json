@@ -17,6 +17,17 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "strictPropertyInitialization": true,
-  }
+    "strictPropertyInitialization": true
+  },
+  "include": [
+    "src",
+    "enums",
+    "resources",
+    "index.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "docs"
+  ]
 }

@@ -33,7 +33,7 @@ export default Object.freeze({
   BR_STORE: 'https://fngw-mcp-gc-livefn.ol.epicgames.com/fortnite/api/storefront/v2/catalog',
   BR_STORE_KEYCHAIN: 'https://fngw-mcp-gc-livefn.ol.epicgames.com/fortnite/api/storefront/v2/keychain?numKeysDownloaded=0',
   BR_NEWS: 'https://fortnitecontent-website-prod07.ol.epicgames.com/content/api/pages/fortnite-game',
-  BR_NEWS_MOTD: 'https://prm-dialogue-public-api-prod.edea.live.use1a.on.epicgames.com/api/v1/fortnite-br/surfaces/motd/target',
+  BR_NEWS_MOTD: 'https://prm-dialogue-public-api-prod.edea.live.use1a.on.epicgames.com/api/v1/fortnite-br/channel/motd/target',
   BR_EVENT_FLAGS: 'https://fngw-mcp-gc-livefn.ol.epicgames.com/fortnite/api/calendar/v1/timeline',
   BR_SAC_SEARCH: 'https://payment-website-pci.ol.epicgames.com/affiliate/search-by-slug',
   BR_SAC: 'https://affiliate-public-service-prod.ol.epicgames.com/affiliate/api/public/affiliates/slug',

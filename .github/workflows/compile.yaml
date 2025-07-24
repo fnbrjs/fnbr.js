@@ -1,0 +1,26 @@
+name: "Compile Code"
+on: ["push", "pull_request"]
+jobs:
+  lint:
+    name: "Compile Code (Node ${{ matrix.node }})"
+    runs-on: "ubuntu-latest"
+
+    strategy:
+      matrix:
+        node: ["20", "22", "24"]
+      fail-fast: false
+
+    steps:
+      - name: "Checkout Repository"
+        uses: "actions/checkout@v2"
+
+      - name: "Set Up NodeJS"
+        uses: "actions/setup-node@v2"
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: "Install Dependencies"
+        run: "npm ci"
+
+      - name: "Compile Code"
+        run: "npx tsc"

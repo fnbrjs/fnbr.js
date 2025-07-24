@@ -1,14 +1,9 @@
-name: "CI"
+name: "Test & Lint Code"
 on: ["push", "pull_request"]
 jobs:
-  test:
-    name: "Test Code (Node ${{ matrix.node }})"
+  lint:
+    name: "Test & Lint Code"
     runs-on: "ubuntu-latest"
-
-    strategy:
-      matrix:
-        node: ["20", "22", "24"]
-      fail-fast: false
 
     steps:
       - name: "Checkout Repository"
@@ -17,19 +12,20 @@ jobs:
       - name: "Set Up NodeJS"
         uses: "actions/setup-node@v2"
         with:
-          node-version: ${{ matrix.node }}
+          node-version: 24
 
       - name: "Install Dependencies"
         run: "npm ci"
 
-      - name: "Lint Code"
-        if: ${{ matrix.node == '20' }}
-        run: "npx eslint -f .github/workflows/formatter.js src/**/*.ts || :"
-
       - name: "Compile Code"
         run: "npx tsc"
 
+      - name: "Lint Code"
+        run: "npx eslint -f .github/workflows/formatter.js src/**/*.ts || :"
+
       - name: "Run Tests"
-        run: "npx jest"
+        run: "npm run test"
         env:
           DEVICE_AUTH: ${{ secrets.TEST_DEVICE_AUTH }}
+
+

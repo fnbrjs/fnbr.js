@@ -132,7 +132,11 @@ class STOMP extends Base {
 
       switch (message.command) {
         case 'CONNECTED':
-          this.pingInterval = setInterval(() => this.connection!.send('\n'), 35000);
+          this.pingInterval = setInterval(() => {
+            if (this.connection && this.connection.readyState === WebSocket.OPEN) {
+              this.connection.send('\n');
+            }
+          }, 35000);
 
           this.sendMessage({
             command: 'SUBSCRIBE',
@@ -216,14 +220,18 @@ class STOMP extends Base {
    * Also performs a cleanup
    */
   public async disconnect() {
-    if (!this.connection) return;
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = undefined;
+    }
 
-    clearInterval(this.pingInterval);
-    this.pingInterval = undefined;
-
-    this.connection.removeAllListeners();
-    this.connection.close();
-    this.connection = undefined;
+    if (this.connection) {
+      this.connection.removeAllListeners();
+      if (this.connection.readyState === WebSocket.OPEN) {
+        this.connection.close();
+      }
+      this.connection = undefined;
+    }
 
     this.connectionId = undefined;
   }

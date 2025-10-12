@@ -85,17 +85,17 @@ class ClientPartyMember extends PartyMember {
    * @throws {EpicgamesAPIError}
    */
   public async setReadiness(ready: boolean) {
-    let data = this.meta.get('Default:LobbyState_j');
-    data = this.meta.set('Default:LobbyState_j', {
+    let data = this.meta.get('Default:MatchmakingInfo_j');
+    data = this.meta.set('Default:MatchmakingInfo_j', {
       ...data,
-      LobbyState: {
-        gameReadiness: ready ? 'Ready' : 'NotReady',
-        readyInputType: ready ? 'MouseAndKeyboard' : 'Count',
+      MatchmakingInfo: {
+        ...data.MatchmakingInfo,
+        readyStatus: ready ? 'Ready' : 'NotReady',
       },
     });
 
     await this.sendPatch({
-      'Default:LobbyState_j': data,
+      'Default:MatchmakingInfo_j': data,
     });
   }
 
@@ -105,17 +105,17 @@ class ClientPartyMember extends PartyMember {
    * @throws {EpicgamesAPIError}
    */
   public async setSittingOut(sittingOut: boolean) {
-    let data = this.meta.get('Default:LobbyState_j');
-    data = this.meta.set('Default:LobbyState_j', {
+    let data = this.meta.get('Default:MatchmakingInfo_j');
+    data = this.meta.set('Default:MatchmakingInfo_j', {
       ...data,
-      LobbyState: {
-        gameReadiness: sittingOut ? 'SittingOut' : 'NotReady',
-        readyInputType: 'Count',
+      MatchmakingInfo: {
+        ...data.MatchmakingInfo,
+        readyStatus: sittingOut ? 'SittingOut' : 'NotReady',
       },
     });
 
     await this.sendPatch({
-      'Default:LobbyState_j': data,
+      'Default:MatchmakingInfo_j': data,
     });
   }
 

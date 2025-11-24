@@ -1004,6 +1004,28 @@ export interface Island {
   };
 }
 
+export interface PartyMemberIsland {
+  LinkId: string;
+  MatchmakingSettingsV1: {
+    privacy: string;
+    productModes: any[];
+    regionId: string;
+    world: {
+      bIsJoinable: boolean;
+      iD: string;
+      name: string;
+      ownerId: string;
+    };
+  };
+  Session: {
+    iD: string;
+    joinInfo: {
+      joinablity: string;
+      sessionKey: string;
+    };
+  };
+}
+
 export interface Cosmetics {
   outfit?: { id: string; variants?: CosmeticVariant[]; enlightment?: CosmeticEnlightment };
   backpack?: { id: string; variants?: CosmeticVariant[]; path?: string };

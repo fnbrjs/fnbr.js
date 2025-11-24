@@ -1,6 +1,6 @@
 import Meta from '../../util/Meta';
 import type {
-  BannerMeta, BattlePassMeta, CosmeticsVariantMeta, Island, MatchMeta, PartyMemberSchema, Platform,
+  BannerMeta, BattlePassMeta, CosmeticsVariantMeta, PartyMemberIsland, MatchMeta, PartyMemberSchema, Platform,
 } from '../../../resources/structs';
 
 /**
@@ -120,8 +120,8 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
   /**
    * The current island info
    */
-  public get island(): Island {
-    return this.get('Default:CurrentIsland_j')?.SelectedIsland;
+  public get island(): PartyMemberIsland {
+    return JSON.parse(this.get('Default:MatchmakingInfo_j')?.MatchmakingInfo.currentIsland.island);
   }
 
   /**

@@ -1,6 +1,8 @@
 import AuthSession from './AuthSession';
 import { AuthSessionType } from '../../resources/enums';
 import Endpoints from '../../resources/Endpoints';
+import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
+import { invalidTokenCodes } from '../../resources/constants';
 import type Client from '../Client';
 import type { FortniteAuthData } from '../../resources/structs';
 
@@ -99,13 +101,22 @@ class FortniteAuthSession extends AuthSession<AuthSessionType.Fortnite> {
     clearTimeout(this.refreshTimeout);
     this.refreshTimeout = undefined;
 
-    await this.client.http.epicgamesRequest({
-      method: 'DELETE',
-      url: `${Endpoints.OAUTH_TOKEN_KILL}/${this.accessToken}`,
-      headers: {
-        Authorization: `bearer ${this.accessToken}`,
-      },
-    });
+    try {
+      await this.client.http.epicgamesRequest({
+        method: 'DELETE',
+        url: `${Endpoints.OAUTH_TOKEN_KILL}/${this.accessToken}`,
+        headers: {
+          Authorization: `bearer ${this.accessToken}`,
+        },
+      });
+    } catch (err) {
+      if (err instanceof EpicgamesAPIError && invalidTokenCodes.includes(err.code)) {
+        // Token is already invalid, nothing to do
+        return;
+      }
+
+      throw err;
+    }
   }
 
   public async refresh() {

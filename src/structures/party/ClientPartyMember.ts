@@ -223,11 +223,7 @@ class ClientPartyMember extends PartyMember {
 
       const parsedVariants: CosmeticsVariantMeta = {
         athenaCharacter: {
-          i: outfit.variants?.map((v) => ({
-            c: v.channel,
-            v: v.variant,
-            dE: v.dE || 0,
-          })) ?? [],
+          i: outfit.variants?.map((v) => `${v.channelIndex}|${v.variantIndex}`) ?? [],
         },
       };
 
@@ -250,12 +246,12 @@ class ClientPartyMember extends PartyMember {
 
       patches['Default:AthenaCosmeticLoadout_j'] = data;
 
-      delete variantData.AthenaCosmeticLoadoutVariants.vL.AthenaCharacter;
+      delete variantData.AthenaCosmeticLoadoutVariants.vD.athenaCharacter;
       if (parsedVariants.athenaCharacter?.i[0]) {
         variantData = this.meta.set('Default:AthenaCosmeticLoadoutVariants_j', {
           AthenaCosmeticLoadoutVariants: {
-            vL: {
-              ...variantData.AthenaCosmeticLoadoutVariants.vL,
+            vD: {
+              ...variantData.AthenaCosmeticLoadoutVariants.vD,
               ...parsedVariants,
             },
           },
@@ -295,11 +291,7 @@ class ClientPartyMember extends PartyMember {
       } else {
         const parsedVariants: CosmeticsVariantMeta = {
           athenaBackpack: {
-            i: backpack.variants?.map((v) => ({
-              c: v.channel,
-              v: v.variant,
-              dE: v.dE || 0,
-            })) ?? [],
+            i: backpack.variants?.map((v) => `${v.channelIndex}|${v.variantIndex}`) ?? [],
           },
         };
 
@@ -313,12 +305,12 @@ class ClientPartyMember extends PartyMember {
 
         patches['Default:AthenaCosmeticLoadout_j'] = data;
 
-        delete variantData.AthenaCosmeticLoadoutVariants.vL.AthenaBackpack;
+        delete variantData.AthenaCosmeticLoadoutVariants.vD.athenaBackpack;
         if (parsedVariants.athenaBackpack?.i[0]) {
           variantData = this.meta.set('Default:AthenaCosmeticLoadoutVariants_j', {
             AthenaCosmeticLoadoutVariants: {
-              vL: {
-                ...variantData.AthenaCosmeticLoadoutVariants.vL,
+              vD: {
+                ...variantData.AthenaCosmeticLoadoutVariants.vD,
                 ...parsedVariants,
               },
             },
@@ -332,11 +324,7 @@ class ClientPartyMember extends PartyMember {
     if (pickaxe) {
       const parsedVariants: CosmeticsVariantMeta = {
         athenaPickaxe: {
-          i: pickaxe.variants?.map((v) => ({
-            c: v.channel,
-            v: v.variant,
-            dE: v.dE || 0,
-          })) ?? [],
+          i: pickaxe.variants?.map((v) => `${v.channelIndex}|${v.variantIndex}`) ?? [],
         },
       };
 
@@ -350,12 +338,12 @@ class ClientPartyMember extends PartyMember {
 
       patches['Default:AthenaCosmeticLoadout_j'] = data;
 
-      delete variantData.AthenaCosmeticLoadoutVariants.vL.AthenaPickaxe;
+      delete variantData.AthenaCosmeticLoadoutVariants.vD.AthenaPickaxe;
       if (parsedVariants.athenaPickaxe?.i[0]) {
         variantData = this.meta.set('Default:AthenaCosmeticLoadoutVariants_j', {
           AthenaCosmeticLoadoutVariants: {
-            vL: {
-              ...variantData.AthenaCosmeticLoadoutVariants.vL,
+            vD: {
+              ...variantData.AthenaCosmeticLoadoutVariants.vD,
               ...parsedVariants,
             },
           },

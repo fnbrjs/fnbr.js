@@ -1035,16 +1035,13 @@ export interface Cosmetics {
 
 export interface CosmeticVariant {
   channel: string;
+  channelIndex: number;
   variant: string;
-  dE?: number;
+  variantIndex: number;
 }
 
 export interface CosmeticVariantMeta {
-  i: {
-    v: string;
-    c: string;
-    dE: number;
-  }[];
+  i: string[];
 }
 
 export interface CosmeticsVariantMeta {

@@ -193,9 +193,11 @@ class STOMP extends Base {
 
               const authorMember = this.client.party.members.get(senderId);
               if (!authorMember) return;
-
+              
+              const decodedBody= JSON.parse(Buffer.from(body, 'base64').toString('utf-8').replace(/\0+$/, '')).msg; 
+              
               const partyMessage = new PartyMessage(this.client, {
-                content: body ?? '',
+                content: decodedBody ?? '',
                 author: authorMember,
                 sentAt: new Date(time),
                 id: data.id!,

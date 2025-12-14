@@ -194,7 +194,17 @@ class STOMP extends Base {
               const authorMember = this.client.party.members.get(senderId);
               if (!authorMember) return;
               
-              const decodedBody= JSON.parse(Buffer.from(body, 'base64').toString('utf-8').replace(/\0+$/, '')).msg; 
+              const decodedBody = (() => {
+                const decoded = Buffer.from(body, 'base64')
+                  .toString('utf-8')
+                  .replace(/\0+$/, '');
+              
+                try {
+                  return JSON.parse(decoded).msg ?? decoded;
+                } catch {
+                  return decoded;
+                }
+              })();
               
               const partyMessage = new PartyMessage(this.client, {
                 content: decodedBody ?? '',
@@ -203,6 +213,7 @@ class STOMP extends Base {
                 id: data.id!,
                 party: this.client.party,
               });
+
 
               this.client.emit('party:member:message', partyMessage);
               break;

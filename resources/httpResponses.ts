@@ -51,6 +51,8 @@ export interface TournamentsResponse {
 export interface TournamentMetadata {
   minimumAccountLevel: number;
   pool: string;
+  tournamentType?: string;
+  webId?: string;
   AccountLockType: string;
   TeamLockType: string;
   DisqualifyType: string;
@@ -79,6 +81,8 @@ export interface TournamentWindowResolvedData {
 }
 
 export interface TournamentWindowMetadata {
+  VisualRound: number;
+  hideScoreLocationsIndexes?: number[];
   RoundType: string;
   ThresholdToAdvanceDivision: number;
   divisionRank: number;
@@ -163,6 +167,7 @@ export interface TournamentDisplayData {
   schedule_info: string;
   primary_color: string;
   flavor_description: string;
+  square_poster_image : string;
   poster_front_image: string;
   short_format_title: string;
   title_line_2: string;
@@ -174,6 +179,7 @@ export interface TournamentDisplayData {
   poster_fade_color: string;
   secondary_color: string;
   playlist_tile_image: string;
+  tournament_view_background_image: string;
   base_color: string;
   highlight_color: string;
   background_title: string;

@@ -1088,10 +1088,12 @@ export interface TournamentColors {
 }
 
 export interface TournamentImages {
+  squarePosterImage?: string;
   loadingScreenImage?: string;
   posterBackImage?: string;
   posterFrontImage?: string;
   playlistTileImage?: string;
+  tournamentViewBackgroundImage?: string;
 }
 
 export interface TournamentTexts {

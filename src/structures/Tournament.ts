@@ -139,10 +139,12 @@ class Tournament extends Base {
     };
 
     this.images = {
+      squarePosterImage: tournamentDisplayData.square_poster_image,
       loadingScreenImage: tournamentDisplayData.loading_screen_image,
       posterBackImage: tournamentDisplayData.poster_back_image,
       posterFrontImage: tournamentDisplayData.poster_front_image,
       playlistTileImage: tournamentDisplayData.playlist_tile_image,
+      tournamentViewBackgroundImage: tournamentDisplayData.tournament_view_background_image,
     };
 
     this.texts = {

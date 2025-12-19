@@ -77,6 +77,7 @@ export interface TournamentWindowScoreLocation {
 export interface TournamentWindowResolvedData {
   locations: string[];
   leaderboardDef?: LeaderboardDef;
+  payoutTableId?: string;
   payoutTable?: TournamentWindowTemplatePayoutTable[];
 }
 

@@ -75,6 +75,7 @@ class TournamentWindow {
    */
   public leaderboardDefs: Array<{
     leaderboardDefId: string;
+    payoutTableId?: string;
     payoutTable?: TournamentWindowTemplatePayoutTable[];
   }>;
 
@@ -181,6 +182,7 @@ class TournamentWindow {
       if (data.leaderboardDef) {
         this.leaderboardDefs.push({
           leaderboardDefId: data.leaderboardDef.leaderboardDefId,
+          payoutTableId: data.payoutTableId,
           payoutTable: data.payoutTable
         });
       }

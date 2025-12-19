@@ -44,7 +44,7 @@ export interface TournamentsResponse {
   events: TournamentData[];
   templates: TournamentWindowTemplateData[];
   resolvedWindowLocations?: Record<string, string[]>;
-  leaderboardDefs?: Record<string, LeaderboardDef>;
+  leaderboardDefs?: LeaderboardDef[];
   payoutTables?: Record<string, TournamentWindowTemplatePayoutTable[]>;
 }
 

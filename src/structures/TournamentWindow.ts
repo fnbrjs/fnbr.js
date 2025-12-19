@@ -175,7 +175,7 @@ class TournamentWindow {
     this.canLiveSpectate = windowData.canLiveSpectate;
     this.scoreLocations = windowData.scoreLocations;
 
-    this.resolvedLocations = resolvedData?.flatMap(r => r.locations) ?? [];
+    this.resolvedLocations = resolvedData?.[0]?.locations ?? [];
     this.leaderboardDefs = new Map();
     resolvedData?.forEach(data => {
       if (data.leaderboardDef) {

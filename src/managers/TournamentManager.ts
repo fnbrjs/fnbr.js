@@ -205,6 +205,7 @@ class TournamentManager extends Base {
           const leaderboardDefId = scoreLocation.leaderboardDefId;
           let leaderboardDef: LeaderboardDef | undefined;
           let payoutTable: TournamentWindowTemplatePayoutTable[] | undefined;
+          let payoutTableId: string | undefined;
 
           if (leaderboardDefId && tournaments.leaderboardDefs) {
             leaderboardDef = tournaments.leaderboardDefs.find(
@@ -212,7 +213,7 @@ class TournamentManager extends Base {
             );
 
             if (leaderboardDef?.payoutsConfig && tournaments.payoutTables) {
-              const payoutTableId = leaderboardDef.payoutsConfig.payoutTableIdFormat
+              payoutTableId = leaderboardDef.payoutsConfig.payoutTableIdFormat
                 .replace('${eventId}', t.eventId)
                 .replace('${round}', w.round.toString())
                 .replace('${windowId}', w.eventWindowId);
@@ -224,6 +225,7 @@ class TournamentManager extends Base {
           return {
             locations: resolvedLocations,
             leaderboardDef,
+            payoutTableId,
             payoutTable,
           };
         });

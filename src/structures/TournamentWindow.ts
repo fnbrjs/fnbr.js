@@ -73,8 +73,8 @@ class TournamentWindow {
   /**
    * Leaderboard definitions with their payout tables
    */
-  public leaderboardDefs: Map<string, {
-    def: LeaderboardDef;
+  public leaderboardDefs: Array<{
+    leaderboardDefId: string;
     payoutTable?: TournamentWindowTemplatePayoutTable[];
   }>;
 
@@ -176,11 +176,11 @@ class TournamentWindow {
     this.scoreLocations = windowData.scoreLocations;
 
     this.resolvedLocations = resolvedData?.[0]?.locations ?? [];
-    this.leaderboardDefs = new Map();
+    this.leaderboardDefs = [];
     resolvedData?.forEach(data => {
       if (data.leaderboardDef) {
-        this.leaderboardDefs.set(data.leaderboardDef.leaderboardDefId, {
-          def: data.leaderboardDef,
+        this.leaderboardDefs.push({
+          leaderboardDefId: data.leaderboardDef.leaderboardDefId,
           payoutTable: data.payoutTable
         });
       }

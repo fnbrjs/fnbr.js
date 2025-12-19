@@ -40,6 +40,14 @@ export type RegionMappings = {
   [key in Region]?: string;
 };
 
+export interface TournamentsResponse {
+  events: TournamentData[];
+  templates: TournamentWindowTemplateData[];
+  resolvedWindowLocations?: Record<string, string[]>;
+  leaderboardDefs?: Record<string, LeaderboardDef>;
+  payoutTables?: Record<string, TournamentWindowTemplatePayoutTable[]>;
+}
+
 export interface TournamentMetadata {
   minimumAccountLevel: number;
   pool: string;
@@ -59,7 +67,15 @@ export interface TournamentWindowScoreLocation {
   scoreMode: string;
   scoreId: string;
   leaderboardId: string;
+  leaderboardDefId?: string;
+  isMainWindowLeaderboard?: boolean;
   useIndividualScores?: boolean;
+}
+
+export interface TournamentWindowResolvedData {
+  locations: string[];
+  leaderboardDef?: LeaderboardDef;
+  payoutTable?: TournamentWindowTemplatePayoutTable[];
 }
 
 export interface TournamentWindowMetadata {
@@ -71,6 +87,27 @@ export interface TournamentWindowMetadata {
   SubgroupId: string;
   ScheduledMatchmakingMatchDelaySeconds?: number;
   liveSpectateAccessToken: string;
+}
+
+export interface LeaderboardDef {
+  gameId: string;
+  leaderboardDefId: string;
+  leaderboardStorageId: string;
+  leaderboardInstanceGroupingKeyFormat: string;
+  leaderboardInstanceIdFormat: string;
+  maxSessionHistorySize: number;
+  useIndividualScores: boolean;
+  tiebreakerFormula: any;
+  scoringRuleSetId: string;
+  clampsToZero: boolean;
+  payoutsConfig?: {
+    payoutTableIdFormat: string;
+    payoutDate: string;
+  };
+  hidePlayerScores: boolean;
+  percentileAccuracy: number;
+  requiredPlayerListings: any[];
+  discardZeroScore: boolean;
 }
 
 export interface TournamentWindowData {

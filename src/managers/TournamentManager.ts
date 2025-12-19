@@ -10,7 +10,9 @@ import type {
   FullPlatform, Region, TournamentSessionMetadata, TournamentWindowTemplate,
 } from '../../resources/structs';
 import type {
-  TournamentData, TournamentDisplayData, TournamentWindowResults, TournamentWindowTemplateData,
+  LeaderboardDef,
+  TournamentData, TournamentDisplayData, TournamentsResponse, TournamentWindowResolvedData, TournamentWindowResults, TournamentWindowTemplateData,
+  TournamentWindowTemplatePayoutTable,
 } from '../../resources/httpResponses';
 
 /**
@@ -115,45 +117,85 @@ class TournamentManager extends Base {
     return constuctedTournaments;
   }
 
-  public async getData() {
-    const tournaments = await this.client.http.epicgamesRequest({
-      method: 'GET',
-      url: `${Endpoints.BR_TOURNAMENTS}/${this.client.user.self!.id}`,
-    }, AuthSessionStoreKey.Fortnite);
+  public async getData(language = this.client.config.language, pastEvents = false) {
+  const tournaments: TournamentsResponse = await this.client.http.epicgamesRequest({
+    method: 'GET',
+    url: `${Endpoints.BR_TOURNAMENTS}/${this.client.user.self!.id}?showPastEvents=${pastEvents}`,
+  }, AuthSessionStoreKey.Fortnite);
 
-    const tournamentsInfo = await this.client.http.epicgamesRequest({
-      method: 'GET',
-      url: `${Endpoints.BR_NEWS}/tournamentinformation`,
-    }, AuthSessionStoreKey.Fortnite);
+  const tournamentsInfo = await this.client.http.epicgamesRequest({
+    method: 'GET',
+    url: `${Endpoints.BR_NEWS}/tournamentinformation?lang=${language}`,
+  }, AuthSessionStoreKey.Fortnite);
 
-    const constuctedTournaments: Tournament[] = [];
+  const constructedTournaments: Tournament[] = [];
 
-    tournaments.events.forEach((t: TournamentData) => {
-      let tournamentDisplayData = tournamentsInfo.tournament_info?.tournaments
-        ?.find((td: TournamentDisplayData) => td.tournament_display_id === t.displayDataId);
+  tournaments.events.forEach((t: TournamentData) => {
+    let tournamentDisplayData = tournamentsInfo.tournament_info?.tournaments
+      ?.find((td: TournamentDisplayData) => td.tournament_display_id === t.displayDataId);
 
-      if (!tournamentDisplayData) {
-        tournamentDisplayData = (Object.values(tournamentsInfo) as any[])
-          .find((tdr: any) => tdr.tournament_info?.tournament_display_id === t.displayDataId)?.tournament_info;
+    if (!tournamentDisplayData) {
+      tournamentDisplayData = (Object.values(tournamentsInfo) as any[])
+        .find((tdr: any) => tdr.tournament_info?.tournament_display_id === t.displayDataId)?.tournament_info;
+    }
+
+    if (!tournamentDisplayData) {
+      return;
+    }
+
+    const templates: TournamentWindowTemplate[] = [];
+    const windowsResolvedData: Map<string, TournamentWindowResolvedData[]> = new Map();
+
+    t.eventWindows.forEach((w) => {
+      const template = tournaments.templates
+        .find((tt: TournamentWindowTemplateData) => tt.eventTemplateId === w.eventTemplateId);
+      
+      if (template) {
+        templates.push({ windowId: w.eventWindowId, templateData: template });
       }
 
-      if (!tournamentDisplayData) {
-        return;
-      }
+      // Construir la key para resolvedWindowLocations
+      const key = `${t.gameId}:${t.eventId}:${w.eventWindowId}`;
+      const resolvedLocations = tournaments.resolvedWindowLocations?.[key] ?? [];
 
-      const templates: TournamentWindowTemplate[] = [];
+      // Obtener leaderboard defs y payout tables para cada scoreLocation
+      const resolvedDataForWindow: TournamentWindowResolvedData[] = w.scoreLocations.map(scoreLocation => {
+        const leaderboardDefId = scoreLocation.leaderboardDefId;
+        let leaderboardDef: LeaderboardDef | undefined;
+        let payoutTable: TournamentWindowTemplatePayoutTable[] | undefined;
 
-      t.eventWindows.forEach((w) => {
-        const template = tournaments.templates
-          .find((tt: TournamentWindowTemplateData) => tt.eventTemplateId === w.eventTemplateId);
-        if (template) templates.push({ windowId: w.eventWindowId, templateData: template });
+        if (leaderboardDefId && tournaments.leaderboardDefs) {
+          leaderboardDef = tournaments.leaderboardDefs[leaderboardDefId];
+
+          // Si tiene payoutsConfig, buscar la payout table
+          if (leaderboardDef?.payoutsConfig && tournaments.payoutTables) {
+            // Construir el ID de la payout table usando el formato
+            const payoutTableId = leaderboardDef.payoutsConfig.payoutTableIdFormat
+              .replace('${eventId}', t.eventId)
+              .replace('${round}', w.round.toString())
+              .replace('${windowId}', w.eventWindowId);
+
+            payoutTable = tournaments.payoutTables[payoutTableId];
+          }
+        }
+
+        return {
+          locations: resolvedLocations,
+          leaderboardDef,
+          payoutTable,
+        };
       });
 
-      constuctedTournaments.push(new Tournament(this.client, t, tournamentDisplayData, templates));
+      windowsResolvedData.set(w.eventWindowId, resolvedDataForWindow);
     });
 
-    return constuctedTournaments;
-  }
+    constructedTournaments.push(
+      new Tournament(this.client, t, tournamentDisplayData, templates, windowsResolvedData)
+    );
+  });
+
+  return constructedTournaments;
+}
 
   /**
    * Fetches a tournament session's metadata

@@ -55,6 +55,24 @@ class STOMP extends Base {
     return this.connection && this.connection.readyState === WebSocket.OPEN;
   }
 
+  private decodeBody(body?: string): string {
+    if (!body) return '';
+
+    try {
+      const decoded = Buffer.from(body, 'base64')
+        .toString('utf-8')
+        .replace(/\0+$/, '');
+
+      try {
+        return JSON.parse(decoded).msg ?? decoded;
+      } catch {
+        return decoded;
+      }
+    } catch {
+      return '';
+    }
+  }
+
   /**
    * Connect to the STOMP server
    * @throws {AuthenticationMissingError} When there is no EOS auth to use for STOMP auth
@@ -170,7 +188,7 @@ class STOMP extends Base {
               if (!friend || senderId === this.client.user.self!.id) return;
 
               const friendMessage = new ReceivedFriendMessage(this.client, {
-                content: body ?? '',
+                content: this.decodeBody(body),
                 author: friend,
                 id: data.id!,
                 sentAt: new Date(time),
@@ -195,7 +213,7 @@ class STOMP extends Base {
               if (!authorMember) return;
 
               const partyMessage = new PartyMessage(this.client, {
-                content: body ?? '',
+                content: this.decodeBody(body),
                 author: authorMember,
                 sentAt: new Date(time),
                 id: data.id!,

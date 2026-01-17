@@ -49,6 +49,13 @@ class ChatManager extends Base {
   }
 
   /**
+   * Returns the chat namespace, this is the eos deployment id
+   */
+  public get namespace() {
+    return this.client.config.eosDeploymentId;
+  }
+
+  /**
    * Sends a private message to the specified user
    * @param user the account id or displayname
    * @param message the message object
@@ -93,7 +100,8 @@ class ChatManager extends Base {
 
     await this.client.http.epicgamesRequest({
       method: 'POST',
-      url: `${Endpoints.EOS_CHAT}/v1/public/_/conversations/${conversationId}/messages?fromAccountId=${this.client.user.self!.id}`,
+      url: `${Endpoints.EOS_CHAT}/v1/public/${conversationType === ConversationType.DirectMessage ? '_' : this.namespace}`
+        + `/conversations/${conversationId}/messages?fromAccountId=${this.client.user.self!.id}`,
       headers: {
         'Content-Type': 'application/json',
         'X-Epic-Correlation-ID': correlationId,

@@ -3,6 +3,7 @@ import Base from '../../Base';
 import AsyncLock from '../../util/AsyncLock';
 import PartyMessage from './PartyMessage';
 import PartyChatConversationNotFoundError from '../../exceptions/PartyChatConversationNotFoundError';
+import { ConversationType } from '../../../resources/enums';
 import type Client from '../../Client';
 import type ClientParty from './ClientParty';
 import type ClientPartyMember from './ClientPartyMember';
@@ -81,7 +82,9 @@ class PartyChat extends Base {
         body: content,
       },
       this.party.members
+        .filter((m) => m.id !== this.client.user.self!.id)
         .map((x) => x.id),
+      ConversationType.Party,
     );
 
     return new PartyMessage(this.client, {

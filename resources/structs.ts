@@ -1520,7 +1520,7 @@ export interface AuthSessionStore<K, V> extends Collection<K, V> {
  */
 export interface ChatMessagePayload {
   /**
-   * The message body, should not be empty and not exceed the limit of 256 characters. Please note that emojis count as 2 characters.
+   * The message body, should not be empty and not exceed the limit of 2048 characters. Please note that emojis count as 2 characters.
    */
   body: string;
 }

@@ -20,6 +20,9 @@ export default Object.freeze({
   XMPP_SERVER: 'xmpp-service-prod.ol.epicgames.com',
   EPIC_PROD_ENV: 'prod.ol.epicgames.com',
 
+  // PUBLIC KEY
+  PUBLICKEY: 'https://publickey-service-prod.ecbc.live.use1a.on.epicgames.com/publickey',
+
   // EOS
   EOS_STOMP: 'connect.epicgames.dev',
   EOS_TOKEN: 'https://api.epicgames.dev/epic/oauth/v2/token',

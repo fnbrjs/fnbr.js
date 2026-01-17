@@ -11,3 +11,13 @@ export enum AuthSessionStoreKey {
   FortniteEOS = 'fortniteEOS',
   Launcher = 'launcher',
 }
+
+export enum SignedMessageType {
+  Persistent = 'Persistent',
+  Party = 'Party',
+}
+
+export enum ConversationType {
+  DirectMessage = 'DirectMessage',
+  Party = 'Party',
+}

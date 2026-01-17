@@ -30,6 +30,16 @@ export interface EpicgamesOAuthData {
   device_id: string;
 }
 
+export interface PublicKeyData {
+  key: string;
+  account_id: string;
+  key_guid: string;
+  kid: string;
+  expiration: string;
+  jwt: string;
+  type: string;
+}
+
 export type PlatformMappings = {
   // eslint-disable-next-line no-unused-vars
   [key in FullPlatform]?: string;

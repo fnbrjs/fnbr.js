@@ -56,6 +56,7 @@ export default Object.freeze({
 
   // SAVE THE WORLD
   STW_WORLD_INFO: 'https://fngw-mcp-gc-livefn.ol.epicgames.com/fortnite/api/game/v2/world/info',
+  STW_NEWS_MOTD: 'https://prm-dialogue-public-api-prod.edea.live.use1a.on.epicgames.com/api/v1/fortnite-br/surfaces/stw-motd/target',
 
   // ACCOUNT
   ACCOUNT_MULTIPLE: 'https://account-public-service-prod.ol.epicgames.com/account/api/public/account',

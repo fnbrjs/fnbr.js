@@ -3,7 +3,7 @@ import type { Collection } from '@discordjs/collection';
 import type { RawAxiosRequestConfig } from 'axios';
 import type { PathLike } from 'fs';
 import type defaultPartyMeta from './defaultPartyMeta.json';
-import type defaultPartyMemberMeta from './defaultPartyMemberMeta.json';
+import type defaultPartyMemberMeta from './defaultPartyMemberMeta';
 import type EpicgamesAPIError from '../src/exceptions/EpicgamesAPIError';
 import type BlockedUser from '../src/structures/user/BlockedUser';
 import type ClientParty from '../src/structures/party/ClientParty';
@@ -86,7 +86,7 @@ export type DeviceAuthResolveable = DeviceAuth | PathLike | DeviceAuthFunction |
 
 export type AuthStringResolveable = string | PathLike | StringFunction | StringFunctionAsync;
 
-export type Platform = 'WIN' | 'MAC' | 'PSN' | 'XBL' | 'SWT' | 'SWT2' | 'IOS' | 'AND' | 'PS5' | 'XSX';
+export type Platform = 'WIN' | 'MAC' | 'PSN' | 'XBL' | 'SWT' | 'SWT2' | 'IOS' | 'AND' | 'PS5' | 'XSX' | 'LUNA';
 
 export type AuthClient = 'fortnitePCGameClient' | 'fortniteIOSGameClient' | 'fortniteAndroidGameClient'
 | 'fortniteSwitchGameClient' | 'fortniteCNGameClient' | 'launcherAppClient2' | 'Diesel - Dauntless';
@@ -1006,21 +1006,11 @@ export interface Island {
 
 export interface PartyMemberIsland {
   LinkId: string;
-  MatchmakingSettingsV1: {
-    privacy: string;
-    productModes: any[];
-    regionId: string;
-    world: {
-      bIsJoinable: boolean;
-      iD: string;
-      name: string;
-      ownerId: string;
-    };
-  };
+  MatchmakingSettingsV2?: Record<string, string>;
   Session: {
     iD: string;
     joinInfo: {
-      joinablity: string;
+      joinability: string;
       sessionKey: string;
     };
   };

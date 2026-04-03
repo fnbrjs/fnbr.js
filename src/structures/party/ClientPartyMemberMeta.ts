@@ -1,4 +1,4 @@
-import defaultPartyMemberMeta from '../../../resources/defaultPartyMemberMeta.json';
+import defaultPartyMemberMeta from '../../../resources/defaultPartyMemberMeta';
 import { getRandomDefaultCharacter } from '../../util/Util';
 import PartyMemberMeta from './PartyMemberMeta';
 import type { PartyMemberSchema } from '../../../resources/structs';
@@ -24,17 +24,25 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
 
     const defaultCharacter = getRandomDefaultCharacter();
 
+    const mpLoadoutData = this.get('Default:MpLoadout1_j')?.MpLoadout1;
+
     this.update({
-      'Default:AthenaCosmeticLoadout_j': JSON.stringify({
-        AthenaCosmeticLoadout: {
-          ...JSON.parse(defaultPartyMemberMeta['Default:AthenaCosmeticLoadout_j']).AthenaCosmeticLoadout,
-          characterPrimaryAssetId: `AthenaCharacter:${defaultCharacter}`,
+      'Default:MpLoadout1_j': JSON.stringify({
+        MpLoadout1: {
+          ...mpLoadoutData,
+          s: {
+            ...mpLoadoutData?.s,
+            ac: {
+              ...(mpLoadoutData?.s?.ac || {}),
+              i: defaultCharacter,
+            },
+          },
         },
       }),
       'Default:CampaignHero_j': JSON.stringify({
         CampaignHero: {
           heroItemInstanceId: '',
-          heroType: `/Game/Athena/Heroes/${defaultCharacter.replace('CID', 'HID')}.${defaultCharacter.replace('CID', 'HID')}`,
+          heroType: 'None',
         },
       }),
       'Default:PlatformData_j': JSON.stringify({

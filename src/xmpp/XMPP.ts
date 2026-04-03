@@ -282,8 +282,6 @@ class XMPP extends Base {
 
       if (!body.type) return;
 
-      console.log(body);
-
       try {
         switch (body.type) {
           case 'com.epicgames.friends.core.apiobjects.Friend': {

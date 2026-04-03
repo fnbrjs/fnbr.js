@@ -125,8 +125,7 @@ export default {
       bHasOwnerStartedMM: false,
       bIsEligible: true,
       currentIsland: {
-        bUsingGracefulUpgrade: true,
-        island: {
+        island: JSON.stringify({
           LinkId: '',
           MatchmakingSettingsV2: {
             '/Fortnite.com/Matchmaking:Region': 'EU',
@@ -138,13 +137,13 @@ export default {
               sessionKey: '',
             },
           },
-        },
+        }),
+        bUsingGracefulUpgrade: true,
         matchmakingId: 'BE8B9072A40C4C9686387F6F626D11DE',
         timestamp: 0,
       },
       islandSelection: {
-        bUsingGracefulUpgrade: true,
-        island: {
+        island: JSON.stringify({
           LinkId: '',
           MatchmakingSettingsV2: {
             '/Fortnite.com/BattleRoyale/Matchmaking:BuildMode': 'Build',
@@ -160,7 +159,8 @@ export default {
               sessionKey: '',
             },
           },
-        },
+        }),
+        bUsingGracefulUpgrade: true,
         matchmakingId: 'BE8B9072A40C4C9686387F6F626D11DE',
         timestamp: 0,
       },

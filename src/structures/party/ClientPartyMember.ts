@@ -203,9 +203,14 @@ class ClientPartyMember extends PartyMember {
     } as Record<string, { i: string; v?: Array<string | number> }>;
 
     if (outfit) {
+      const variants = new Array(Math.max(...outfit.variants?.map((v) => v.channelIndex) ?? [0])).fill(0);
+      outfit.variants?.forEach((v) => {
+        variants[v.channelIndex] = v.variantIndex;
+      });
+
       nextSlots.ac = {
         i: outfit.id,
-        v: outfit.variants?.map(() => 0) ?? [],
+        v: variants,
       };
 
       loadoutMetaData = this.meta.set('Default:LoadoutMeta_j', {
@@ -224,17 +229,27 @@ class ClientPartyMember extends PartyMember {
       if (!backpack) {
         delete nextSlots.ab;
       } else {
+        const variants = new Array(Math.max(...backpack.variants?.map((v) => v.channelIndex) ?? [0])).fill(0);
+        backpack.variants?.forEach((v) => {
+          variants[v.channelIndex] = v.variantIndex;
+        });
+
         nextSlots.ab = {
           i: backpack.id,
-          v: backpack.variants?.map(() => 0) ?? [],
+          v: variants,
         };
       }
     }
 
     if (pickaxe) {
+      const variants = new Array(Math.max(...pickaxe.variants?.map((v) => v.channelIndex) ?? [0])).fill(0);
+      pickaxe.variants?.forEach((v) => {
+        variants[v.channelIndex] = v.variantIndex;
+      });
+
       nextSlots.ap = {
         i: pickaxe.id,
-        v: pickaxe.variants?.map(() => 0) ?? [],
+        v: variants,
       };
     }
 

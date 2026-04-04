@@ -1051,8 +1051,6 @@ export interface BannerMeta {
 export interface BattlePassMeta {
   bHasPurchasedPass: boolean;
   passLevel: number;
-  selfBoostXp: number;
-  friendBoostXp: number;
 }
 
 export interface AssistedChallengeMeta {

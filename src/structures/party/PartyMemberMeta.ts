@@ -108,8 +108,6 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
     return {
       bHasPurchasedPass: !!info.bHasPurchasedPass,
       passLevel: info.passLevel || 0,
-      selfBoostXp: info.selfBoostXp || 0,
-      friendBoostXp: info.friendBoostXp || 0,
     };
   }
 

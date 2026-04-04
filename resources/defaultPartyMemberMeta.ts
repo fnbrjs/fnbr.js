@@ -1,3 +1,7 @@
+import crypto from 'crypto';
+
+const matchmakingId = crypto.randomUUID().replaceAll('-', '').toUpperCase();
+
 export default {
   'Default:FrontEndMapMarker_j': JSON.stringify({
     FrontEndMapMarker: {
@@ -55,7 +59,7 @@ export default {
       bRecText: false,
       bRecVoice: false,
       bUploadLogs: false,
-      eOSProductUserId: '2a19b281988345b6a0fab03ea2e88e63',
+      eOSProductUserId: crypto.randomUUID().replaceAll('-', ''),
       gameMode: 'None',
       hasCompletedSTWTutorial: false,
       hasPurchasedSTW: false,
@@ -139,7 +143,7 @@ export default {
           },
         }),
         bUsingGracefulUpgrade: true,
-        matchmakingId: 'BE8B9072A40C4C9686387F6F626D11DE',
+        matchmakingId,
         timestamp: 0,
       },
       islandSelection: {
@@ -161,7 +165,7 @@ export default {
           },
         }),
         bUsingGracefulUpgrade: true,
-        matchmakingId: 'BE8B9072A40C4C9686387F6F626D11DE',
+        matchmakingId,
         timestamp: 0,
       },
       maxMatchmakingDelay: 0,

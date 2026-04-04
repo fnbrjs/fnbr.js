@@ -129,13 +129,6 @@ class PartyMember extends User {
   }
 
   /**
-   * The member's custom data store
-   */
-  public get customDataStore() {
-    return this.meta.customDataStore;
-  }
-
-  /**
    * The member's banner info
    */
   public get banner() {

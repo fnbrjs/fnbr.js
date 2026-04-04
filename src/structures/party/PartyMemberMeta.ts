@@ -86,14 +86,6 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
   }
 
   /**
-   * The custom data store
-   */
-  public get customDataStore(): string[] {
-    if (!Object.prototype.hasOwnProperty.call(this.schema, 'Default:ArbitraryCustomDataStore_j')) return [];
-    return this.get('Default:ArbitraryCustomDataStore_j' as keyof PartyMemberSchema & string)?.ArbitraryCustomDataStore || [];
-  }
-
-  /**
    * The banner info
    */
   public get banner(): BannerMeta | undefined {

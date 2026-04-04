@@ -1,8 +1,7 @@
 import type {
-  LeaderboardDef,
-  TournamentWindowBlackoutPeriod, TournamentWindowData, TournamentWindowMetadata, TournamentWindowResolvedData, TournamentWindowScoreLocation,
-  TournamentWindowTemplateData, TournamentWindowTemplatePayoutTable, TournamentWindowTemplateScoringRule,
-  TournamentWindowTemplateTiebreakFormula,
+  TournamentWindowBlackoutPeriod, TournamentWindowData, TournamentWindowMetadata, TournamentWindowResolvedData,
+  TournamentWindowScoreLocation, TournamentWindowTemplateData, TournamentWindowTemplatePayoutTable,
+  TournamentWindowTemplateScoringRule, TournamentWindowTemplateTiebreakFormula,
 } from '../../resources/httpResponses';
 import type Tournament from './Tournament';
 
@@ -159,9 +158,12 @@ class TournamentWindow {
    * @param windowData The tournament window's data
    * @param tournamentWindowTemplateData The tournament window's template data
    */
-  constructor(tournament: Tournament, windowData: TournamentWindowData, tournamentWindowTemplateData?: TournamentWindowTemplateData,
-    resolvedData?: TournamentWindowResolvedData[]) 
-    {
+  constructor(
+    tournament: Tournament,
+    windowData: TournamentWindowData,
+    tournamentWindowTemplateData?: TournamentWindowTemplateData,
+    resolvedData?: TournamentWindowResolvedData[],
+  ) {
     Object.defineProperty(this, 'tournament', { value: tournament });
 
     // Window data
@@ -178,12 +180,12 @@ class TournamentWindow {
 
     this.resolvedLocations = resolvedData?.[0]?.locations ?? [];
     this.leaderboardDefs = [];
-    resolvedData?.forEach(data => {
+    resolvedData?.forEach((data) => {
       if (data.leaderboardDef) {
         this.leaderboardDefs.push({
           leaderboardDefId: data.leaderboardDef.leaderboardDefId,
           payoutTableId: data.payoutTableId,
-          payoutTable: data.payoutTable
+          payoutTable: data.payoutTable,
         });
       }
     });

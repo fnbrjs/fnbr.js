@@ -588,3 +588,21 @@ export const chunk = <T extends any>(array: T[], maxSize: number): T[][] => {
 
   return chunkedArray;
 };
+
+export const decodeSTOMPMessageBody = (body?: string): string => {
+  if (!body) return '';
+
+  try {
+    const decoded = Buffer.from(body, 'base64')
+      .toString('utf-8')
+      .replace(/\0+$/, '');
+
+    try {
+      return JSON.parse(decoded).msg ?? decoded;
+    } catch {
+      return decoded;
+    }
+  } catch {
+    return '';
+  }
+};

@@ -1,3 +1,4 @@
+/* eslint-disable no-template-curly-in-string */
 import { AxiosError } from 'axios';
 import Endpoints from '../../resources/Endpoints';
 import Base from '../Base';
@@ -117,15 +118,15 @@ class TournamentManager extends Base {
         const key = `${t.gameId}:${t.eventId}:${w.eventWindowId}`;
         const resolvedLocations = tournaments.resolvedWindowLocations?.[key] ?? [];
 
-        const resolvedDataForWindow: TournamentWindowResolvedData[] = w.scoreLocations.map(scoreLocation => {
-          const leaderboardDefId = scoreLocation.leaderboardDefId;
+        const resolvedDataForWindow: TournamentWindowResolvedData[] = w.scoreLocations.map((scoreLocation) => {
+          const { leaderboardDefId } = scoreLocation;
           let leaderboardDef: LeaderboardDef | undefined;
           let payoutTable: TournamentWindowTemplatePayoutTable[] | undefined;
           let payoutTableId: string | undefined;
 
           if (leaderboardDefId && tournaments.leaderboardDefs) {
             leaderboardDef = tournaments.leaderboardDefs.find(
-              def => def.leaderboardDefId === leaderboardDefId
+              (def) => def.leaderboardDefId === leaderboardDefId,
             );
 
             if (leaderboardDef?.payoutsConfig && tournaments.payoutTables) {
@@ -201,15 +202,15 @@ class TournamentManager extends Base {
         const key = `${t.gameId}:${t.eventId}:${w.eventWindowId}`;
         const resolvedLocations = tournaments.resolvedWindowLocations?.[key] ?? [];
 
-        const resolvedDataForWindow: TournamentWindowResolvedData[] = w.scoreLocations.map(scoreLocation => {
-          const leaderboardDefId = scoreLocation.leaderboardDefId;
+        const resolvedDataForWindow: TournamentWindowResolvedData[] = w.scoreLocations.map((scoreLocation) => {
+          const { leaderboardDefId } = scoreLocation;
           let leaderboardDef: LeaderboardDef | undefined;
           let payoutTable: TournamentWindowTemplatePayoutTable[] | undefined;
           let payoutTableId: string | undefined;
 
           if (leaderboardDefId && tournaments.leaderboardDefs) {
             leaderboardDef = tournaments.leaderboardDefs.find(
-              def => def.leaderboardDefId === leaderboardDefId
+              (def) => def.leaderboardDefId === leaderboardDefId,
             );
 
             if (leaderboardDef?.payoutsConfig && tournaments.payoutTables) {
@@ -234,7 +235,7 @@ class TournamentManager extends Base {
       });
 
       constructedTournaments.push(
-        new Tournament(this.client, t, tournamentDisplayData, templates, windowsResolvedData)
+        new Tournament(this.client, t, tournamentDisplayData, templates, windowsResolvedData),
       );
     });
 

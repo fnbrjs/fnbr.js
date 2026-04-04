@@ -109,7 +109,7 @@ class Tournament extends Base {
     tournamentData: TournamentData,
     tournamentDisplayData: TournamentDisplayData,
     templates: TournamentWindowTemplate[],
-    windowsResolvedData?: Map<string, TournamentWindowResolvedData[]>
+    windowsResolvedData?: Map<string, TournamentWindowResolvedData[]>,
   ) {
     super(client);
 
@@ -161,11 +161,11 @@ class Tournament extends Base {
     };
 
     this.windows = tournamentData.eventWindows.map((w) => {
-    const templateData = templates.find((t) => t.windowId === w.eventWindowId)?.templateData;
-    const resolvedData = windowsResolvedData?.get(w.eventWindowId);
-    
-    return new TournamentWindow(this, w, templateData, resolvedData);
-  });
+      const templateData = templates.find((t) => t.windowId === w.eventWindowId)?.templateData;
+      const resolvedData = windowsResolvedData?.get(w.eventWindowId);
+
+      return new TournamentWindow(this, w, templateData, resolvedData);
+    });
   }
 }
 

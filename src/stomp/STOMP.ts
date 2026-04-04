@@ -8,6 +8,7 @@ import PartyMessage from '../structures/party/PartyMessage';
 import STOMPConnectionTimeoutError from '../exceptions/STOMPConnectionTimeoutError';
 import STOMPMessage from './STOMPMessage';
 import STOMPConnectionError from '../exceptions/STOMPConnectionError';
+import { decodeSTOMPMessageBody } from '../util/Util';
 import type { StompMessageData } from './STOMPMessage';
 import type { EOSConnectMessage } from '../../resources/structs';
 import type Client from '../Client';
@@ -53,24 +54,6 @@ class STOMP extends Base {
    */
   public get isConnected() {
     return this.connection && this.connection.readyState === WebSocket.OPEN;
-  }
-
-  private decodeBody(body?: string): string {
-    if (!body) return '';
-
-    try {
-      const decoded = Buffer.from(body, 'base64')
-        .toString('utf-8')
-        .replace(/\0+$/, '');
-
-      try {
-        return JSON.parse(decoded).msg ?? decoded;
-      } catch {
-        return decoded;
-      }
-    } catch {
-      return '';
-    }
   }
 
   /**
@@ -188,7 +171,7 @@ class STOMP extends Base {
               if (!friend || senderId === this.client.user.self!.id) return;
 
               const friendMessage = new ReceivedFriendMessage(this.client, {
-                content: this.decodeBody(body),
+                content: decodeSTOMPMessageBody(body),
                 author: friend,
                 id: data.id!,
                 sentAt: new Date(time),
@@ -213,7 +196,7 @@ class STOMP extends Base {
               if (!authorMember) return;
 
               const partyMessage = new PartyMessage(this.client, {
-                content: this.decodeBody(body),
+                content: decodeSTOMPMessageBody(body),
                 author: authorMember,
                 sentAt: new Date(time),
                 id: data.id!,

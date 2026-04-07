@@ -203,7 +203,7 @@ class ClientPartyMember extends PartyMember {
     } as Record<string, { i: string; v?: Array<string | number> }>;
 
     if (outfit) {
-      const variants = new Array(Math.max(...outfit.variants?.map((v) => v.channelIndex) ?? [0])).fill(0);
+      const variants = new Array(Math.max(...outfit.variants?.map((v) => v.channelIndex) ?? [0], 0)).fill(0);
       outfit.variants?.forEach((v) => {
         variants[v.channelIndex] = v.variantIndex;
       });

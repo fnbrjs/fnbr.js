@@ -78,7 +78,7 @@ class FriendManager extends Base {
     try {
       await this.client.http.epicgamesRequest({
         method: 'POST',
-        url: `${Endpoints.FRIEND_ADD}/${this.client.user.self!.id}/${userID}`,
+        url: `${Endpoints.FRIENDS}/${this.client.user.self!.id}/friends/${userID}`,
       }, AuthSessionStoreKey.Fortnite);
     } catch (e) {
       if (e instanceof EpicgamesAPIError) {

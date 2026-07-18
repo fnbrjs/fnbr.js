@@ -198,12 +198,22 @@ class ClientPartyMember extends PartyMember {
     let data = this.meta.get('Default:MpLoadout1_j');
     let loadoutMetaData = this.meta.get('Default:LoadoutMeta_j');
 
+    const buildVariantArray = (variants?: CosmeticVariant[]) => {
+      const highestChannelIndex = (variants ?? []).reduce((highest, variant) => (
+        Number.isInteger(variant.channelIndex) && variant.channelIndex > highest
+          ? variant.channelIndex
+          : highest
+      ), -1);
+
+      return new Array(highestChannelIndex + 1).fill(0);
+    };
+
     const nextSlots = {
       ...(data.MpLoadout1?.s || {}),
     } as Record<string, { i: string; v?: Array<string | number> }>;
 
     if (outfit) {
-      const variants = new Array(Math.max(...outfit.variants?.map((v) => v.channelIndex) ?? [0], 0)).fill(0);
+      const variants = buildVariantArray(outfit.variants);
       outfit.variants?.forEach((v) => {
         variants[v.channelIndex] = v.variantIndex;
       });
@@ -229,7 +239,7 @@ class ClientPartyMember extends PartyMember {
       if (!backpack) {
         delete nextSlots.ab;
       } else {
-        const variants = new Array(Math.max(...backpack.variants?.map((v) => v.channelIndex) ?? [0])).fill(0);
+        const variants = buildVariantArray(backpack.variants);
         backpack.variants?.forEach((v) => {
           variants[v.channelIndex] = v.variantIndex;
         });
@@ -242,7 +252,7 @@ class ClientPartyMember extends PartyMember {
     }
 
     if (pickaxe) {
-      const variants = new Array(Math.max(...pickaxe.variants?.map((v) => v.channelIndex) ?? [0])).fill(0);
+      const variants = buildVariantArray(pickaxe.variants);
       pickaxe.variants?.forEach((v) => {
         variants[v.channelIndex] = v.variantIndex;
       });

@@ -1584,6 +1584,50 @@ export interface EOSConnectChatNewWhisperMessage extends BaseEOSConnectMessage {
   type: 'social.chat.v1.NEW_WHISPER';
 }
 
+export interface EOSPresenceProps {
+  EOS_Platform: Platform;
+  EOS_IntegratedPlatform: string;
+  EOS_OnlinePlatformType: number;
+  EOS_ProductVersion: string;
+  EOS_ProductName: string;
+  EOS_Session: string;
+  EOS_Lobby: string;
+}
+
+export interface EOSPresencePropsWithParty extends EOSPresenceProps {
+  FortBasicInfo: string;
+  FortLFG: string;
+  FortPartySize: string;
+  FortSubGame: string;
+  IslandCode: string;
+  IsInZone: string;
+  FortGameplayStats: string;
+  SocialStatus: string;
+  InUnjoinableMatch: string;
+}
+
+export interface EOSPresencePropsWithJoinableParty extends EOSPresencePropsWithParty {
+  'party.joininfodata.286331153_j': string;
+}
+
+export interface EOSPresencePerNs {
+  ns: string;
+  status: PresenceOnlineType;
+  activity: {
+    value: string;
+  };
+  props: EOSPresenceProps | EOSPresencePropsWithParty | EOSPresencePropsWithJoinableParty;
+}
+
+export interface EOSPresenceUpdateMessage extends BaseEOSConnectMessage {
+  payload: {
+    accountId: string;
+    status: PresenceOnlineType;
+    perNs: EOSPresencePerNs[]
+  };
+  type: 'presence.v1.UPDATE';
+}
+
 export type EOSConnectMessage =
   // Core
   EOSConnectCoreConnected
@@ -1592,4 +1636,5 @@ export type EOSConnectMessage =
   | EOSConnectChatConversionCreatedMessage
   | EOSConnectChatNewMsgMessage
   | EOSConnectChatMemberLeftMessage
-  | EOSConnectChatNewWhisperMessage;
+  | EOSConnectChatNewWhisperMessage
+  | EOSPresenceUpdateMessage;

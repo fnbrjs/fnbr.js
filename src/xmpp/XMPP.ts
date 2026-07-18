@@ -1,7 +1,6 @@
 /* eslint-disable max-len */
 import { createClient as createStanzaClient } from 'stanza';
 import crypto from 'crypto';
-import { deprecate } from 'util';
 import Base from '../Base';
 import Endpoints from '../../resources/Endpoints';
 import PartyMessage from '../structures/party/PartyMessage';
@@ -26,10 +25,8 @@ import { AuthSessionStoreKey } from '../../resources/enums';
 import AuthenticationMissingError from '../exceptions/AuthenticationMissingError';
 import XMPPConnectionTimeoutError from '../exceptions/XMPPConnectionTimeoutError';
 import XMPPConnectionError from '../exceptions/XMPPConnectionError';
-import type { Stanzas, Agent, Constants } from 'stanza';
+import type { Agent } from 'stanza';
 import type Client from '../Client';
-
-const deprecationNotOverXmppAnymore = 'Chatting is not done over XMPP anymore, this function will be removed in a future version';
 
 /**
  * Represents the client's XMPP manager
@@ -128,7 +125,7 @@ class XMPP extends Base {
 
         this.connectedAt = Date.now();
 
-        if (sendStatusWhenConnected) this.sendStatus();
+        if (sendStatusWhenConnected) this.client.setStatus();
 
         res();
       });
@@ -638,7 +635,7 @@ class XMPP extends Base {
   /**
    * Waits for a friend to be added to the clients cache
    */
-  private async waitForFriend(id: string) {
+  public async waitForFriend(id: string) {
     const cachedFriend = this.client.friend.list.get(id);
     if (cachedFriend) return cachedFriend;
 
@@ -651,106 +648,6 @@ class XMPP extends Base {
     } finally {
       this.client.setMaxListeners(this.client.getMaxListeners() - 1);
     }
-  }
-
-  /**
-   * Sends a presence to all or a specific friend
-   * @param status The status message. Can be undefined if you want to reset it
-   * @param show The show type of the presence (eg "away")
-   * @param to The JID of a specific friend
-   */
-  public sendStatus(status?: object | string, show?: Constants.PresenceShow, to?: string) {
-    if (!status) {
-      this.connection!.sendPresence();
-      return;
-    }
-
-    this.connection!.sendPresence({
-      status: JSON.stringify(typeof status === 'string' ? { Status: status } : status),
-      to,
-      show,
-    });
-  }
-
-  /**
-   * Sends an XMPP message
-   * @param to The message receiver's JID
-   * @param content The message that will be sent
-   * @param type The message type (eg "chat" or "groupchat")
-   * @deprecated this doesn't work anymore, since chat messages are handled via an rest api now see {@link Client#chat}. This function will be removed in a future version
-   */
-  public async sendMessage(to: string, content: string, type: Constants.MessageType = 'chat') {
-    const deprecatedFn = deprecate(async () => this.waitForSentMessage(this.connection!.sendMessage({
-      to,
-      body: content,
-      type,
-    })), deprecationNotOverXmppAnymore);
-
-    return deprecatedFn();
-  }
-
-  /**
-   * Wait until a message is sent
-   * @param id The message id
-   * @param timeout How long to wait for the message
-   * @deprecated this doesn't work anymore, since chat messages are handled via an rest api now see {@link Client#chat}. This function will be removed in a future version
-   */
-  public waitForSentMessage(id: string, timeout = 1000) {
-    const deprecatedFn = deprecate(async () => new Promise<Stanzas.Message | undefined>((res) => {
-      // eslint-disable-next-line no-undef
-      let messageTimeout: NodeJS.Timeout;
-
-      const listener = (m: Stanzas.Message) => {
-        if (m.id === id) {
-          this.connection!.removeListener('message:sent', listener);
-          if (messageTimeout) clearTimeout(messageTimeout);
-          res(m);
-        }
-      };
-
-      this.connection!.on('message:sent', listener);
-      messageTimeout = setTimeout(() => {
-        res(undefined);
-        this.connection!.removeListener('message:sent', listener);
-      }, timeout);
-    }), deprecationNotOverXmppAnymore);
-
-    return deprecatedFn();
-  }
-
-  /**
-   * Joins a multi user chat room (MUC)
-   * @param jid The room's JID
-   * @param nick The client's nickname
-   * @deprecated this doesn't work anymore, since chat messages are handled via an rest api now see {@link Client#chat}. This function will be removed in a future version
-   */
-  public async joinMUC(jid: string, nick: string) {
-    const deprecatedFn = deprecate(async () => this.connection!.joinRoom(jid, nick), deprecationNotOverXmppAnymore);
-
-    return deprecatedFn();
-  }
-
-  /**
-   * Leaves a multi user chat room (MUC)
-   * @param jid The room's JID
-   * @param nick The client's nickname
-   * @deprecated this doesn't work anymore, since chat messages are handled via an rest api now see {@link Client#chat}. This function will be removed in a future version
-   */
-  public async leaveMUC(jid: string, nick: string) {
-    const deprecatedFn = deprecate(async () => this.connection!.leaveRoom(jid, nick), deprecationNotOverXmppAnymore);
-
-    return deprecatedFn();
-  }
-
-  /**
-   * Bans a member from a multi user chat room
-   * @param member The member that should be banned
-   * @deprecated this doesn't work anymore, since chat messages are handled via an rest api now see {@link Client#chat}. This function will be removed in a future version
-   */
-  public async ban(jid: string, member: string) {
-    const deprecatedFn = deprecate(async () => this.connection!.ban(jid, `${member}@${Endpoints.EPIC_PROD_ENV}`), deprecationNotOverXmppAnymore);
-
-    return deprecatedFn();
   }
 }
 

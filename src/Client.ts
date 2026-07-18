@@ -35,7 +35,6 @@ import FriendManager from './managers/FriendManager';
 import STWManager from './managers/STWManager';
 import STOMP from './stomp/STOMP';
 import ChatManager from './managers/ChatManager';
-import type { PresenceShow } from 'stanza/Constants';
 import type {
   BlurlStreamData, CreativeIslandData,
   BlurlStreamMasterPlaylistData, CreativeDiscoveryPanel,
@@ -44,6 +43,9 @@ import type {
   ClientOptions, ClientConfig, ClientEvents, PartyConfig, Schema,
   Region, BlurlStream, Language, PartyData,
   PartySchema, PresenceOnlineType, BRAccountLevelData,
+  EOSPresenceProps,
+  EOSPresencePropsWithParty,
+  EOSPresencePropsWithJoinableParty,
 } from '../resources/structs';
 
 /**
@@ -576,84 +578,73 @@ class Client extends EventEmitter {
   /* -------------------------------------------------------------------------- */
 
   /**
-   * Sets the clients XMPP status
+   * Sets the clients status
    * @param status The status
    * @param onlineType The presence's online type (eg "away")
-   * @param friend A specific friend you want to send this status to
    * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    */
-  public setStatus(status?: string, onlineType?: PresenceOnlineType, friend?: string) {
-    let toJID: string | undefined;
-    if (friend) {
-      const resolvedFriend = this.friend.resolve(friend);
-      if (!resolvedFriend) throw new FriendNotFoundError(friend);
-      toJID = `${resolvedFriend.id}@${Endpoints.EPIC_PROD_ENV}`;
-    }
+  public async setStatus(status?: string, onlineType?: PresenceOnlineType) {
+    if (status) this.config.defaultStatus = status;
+    if (onlineType) this.config.defaultOnlineType = onlineType;
 
-    // eslint-disable-next-line no-undef-init
-    let partyJoinInfoData: { [key: string]: any } | undefined = undefined;
+    let props: EOSPresenceProps | EOSPresencePropsWithParty | EOSPresencePropsWithJoinableParty = {
+      EOS_Platform: this.config.platform,
+      EOS_IntegratedPlatform: 'EGS',
+      EOS_OnlinePlatformType: 100,
+      EOS_ProductVersion: '++Fortnite+Release-00.00-CL-00000000',
+      EOS_ProductName: 'Fortnite',
+      EOS_Session: '{"version":3}',
+      EOS_Lobby: '{"version":3}',
+    };
+
     if (this.party) {
-      const partyPrivacy = this.party.config.privacy;
-      if (
-        partyPrivacy.presencePermission === 'Noone'
-        || (partyPrivacy.presencePermission === 'Leader'
-          && !this.party.me?.isLeader)
-      ) {
-        partyJoinInfoData = {
-          isPrivate: true,
-        };
-      } else {
-        partyJoinInfoData = {
-          sourceId: this.user.self!.displayName,
-          sourceDisplayName: this.user.self!.displayName,
-          sourcePlatform: this.config.platform,
-          partyId: this.party.id,
-          partyTypeId: 286331153,
-          key: 'k',
-          appId: 'Fortnite',
-          buildId: this.config.partyBuildId,
-          partyFlags: -2024557306,
-          notAcceptingReason: 0,
-          pc: this.party.size,
-        };
-      }
-    }
-
-    if (status && !toJID) this.config.defaultStatus = status;
-    if (onlineType && !toJID) this.config.defaultOnlineType = onlineType;
-
-    const rawStatus = {
-      Status: status || this.config.defaultStatus || (this.party && `Lobby - ${this.party.size} / ${this.party.maxSize}`)
-        || 'Playing Battle Royale',
-      bIsPlaying: false,
-      bIsJoinable: this.party && !this.party.isPrivate && this.party.size !== this.party.maxSize,
-      bHasVoiceSupport: false,
-      SessionId: '',
-      ProductName: 'Fortnite',
-      Properties: {
-        'party.joininfodata.286331153_j': partyJoinInfoData,
-        FortBasicInfo_j: {
+      props = {
+        ...props,
+        FortBasicInfo: `m${JSON.stringify({
           homeBaseRating: 0,
-        },
-        FortLFG_I: '0',
-        FortPartySize_i: 1,
-        FortSubGame_i: 1,
-        InUnjoinableMatch_b: false,
-        FortGameplayStats_j: {
+        })}`,
+        FortLFG: 'i0',
+        FortPartySize: 'i1',
+        FortSubGame: 'i1',
+        IslandCode: `s${this.party.playlist?.linkId?.mnemonic || ''}`,
+        IsInZone: 'bfalse',
+        FortGameplayStats: `m${JSON.stringify({
           state: '',
           playlist: 'None',
           numKills: 0,
           bFellToDeath: false,
-        },
-      },
-    };
+        })}`,
+        SocialStatus: `m${JSON.stringify({
+          attendingSocialEventIds: [],
+        })}`,
+        InUnjoinableMatch: 'bfalse',
+      };
 
-    const rawOnlineType = (onlineType || this.config.defaultOnlineType) === 'online' ? undefined : onlineType || this.config.defaultOnlineType;
+      const partyPrivacy = this.party.config.privacy;
+      if (
+        partyPrivacy.presencePermission === 'Anyone'
+        || (partyPrivacy.presencePermission === 'Leader' && this.party.me?.isLeader)
+      ) {
+        props = {
+          ...props,
+          'party.joininfodata.286331153_j': `m${JSON.stringify({
+            sDN: this.user.self?.displayName,
+            sP: this.config.platform,
+            p: this.party.id,
+            d: 'Fortnite',
+            b: this.config.partyBuildId,
+            f: 6,
+            nAR: 0,
+            pc: this.party.members.size,
+          })}`,
+        };
+      }
+    }
 
-    return this.xmpp.sendStatus(
-      rawStatus,
-      rawOnlineType as PresenceShow | undefined,
-      toJID,
+    return this.stomp.patchPresence(
+      status || this.config.defaultStatus || (this.party && `Lobby - ${this.party.size} / ${this.party.maxSize}`) || 'Playing Battle Royale',
+      props,
+      onlineType || this.config.defaultOnlineType,
     );
   }
 

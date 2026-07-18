@@ -3,6 +3,7 @@ import type Client from '../../Client';
 import type Friend from './Friend';
 import type {
   FriendPresenceData, PresenceGameplayStats, Platform, PresenceOnlineType,
+  EOSPresencePerNs,
 } from '../../../resources/structs';
 
 /**
@@ -99,14 +100,19 @@ class FriendPresence extends Base {
    * @param data The presence data
    * @param friend The friend this presence belongs to
    */
-  constructor(client: Client, data: FriendPresenceData, friend: Friend, show: PresenceOnlineType, from: string) {
+  constructor(client: Client, data: EOSPresencePerNs, friend: Friend, onlineType: PresenceOnlineType) {
     super(client);
 
     this.friend = friend;
-    this.status = data.Status;
-    this.onlineType = show;
-    this.platform = from.match(/(?<=\/.+?:.+?:).+(?=::)/g)?.[0] as Platform | undefined;
+    this.status = data.activity.value;
+    this.onlineType = onlineType;
+    this.platform = data.props.EOS_Platform;
     this.receivedAt = new Date();
+
+    if ('FortLFG_i' in data.props) {
+      
+    }
+
     this.isPlaying = data.bIsPlaying || false;
     this.isJoinable = data.bIsJoinable || false;
     this.hasVoiceSupport = data.bHasVoiceSupport || false;

@@ -35,6 +35,7 @@ import FriendManager from './managers/FriendManager';
 import STWManager from './managers/STWManager';
 import STOMP from './stomp/STOMP';
 import ChatManager from './managers/ChatManager';
+import FriendPresence from './structures/friend/FriendPresence';
 import type {
   BlurlStreamData, CreativeIslandData,
   BlurlStreamMasterPlaylistData, CreativeDiscoveryPanel,
@@ -43,9 +44,7 @@ import type {
   ClientOptions, ClientConfig, ClientEvents, PartyConfig, Schema,
   Region, BlurlStream, Language, PartyData,
   PartySchema, PresenceOnlineType, BRAccountLevelData,
-  EOSPresenceProps,
-  EOSPresencePropsWithParty,
-  EOSPresencePropsWithJoinableParty,
+  EOSPresencePropsInGame,
 } from '../resources/structs';
 
 /**
@@ -587,10 +586,10 @@ class Client extends EventEmitter {
     if (status) this.config.defaultStatus = status;
     if (onlineType) this.config.defaultOnlineType = onlineType;
 
-    let props: EOSPresenceProps | EOSPresencePropsWithParty | EOSPresencePropsWithJoinableParty = {
+    let props: EOSPresencePropsInGame = {
       EOS_Platform: this.config.platform,
       EOS_IntegratedPlatform: 'EGS',
-      EOS_OnlinePlatformType: 100,
+      EOS_OnlinePlatformType: '100',
       EOS_ProductVersion: '++Fortnite+Release-00.00-CL-00000000',
       EOS_ProductName: 'Fortnite',
       EOS_Session: '{"version":3}',
@@ -600,23 +599,21 @@ class Client extends EventEmitter {
     if (this.party) {
       props = {
         ...props,
-        FortBasicInfo: `m${JSON.stringify({
-          homeBaseRating: 0,
-        })}`,
+        FortBasicInfo: FriendPresence.stringifyPropsValue({ homeBaseRating: 0 }),
         FortLFG: 'i0',
-        FortPartySize: 'i1',
+        FortPartySize: `i${this.party.size}`,
         FortSubGame: 'i1',
         IslandCode: `s${this.party.playlist?.linkId?.mnemonic || ''}`,
         IsInZone: 'bfalse',
-        FortGameplayStats: `m${JSON.stringify({
+        FortGameplayStats: FriendPresence.stringifyPropsValue({
           state: '',
           playlist: 'None',
           numKills: 0,
           bFellToDeath: false,
-        })}`,
-        SocialStatus: `m${JSON.stringify({
+        }),
+        SocialStatus: FriendPresence.stringifyPropsValue({
           attendingSocialEventIds: [],
-        })}`,
+        }),
         InUnjoinableMatch: 'bfalse',
       };
 
@@ -625,19 +622,20 @@ class Client extends EventEmitter {
         partyPrivacy.presencePermission === 'Anyone'
         || (partyPrivacy.presencePermission === 'Leader' && this.party.me?.isLeader)
       ) {
-        props = {
-          ...props,
-          'party.joininfodata.286331153_j': `m${JSON.stringify({
-            sDN: this.user.self?.displayName,
-            sP: this.config.platform,
-            p: this.party.id,
-            d: 'Fortnite',
-            b: this.config.partyBuildId,
-            f: 6,
-            nAR: 0,
-            pc: this.party.members.size,
-          })}`,
-        };
+        props['party.joininfodata.286331153'] = FriendPresence.stringifyPropsValue({
+          sDN: this.user.self?.displayName,
+          sP: this.config.platform,
+          p: this.party.id,
+          d: 'Fortnite',
+          b: this.config.partyBuildId,
+          f: 6,
+          nAR: 0,
+          pc: this.party.members.size,
+        });
+      } else {
+        props['party.joininfodata.286331153'] = FriendPresence.stringifyPropsValue({
+          bIsPrivate: true,
+        });
       }
     }
 

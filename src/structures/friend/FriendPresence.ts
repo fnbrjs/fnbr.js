@@ -2,7 +2,7 @@ import Base from '../../Base';
 import type Client from '../../Client';
 import type Friend from './Friend';
 import type {
-  FriendPresenceData, PresenceGameplayStats, Platform, PresenceOnlineType,
+  PresenceGameplayStats, Platform, PresenceOnlineType,
   EOSPresencePerNs,
 } from '../../../resources/structs';
 
@@ -26,17 +26,28 @@ class FriendPresence extends Base {
   public receivedAt: Date;
 
   /**
+   * The friend's online type
+   */
+  public onlineType: PresenceOnlineType;
+
+  /**
+   * The platform the friend is currently playing on
+   */
+  public platform: Platform;
+
+  /**
    * Whether the friend is playing
    */
-  public isPlaying?: boolean;
+  public isPlaying: boolean;
 
   /**
    * Whether the friend's party is joinable
    */
-  public isJoinable?: boolean;
+  public isJoinable: boolean;
 
   /**
    * Whether the friend has voice support
+   * @deprecated This property is no longer used and will be removed in a future version
    */
   public hasVoiceSupport?: boolean;
 
@@ -77,6 +88,7 @@ class FriendPresence extends Base {
 
   /**
    * The join key of the game session the friend is currently in (if the game session is joinable)
+   * @deprecated This property is no longer used and will be removed in a future version
    */
   public gameSessionJoinKey?: string;
 
@@ -84,16 +96,6 @@ class FriendPresence extends Base {
    * The stats of the game the friend is currently in
    */
   public gameplayStats?: PresenceGameplayStats;
-
-  /**
-   * The platform the friend is currently playing on
-   */
-  public platform?: Platform;
-
-  /**
-   * The friend's online type
-   */
-  public onlineType: PresenceOnlineType;
 
   /**
    * @param client The main client
@@ -105,39 +107,88 @@ class FriendPresence extends Base {
 
     this.friend = friend;
     this.status = data.activity.value;
+    this.receivedAt = new Date();
     this.onlineType = onlineType;
     this.platform = data.props.EOS_Platform;
-    this.receivedAt = new Date();
 
-    if ('FortLFG_i' in data.props) {
-      
+    this.isPlaying = typeof data.props.IsInZone === 'string' && FriendPresence.parsePropsValue(data.props.IsInZone);
+    this.isJoinable = typeof data.props['party.joininfodata.286331153'] === 'string'
+      ? !FriendPresence.parsePropsValue<{ bIsPrivate?: boolean }>(data.props['party.joininfodata.286331153'])?.bIsPrivate
+      : false;
+
+    this.sessionId = typeof data.props.SessionIdAttributeKey === 'string'
+      ? FriendPresence.parsePropsValue(data.props.SessionIdAttributeKey)
+      : undefined;
+
+    this.homebaseRating = typeof data.props.FortBasicInfo === 'string'
+      ? FriendPresence.parsePropsValue<{ homeBaseRating: number }>(data.props.FortBasicInfo)?.homeBaseRating
+      : undefined;
+
+    this.subGame = typeof data.props.FortSubGame === 'string'
+      ? FriendPresence.parsePropsValue(data.props.FortSubGame)
+      : undefined;
+
+    this.isInUnjoinableMatch = typeof data.props.InUnjoinableMatch === 'string'
+      ? FriendPresence.parsePropsValue(data.props.InUnjoinableMatch)
+      : undefined;
+
+    this.playlist = typeof data.props.GamePlaylistName === 'string'
+      ? FriendPresence.parsePropsValue(data.props.GamePlaylistName)
+      : undefined;
+
+    this.partySize = typeof data.props.FortPartySize === 'string'
+      ? FriendPresence.parsePropsValue(data.props.FortPartySize)
+      : undefined;
+
+    this.partyMaxSize = typeof data.props.Event_PartyMaxSize === 'string'
+      ? FriendPresence.parsePropsValue(data.props.Event_PartyMaxSize)
+      : undefined;
+
+    const gameplayStats = typeof data.props.FortGameplayStats === 'string'
+      ? FriendPresence.parsePropsValue<{
+        state: string; playlist: string; numKills: number; bFellToDeath: boolean;
+      }>(data.props.FortGameplayStats)
+      : undefined;
+
+    this.gameplayStats = gameplayStats && {
+      kills: gameplayStats.numKills,
+      fellToDeath: gameplayStats.bFellToDeath,
+      playersAlive: typeof data.props.Event_PlayersAlive === 'string'
+        ? FriendPresence.parsePropsValue<number>(data.props.Event_PlayersAlive)
+        : undefined,
+    };
+  }
+
+  public static parsePropsValue<T extends any>(value: string): T {
+    const type = value[0];
+    const val = value.slice(1);
+
+    switch (type) {
+      case 'b':
+        return (val === 'true') as T;
+      case 'i':
+        return parseInt(val, 10) as T;
+      case 'm':
+        return JSON.parse(val) as T;
+      case 's':
+        return val as T;
+      default:
+        return val as T;
     }
+  }
 
-    this.isPlaying = data.bIsPlaying || false;
-    this.isJoinable = data.bIsJoinable || false;
-    this.hasVoiceSupport = data.bHasVoiceSupport || false;
-    this.sessionId = data.SessionId;
-    this.homebaseRating = data.Properties && data.Properties.FortBasicInfo_j ? data.Properties.FortBasicInfo_j.homeBaseRating : undefined;
-    this.subGame = data.Properties ? data.Properties.FortSubGame_i : undefined;
-    this.isInUnjoinableMatch = data.Properties ? data.Properties.InUnjoinableMatch_b : false;
-    this.playlist = data.Properties ? data.Properties.GamePlaylistName_s : undefined;
-    this.partySize = data.Properties && data.Properties.Event_PartySize_s ? parseInt(data.Properties.Event_PartySize_s, 10) : undefined;
-    this.partyMaxSize = data.Properties && data.Properties.Event_PartyMaxSize_s
-      ? parseInt(data.Properties.Event_PartyMaxSize_s, 10) : undefined;
-    this.gameSessionJoinKey = data.Properties ? data.Properties.GameSessionJoinKey_s : undefined;
-
-    const serverPlayerCount = data.Properties && data.Properties.ServerPlayerCount_i
-      ? parseInt(data.Properties.ServerPlayerCount_i, 10) : undefined;
-    this.gameplayStats = undefined;
-
-    if (data.Properties && data.Properties.FortGameplayStats_j) {
-      const gps = data.Properties.FortGameplayStats_j;
-
-      this.gameplayStats = {
-        kills: typeof gps.numKills === 'number' ? gps.numKills : undefined,
-        fellToDeath: gps.bFellToDeath,
-        serverPlayerCount,
-      };
+  public static stringifyPropsValue(value: any): string {
+    switch (typeof value) {
+      case 'boolean':
+        return `b${value}`;
+      case 'number':
+        return `i${value}`;
+      case 'object':
+        return `m${JSON.stringify(value)}`;
+      case 'string':
+        return `s${value}`;
+      default:
+        return `s${value}`;
     }
   }
 }

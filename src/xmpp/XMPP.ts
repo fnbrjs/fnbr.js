@@ -4,7 +4,6 @@ import crypto from 'crypto';
 import Base from '../Base';
 import Endpoints from '../../resources/Endpoints';
 import PartyMessage from '../structures/party/PartyMessage';
-import FriendPresence from '../structures/friend/FriendPresence';
 import Friend from '../structures/friend/Friend';
 import IncomingPendingFriend from '../structures/friend/IncomingPendingFriend';
 import OutgoingPendingFriend from '../structures/friend/OutgoingPendingFriend';
@@ -18,7 +17,6 @@ import PartyMember from '../structures/party/PartyMember';
 import PartyMemberNotFoundError from '../exceptions/PartyMemberNotFoundError';
 import PartyMemberConfirmation from '../structures/party/PartyMemberConfirmation';
 import ReceivedPartyJoinRequest from '../structures/party/ReceivedPartyJoinRequest';
-import PresenceParty from '../structures/party/PresenceParty';
 import ReceivedFriendMessage from '../structures/friend/ReceivedFriendMessage';
 import PartyMemberMeta from '../structures/party/PartyMemberMeta';
 import { AuthSessionStoreKey } from '../../resources/enums';
@@ -217,51 +215,6 @@ class XMPP extends Base {
       } catch (err: any) {
         this.client.debug(`[XMPP] Error while processing friend whisper message: ${err.name} - ${err.message}`);
         this.client.emit('xmpp:chat:error', err);
-      }
-    });
-
-    this.connection!.on('presence', async (p) => {
-      try {
-        await this.client.cacheLock.wait();
-        if (!p.status) return;
-
-        const friendId = p.from.split('@')[0];
-        if (friendId === this.client.user.self!.id) return;
-
-        const friend = await this.waitForFriend(friendId);
-        if (!friend) return;
-
-        if (p.type === 'unavailable') {
-          friend.lastAvailableTimestamp = undefined;
-          friend.party = undefined;
-
-          this.client.emit('friend:offline', friend);
-          return;
-        }
-
-        const wasUnavailable = !friend.lastAvailableTimestamp;
-        friend.lastAvailableTimestamp = Date.now();
-
-        const presence = JSON.parse(p.status);
-
-        const before = this.client.friend.list.get(friendId)?.presence;
-        const after = new FriendPresence(this.client, presence, friend, p.show || 'online', p.from);
-        if ((this.client.config.cacheSettings.presences?.maxLifetime || 0) > 0) {
-          friend.presence = after;
-        }
-
-        if (presence.Properties?.['party.joininfodata.286331153_j']) {
-          friend.party = new PresenceParty(this.client, presence.Properties['party.joininfodata.286331153_j']);
-        }
-
-        if (wasUnavailable && this.connectedAt && this.connectedAt > this.client.config.friendOnlineConnectionTimeout) {
-          this.client.emit('friend:online', friend);
-        }
-
-        this.client.emit('friend:presence', before, after);
-      } catch (err: any) {
-        this.client.debug(`[XMPP] Error while processing presence: ${err.name} - ${err.message}`);
-        this.client.emit('xmpp:presence:error', err);
       }
     });
 

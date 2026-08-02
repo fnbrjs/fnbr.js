@@ -228,7 +228,7 @@ export interface PartyConfig {
   privacy: PartyPrivacy;
 }
 
-export type PresenceOnlineType = 'online' | 'away' | 'chat' | 'dnd' | 'xa';
+export type PresenceOnlineType = 'online' | 'away' | 'chat' | 'dnd' | 'xa' | 'offline';
 
 export type StatsPlaylistType = 'other' | 'solo' | 'duo' | 'squad' | 'ltm';
 
@@ -679,6 +679,7 @@ export interface PresenceGameplayStats {
   kills?: number;
   fellToDeath?: boolean;
   serverPlayerCount?: number;
+  playersAlive?: number;
 }
 
 export type PendingFriendDirection = 'INCOMING' | 'OUTGOING';
@@ -1104,16 +1105,37 @@ export interface TournamentWindowTemplate {
 
 export interface PresencePartyData {
   bIsPrivate?: boolean;
-  sourceId?: string;
-  sourceDisplayName?: string;
-  sourcePlatform?: string;
-  partyId?: string;
-  partyTypeId?: number;
-  key?: 'k';
-  appId?: string;
-  buildId?: string;
-  partyFlags?: number;
-  notAcceptingReason?: number;
+  /**
+   * sourceDisplayName
+   */
+  sDN?: string;
+  /**
+   * sourcePlatform
+   */
+  sP?: string;
+  /**
+   * partyId
+   */
+  p?: string;
+  /**
+   * appId
+   */
+  d?: string;
+  /**
+   * buildId
+   */
+  b?: string;
+  /**
+   * partyFlags
+   */
+  f?: number;
+  /**
+   * notAcceptingMembersReason
+   */
+  nAR?: number;
+  /**
+   * playerCount
+   */
   pc?: number;
 }
 
@@ -1584,6 +1606,67 @@ export interface EOSConnectChatNewWhisperMessage extends BaseEOSConnectMessage {
   type: 'social.chat.v1.NEW_WHISPER';
 }
 
+export interface EOSPresenceProps {
+  EOS_Platform: Platform;
+  EOS_IntegratedPlatform: string;
+  EOS_OnlinePlatformType: string;
+  EOS_ProductVersion: string;
+  EOS_ProductName: string;
+  EOS_Session: string;
+  EOS_Lobby: string;
+}
+
+export interface EOSPresencePropsInGame extends EOSPresenceProps {
+  FortBasicInfo?: string;
+  FortLFG?: string;
+  FortPartySize?: string;
+  FortSubGame?: string;
+  IslandCode?: string;
+  IsInZone?: string;
+  FortGameplayStats?: string;
+  SocialStatus?: string;
+  InUnjoinableMatch?: string;
+  'party.joininfodata.286331153'?: string;
+  SessionIdAttributeKey?: string;
+  GamePlaylistName?: string;
+  Event_PartyMaxSize?: string;
+  Event_PartySize?: string;
+  Event_PlayersAlive?: string;
+}
+
+export interface EOSPresenceInGame {
+  productId?: string;
+  appId?: string;
+  status: PresenceOnlineType;
+  activity: {
+    value: string;
+  };
+  ns: string;
+  props: EOSPresencePropsInGame;
+  conns?: {
+    id: string;
+    props: Record<string, unknown>;
+  }[];
+}
+
+export interface EOSPresencePerNs {
+  ns: string;
+  status: PresenceOnlineType;
+  activity: {
+    value: string;
+  };
+  props: EOSPresencePropsInGame;
+}
+
+export interface EOSPresenceUpdateMessage extends BaseEOSConnectMessage {
+  payload: {
+    accountId: string;
+    status: PresenceOnlineType;
+    perNs: EOSPresencePerNs[]
+  };
+  type: 'presence.v1.UPDATE';
+}
+
 export type EOSConnectMessage =
   // Core
   EOSConnectCoreConnected
@@ -1592,4 +1675,5 @@ export type EOSConnectMessage =
   | EOSConnectChatConversionCreatedMessage
   | EOSConnectChatNewMsgMessage
   | EOSConnectChatMemberLeftMessage
-  | EOSConnectChatNewWhisperMessage;
+  | EOSConnectChatNewWhisperMessage
+  | EOSPresenceUpdateMessage;

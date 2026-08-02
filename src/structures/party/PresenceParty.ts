@@ -26,11 +26,13 @@ class PresenceParty extends Base {
 
   /**
    * The party type ID
+   * @deprecated This property is no longer used and will be removed in a future version
    */
   public typeId?: number;
 
   /**
    * The party key
+   * @deprecated This property is no longer used and will be removed in a future version
    */
   public key?: string;
 
@@ -62,15 +64,13 @@ class PresenceParty extends Base {
   constructor(client: Client, data: PresencePartyData) {
     super(client);
 
-    this.isPrivate = typeof data.bIsPrivate === 'boolean' || false;
-    this.id = data.partyId;
+    this.isPrivate = typeof data.bIsPrivate === 'boolean' && data.bIsPrivate;
+    this.id = data.p;
     this.size = data.pc;
-    this.typeId = data.partyTypeId;
-    this.key = data.key;
-    this.appId = data.appId;
-    this.buildId = data.buildId;
-    this.flags = data.partyFlags;
-    this.notAcceptingMembersReason = data.notAcceptingReason;
+    this.appId = data.d;
+    this.buildId = data.b;
+    this.flags = data.f;
+    this.notAcceptingMembersReason = data.nAR;
   }
 
   /**

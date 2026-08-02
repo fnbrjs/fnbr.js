@@ -9,8 +9,12 @@ import STOMPConnectionTimeoutError from '../exceptions/STOMPConnectionTimeoutErr
 import STOMPMessage from './STOMPMessage';
 import STOMPConnectionError from '../exceptions/STOMPConnectionError';
 import { decodeSTOMPMessageBody } from '../util/Util';
+import FriendPresence from '../structures/friend/FriendPresence';
+import PresenceParty from '../structures/party/PresenceParty';
 import type { StompMessageData } from './STOMPMessage';
-import type { EOSConnectMessage } from '../../resources/structs';
+import type {
+  EOSConnectMessage, EOSPresencePropsInGame, PresenceOnlineType,
+} from '../../resources/structs';
 import type Client from '../Client';
 
 /**
@@ -36,6 +40,11 @@ class STOMP extends Base {
    * The amount of times the stomp connection has been retried
    */
   private connectionRetryCount: number;
+
+  /**
+   * The timestamp when the stomp connection was established
+   */
+  private connectedAt?: number;
 
   /**
    * @param client The main client
@@ -88,6 +97,8 @@ class STOMP extends Base {
       this.connection!.once('open', () => {
         clearTimeout(connectionTimeout);
 
+        this.connectedAt = Date.now();
+
         this.sendMessage({
           command: 'CONNECT',
           headers: {
@@ -114,6 +125,8 @@ class STOMP extends Base {
   private registerEvents(resolve: () => void, reject: (reason?: unknown) => void, connectionStartTime: number) {
     this.connection!.on('close', async (code, reason) => {
       this.disconnect();
+
+      this.connectedAt = undefined;
 
       if (this.connectionRetryCount < 2) {
         this.client.debug('[STOMP] Disconnected, reconnecting in 5 seconds...');
@@ -206,6 +219,46 @@ class STOMP extends Base {
               this.client.emit('party:member:message', partyMessage);
               break;
             }
+            case 'presence.v1.UPDATE': {
+              await this.client.cacheLock.wait();
+
+              const friend = await this.client.xmpp.waitForFriend(data.payload.accountId);
+              if (!friend) break;
+
+              if (data.payload.status === 'offline' && friend.lastAvailableTimestamp) {
+                friend.lastAvailableTimestamp = undefined;
+                friend.party = undefined;
+
+                this.client.emit('friend:offline', friend);
+                break;
+              }
+
+              const presenceData = data.payload.perNs.find((pNs: any) => pNs.ns === this.client.config.eosDeploymentId);
+              if (!presenceData) break;
+
+              const wasUnavailable = !friend.lastAvailableTimestamp;
+              friend.lastAvailableTimestamp = Date.now();
+
+              if (wasUnavailable && this.connectedAt && this.connectedAt > this.client.config.friendOnlineConnectionTimeout) {
+                this.client.emit('friend:online', friend);
+              }
+
+              const before = friend.presence;
+              const after = new FriendPresence(this.client, presenceData, friend, presenceData.status);
+              if ((this.client.config.cacheSettings.presences?.maxLifetime || 0) > 0) {
+                friend.presence = after;
+              }
+
+              const presenceParty = typeof presenceData.props['party.joininfodata.286331153'] === 'string'
+                ? FriendPresence.parsePropsValue(presenceData.props['party.joininfodata.286331153'])
+                : undefined;
+
+              if (typeof presenceParty === 'object' && presenceParty !== null) {
+                friend.party = new PresenceParty(this.client, presenceParty);
+              }
+
+              this.client.emit('friend:presence', before, after);
+            } break;
             default:
               this.client.debug(`[STOMP] Unknown message type: ${data.type} ${message.body}`);
           }
@@ -214,6 +267,37 @@ class STOMP extends Base {
           this.client.debug(`[STOMP] Unknown command: ${message.command} ${message.body ?? 'no body'}`);
       }
     });
+  }
+
+  public async patchPresence(
+    activityValue: string,
+    props: EOSPresencePropsInGame,
+    onlineType: PresenceOnlineType = 'online',
+  ) {
+    await this.client.http.epicgamesRequest({
+      method: 'PATCH',
+      url: `${Endpoints.EOS_PRESENCE}/${this.client.config.eosDeploymentId}/${this.client.user.self!.id}/presence/${this.connectionId}`,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: {
+        activity: {
+          value: activityValue,
+        },
+        conn: {
+          props: {},
+        },
+        props,
+        status: onlineType,
+      },
+    }, AuthSessionStoreKey.FortniteEOS);
+  }
+
+  public async deletePresence() {
+    await this.client.http.epicgamesRequest({
+      method: 'DELETE',
+      url: `${Endpoints.EOS_PRESENCE}/${this.client.config.eosDeploymentId}/${this.client.user.self!.id}/presence/${this.connectionId}`,
+    }, AuthSessionStoreKey.FortniteEOS);
   }
 
   /**

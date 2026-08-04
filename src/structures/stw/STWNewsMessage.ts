@@ -1,5 +1,6 @@
 import Base from '../../Base';
 import Image from '../Image';
+import STWNewsMessageButton from './STWNewsMessageButton';
 import type Client from '../../Client';
 
 /**
@@ -7,9 +8,19 @@ import type Client from '../../Client';
  */
 class STWNewsMessage extends Base {
   /**
+   * The news message's entry type
+   */
+  public contentType: string;
+
+  /**
    * The news message's title
    */
   public title: string;
+
+  /**
+   * The news message's tab title
+   */
+  public tabTitle: string;
 
   /**
    * The news message's body
@@ -17,29 +28,24 @@ class STWNewsMessage extends Base {
   public body: string;
 
   /**
-   * The news message's image
+   * The news message's buttons
    */
-  public image: Image;
+  public buttons?: STWNewsMessageButton[];
 
   /**
-   * The news message's type
+   * The news message's images
    */
-  public type: string;
+  public images?: Image[];
 
   /**
-   * The news message's adspace
+   * The news message's teaser title
    */
-  public adspace: string;
+  public teaserTitle?: string;
 
   /**
-   * Whether the news message is hidden
+   * The news message's teaser image
    */
-  public isHidden: boolean;
-
-  /**
-   * Whether the news message is a spotlight
-   */
-  public isSpotlight: boolean;
+  public teaserImages?: Image[];
 
   /**
    * @param client The main client
@@ -47,15 +53,18 @@ class STWNewsMessage extends Base {
    */
   constructor(client: Client, data: any) {
     super(client);
+    const newsData = data.contentFields;
 
-    this.title = data.title;
-    this.body = data.body;
-    this.image = new Image(this.client, { url: data.image });
-    // eslint-disable-next-line no-underscore-dangle
-    this.type = data._type;
-    this.adspace = data.adspace;
-    this.isHidden = data.hidden;
-    this.isSpotlight = data.spotlight;
+    this.contentType = data.contentType;
+
+    this.title = newsData.FullScreenTitle;
+    this.tabTitle = newsData.FullScreenTabTitle;
+
+    this.body = newsData.FullScreenBody;
+    this.buttons = newsData.Buttons?.map((b: any) => new STWNewsMessageButton(this.client, b));
+    this.images = newsData.FullScreenBackground?.Image?.map((i: any) => new Image(this.client, i));
+    this.teaserTitle = newsData.TeaserTitle;
+    this.teaserImages = newsData.TeaserBackground?.Image?.map((i: any) => new Image(this.client, i));
   }
 }
 

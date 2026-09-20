@@ -33,6 +33,7 @@ import type EOSAuthSession from '../src/auth/EOSAuthSession';
 
 export type PartyMemberSchema = Partial<typeof defaultPartyMemberMeta>;
 export type PartySchema = Partial<typeof defaultPartyMeta> & {
+  'Default:LeaderData_j'?: string;
   'urn:epic:cfg:presence-perm_s'?: string;
   'urn:epic:cfg:accepting-members_b'?: string;
   'urn:epic:cfg:invite-perm_s'?: string;
@@ -362,9 +363,10 @@ export interface ClientConfig {
   handleRatelimits: boolean;
 
   /**
-   * The party build id (does not change very often, don't change this unless you know what you're doing)
+   * The party build ID. When omitted, the current build ID is discovered once from Fortnite matchmaking.
+   * Supplying a value disables discovery and preserves the value as provided.
    */
-  partyBuildId: string;
+  partyBuildId?: string;
 
   /**
    * Whether the client should restart if a refresh token is invalid.
@@ -601,6 +603,12 @@ export interface ClientEvents {
    * @param request The recieved join request
    */
   'party:joinrequest': (request: ReceivedPartyJoinRequest) => void;
+
+  /**
+   * Emitted after the EOS social party was recreated.
+   * @param party The replacement linked Fortnite lobby
+   */
+  'party:recreated': (party: ClientParty) => void;
 
   /**
    * Emitted when a party member updated their outfit
@@ -973,6 +981,39 @@ export interface PartyData {
   meta: PartySchema;
   invites: any[];
   revision: number;
+  eosPartyId?: string;
+}
+
+export interface EOSPartyData {
+  id: string;
+  revision: number;
+}
+
+export interface EOSPartyInviteData {
+  party_id?: string;
+  partyId?: string;
+  sent_by?: string;
+  senderId?: string;
+  sent_at?: string;
+  sent?: string;
+  expires_at?: string;
+}
+
+export interface EOSPartyJoinRequestData {
+  requester_id?: string;
+  requesterId?: string;
+  sent_by?: string;
+  senderId?: string;
+  account_id?: string;
+  sent_at?: string;
+  sent?: string;
+  expires_at?: string;
+}
+
+export interface EOSPartyUserState {
+  current?: EOSPartyData;
+  invites?: EOSPartyInviteData[];
+  join_requests?: EOSPartyJoinRequestData[];
 }
 
 export interface PartyUpdateData {
@@ -1117,22 +1158,27 @@ export interface PresencePartyData {
    * partyId
    */
   p?: string;
+  partyId?: string;
   /**
    * appId
    */
   d?: string;
+  appId?: string;
   /**
    * buildId
    */
   b?: string;
+  buildId?: string;
   /**
    * partyFlags
    */
   f?: number;
+  partyFlags?: number;
   /**
    * notAcceptingMembersReason
    */
   nAR?: number;
+  notAcceptingReason?: number;
   /**
    * playerCount
    */
@@ -1543,6 +1589,7 @@ interface BaseEOSConnectMessage {
   timestamp: number; // unix
   id?: string;
   connectionId?: string;
+  payload?: unknown;
 }
 
 export interface EOSConnectCoreConnected extends BaseEOSConnectMessage {
@@ -1651,6 +1698,7 @@ export interface EOSPresenceInGame {
 
 export interface EOSPresencePerNs {
   ns: string;
+  productId?: string;
   status: PresenceOnlineType;
   activity: {
     value: string;
@@ -1667,6 +1715,11 @@ export interface EOSPresenceUpdateMessage extends BaseEOSConnectMessage {
   type: 'presence.v1.UPDATE';
 }
 
+export interface EOSConnectPartyNotification extends BaseEOSConnectMessage {
+  type: `party.v2.${string}`;
+  payload: unknown;
+}
+
 export type EOSConnectMessage =
   // Core
   EOSConnectCoreConnected
@@ -1676,4 +1729,5 @@ export type EOSConnectMessage =
   | EOSConnectChatNewMsgMessage
   | EOSConnectChatMemberLeftMessage
   | EOSConnectChatNewWhisperMessage
+  | EOSConnectPartyNotification
   | EOSPresenceUpdateMessage;

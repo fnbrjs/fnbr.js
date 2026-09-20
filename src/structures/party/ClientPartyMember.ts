@@ -46,38 +46,33 @@ class ClientPartyMember extends PartyMember {
    */
   public async sendPatch(updated: PartyMemberSchema): Promise<void> {
     await this.patchQueue.wait();
+    const entries = Object.entries(updated).filter(([key]) => !this.party.eosPartyId || key.startsWith('Default:'));
+    try {
+      for (let index = 0; index < entries.length; index += 32) {
+        // Member revisions require each chunk to finish before the next one begins.
+        // eslint-disable-next-line no-await-in-loop
+        await this.sendPatchChunk(Object.fromEntries(entries.slice(index, index + 32)));
+      }
+      if (this.client.config.savePartyMemberMeta) this.client.lastPartyMemberMeta = this.meta.schema;
+    } finally {
+      this.patchQueue.shift();
+    }
+  }
 
+  private async sendPatchChunk(update: Record<string, unknown>): Promise<void> {
     try {
       await this.client.http.epicgamesRequest({
         method: 'PATCH',
         url: `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.id}/meta`,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        data: {
-          delete: [],
-          revision: this.revision,
-          update: updated,
-        },
+        headers: { 'Content-Type': 'application/json' },
+        data: { delete: [], revision: this.revision, update },
       }, AuthSessionStoreKey.Fortnite);
-    } catch (e) {
-      if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.social.party.stale_revision') {
-        this.revision = parseInt(e.messageVars[1], 10);
-        this.patchQueue.shift();
-        return this.sendPatch(updated);
-      }
-
-      this.patchQueue.shift();
-
-      throw e;
+      this.revision += 1;
+    } catch (error) {
+      if (!(error instanceof EpicgamesAPIError) || error.code !== 'errors.com.epicgames.social.party.stale_revision') throw error;
+      this.revision = parseInt(error.messageVars[1], 10);
+      await this.sendPatchChunk(update);
     }
-
-    this.revision += 1;
-    this.patchQueue.shift();
-
-    if (this.client.config.savePartyMemberMeta) this.client.lastPartyMemberMeta = this.meta.schema;
-
-    return undefined;
   }
 
   /**
@@ -92,13 +87,11 @@ class ClientPartyMember extends PartyMember {
       MatchmakingInfo: {
         ...data.MatchmakingInfo,
         readyStatus: ready ? 'Ready' : 'NotReady',
+        readyInputType: ready ? 'Touch' : 'Count',
         readyStatusMMId: ready ? crypto.randomUUID().replaceAll('-', '').toUpperCase() : '',
       },
     });
-
-    await this.sendPatch({
-      'Default:MatchmakingInfo_j': data,
-    });
+    await this.sendPatch({ 'Default:MatchmakingInfo_j': data });
   }
 
   /**
@@ -113,13 +106,11 @@ class ClientPartyMember extends PartyMember {
       MatchmakingInfo: {
         ...data.MatchmakingInfo,
         readyStatus: sittingOut ? 'SittingOut' : 'NotReady',
+        readyInputType: 'Count',
         readyStatusMMId: '',
       },
     });
-
-    await this.sendPatch({
-      'Default:MatchmakingInfo_j': data,
-    });
+    await this.sendPatch({ 'Default:MatchmakingInfo_j': data });
   }
 
   /**

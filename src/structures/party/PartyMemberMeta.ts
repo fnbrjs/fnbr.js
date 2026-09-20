@@ -55,14 +55,14 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
    * Whether the member is ready
    */
   public get isReady() {
-    return this.get('Default:LobbyState_j')?.LobbyState?.inGameReadyCheckStatus === 'Ready';
+    return this.get('Default:MatchmakingInfo_j')?.MatchmakingInfo?.readyStatus === 'Ready';
   }
 
   /**
    * Whether the member is sitting out
    */
   public get isSittingOut() {
-    return this.get('Default:LobbyState_j')?.LobbyState?.inGameReadyCheckStatus === 'SittingOut';
+    return this.get('Default:MatchmakingInfo_j')?.MatchmakingInfo?.readyStatus === 'SittingOut';
   }
 
   /**

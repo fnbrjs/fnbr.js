@@ -15,6 +15,11 @@ abstract class BasePartyInvitation extends Base {
   public party: Party | ClientParty;
 
   /**
+   * Linked EOS social-party identifier.
+   */
+  public eosPartyId?: string;
+
+  /**
    * The party this invitation belongs to
    */
   public sender: Friend | ClientUser;
@@ -50,6 +55,7 @@ abstract class BasePartyInvitation extends Base {
     super(client);
 
     this.party = party;
+    this.eosPartyId = data.eosPartyId ?? party.eosPartyId;
 
     this.sender = sender;
     this.receiver = receiver;

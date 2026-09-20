@@ -106,7 +106,7 @@ class FriendPresence extends Base {
     super(client);
 
     this.friend = friend;
-    this.status = data.activity.value;
+    this.status = data.activity?.value;
     this.receivedAt = new Date();
     this.onlineType = onlineType;
     this.platform = data.props.EOS_Platform;

@@ -20,8 +20,10 @@ import ClientParty from './structures/party/ClientParty';
 import Party from './structures/party/Party';
 import PartyNotFoundError from './exceptions/PartyNotFoundError';
 import PartyPermissionError from './exceptions/PartyPermissionError';
-import SentPartyJoinRequest from './structures/party/SentPartyJoinRequest';
 import RadioStation from './structures/RadioStation';
+import ReceivedPartyInvitation from './structures/party/ReceivedPartyInvitation';
+import ReceivedPartyJoinRequest from './structures/party/ReceivedPartyJoinRequest';
+import SentPartyJoinRequest from './structures/party/SentPartyJoinRequest';
 import CreativeIslandNotFoundError from './exceptions/CreativeIslandNotFoundError';
 import Stats from './structures/Stats';
 import EventTimeoutError from './exceptions/EventTimeoutError';
@@ -33,17 +35,19 @@ import EpicgamesAPIError from './exceptions/EpicgamesAPIError';
 import UserManager from './managers/UserManager';
 import FriendManager from './managers/FriendManager';
 import STWManager from './managers/STWManager';
+import EOSPartyManager from './managers/EOSPartyManager';
 import STOMP from './stomp/STOMP';
 import ChatManager from './managers/ChatManager';
 import FriendPresence from './structures/friend/FriendPresence';
 import type {
   BlurlStreamData, CreativeIslandData,
   BlurlStreamMasterPlaylistData, CreativeDiscoveryPanel,
+  FortniteMatchmakingResponse,
 } from '../resources/httpResponses';
 import type {
-  ClientOptions, ClientConfig, ClientEvents, PartyConfig, Schema,
+  ClientOptions, ClientConfig, ClientEvents, PartyConfig, PartyOptions, Schema,
   Region, BlurlStream, Language, PartyData,
-  PartySchema, PresenceOnlineType, BRAccountLevelData,
+  PresenceOnlineType, BRAccountLevelData,
   EOSPresencePropsInGame,
 } from '../resources/structs';
 
@@ -109,6 +113,11 @@ class Client extends EventEmitter {
   public stomp: STOMP;
 
   /**
+   * EOS Party v2 REST manager
+   */
+  public eosParty: EOSPartyManager;
+
+  /**
    * Friend manager
    */
   public friend: FriendManager;
@@ -137,6 +146,8 @@ class Client extends EventEmitter {
    * EOS: Chat Manager
    */
   public chat: ChatManager;
+  private eosPartyKeepAliveTimer?: NodeJS.Timeout;
+  private partyRecreationInProgress = false;
 
   /**
    * @param config The client's configuration options
@@ -164,7 +175,7 @@ class Client extends EventEmitter {
       fetchFriends: true,
       restRetryLimit: 1,
       handleRatelimits: true,
-      partyBuildId: '1:3:',
+      partyBuildId: undefined,
       restartOnInvalidRefresh: false,
       language: 'en',
       friendOnlineConnectionTimeout: 30000,
@@ -212,6 +223,7 @@ class Client extends EventEmitter {
     this.http = new Http(this);
     this.xmpp = new XMPP(this);
     this.stomp = new STOMP(this);
+    this.eosParty = new EOSPartyManager(this);
 
     this.partyLock = new AsyncLock();
     this.cacheLock = new AsyncLock();
@@ -308,9 +320,16 @@ class Client extends EventEmitter {
    */
   public async initParty(createNew = true, forceNew = true) {
     this.party = await this.getClientParty();
-    if (!forceNew && this.party) return;
+    if (!forceNew && this.party) {
+      const { eosPartyId } = this.party;
+      if (!eosPartyId) throw new Error('Current Fortnite lobby is not linked to an EOS Party v2 party');
+      const { publicConnectionId } = this.requireEOSPartyConnections();
+      await this.eosParty.connect(eosPartyId, publicConnectionId);
+      this.startEOSPartyKeepAlive(eosPartyId);
+      return;
+    }
     if (createNew) {
-      await this.leaveParty(false);
+      await this.party?.leave(false);
       await this.createParty();
     }
   }
@@ -639,11 +658,12 @@ class Client extends EventEmitter {
       }
     }
 
-    return this.stomp.patchPresence(
+    await this.stomp.patchPresence(
       status || this.config.defaultStatus || (this.party && `Lobby - ${this.party.size} / ${this.party.maxSize}`) || 'Playing Battle Royale',
       props,
       onlineType || this.config.defaultOnlineType,
     );
+    await this.stomp.patchInternalPresence(this.party);
   }
 
   /**
@@ -676,140 +696,286 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Joins a party by its id
-   * @param id The party id
-   * @throws {PartyNotFoundError} The party wasn't found
-   * @throws {PartyPermissionError} The party cannot be fetched
-   * @throws {PartyMaxSizeReachedError} The party has reached its max size
+   * Sends a party join request to a friend.
+   * @param friend The friend that will receive the request
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
    * @throws {EpicgamesAPIError}
    */
-  public async joinParty(id: string) {
-    const party = (await this.getParty(id)) as Party;
-
-    return party.join(true);
+  public async sendRequestToJoin(friend: string) {
+    const resolvedFriend = this.friend.list.get(friend)
+      || this.friend.list.find((candidate: Friend) => candidate.displayName === friend);
+    if (!resolvedFriend) throw new FriendNotFoundError(friend);
+    await this.eosParty.sendJoinRequest(resolvedFriend.id);
+    return new SentPartyJoinRequest(this, this.user.self!, resolvedFriend, {
+      sent_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 60000).toISOString(),
+    });
   }
 
   /**
-   * Creates a new party
-   * @param config The party config
-   * @throws {EpicgamesAPIError}
-   */
-  public async createParty(config?: PartyConfig): Promise<void> {
-    if (this.party) await this.party.leave();
-    this.partyLock.lock();
-
-    const partyConfig = { ...this.config.partyConfig, ...config };
-
-    let party;
-    try {
-      party = await this.http.epicgamesRequest({
-        method: 'POST',
-        url: `${Endpoints.BR_PARTY}/parties`,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        data: {
-          config: {
-            join_confirmation: partyConfig.joinConfirmation,
-            joinability: partyConfig.joinability,
-            max_size: partyConfig.maxSize,
-          },
-          join_info: {
-            connection: {
-              id: this.xmpp.JID,
-              meta: {
-                'urn:epic:conn:platform_s': this.config.platform,
-                'urn:epic:conn:type_s': 'game',
-              },
-              yield_leadership: false,
-            },
-            meta: {
-              'urn:epic:member:dn_s': this.user.self!.displayName,
-            },
-          },
-          meta: {
-            'urn:epic:cfg:party-type-id_s': 'default',
-            'urn:epic:cfg:build-id_s': this.config.partyBuildId,
-            'urn:epic:cfg:join-request-action_s': 'Manual',
-            'urn:epic:cfg:chat-enabled_b':
-              partyConfig.chatEnabled?.toString() || 'true',
-            'urn:epic:cfg:can-join_b': 'true',
-          },
-        },
-      }, AuthSessionStoreKey.Fortnite);
-    } catch (e) {
-      this.partyLock.unlock();
-      if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.social.party.user_has_party') {
-        await this.leaveParty(false);
-        return this.createParty(config);
-      }
-
-      throw e;
-    }
-
-    this.party = new ClientParty(this, party);
-
-    const newPrivacy = await this.party.setPrivacy(partyConfig.privacy || Enums.PartyPrivacy.PUBLIC, false);
-
-    await this.party.sendPatch({
-      ...newPrivacy.updated,
-      ...Object.keys(this.party.meta.schema)
-        .filter((k: string) => !k.startsWith('urn:'))
-        .reduce((obj, key) => {
-          // eslint-disable-next-line no-param-reassign
-          (obj as any)[key] = this.party?.meta.schema[key as keyof PartySchema];
-          return obj;
-        }, {}),
-    }, newPrivacy.deleted);
-
-    this.partyLock.unlock();
-    return undefined;
-  }
-
-  /**
-   * Leaves the client's current party
-   * @param createNew Whether a new party should be created
-   * @throws {EpicgamesAPIError}
+   * Leaves the current party.
+   * @param createNew Whether to create a replacement party
+   * @throws {PartyNotFoundError} The client is not in a party
    */
   public async leaveParty(createNew = true) {
-    if (!this.party) return undefined;
-
+    if (!this.party) throw new PartyNotFoundError();
     return this.party.leave(createNew);
   }
 
   /**
-   * Sends a party join request to a friend.
-   * When the friend confirms this, a party invite will be sent to the client
-   * @param friend The friend
-   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
-   * @throws {PartyNotFoundError} The friend is not in a party
+   * Joins an EOS Party v2 social party by EOS ID or linked lobby ID.
+   */
+  public async joinParty(id: string): Promise<void> {
+    const eosPartyId = Client.normalizeEOSPartyId(id);
+    const { privateConnectionId, publicConnectionId } = this.requireEOSPartyConnections();
+    if (this.config.partyBuildId === undefined) await this.fetchPartyBuildId();
+
+    if (this.party) await this.party.leave(false);
+    this.partyLock.lock();
+    let joinedEOSParty = false;
+    try {
+      const state = await this.eosParty.getUserState();
+      if (state.current?.id && state.current.id !== eosPartyId) {
+        await this.eosParty.removeMember(state.current.id);
+      }
+      await this.eosParty.join(eosPartyId, privateConnectionId);
+      joinedEOSParty = true;
+      await this.eosParty.connect(eosPartyId, publicConnectionId);
+      const lobby = await this.eosParty.joinLobby(eosPartyId, this.getEOSLobbyId(eosPartyId), this.resolvePartyConfig());
+      this.party = new ClientParty(this, { ...lobby, eosPartyId });
+      await this.stomp.patchInternalPresence(this.party);
+      await this.setStatus();
+      this.startEOSPartyKeepAlive(eosPartyId);
+    } catch (error) {
+      if (joinedEOSParty) await this.eosParty.removeMember(eosPartyId).catch(() => undefined);
+      throw error;
+    } finally {
+      this.partyLock.unlock();
+    }
+  }
+
+  /**
+   * Fetches the current Fortnite party build ID from matchmaking.
    * @throws {EpicgamesAPIError}
    */
-  public async sendRequestToJoin(friend: string) {
-    const resolvedFriend = this.friend.list.find((f: Friend) => f.displayName === friend || f.id === friend);
-    if (!resolvedFriend) throw new FriendNotFoundError(friend);
+  public async fetchPartyBuildId(): Promise<string> {
+    const matchmaking: FortniteMatchmakingResponse = await this.http.epicgamesRequest({
+      method: 'POST',
+      url: Endpoints.BR_MATCHMAKING_REQUEST,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: {
+        criteria: [],
+        openPlayersRequired: 1,
+        buildUniqueId: '',
+        maxResults: 1,
+      },
+    }, AuthSessionStoreKey.Fortnite);
 
-    let intention;
-    try {
-      intention = await this.http.epicgamesRequest({
-        method: 'POST',
-        url: `${Endpoints.BR_PARTY}/members/${resolvedFriend.id}/intentions/${this.user.self!.id}`,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        data: {
-          'urn:epic:invite:platformdata_s': '',
-        },
-      }, AuthSessionStoreKey.Fortnite);
-    } catch (e) {
-      if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.social.party.user_has_no_party') {
-        throw new PartyNotFoundError();
-      }
-
-      throw e;
+    const buildUniqueId = matchmaking?.[0]?.buildUniqueId;
+    if (typeof buildUniqueId !== 'string' && typeof buildUniqueId !== 'number') {
+      throw new Error('Matchmaking response did not contain a party build ID');
     }
 
-    return new SentPartyJoinRequest(this, this.user.self!, resolvedFriend, intention);
+    const netCL = String(buildUniqueId);
+    if (netCL.length === 0) {
+      throw new Error('Matchmaking response contained an empty party build ID');
+    }
+
+    this.config.partyBuildId = `1:3:${netCL}`;
+    return this.config.partyBuildId;
+  }
+
+  /**
+   * Creates a linked EOS social party and Fortnite lobby.
+   */
+  public async createParty(config?: PartyConfig): Promise<void> {
+    if (this.config.partyBuildId === undefined) await this.fetchPartyBuildId();
+    const { privateConnectionId, publicConnectionId } = this.requireEOSPartyConnections();
+    const partyConfig = this.resolvePartyConfig(config);
+    if (this.party) await this.party.leave(false);
+
+    this.partyLock.lock();
+    let eosPartyId: string | undefined;
+    try {
+      await this.setStatus();
+      const state = await this.eosParty.getUserState();
+      if (state.current?.id) await this.eosParty.removeMember(state.current.id);
+
+      const eosParty = await this.eosParty.create(privateConnectionId);
+      eosPartyId = eosParty.id;
+      const joinability = partyConfig.privacy.partyType === 'Private' ? 'INVITE_ONLY' : 'OPEN';
+      await this.eosParty.setJoinability(eosPartyId, joinability, eosParty.revision);
+      await this.eosParty.connect(eosPartyId, publicConnectionId);
+      const lobby = await this.eosParty.joinLobby(eosPartyId, this.getEOSLobbyId(eosPartyId), partyConfig);
+      this.party = new ClientParty(this, { ...lobby, eosPartyId });
+      const privacy = await this.party.setPrivacy(partyConfig.privacy, false);
+      await this.party.sendPatch({ ...this.party.meta.schema, ...privacy.updated }, privacy.deleted);
+      await this.stomp.patchInternalPresence(this.party);
+      await this.setStatus();
+      this.startEOSPartyKeepAlive(eosPartyId);
+    } catch (error) {
+      this.party = undefined;
+      if (eosPartyId) await this.eosParty.removeMember(eosPartyId).catch(() => undefined);
+      throw error;
+    } finally {
+      this.partyLock.unlock();
+    }
+  }
+
+  private requireEOSPartyConnections() {
+    const { publicConnectionId, privateConnectionId } = this.stomp;
+    if (!this.stomp.isConnected || !publicConnectionId || !privateConnectionId || !this.xmpp.JID) {
+      throw new Error('EOS party operations require connected STOMP and XMPP transports');
+    }
+    return { publicConnectionId, privateConnectionId };
+  }
+
+  private static normalizeEOSPartyId(id: string): string {
+    if (/^[0-9a-f]{32}$/i.test(id)) return id;
+    const match = /^([0-9a-f]{32})-\d+-[A-Za-z0-9_-]+$/i.exec(id);
+    if (!match) throw new PartyNotFoundError();
+    return match[1];
+  }
+
+  private resolvePartyConfig(options?: PartyOptions): PartyConfig {
+    const configured = { ...this.config.partyConfig, ...options };
+    return {
+      type: 'DEFAULT',
+      subType: 'default',
+      joinability: configured.joinability ?? 'OPEN',
+      discoverability: configured.discoverability ?? 'ALL',
+      maxSize: configured.maxSize ?? 16,
+      inviteTtl: configured.inviteTtl ?? 3600,
+      intentionTtl: configured.intentionTtl ?? 60,
+      joinConfirmation: configured.joinConfirmation ?? false,
+      privacy: configured.privacy ?? Enums.PartyPrivacy.PUBLIC,
+    };
+  }
+
+  private getEOSLobbyId(eosPartyId: string): string {
+    const netCL = this.config.partyBuildId?.split(':').pop();
+    if (!netCL || !/^\d+$/.test(netCL)) throw new Error('EOS party operations require a numeric party build ID');
+    return `${eosPartyId}-${netCL}-default`;
+  }
+
+  private startEOSPartyKeepAlive(eosPartyId: string) {
+    if (this.eosPartyKeepAliveTimer) this.clearInterval(this.eosPartyKeepAliveTimer);
+    const timer = this.setInterval(() => {
+      if (this.party?.eosPartyId !== eosPartyId) {
+        this.clearInterval(timer);
+        return;
+      }
+      this.eosParty.keepAlive(eosPartyId).catch((error: unknown) => {
+        this.debug(`[EOS Party] Keepalive failed: ${error instanceof Error ? error.message : String(error)}`);
+      });
+    }, 60000);
+    this.eosPartyKeepAliveTimer = timer;
+  }
+
+  private async recreateParty(party: ClientParty, partyDisbanded = false) {
+    if (this.partyRecreationInProgress) return;
+    this.partyRecreationInProgress = true;
+    try {
+      if (partyDisbanded) {
+        this.partyLock.lock();
+        try {
+          await this.http.epicgamesRequest({
+            method: 'DELETE',
+            url: `${Endpoints.BR_PARTY}/parties/${party.id}/members/${this.user.self!.id}`,
+          }, AuthSessionStoreKey.Fortnite);
+          if (this.party === party) {
+            this.party = undefined;
+            await this.stomp.patchInternalPresence();
+          }
+        } finally {
+          this.partyLock.unlock();
+        }
+      } else {
+        await party.leave(false);
+      }
+      await this.createParty();
+      if (this.party) this.emit('party:recreated', this.party);
+    } finally {
+      this.partyRecreationInProgress = false;
+    }
+  }
+
+  public async rebindEOSPartyConnection() {
+    const { party } = this;
+    if (!party?.eosPartyId || !this.stomp.publicConnectionId) return;
+    try {
+      await this.eosParty.connect(party.eosPartyId, this.stomp.publicConnectionId);
+    } catch {
+      await this.recreateParty(party);
+    }
+  }
+
+  public async handleEOSPartyNotification(type: string, payload: unknown) {
+    if (!payload || typeof payload !== 'object') return;
+    let partyId: string | undefined;
+    if ('party_id' in payload && typeof payload.party_id === 'string') partyId = payload.party_id;
+    else if ('partyId' in payload && typeof payload.partyId === 'string') partyId = payload.partyId;
+    if (type === 'party.v2.MEMBER_EXPIRED_PARTY_DISBANDED') {
+      const { party } = this;
+      if (!partyId || !party || party.eosPartyId !== partyId) return;
+      await this.recreateParty(party, true);
+      return;
+    }
+
+    let senderId: string | undefined;
+    if ('sent_by' in payload && typeof payload.sent_by === 'string') senderId = payload.sent_by;
+    else if ('senderId' in payload && typeof payload.senderId === 'string') senderId = payload.senderId;
+    if (type.includes('INVITE') && partyId && senderId && !/(EXPIRED|CANCEL|DECLINED|REMOVED)/.test(type)) {
+      const sender = this.friend.list.get(senderId);
+      if (!sender || this.listenerCount('party:invite') === 0) return;
+      const sentAt = 'sent_at' in payload && typeof payload.sent_at === 'string' ? payload.sent_at : new Date().toISOString();
+      let expiresAt = new Date(Date.now() + 3600000).toISOString();
+      if ('expires_at' in payload && typeof payload.expires_at === 'string') expiresAt = payload.expires_at;
+      const invitationParty: PartyData = {
+        id: this.getEOSLobbyId(partyId),
+        eosPartyId: partyId,
+        created_at: sentAt,
+        updated_at: sentAt,
+        config: {
+          type: 'DEFAULT',
+          joinability: 'OPEN',
+          discoverability: 'ALL',
+          sub_type: 'default',
+          max_size: 16,
+          invite_ttl: 3600,
+          join_confirmation: false,
+          intention_ttl: 60,
+        },
+        members: [],
+        meta: {},
+        invites: [],
+        revision: 0,
+      };
+      const party = new Party(this, invitationParty);
+      this.emit('party:invite', new ReceivedPartyInvitation(this, party, sender, this.user.self!, {
+        eosPartyId: partyId,
+        sent_at: sentAt,
+        expires_at: expiresAt,
+      }));
+      return;
+    }
+
+    let requesterId = senderId;
+    if ('requester_id' in payload && typeof payload.requester_id === 'string') requesterId = payload.requester_id;
+    else if ('requesterId' in payload && typeof payload.requesterId === 'string') requesterId = payload.requesterId;
+    if ((type.includes('JOIN_REQUEST') || type.includes('INTENTION')) && requesterId && !/(EXPIRED|CANCEL|DECLINED|REMOVED)/.test(type)) {
+      const sender = this.friend.list.get(requesterId);
+      if (!sender || this.listenerCount('party:joinrequest') === 0) return;
+      const sentAt = 'sent_at' in payload && typeof payload.sent_at === 'string' ? payload.sent_at : new Date().toISOString();
+      let expiresAt = new Date(Date.now() + 60000).toISOString();
+      if ('expires_at' in payload && typeof payload.expires_at === 'string') expiresAt = payload.expires_at;
+      this.emit('party:joinrequest', new ReceivedPartyJoinRequest(this, sender, this.user.self!, {
+        sent_at: sentAt,
+        expires_at: expiresAt,
+      }));
+    }
   }
 
   /**
@@ -817,13 +983,19 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async getClientParty() {
-    const party = await this.http.epicgamesRequest({
-      method: 'GET',
-      url: `${Endpoints.BR_PARTY}/user/${this.user.self!.id}`,
-    }, AuthSessionStoreKey.Fortnite);
-
-    if (!party?.current[0]) return undefined;
-    return new ClientParty(this, party.current[0]);
+    const state = await this.eosParty.getUserState();
+    if (!state.current) return undefined;
+    if (this.config.partyBuildId === undefined) await this.fetchPartyBuildId();
+    try {
+      const party = await this.http.epicgamesRequest({
+        method: 'GET',
+        url: `${Endpoints.BR_PARTY}/parties/${this.getEOSLobbyId(state.current.id)}`,
+      }, AuthSessionStoreKey.Fortnite);
+      return new ClientParty(this, { ...party, eosPartyId: state.current.id });
+    } catch (error) {
+      if (error instanceof EpicgamesAPIError && error.code === 'errors.com.epicgames.social.party.party_not_found') return undefined;
+      throw error;
+    }
   }
 
   /**
@@ -1153,12 +1325,10 @@ class Client extends EventEmitter {
    */
   public async getBRAccountLevel(user: string | string[], seasonNumber: number): Promise<BRAccountLevelData[]> {
     const users = Array.isArray(user) ? user : [user];
-
-    const accountLevels = await this.getBRStats(users, undefined, undefined, [`s${seasonNumber}_social_bp_level`]);
-
-    return accountLevels.map((al) => ({
-      user: al.user,
-      level: al.levelData[`s${seasonNumber}`] || { level: 0, progress: 0 },
+    const accountStats = await Promise.all(users.map((account) => this.getBRStats(account)));
+    return accountStats.map((stats) => ({
+      user: stats.user,
+      level: stats.levelData[`s${seasonNumber}`] || { level: 0, progress: 0 },
     }));
   }
 

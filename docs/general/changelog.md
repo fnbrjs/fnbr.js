@@ -1,5 +1,27 @@
 # Changelog
 
+## 5.0.0
+
+### Additions
+* Party
+  * Added `Party#eosPartyId`, the identifier paired with `Party#id` for party operations that require it.
+  * Added the `party:recreated` event, emitted with the replacement `ClientParty` when the client's party is recreated.
+
+### Fixes
+* Party
+  * Fixed party recreation failing when the client remained in its previous lobby after the party was disbanded.
+
+* Stats
+  * Fixed `Client#getBRAccountLevel()` failing when the requested season's level stat could not be queried through the multi-account stats endpoint.
+
+### Changes
+* Party
+  * **(Breaking)** `Client#joinParty()`, `Party#join()`, and `PresenceParty#join()` now reject unsupported party IDs instead of attempting to join them.
+  * `ClientParty#invite()`, `ReceivedPartyInvitation#accept()`, `ReceivedPartyInvitation#decline()`, and `ReceivedPartyJoinRequest#decline()` use the current party invitation and join-request flow.
+  * `ClientParty#chat` sends and receives party messages through the current party chat conversation.
+  * `Client` discovers the current party build ID from Fortnite matchmaking when `partyBuildId` is omitted; supplied values remain authoritative.
+  * **(Breaking)** Removed `SentPartyInvitation#abort()`.
+
 ## 4.2.0
 
 ### Changes

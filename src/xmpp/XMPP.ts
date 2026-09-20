@@ -8,15 +8,10 @@ import Friend from '../structures/friend/Friend';
 import IncomingPendingFriend from '../structures/friend/IncomingPendingFriend';
 import OutgoingPendingFriend from '../structures/friend/OutgoingPendingFriend';
 import BlockedUser from '../structures/user/BlockedUser';
-import Party from '../structures/party/Party';
-import { createPartyInvitation } from '../util/Util';
-import ReceivedPartyInvitation from '../structures/party/ReceivedPartyInvitation';
-import FriendNotFoundError from '../exceptions/FriendNotFoundError';
 import ClientPartyMember from '../structures/party/ClientPartyMember';
 import PartyMember from '../structures/party/PartyMember';
 import PartyMemberNotFoundError from '../exceptions/PartyMemberNotFoundError';
 import PartyMemberConfirmation from '../structures/party/PartyMemberConfirmation';
-import ReceivedPartyJoinRequest from '../structures/party/ReceivedPartyJoinRequest';
 import ReceivedFriendMessage from '../structures/friend/ReceivedFriendMessage';
 import PartyMemberMeta from '../structures/party/PartyMemberMeta';
 import { AuthSessionStoreKey } from '../../resources/enums';
@@ -180,6 +175,7 @@ class XMPP extends Base {
 
     this.connection!.on('groupchat', async (m) => {
       try {
+        if (this.client.stomp.isConnected) return;
         await this.client.partyLock.wait();
 
         const partyId = m.from.split('@')[0].replace('Party-', '');
@@ -329,40 +325,6 @@ class XMPP extends Base {
               this.client.user.blocklist.delete(blockedUser.id);
               this.client.emit('user:unblocked', blockedUser);
             }
-          } break;
-
-          case 'com.epicgames.social.party.notification.v0.PING': {
-            if (this.client.config.disablePartyService) break;
-            if (this.client.listenerCount('party:invite') === 0) break;
-
-            const pingerId = body.pinger_id;
-
-            const friend = await this.waitForFriend(pingerId);
-            if (!friend) throw new FriendNotFoundError(pingerId);
-
-            const data = await this.client.http.epicgamesRequest({
-              method: 'GET',
-              url: `${Endpoints.BR_PARTY}/user/${this.client.user.self!.id}/pings/${pingerId}/parties`,
-            }, AuthSessionStoreKey.Fortnite);
-
-            if (!data[0]) {
-              this.client.debug(`[XMPP] Error while processing ${body.type}: Could't find an active invitation`);
-              break;
-            }
-
-            const [partyData] = data;
-            let party: Party;
-
-            if (partyData.config.discoverability === 'ALL') party = await this.client.getParty(partyData.id) as Party;
-            else party = new Party(this.client, partyData);
-
-            if (party.members.some((pm: PartyMember) => !pm.displayName)) await party.updateMemberBasicInfo();
-
-            let invitation = partyData.invites.find((i: any) => i.sent_by === pingerId && i.status === 'SENT');
-            if (!invitation) invitation = createPartyInvitation(this.client.user.self!.id, pingerId, { ...body, ...partyData });
-
-            const invite = new ReceivedPartyInvitation(this.client, party, friend, this.client.user.self!, invitation);
-            this.client.emit('party:invite', invite);
           } break;
 
           case 'com.epicgames.social.party.notification.v0.MEMBER_JOINED': {
@@ -563,19 +525,6 @@ class XMPP extends Base {
             } else {
               await confirmation.confirm();
             }
-          } break;
-
-          case 'com.epicgames.social.party.notification.v0.INITIAL_INTENTION': {
-            if (this.client.config.disablePartyService) break;
-            await this.client.partyLock.wait();
-            if (!this.client.party || this.client.party.id !== body.party_id) break;
-
-            const friend = await this.waitForFriend(body.requester_id);
-            if (!friend) throw new FriendNotFoundError(body.requester_id);
-
-            const request = new ReceivedPartyJoinRequest(this.client, friend, this.client.user.self!, body);
-
-            this.client.emit('party:joinrequest', request);
           } break;
         }
       } catch (err: any) {

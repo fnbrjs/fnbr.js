@@ -65,6 +65,9 @@ class ClientParty extends Party {
     this.patchQueue = new AsyncQueue();
     this.chat = new PartyChat(this.client, this);
     this.meta = new ClientPartyMeta(this, data instanceof Party ? data.meta.schema : data.meta);
+    if (this.eosPartyId) {
+      this.meta.set('Default:LeaderData_j', { LeaderData: { epicPartyId: this.eosPartyId } });
+    }
   }
 
   /**
@@ -88,21 +91,18 @@ class ClientParty extends Party {
    */
   public async leave(createNew = true) {
     this.client.partyLock.lock();
-
     try {
       await this.client.http.epicgamesRequest({
         method: 'DELETE',
         url: `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.me?.id}`,
       }, AuthSessionStoreKey.Fortnite);
-    } catch (e) {
+      if (!this.eosPartyId) throw new Error('Legacy Fortnite parties are not supported');
+      await this.client.eosParty.removeMember(this.eosPartyId);
+      this.client.party = undefined;
+      await this.client.stomp.patchInternalPresence();
+    } finally {
       this.client.partyLock.unlock();
-
-      throw e;
     }
-
-    this.client.party = undefined;
-
-    this.client.partyLock.unlock();
     if (createNew) await this.client.createParty();
   }
 
@@ -115,14 +115,33 @@ class ClientParty extends Party {
    */
   public async sendPatch(updated: PartySchema, deleted: (keyof PartySchema & string)[] = []): Promise<void> {
     await this.patchQueue.wait();
+    const entries = Object.entries(updated).filter(([key]) => (
+      !this.eosPartyId || (key.startsWith('Default:') && key !== 'VoiceChat:implementation_s')
+    ));
+    const chunks: Array<Array<[string, unknown]>> = [];
+    for (let index = 0; index < entries.length; index += 32) chunks.push(entries.slice(index, index + 32));
+    if (chunks.length === 0) chunks.push([]);
+    try {
+      for (const [chunkIndex, chunk] of chunks.entries()) {
+        // Party revisions require each chunk to finish before the next one begins.
+        // eslint-disable-next-line no-await-in-loop
+        await this.sendPatchChunk(Object.fromEntries(chunk), chunkIndex === 0 ? deleted : []);
+      }
+    } finally {
+      this.patchQueue.shift();
+    }
+  }
 
+  private async sendPatchChunk(
+    update: Record<string, unknown>,
+    deleted: (keyof PartySchema & string)[],
+    retriedValidation = false,
+  ): Promise<void> {
     try {
       await this.client.http.epicgamesRequest({
         method: 'PATCH',
         url: `${Endpoints.BR_PARTY}/parties/${this.id}`,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         data: {
           config: {
             join_confirmation: this.config.joinConfirmation,
@@ -130,10 +149,7 @@ class ClientParty extends Party {
             max_size: this.config.maxSize,
             discoverability: this.config.discoverability,
           },
-          meta: {
-            delete: deleted,
-            update: updated || this.meta.schema,
-          },
+          meta: { delete: deleted, update },
           party_state_overridden: {},
           party_privacy_type: this.config.joinability,
           party_type: this.config.type,
@@ -143,26 +159,23 @@ class ClientParty extends Party {
           revision: this.revision,
         },
       }, AuthSessionStoreKey.Fortnite);
-    } catch (e) {
-      if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.social.party.stale_revision') {
-        this.revision = parseInt(e.messageVars[1], 10);
-        this.patchQueue.shift();
-        return this.sendPatch(updated);
+      this.revision += 1;
+    } catch (error) {
+      if (error instanceof EpicgamesAPIError && error.code === 'errors.com.epicgames.social.party.stale_revision') {
+        this.revision = parseInt(error.messageVars[1], 10);
+        await this.sendPatchChunk(update, deleted, retriedValidation);
+        return;
       }
-
-      this.patchQueue.shift();
-
-      if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.social.party.party_change_forbidden') {
+      if (error instanceof EpicgamesAPIError && error.code === 'errors.com.epicgames.validation.validation_failed' && !retriedValidation) {
+        const supportedUpdate = Object.fromEntries(Object.entries(update).filter(([key]) => key.startsWith('Default:')));
+        await this.sendPatchChunk(supportedUpdate, deleted, true);
+        return;
+      }
+      if (error instanceof EpicgamesAPIError && error.code === 'errors.com.epicgames.social.party.party_change_forbidden') {
         throw new PartyPermissionError();
       }
-
-      throw e;
+      throw error;
     }
-
-    this.revision += 1;
-    this.patchQueue.shift();
-
-    return undefined;
   }
 
   /**
@@ -174,22 +187,10 @@ class ClientParty extends Party {
    */
   public async kick(member: string) {
     if (!this.me.isLeader) throw new PartyPermissionError();
-
-    const partyMember = this.members.find((m: PartyMember) => m.displayName === member || m.id === member);
+    if (!this.eosPartyId) throw new Error('Legacy Fortnite parties are not supported');
+    const partyMember = this.members.find((candidate: PartyMember) => candidate.displayName === member || candidate.id === member);
     if (!partyMember) throw new PartyMemberNotFoundError(member);
-
-    try {
-      await this.client.http.epicgamesRequest({
-        method: 'DELETE',
-        url: `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}`,
-      }, AuthSessionStoreKey.Fortnite);
-    } catch (e) {
-      if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.social.party.party_change_forbidden') {
-        throw new PartyPermissionError();
-      }
-
-      throw e;
-    }
+    await this.client.eosParty.removeMember(this.eosPartyId, partyMember.id);
   }
 
   /**
@@ -201,42 +202,16 @@ class ClientParty extends Party {
    * @throws {EpicgamesAPIError}
    */
   public async invite(friend: string) {
-    const resolvedFriend = this.client.friend.list.find((f: Friend) => f.id === friend || f.displayName === friend);
+    const resolvedFriend = this.client.friend.list.find((candidate: Friend) => candidate.id === friend || candidate.displayName === friend);
     if (!resolvedFriend) throw new FriendNotFoundError(friend);
-
+    if (!this.eosPartyId) throw new Error('Legacy Fortnite parties are not supported');
     if (this.members.has(resolvedFriend.id)) throw new PartyAlreadyJoinedError();
     if (this.size === this.maxSize) throw new PartyMaxSizeReachedError();
-
-    let invite;
-    if (this.isPrivate) {
-      invite = await this.client.http.epicgamesRequest({
-        method: 'POST',
-        url: `${Endpoints.BR_PARTY}/parties/${this.id}/invites/${resolvedFriend.id}?sendPing=true`,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        data: {
-          'urn:epic:cfg:build-id_s': this.client.config.partyBuildId,
-          'urn:epic:conn:platform_s': this.client.config.platform,
-          'urn:epic:conn:type_s': 'game',
-          'urn:epic:invite:platformdata_s': '',
-          'urn:epic:member:dn_s': this.client.user.self!.displayName,
-        },
-      }, AuthSessionStoreKey.Fortnite);
-    } else {
-      invite = await this.client.http.epicgamesRequest({
-        method: 'POST',
-        url: `${Endpoints.BR_PARTY}/user/${resolvedFriend.id}/pings/${this.client.user.self!.id}`,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        data: {
-          'urn:epic:invite:platformdata_s': '',
-        },
-      }, AuthSessionStoreKey.Fortnite);
-    }
-
-    return new SentPartyInvitation(this.client, this, this.client.user.self!, resolvedFriend, invite);
+    await this.client.eosParty.invite(resolvedFriend.id);
+    return new SentPartyInvitation(this.client, this, this.client.user.self!, resolvedFriend, {
+      sent_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 3600000).toISOString(),
+    });
   }
 
   /**
@@ -313,6 +288,14 @@ class ClientParty extends Party {
     }
 
     this.meta.remove(deleted);
+    if (this.eosPartyId) {
+      const state = await this.client.eosParty.getUserState();
+      await this.client.eosParty.setJoinability(
+        this.eosPartyId,
+        privacy.partyType === 'Private' ? 'INVITE_ONLY' : 'OPEN',
+        state.current?.revision ?? 0,
+      );
+    }
 
     if (sendPatch) await this.sendPatch(updated, deleted);
     this.config.privacy = {

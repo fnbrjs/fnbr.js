@@ -24,7 +24,7 @@ class PartyChat extends Base {
    * the party chat's conversation id
    */
   public get conversationId() {
-    return `p-${this.party.id}`;
+    return this.party.id;
   }
 
   /**

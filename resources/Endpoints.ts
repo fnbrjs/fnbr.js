@@ -24,12 +24,15 @@ export default Object.freeze({
   PUBLICKEY: 'https://publickey-service-prod.ecbc.live.use1a.on.epicgames.com/publickey',
 
   // EOS
-  EOS_STOMP: 'connect.epicgames.dev',
+  EOS_STOMP: 'connect.epicgames.dev/v2',
   EOS_TOKEN: 'https://api.epicgames.dev/epic/oauth/v2/token',
   EOS_TOKEN_INFO: 'https://api.epicgames.dev/epic/oauth/v2/tokenInfo',
   EOS_TOKEN_REVOKE: 'https://api.epicgames.dev/epic/oauth/v2/revoke',
   EOS_CHAT: 'https://api.epicgames.dev/epic/chat',
   EOS_PRESENCE: 'https://api.epicgames.dev/epic/presence/v1',
+  EOS_PARTY: 'https://api.epicgames.dev/epic/party',
+  EOS_PARTY_INTERNAL: 'https://api.epicgames.dev/epic/party/internal/v2',
+  EOS_USERS: 'https://api.epicgames.dev/auth/v1/users',
 
   // BATTLE ROYALE
   BR_STATS_V2: 'https://statsproxy-public-service-live.ol.epicgames.com/statsproxy/api/statsv2',
@@ -42,6 +45,7 @@ export default Object.freeze({
   BR_SAC_SEARCH: 'https://payment-website-pci.ol.epicgames.com/affiliate/search-by-slug',
   BR_SAC: 'https://affiliate-public-service-prod.ol.epicgames.com/affiliate/api/public/affiliates/slug',
   BR_PARTY: 'https://party-service-prod.ol.epicgames.com/party/api/v1/Fortnite',
+  BR_MATCHMAKING_REQUEST: 'https://fortnite-public-service-prod11.ol.epicgames.com/fortnite/api/matchmaking/session/matchMakingRequest',
   BR_TOURNAMENTS: 'https://events-public-service-live.ol.epicgames.com/api/v1/events/Fortnite/data',
   BR_TOURNAMENTS_DOWNLOAD: 'https://events-public-service-live.ol.epicgames.com/api/v1/events/Fortnite/download',
   BR_TOURNAMENT_WINDOW: 'https://events-public-service-live.ol.epicgames.com/api/v1/leaderboards/Fortnite',

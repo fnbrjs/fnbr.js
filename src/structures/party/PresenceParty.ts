@@ -65,12 +65,12 @@ class PresenceParty extends Base {
     super(client);
 
     this.isPrivate = typeof data.bIsPrivate === 'boolean' && data.bIsPrivate;
-    this.id = data.p;
+    this.id = data.partyId ?? data.p;
     this.size = data.pc;
-    this.appId = data.d;
-    this.buildId = data.b;
-    this.flags = data.f;
-    this.notAcceptingMembersReason = data.nAR;
+    this.appId = data.appId ?? data.d;
+    this.buildId = data.buildId ?? data.b;
+    this.flags = data.partyFlags ?? data.f;
+    this.notAcceptingMembersReason = data.notAcceptingReason ?? data.nAR;
   }
 
   /**

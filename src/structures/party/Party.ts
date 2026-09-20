@@ -1,5 +1,4 @@
 import { Collection } from '@discordjs/collection';
-import Endpoints from '../../../resources/Endpoints';
 import { PartyPrivacy } from '../../../enums/Enums';
 import Base from '../../Base';
 import PartyAlreadyJoinedError from '../../exceptions/PartyAlreadyJoinedError';
@@ -7,7 +6,6 @@ import { makeCamelCase, makeSnakeCase } from '../../util/Util';
 import ClientPartyMember from './ClientPartyMember';
 import PartyMember from './PartyMember';
 import PartyMeta from './PartyMeta';
-import { AuthSessionStoreKey } from '../../../resources/enums';
 import type Client from '../../Client';
 import type {
   PartyConfig, PartyData, PartySchema, PartyUpdateData,
@@ -48,6 +46,11 @@ class Party extends Base {
   public revision: number;
 
   /**
+   * Linked EOS Party v2 social-party ID.
+   */
+  public eosPartyId?: string;
+
+  /**
    * @param client The main client
    * @param data The party's data
    */
@@ -55,6 +58,7 @@ class Party extends Base {
     super(client);
 
     this.id = data.id;
+    this.eosPartyId = data.eosPartyId ?? Party.parseEOSPartyId(data.id);
     this.createdAt = new Date(data.created_at);
     this.config = makeCamelCase(data.config);
     this.config.privacy = this.config.joinability === 'OPEN' ? PartyPrivacy.PUBLIC : PartyPrivacy.PRIVATE;
@@ -119,58 +123,10 @@ class Party extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async join(skipRefresh = false) {
-    if (!skipRefresh) {
-      await this.fetch();
-    }
-
+    if (!skipRefresh) await this.fetch();
+    if (!this.eosPartyId) throw new Error('Legacy Fortnite parties are not supported');
     if (this.members.get(this.client.user.self!.id)) throw new PartyAlreadyJoinedError();
-
-    this.client.partyLock.lock();
-    if (this.client.party) await this.client.party.leave(false);
-
-    try {
-      await this.client.http.epicgamesRequest({
-        method: 'POST',
-        url: `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.client.user.self!.id}/join`,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        data: {
-          connection: {
-            id: this.client.xmpp.JID,
-            meta: {
-              'urn:epic:conn:platform_s': this.client.config.platform,
-              'urn:epic:conn:type_s': 'game',
-            },
-            yield_leadership: false,
-          },
-          meta: {
-            'urn:epic:member:dn_s': this.client.user.self!.displayName,
-            'urn:epic:member:joinrequestusers_j': JSON.stringify({
-              users: [
-                {
-                  id: this.client.user.self!.id,
-                  dn: this.client.user.self!.displayName,
-                  plat: this.client.config.platform,
-                  data: JSON.stringify({
-                    CrossplayPreference: '1',
-                    SubGame_u: '1',
-                  }),
-                },
-              ],
-            }),
-          },
-        },
-      }, AuthSessionStoreKey.Fortnite);
-    } catch (e) {
-      this.client.partyLock.unlock();
-      await this.client.initParty(true, false);
-
-      throw e;
-    }
-
-    this.client.setClientParty(this);
-    this.client.partyLock.unlock();
+    await this.client.joinParty(this.eosPartyId);
   }
 
   /**
@@ -237,9 +193,14 @@ class Party extends Base {
       invites: [],
       members: this.members.map((m: PartyMember) => m.toObject()),
       meta: this.meta.schema,
+      eosPartyId: this.eosPartyId,
       revision: 0,
       updated_at: new Date().toISOString(),
     };
+  }
+
+  private static parseEOSPartyId(lobbyId: string): string | undefined {
+    return /^([0-9a-f]{32})-\d+-[A-Za-z0-9_-]+$/i.exec(lobbyId)?.[1];
   }
 }
 

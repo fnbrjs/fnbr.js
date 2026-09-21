@@ -62,6 +62,12 @@ export const makeSnakeCase = (obj: { [key: string]: any }): any => {
 
 export const getRandomDefaultCharacter = () => defaultCharacters[Math.floor(Math.random() * defaultCharacters.length)];
 
+export const getEOSLobbyId = (eosPartyId: string, partyBuildId?: string) => {
+  const netCL = partyBuildId?.split(':').pop();
+  if (!netCL || !/^\d+$/.test(netCL)) throw new Error('EOS party operations require a numeric party build ID');
+  return `${eosPartyId}-${netCL}-default`;
+};
+
 export const createPartyInvitation = (clientUserId: string, pingerId: string, data: any) => {
   const member = data.members.find((m: any) => m.account_id === pingerId);
 

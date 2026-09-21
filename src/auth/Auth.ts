@@ -141,28 +141,28 @@ class Auth extends Base {
    * Accepts the Fortnite End User License Agreement (EULA)
    */
   private async acceptEULA() {
+    const accountId = this.sessions.get(AuthSessionStoreKey.Fortnite)!.accountId;
+
+    try {
+      await this.client.http.epicgamesRequest({
+        method: 'POST',
+        url: `${Endpoints.INIT_REQUESTACCESS}/${accountId}`,
+        data: {},
+      }, AuthSessionStoreKey.Fortnite);
+    } catch (e) {
+      if (!(e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.bad_request')) throw e;
+    }
+
     const EULAdata = await this.client.http.epicgamesRequest({
-      url: `${Endpoints.INIT_EULA}/account/${this.sessions.get(AuthSessionStoreKey.Fortnite)!.accountId}`,
+      url: `${Endpoints.INIT_EULA}/account/${accountId}`,
     }, AuthSessionStoreKey.Fortnite);
 
     if (!EULAdata) return { alreadyAccepted: true };
 
     await this.client.http.epicgamesRequest({
       method: 'POST',
-      url: `${Endpoints.INIT_EULA}/version/${EULAdata.version}/account/`
-        + `${this.sessions.get(AuthSessionStoreKey.Fortnite)!.accountId}/accept?locale=${EULAdata.locale}`,
+      url: `${Endpoints.INIT_EULA}/version/${EULAdata.version}/account/${accountId}/accept?locale=${EULAdata.locale}`,
     }, AuthSessionStoreKey.Fortnite);
-
-    try {
-      await this.client.http.epicgamesRequest({
-        method: 'POST',
-        url: `${Endpoints.INIT_GRANTACCESS}/${this.sessions.get(AuthSessionStoreKey.Fortnite)!.accountId}`,
-      }, AuthSessionStoreKey.Fortnite);
-    } catch (e) {
-      if (e instanceof EpicgamesAPIError && e.message === 'Client requested access grant but already has the requested access entitlement') {
-        return { alreadyAccepted: true };
-      }
-    }
 
     return { alreadyAccepted: false };
   }

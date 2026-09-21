@@ -1,7 +1,9 @@
 /* eslint-disable no-restricted-syntax */
 import { EventEmitter } from 'events';
 import Enums from '../enums/Enums';
-import { consoleQuestion, parseBlurlStream, parseM3U8File } from './util/Util';
+import {
+  consoleQuestion, getEOSLobbyId, parseBlurlStream, parseM3U8File,
+} from './util/Util';
 import Auth from './auth/Auth';
 import Http from './http/HTTP';
 import AsyncLock from './util/AsyncLock';
@@ -21,8 +23,6 @@ import Party from './structures/party/Party';
 import PartyNotFoundError from './exceptions/PartyNotFoundError';
 import PartyPermissionError from './exceptions/PartyPermissionError';
 import RadioStation from './structures/RadioStation';
-import ReceivedPartyInvitation from './structures/party/ReceivedPartyInvitation';
-import ReceivedPartyJoinRequest from './structures/party/ReceivedPartyJoinRequest';
 import SentPartyJoinRequest from './structures/party/SentPartyJoinRequest';
 import CreativeIslandNotFoundError from './exceptions/CreativeIslandNotFoundError';
 import Stats from './structures/Stats';
@@ -147,7 +147,6 @@ class Client extends EventEmitter {
    */
   public chat: ChatManager;
   private eosPartyKeepAliveTimer?: NodeJS.Timeout;
-  private partyRecreationInProgress = false;
 
   /**
    * @param config The client's configuration options
@@ -714,7 +713,11 @@ class Client extends EventEmitter {
       await this.eosParty.join(eosPartyId, privateConnectionId);
       joinedEOSParty = true;
       await this.eosParty.connect(eosPartyId, publicConnectionId);
-      const lobby = await this.eosParty.joinLobby(eosPartyId, this.getEOSLobbyId(eosPartyId), this.resolvePartyConfig());
+      const lobby = await this.eosParty.joinLobby(
+        eosPartyId,
+        getEOSLobbyId(eosPartyId, this.config.partyBuildId),
+        this.resolvePartyConfig(),
+      );
       this.party = new ClientParty(this, { ...lobby, eosPartyId });
       await this.stomp.patchInternalPresence(this.party);
       await this.setStatus();
@@ -748,7 +751,11 @@ class Client extends EventEmitter {
       const joinability = partyConfig.privacy.partyType === 'Private' ? 'INVITE_ONLY' : 'OPEN';
       await this.eosParty.setJoinability(eosPartyId, joinability, eosParty.revision);
       await this.eosParty.connect(eosPartyId, publicConnectionId);
-      const lobby = await this.eosParty.joinLobby(eosPartyId, this.getEOSLobbyId(eosPartyId), partyConfig);
+      const lobby = await this.eosParty.joinLobby(
+        eosPartyId,
+        getEOSLobbyId(eosPartyId, this.config.partyBuildId),
+        partyConfig,
+      );
       this.party = new ClientParty(this, { ...lobby, eosPartyId });
       const privacy = await this.party.setPrivacy(partyConfig.privacy, false);
       await this.party.sendPatch({ ...this.party.meta.schema, ...privacy.updated }, privacy.deleted);
@@ -802,7 +809,7 @@ class Client extends EventEmitter {
     try {
       const party = await this.http.epicgamesRequest({
         method: 'GET',
-        url: `${Endpoints.BR_PARTY}/parties/${this.getEOSLobbyId(state.current.id)}`,
+        url: `${Endpoints.BR_PARTY}/parties/${getEOSLobbyId(state.current.id, this.config.partyBuildId)}`,
       }, AuthSessionStoreKey.Fortnite);
       return new ClientParty(this, { ...party, eosPartyId: state.current.id });
     } catch (error) {
@@ -878,12 +885,6 @@ class Client extends EventEmitter {
     };
   }
 
-  private getEOSLobbyId(eosPartyId: string): string {
-    const netCL = this.config.partyBuildId?.split(':').pop();
-    if (!netCL || !/^\d+$/.test(netCL)) throw new Error('EOS party operations require a numeric party build ID');
-    return `${eosPartyId}-${netCL}-default`;
-  }
-
   private startEOSPartyKeepAlive(eosPartyId: string) {
     if (this.eosPartyKeepAliveTimer) this.clearInterval(this.eosPartyKeepAliveTimer);
     const timer = this.setInterval(() => {
@@ -896,110 +897,6 @@ class Client extends EventEmitter {
       });
     }, 60000);
     this.eosPartyKeepAliveTimer = timer;
-  }
-
-  private async recreateParty(party: ClientParty, partyDisbanded = false) {
-    if (this.partyRecreationInProgress) return;
-    this.partyRecreationInProgress = true;
-    try {
-      if (partyDisbanded) {
-        this.partyLock.lock();
-        try {
-          await this.http.epicgamesRequest({
-            method: 'DELETE',
-            url: `${Endpoints.BR_PARTY}/parties/${party.id}/members/${this.user.self!.id}`,
-          }, AuthSessionStoreKey.Fortnite);
-          if (this.party === party) {
-            this.party = undefined;
-            await this.stomp.patchInternalPresence();
-          }
-        } finally {
-          this.partyLock.unlock();
-        }
-      } else {
-        await party.leave(false);
-      }
-      await this.createParty();
-      if (this.party) this.emit('party:recreated', this.party);
-    } finally {
-      this.partyRecreationInProgress = false;
-    }
-  }
-
-  public async rebindEOSPartyConnection() {
-    const { party } = this;
-    if (!party?.eosPartyId || !this.stomp.publicConnectionId) return;
-    try {
-      await this.eosParty.connect(party.eosPartyId, this.stomp.publicConnectionId);
-    } catch {
-      await this.recreateParty(party);
-    }
-  }
-
-  public async handleEOSPartyNotification(type: string, payload: unknown) {
-    if (!payload || typeof payload !== 'object') return;
-    let partyId: string | undefined;
-    if ('party_id' in payload && typeof payload.party_id === 'string') partyId = payload.party_id;
-    else if ('partyId' in payload && typeof payload.partyId === 'string') partyId = payload.partyId;
-    if (type === 'party.v2.MEMBER_EXPIRED_PARTY_DISBANDED') {
-      const { party } = this;
-      if (!partyId || !party || party.eosPartyId !== partyId) return;
-      await this.recreateParty(party, true);
-      return;
-    }
-
-    let senderId: string | undefined;
-    if ('sent_by' in payload && typeof payload.sent_by === 'string') senderId = payload.sent_by;
-    else if ('senderId' in payload && typeof payload.senderId === 'string') senderId = payload.senderId;
-    if (type.includes('INVITE') && partyId && senderId && !/(EXPIRED|CANCEL|DECLINED|REMOVED)/.test(type)) {
-      const sender = this.friend.list.get(senderId);
-      if (!sender || this.listenerCount('party:invite') === 0) return;
-      const sentAt = 'sent_at' in payload && typeof payload.sent_at === 'string' ? payload.sent_at : new Date().toISOString();
-      let expiresAt = new Date(Date.now() + 3600000).toISOString();
-      if ('expires_at' in payload && typeof payload.expires_at === 'string') expiresAt = payload.expires_at;
-      const invitationParty: PartyData = {
-        id: this.getEOSLobbyId(partyId),
-        eosPartyId: partyId,
-        created_at: sentAt,
-        updated_at: sentAt,
-        config: {
-          type: 'DEFAULT',
-          joinability: 'OPEN',
-          discoverability: 'ALL',
-          sub_type: 'default',
-          max_size: 16,
-          invite_ttl: 3600,
-          join_confirmation: false,
-          intention_ttl: 60,
-        },
-        members: [],
-        meta: {},
-        invites: [],
-        revision: 0,
-      };
-      const party = new Party(this, invitationParty);
-      this.emit('party:invite', new ReceivedPartyInvitation(this, party, sender, this.user.self!, {
-        eosPartyId: partyId,
-        sent_at: sentAt,
-        expires_at: expiresAt,
-      }));
-      return;
-    }
-
-    let requesterId = senderId;
-    if ('requester_id' in payload && typeof payload.requester_id === 'string') requesterId = payload.requester_id;
-    else if ('requesterId' in payload && typeof payload.requesterId === 'string') requesterId = payload.requesterId;
-    if ((type.includes('JOIN_REQUEST') || type.includes('INTENTION')) && requesterId && !/(EXPIRED|CANCEL|DECLINED|REMOVED)/.test(type)) {
-      const sender = this.friend.list.get(requesterId);
-      if (!sender || this.listenerCount('party:joinrequest') === 0) return;
-      const sentAt = 'sent_at' in payload && typeof payload.sent_at === 'string' ? payload.sent_at : new Date().toISOString();
-      let expiresAt = new Date(Date.now() + 60000).toISOString();
-      if ('expires_at' in payload && typeof payload.expires_at === 'string') expiresAt = payload.expires_at;
-      this.emit('party:joinrequest', new ReceivedPartyJoinRequest(this, sender, this.user.self!, {
-        sent_at: sentAt,
-        expires_at: expiresAt,
-      }));
-    }
   }
 
   /**

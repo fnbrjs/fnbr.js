@@ -64,7 +64,7 @@ class PresenceParty extends Base {
   constructor(client: Client, data: PresencePartyData) {
     super(client);
 
-    this.isPrivate = typeof data.bIsPrivate === 'boolean' && data.bIsPrivate;
+    this.isPrivate = data.bIsPrivate ?? false;
     this.id = data.partyId ?? data.p;
     this.size = data.pc;
     this.appId = data.appId ?? data.d;

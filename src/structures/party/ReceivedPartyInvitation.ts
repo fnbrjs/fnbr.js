@@ -11,7 +11,6 @@ class ReceivedPartyInvitation extends BasePartyInvitation {
   public async accept() {
     if (this.isExpired || this.isHandled || !this.eosPartyId) throw new PartyInvitationExpiredError();
     await this.client.joinParty(this.eosPartyId);
-    await this.client.eosParty.deleteInvite(this.sender.id);
     this.isHandled = true;
   }
 

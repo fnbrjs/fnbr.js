@@ -14,7 +14,7 @@ export default Object.freeze({
 
   // INITIAL SETUP
   INIT_EULA: 'https://eulatracking-public-service-prod-m.ol.epicgames.com/eulatracking/api/public/agreements/fn',
-  INIT_GRANTACCESS: 'https://fngw-mcp-gc-livefn.ol.epicgames.com/fortnite/api/game/v2/grant_access',
+  INIT_REQUESTACCESS: 'https://fngw-mcp-gc-livefn.ol.epicgames.com/fortnite/api/storeaccess/v1/request_access',
 
   // XMPP
   XMPP_SERVER: 'xmpp-service-prod.ol.epicgames.com',

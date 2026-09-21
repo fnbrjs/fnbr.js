@@ -696,33 +696,6 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Sends a party join request to a friend.
-   * @param friend The friend that will receive the request
-   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
-   * @throws {EpicgamesAPIError}
-   */
-  public async sendRequestToJoin(friend: string) {
-    const resolvedFriend = this.friend.list.get(friend)
-      || this.friend.list.find((candidate: Friend) => candidate.displayName === friend);
-    if (!resolvedFriend) throw new FriendNotFoundError(friend);
-    await this.eosParty.sendJoinRequest(resolvedFriend.id);
-    return new SentPartyJoinRequest(this, this.user.self!, resolvedFriend, {
-      sent_at: new Date().toISOString(),
-      expires_at: new Date(Date.now() + 60000).toISOString(),
-    });
-  }
-
-  /**
-   * Leaves the current party.
-   * @param createNew Whether to create a replacement party
-   * @throws {PartyNotFoundError} The client is not in a party
-   */
-  public async leaveParty(createNew = true) {
-    if (!this.party) throw new PartyNotFoundError();
-    return this.party.leave(createNew);
-  }
-
-  /**
    * Joins an EOS Party v2 social party by EOS ID or linked lobby ID.
    */
   public async joinParty(id: string): Promise<void> {
@@ -752,39 +725,6 @@ class Client extends EventEmitter {
     } finally {
       this.partyLock.unlock();
     }
-  }
-
-  /**
-   * Fetches the current Fortnite party build ID from matchmaking.
-   * @throws {EpicgamesAPIError}
-   */
-  public async fetchPartyBuildId(): Promise<string> {
-    const matchmaking: FortniteMatchmakingResponse = await this.http.epicgamesRequest({
-      method: 'POST',
-      url: Endpoints.BR_MATCHMAKING_REQUEST,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      data: {
-        criteria: [],
-        openPlayersRequired: 1,
-        buildUniqueId: '',
-        maxResults: 1,
-      },
-    }, AuthSessionStoreKey.Fortnite);
-
-    const buildUniqueId = matchmaking?.[0]?.buildUniqueId;
-    if (typeof buildUniqueId !== 'string' && typeof buildUniqueId !== 'number') {
-      throw new Error('Matchmaking response did not contain a party build ID');
-    }
-
-    const netCL = String(buildUniqueId);
-    if (netCL.length === 0) {
-      throw new Error('Matchmaking response contained an empty party build ID');
-    }
-
-    this.config.partyBuildId = `1:3:${netCL}`;
-    return this.config.partyBuildId;
   }
 
   /**
@@ -822,6 +762,90 @@ class Client extends EventEmitter {
     } finally {
       this.partyLock.unlock();
     }
+  }
+
+  /**
+   * Leaves the current party.
+   * @param createNew Whether to create a replacement party
+   * @throws {PartyNotFoundError} The client is not in a party
+   */
+  public async leaveParty(createNew = true) {
+    if (!this.party) throw new PartyNotFoundError();
+    return this.party.leave(createNew);
+  }
+
+  /**
+   * Sends a party join request to a friend.
+   * @param friend The friend that will receive the request
+   * @throws {FriendNotFoundError} The user does not exist or is not friends with the client
+   * @throws {EpicgamesAPIError}
+   */
+  public async sendRequestToJoin(friend: string) {
+    const resolvedFriend = this.friend.list.get(friend)
+      || this.friend.list.find((candidate: Friend) => candidate.displayName === friend);
+    if (!resolvedFriend) throw new FriendNotFoundError(friend);
+    await this.eosParty.sendJoinRequest(resolvedFriend.id);
+    return new SentPartyJoinRequest(this, this.user.self!, resolvedFriend, {
+      sent_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 60000).toISOString(),
+    });
+  }
+
+  /**
+   * Fetches the client's party
+   * @throws {EpicgamesAPIError}
+   */
+  public async getClientParty() {
+    const state = await this.eosParty.getUserState();
+    if (!state.current) return undefined;
+    if (this.config.partyBuildId === undefined) await this.fetchPartyBuildId();
+    try {
+      const party = await this.http.epicgamesRequest({
+        method: 'GET',
+        url: `${Endpoints.BR_PARTY}/parties/${this.getEOSLobbyId(state.current.id)}`,
+      }, AuthSessionStoreKey.Fortnite);
+      return new ClientParty(this, { ...party, eosPartyId: state.current.id });
+    } catch (error) {
+      if (error instanceof EpicgamesAPIError && error.code === 'errors.com.epicgames.social.party.party_not_found') return undefined;
+      throw error;
+    }
+  }
+
+  /**
+   * Fetches a party by its id
+   * @param id The party's id
+   * @param raw Whether to return the raw party data
+   * @throws {PartyNotFoundError} The party wasn't found
+   * @throws {PartyPermissionError} The party cannot be fetched due to a permission error
+   * @throws {EpicgamesAPIError}
+   */
+  public async getParty(id: string, raw = false): Promise<Party | PartyData> {
+    let party;
+    try {
+      party = await this.http.epicgamesRequest({
+        method: 'GET',
+        url: `${Endpoints.BR_PARTY}/parties/${id}`,
+      }, AuthSessionStoreKey.Fortnite);
+    } catch (e) {
+      if (e instanceof EpicgamesAPIError) {
+        if (e.code === 'errors.com.epicgames.social.party.party_not_found') {
+          throw new PartyNotFoundError();
+        }
+
+        if (e.code === 'errors.com.epicgames.social.party.party_query_forbidden') {
+          throw new PartyPermissionError();
+        }
+      }
+
+      throw e;
+    }
+
+    if (raw) return party;
+
+    const constuctedParty = new Party(this, party);
+    await constuctedParty.updateMemberBasicInfo();
+
+    return constuctedParty;
   }
 
   private requireEOSPartyConnections() {
@@ -979,60 +1003,36 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Fetches the client's party
+   * Fetches the current Fortnite party build ID from matchmaking.
    * @throws {EpicgamesAPIError}
    */
-  public async getClientParty() {
-    const state = await this.eosParty.getUserState();
-    if (!state.current) return undefined;
-    if (this.config.partyBuildId === undefined) await this.fetchPartyBuildId();
-    try {
-      const party = await this.http.epicgamesRequest({
-        method: 'GET',
-        url: `${Endpoints.BR_PARTY}/parties/${this.getEOSLobbyId(state.current.id)}`,
-      }, AuthSessionStoreKey.Fortnite);
-      return new ClientParty(this, { ...party, eosPartyId: state.current.id });
-    } catch (error) {
-      if (error instanceof EpicgamesAPIError && error.code === 'errors.com.epicgames.social.party.party_not_found') return undefined;
-      throw error;
-    }
-  }
+  public async fetchPartyBuildId(): Promise<string> {
+    const matchmaking: FortniteMatchmakingResponse = await this.http.epicgamesRequest({
+      method: 'POST',
+      url: Endpoints.BR_MATCHMAKING_REQUEST,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: {
+        criteria: [],
+        openPlayersRequired: 1,
+        buildUniqueId: '',
+        maxResults: 1,
+      },
+    }, AuthSessionStoreKey.Fortnite);
 
-  /**
-   * Fetches a party by its id
-   * @param id The party's id
-   * @param raw Whether to return the raw party data
-   * @throws {PartyNotFoundError} The party wasn't found
-   * @throws {PartyPermissionError} The party cannot be fetched due to a permission error
-   * @throws {EpicgamesAPIError}
-   */
-  public async getParty(id: string, raw = false): Promise<Party | PartyData> {
-    let party;
-    try {
-      party = await this.http.epicgamesRequest({
-        method: 'GET',
-        url: `${Endpoints.BR_PARTY}/parties/${id}`,
-      }, AuthSessionStoreKey.Fortnite);
-    } catch (e) {
-      if (e instanceof EpicgamesAPIError) {
-        if (e.code === 'errors.com.epicgames.social.party.party_not_found') {
-          throw new PartyNotFoundError();
-        }
-
-        if (e.code === 'errors.com.epicgames.social.party.party_query_forbidden') {
-          throw new PartyPermissionError();
-        }
-      }
-
-      throw e;
+    const buildUniqueId = matchmaking?.[0]?.buildUniqueId;
+    if (typeof buildUniqueId !== 'string' && typeof buildUniqueId !== 'number') {
+      throw new Error('Matchmaking response did not contain a party build ID');
     }
 
-    if (raw) return party;
+    const netCL = String(buildUniqueId);
+    if (netCL.length === 0) {
+      throw new Error('Matchmaking response contained an empty party build ID');
+    }
 
-    const constuctedParty = new Party(this, party);
-    await constuctedParty.updateMemberBasicInfo();
-
-    return constuctedParty;
+    this.config.partyBuildId = `1:3:${netCL}`;
+    return this.config.partyBuildId;
   }
 
   /* -------------------------------------------------------------------------- */

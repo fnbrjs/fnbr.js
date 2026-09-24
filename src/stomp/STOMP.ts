@@ -17,6 +17,7 @@ import STOMPConnectionError from '../exceptions/STOMPConnectionError';
 import { decodeRawData, decodeSTOMPMessageBody } from '../util/Util';
 import FriendPresence from '../structures/friend/FriendPresence';
 import PresenceParty from '../structures/party/PresenceParty';
+import STOMPMessageDedupe from './STOMPMessageDedupe';
 import type Party from '../structures/party/Party';
 import type ClientParty from '../structures/party/ClientParty';
 import type { StompMessageData } from './STOMPMessage';
@@ -43,6 +44,7 @@ class STOMP extends Base {
   private pingInterval?: NodeJS.Timeout;
   private connectionRetryCount = 0;
   private partyEventQueue = new AsyncQueue();
+  private handledMessages = new STOMPMessageDedupe(100);
 
   public get isConnected() {
     return this.connection?.readyState === WebSocket.OPEN;
@@ -154,7 +156,7 @@ class STOMP extends Base {
 
       if (data.type.startsWith('party.v2.') && this.client.config.disablePartyService) return;
 
-      this.client.emit('stomp:message', message.body);
+      this.client.emit('stomp:message', data);
 
       switch (data.type) {
         case 'core.connect.v1.connected':
@@ -177,7 +179,7 @@ class STOMP extends Base {
           break;
 
         case 'social.chat.v1.NEW_WHISPER':
-          await this.handleFriendMessage(data.payload.message, data.id);
+          await this.handleFriendMessage(data.payload.message, data.id!);
           break;
 
         case 'social.chat.v1.NEW_MESSAGE':
@@ -297,13 +299,17 @@ class STOMP extends Base {
   private async handleFriendMessage(message: { senderId: string; body: string; time: number }, id?: string) {
     if (message.senderId === this.client.user.self!.id) return;
 
+    const ensuredId = id ?? `${message.senderId}:${message.time}`;
+    if (this.handledMessages.hasHandled(ensuredId)) return;
+    this.handledMessages.markHandled(ensuredId);
+
     const friend = await this.client.waitForFriend(message.senderId);
     if (!friend) return;
 
     this.client.emit('friend:message', new ReceivedFriendMessage(this.client, {
       content: decodeSTOMPMessageBody(message.body),
       author: friend,
-      id: id || `${message.senderId}:${message.time}`,
+      id: ensuredId,
       sentAt: new Date(message.time),
     }));
   }
@@ -318,6 +324,10 @@ class STOMP extends Base {
 
     if (conversation.type !== 'epic_party' || this.client.config.disablePartyService) return;
 
+    const id = data.id ?? `${message.senderId}:${message.time}`;
+    if (this.handledMessages.hasHandled(id)) return;
+    this.handledMessages.markHandled(id);
+
     await this.client.partyLock.wait();
     const eosPartyId = conversation.conversationId.replace(/^ep-/, '');
     if (!this.client.party || this.client.party.eosId !== eosPartyId
@@ -330,7 +340,7 @@ class STOMP extends Base {
       content: decodeSTOMPMessageBody(message.body),
       author,
       sentAt: new Date(message.time),
-      id: data.id || `${message.senderId}:${message.time}`,
+      id,
       party: this.client.party,
     }));
   }

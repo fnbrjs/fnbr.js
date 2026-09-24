@@ -528,15 +528,15 @@ export interface ClientEvents {
 
   /**
    * Emitted for an incoming XMPP notification.
-   * @param body The raw message body
+   * @param body The message body
    */
-  'xmpp:message': (body: string) => void;
+  'xmpp:message': (body: any) => void;
 
   /**
    * Emitted for an incoming STOMP notification.
-   * @param body The raw message body
+   * @param body The message body
    */
-  'stomp:message': (body: string) => void;
+  'stomp:message': (body: any) => void;
 
   /**
    * Emitted when an error occures while processing an incoming xmpp message

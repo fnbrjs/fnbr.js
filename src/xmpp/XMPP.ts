@@ -165,7 +165,7 @@ class XMPP extends Base {
 
       if (!body.type) return;
 
-      this.client.emit('xmpp:message', m.body);
+      this.client.emit('xmpp:message', body);
 
       try {
         switch (body.type) {

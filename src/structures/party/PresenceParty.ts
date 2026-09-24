@@ -1,8 +1,7 @@
 import Base from '../../Base';
 import PartyPermissionError from '../../exceptions/PartyPermissionError';
-import type { PresencePartyData } from '../../../resources/structs';
+import type { FortnitePartyPresenceData } from '../../../resources/structs';
 import type Client from '../../Client';
-import type Party from './Party';
 
 /**
  * Represents a party received by a friend's presence
@@ -61,7 +60,7 @@ class PresenceParty extends Base {
    * @param client The main client
    * @param data The presence party's data
    */
-  constructor(client: Client, data: PresencePartyData) {
+  constructor(client: Client, data: FortnitePartyPresenceData) {
     super(client);
 
     this.isPrivate = data.bIsPrivate ?? false;
@@ -93,7 +92,7 @@ class PresenceParty extends Base {
   public async fetch() {
     if (this.isPrivate || !this.id) throw new PartyPermissionError();
 
-    return this.client.getParty(this.id) as Promise<Party>;
+    return this.client.getParty(this.id);
   }
 }
 

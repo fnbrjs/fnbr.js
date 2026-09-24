@@ -3,29 +3,24 @@ import { createClient as createStanzaClient } from 'stanza';
 import crypto from 'crypto';
 import Base from '../Base';
 import Endpoints from '../../resources/Endpoints';
-import PartyMessage from '../structures/party/PartyMessage';
 import Friend from '../structures/friend/Friend';
 import IncomingPendingFriend from '../structures/friend/IncomingPendingFriend';
 import OutgoingPendingFriend from '../structures/friend/OutgoingPendingFriend';
 import BlockedUser from '../structures/user/BlockedUser';
-import ClientPartyMember from '../structures/party/ClientPartyMember';
-import PartyMember from '../structures/party/PartyMember';
-import PartyMemberNotFoundError from '../exceptions/PartyMemberNotFoundError';
 import PartyMemberConfirmation from '../structures/party/PartyMemberConfirmation';
-import ReceivedFriendMessage from '../structures/friend/ReceivedFriendMessage';
-import PartyMemberMeta from '../structures/party/PartyMemberMeta';
 import { AuthSessionStoreKey } from '../../resources/enums';
 import AuthenticationMissingError from '../exceptions/AuthenticationMissingError';
 import XMPPConnectionTimeoutError from '../exceptions/XMPPConnectionTimeoutError';
 import XMPPConnectionError from '../exceptions/XMPPConnectionError';
+import XMPPMetadataStore from './XMPPMetadataStore';
 import type { Agent } from 'stanza';
-import type Client from '../Client';
 
 /**
  * Represents the client's XMPP manager
  * @private
  */
 class XMPP extends Base {
+  public readonly metadataStore = new XMPPMetadataStore(this.client);
   /**
    * XMPP agent
    */
@@ -34,23 +29,7 @@ class XMPP extends Base {
   /**
    * The amount of times the XMPP agent has tried to reconnect
    */
-  private connectionRetryCount: number;
-
-  /**
-   * The time the XMPP agent connected at
-   */
-  private connectedAt?: number;
-
-  /**
-   * @param client The main client
-   */
-  constructor(client: Client) {
-    super(client);
-
-    this.connection = undefined;
-    this.connectedAt = undefined;
-    this.connectionRetryCount = 0;
-  }
+  private connectionRetryCount = 0;
 
   /**
    * Whether the XMPP agent is connected
@@ -116,8 +95,6 @@ class XMPP extends Base {
         this.client.debug(`[XMPP] Successfully connected (${((Date.now() - connectionStartTime) / 1000).toFixed(2)}s)`);
         this.connectionRetryCount = 0;
 
-        this.connectedAt = Date.now();
-
         if (sendStatusWhenConnected) this.client.setStatus();
 
         res();
@@ -137,6 +114,7 @@ class XMPP extends Base {
    * Also performs a cleanup
    */
   public disconnect() {
+    this.metadataStore.clear();
     if (!this.connection) return;
 
     this.connection.disableKeepAlive();
@@ -173,47 +151,6 @@ class XMPP extends Base {
     this.connection!.on('raw:incoming', (raw) => this.client.debug(`IN ${raw}`, 'xmpp'));
     this.connection!.on('raw:outgoing', (raw) => this.client.debug(`OUT ${raw}`, 'xmpp'));
 
-    this.connection!.on('groupchat', async (m) => {
-      try {
-        if (this.client.stomp.isConnected) return;
-        await this.client.partyLock.wait();
-
-        const partyId = m.from.split('@')[0].replace('Party-', '');
-        if (!this.client.party || this.client.party.id !== partyId) return;
-        if (m.body === 'Welcome! You created new Multi User Chat Room.') return;
-
-        const [, authorId] = m.from.split(':');
-        if (authorId === this.client.user.self!.id) return;
-
-        const authorMember = this.client.party.members.get(authorId);
-        if (!authorMember) return;
-
-        const partyMessage = new PartyMessage(this.client, {
-          content: m.body ?? '', author: authorMember, sentAt: new Date(), id: m.id as string, party: this.client.party,
-        });
-
-        this.client.emit('party:member:message', partyMessage);
-      } catch (err: any) {
-        this.client.debug(`[XMPP] Error while processing party chat message: ${err.name} - ${err.message}`);
-        this.client.emit('xmpp:chat:error', err);
-      }
-    });
-
-    this.connection!.on('chat', async (m) => {
-      try {
-        const friend = await this.waitForFriend(m.from.split('@')[0]);
-        if (!friend) return;
-        const message = new ReceivedFriendMessage(this.client, {
-          content: m.body || '', author: friend, id: m.id as string, sentAt: new Date(),
-        });
-
-        this.client.emit('friend:message', message);
-      } catch (err: any) {
-        this.client.debug(`[XMPP] Error while processing friend whisper message: ${err.name} - ${err.message}`);
-        this.client.emit('xmpp:chat:error', err);
-      }
-    });
-
     this.connection!.on('message', async (m) => {
       if (m.type && m.type !== 'normal') return;
       if (!m.body) return;
@@ -227,6 +164,8 @@ class XMPP extends Base {
       }
 
       if (!body.type) return;
+
+      this.client.emit('xmpp:message', m.body);
 
       try {
         switch (body.type) {
@@ -299,7 +238,7 @@ class XMPP extends Base {
               this.client.friend.pendingList.delete(pendingFriend.id);
               this.client.emit('friend:request:declined', pendingFriend);
             } else if (reason === 'DELETED') {
-              const friend = await this.waitForFriend(accountId);
+              const friend = await this.client.waitForFriend(accountId);
               if (!friend) break;
 
               this.client.friend.list.delete(friend.id);
@@ -327,175 +266,21 @@ class XMPP extends Base {
             }
           } break;
 
-          case 'com.epicgames.social.party.notification.v0.MEMBER_JOINED': {
-            if (this.client.config.disablePartyService) break;
-            await this.client.partyLock.wait();
-            if (!this.client.party || this.client.party.id !== body.party_id) break;
-
-            const memberId = body.account_id;
-
-            if (memberId === this.client.user.self!.id) {
-              if (!this.client.party.me) this.client.party.members.set(memberId, new ClientPartyMember(this.client.party, body));
-              await this.client.party.me.sendPatch(this.client.party.me.meta.schema);
-            } else {
-              this.client.party.members.set(memberId, new PartyMember(this.client.party, body));
-            }
-
-            const member = this.client.party.members.get(memberId);
-            if (!member) break;
-            if (!member.displayName) await member.fetch();
-
-            this.client.setStatus();
-            if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
-
-            try {
-              await this.client.waitForEvent('party:member:updated', 2000, (um) => um.id === member.id);
-            } catch (err) {
-              // ignore. meta will be partly undefined, but usually, if this takes longer than 2 seconds, something else went wrong
-            }
-
-            this.client.emit('party:member:joined', member);
-          } break;
-
+          case 'com.epicgames.social.party.notification.v0.MEMBER_JOINED':
           case 'com.epicgames.social.party.notification.v0.MEMBER_STATE_UPDATED': {
             if (this.client.config.disablePartyService) break;
             await this.client.partyLock.wait();
-            if (!this.client.party || this.client.party.id !== body.party_id) return;
+            const { party } = this.client;
+            if (!party || party.id !== body.party_id || typeof body.account_id !== 'string') break;
 
-            const memberId = body.account_id;
-            const member = this.client.party.members.get(memberId);
-            if (!member) throw new PartyMemberNotFoundError(memberId);
-
-            if (member.receivedInitialStateUpdate) {
-              const newMeta = new PartyMemberMeta({ ...member.meta.schema });
-              newMeta.update(body.member_state_updated, true);
-
-              if (newMeta.outfit !== member.meta.outfit) {
-                this.client.emit('party:member:outfit:updated', member, newMeta.outfit, member.meta.outfit);
-              }
-
-              if (newMeta.backpack !== member.meta.backpack) {
-                this.client.emit('party:member:backpack:updated', member, newMeta.backpack, member.meta.backpack);
-              }
-
-              if (newMeta.pickaxe !== member.meta.pickaxe) {
-                this.client.emit('party:member:pickaxe:updated', member, newMeta.pickaxe, member.meta.pickaxe);
-              }
-
-              if (newMeta.emote !== member.meta.emote) {
-                this.client.emit('party:member:emote:updated', member, newMeta.emote, member.meta.emote);
-              }
-
-              if (newMeta.isReady !== member.meta.isReady) {
-                this.client.emit('party:member:readiness:updated', member, newMeta.isReady, member.meta.isReady);
-              }
-
-              if (JSON.stringify(newMeta.match) !== JSON.stringify(member.meta.match)) {
-                this.client.emit('party:member:matchstate:updated', member, newMeta.match, member.meta.match);
-              }
-            }
-
-            member.updateData(body);
-            member.receivedInitialStateUpdate = true;
-            this.client.emit('party:member:updated', member);
-          } break;
-
-          case 'com.epicgames.social.party.notification.v0.MEMBER_LEFT': {
-            if (this.client.config.disablePartyService) break;
-            await this.client.partyLock.wait();
-            if (!this.client.party || this.client.party.id !== body.party_id) break;
-
-            const memberId = body.account_id;
-            const member = this.client.party.members.get(memberId);
-            if (!member) {
-              if (this.client.party.pendingMemberConfirmations.has(memberId)) {
-                this.client.party.pendingMemberConfirmations.delete(memberId);
-                break;
-              }
-
-              throw new PartyMemberNotFoundError(memberId);
-            }
-
-            if (memberId === this.client.user.self!.id) {
-              await this.client.initParty(true, false);
-              break;
-            }
-
-            this.client.party.members.delete(member.id);
-            this.client.setStatus();
-            if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
-
-            this.client.emit('party:member:left', member);
-          } break;
-
-          case 'com.epicgames.social.party.notification.v0.MEMBER_EXPIRED': {
-            if (this.client.config.disablePartyService) break;
-            await this.client.partyLock.wait();
-            if (!this.client.party || this.client.party.id !== body.party_id
-              || body.account_id === this.client.user.self!.id) break;
-
-            const memberId = body.account_id;
-            const member = this.client.party.members.get(memberId);
-            if (!member) return;
-
-            this.client.party.members.delete(member.id);
-            this.client.setStatus();
-            if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
-
-            this.client.emit('party:member:expired', member);
-          } break;
-
-          case 'com.epicgames.social.party.notification.v0.MEMBER_KICKED': {
-            if (this.client.config.disablePartyService) break;
-            await this.client.partyLock.wait();
-            if (!this.client.party || this.client.party.id !== body.party_id) break;
-
-            const memberId = body.account_id;
-            const member = this.client.party.members.get(memberId);
-            if (!member) throw new PartyMemberNotFoundError(memberId);
-
-            if (member.id === this.client.user.self!.id) {
-              this.client.party = undefined;
-              await this.client.initParty(true, false);
-            } else {
-              this.client.party.members.delete(member.id);
-              this.client.setStatus();
-              if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
-            }
-
-            this.client.emit('party:member:kicked', member);
-          } break;
-
-          case 'com.epicgames.social.party.notification.v0.MEMBER_DISCONNECTED': {
-            if (this.client.config.disablePartyService) break;
-            await this.client.partyLock.wait();
-            if (!this.client.party || this.client.party.id !== body.party_id) break;
-
-            const memberId = body.account_id;
-            const member = this.client.party.members.get(memberId);
-            if (!member) throw new PartyMemberNotFoundError(memberId);
-
-            this.client.party.members.delete(member.id);
-            this.client.setStatus();
-            if (this.client.party.me.isLeader) await this.client.party.refreshSquadAssignments();
-            this.client.emit('party:member:disconnected', member);
-          } break;
-
-          case 'com.epicgames.social.party.notification.v0.MEMBER_NEW_CAPTAIN': {
-            if (this.client.config.disablePartyService) break;
-            await this.client.partyLock.wait();
-            if (!this.client.party || this.client.party.id !== body.party_id) break;
-
-            if (this.client.party.leader) this.client.party.leader.role = '';
-
-            const memberId = body.account_id;
-            const member = this.client.party.members.get(memberId);
-            if (!member) throw new PartyMemberNotFoundError(memberId);
-
-            member.role = 'CAPTAIN';
-            this.client.setStatus();
-
-            this.client.emit('party:member:promoted', member);
+            this.metadataStore.handleMemberMetadata(party, {
+              account_id: body.account_id,
+              account_dn: body.account_dn,
+              revision: body.revision,
+              member_state_updated: body.member_state_updated,
+              member_state_removed: body.type === 'com.epicgames.social.party.notification.v0.MEMBER_JOINED'
+                ? [] : body.member_state_removed,
+            });
           } break;
 
           case 'com.epicgames.social.party.notification.v0.PARTY_UPDATED':
@@ -503,12 +288,14 @@ class XMPP extends Base {
             await this.client.partyLock.wait();
             if (!this.client.party || this.client.party.id !== body.party_id) break;
 
-            this.client.party.updateData(body);
-            this.client.setStatus();
+            this.client.party.updateFortniteData(body);
 
             this.client.emit('party:updated', this.client.party);
+
+            await this.client.setStatus();
             break;
 
+          // Unsure if this is still used, keeping for now
           case 'com.epicgames.social.party.notification.v0.MEMBER_REQUIRE_CONFIRMATION': {
             if (this.client.config.disablePartyService) break;
             await this.client.partyLock.wait();
@@ -532,24 +319,6 @@ class XMPP extends Base {
         this.client.emit('xmpp:message:error', err);
       }
     });
-  }
-
-  /**
-   * Waits for a friend to be added to the clients cache
-   */
-  public async waitForFriend(id: string) {
-    const cachedFriend = this.client.friend.list.get(id);
-    if (cachedFriend) return cachedFriend;
-
-    try {
-      this.client.setMaxListeners(this.client.getMaxListeners() + 1);
-      const friend = await this.client.waitForEvent('friend:added', 5000, (f) => f.id === id);
-      return friend[0];
-    } catch (e) {
-      return undefined;
-    } finally {
-      this.client.setMaxListeners(this.client.getMaxListeners() - 1);
-    }
   }
 }
 

@@ -1,28 +1,34 @@
+import { AsyncQueue } from '@sapphire/async-queue';
 import WebSocket from 'ws';
 import Base from '../Base';
-import { AuthSessionStoreKey } from '../../resources/enums';
+import { AuthSessionStoreKey, RetryDecision } from '../../resources/enums';
 import AuthenticationMissingError from '../exceptions/AuthenticationMissingError';
+import RetryAbandonedError from '../exceptions/RetryAbandonedError';
 import Endpoints from '../../resources/Endpoints';
 import ReceivedFriendMessage from '../structures/friend/ReceivedFriendMessage';
-import Party from '../structures/party/Party';
+import PartyMember from '../structures/party/PartyMember';
+import ClientPartyMember from '../structures/party/ClientPartyMember';
 import PartyMessage from '../structures/party/PartyMessage';
 import ReceivedPartyInvitation from '../structures/party/ReceivedPartyInvitation';
 import ReceivedPartyJoinRequest from '../structures/party/ReceivedPartyJoinRequest';
 import STOMPConnectionTimeoutError from '../exceptions/STOMPConnectionTimeoutError';
 import STOMPMessage from './STOMPMessage';
 import STOMPConnectionError from '../exceptions/STOMPConnectionError';
-import { decodeSTOMPMessageBody, getEOSLobbyId } from '../util/Util';
+import { decodeRawData, decodeSTOMPMessageBody } from '../util/Util';
 import FriendPresence from '../structures/friend/FriendPresence';
 import PresenceParty from '../structures/party/PresenceParty';
+import type Party from '../structures/party/Party';
+import type ClientParty from '../structures/party/ClientParty';
 import type { StompMessageData } from './STOMPMessage';
 import type {
-  EOSConnectMessage, EOSPartyDisbandedData, EOSPartyInviteData, EOSPartyJoinRequestData,
-  EOSPresencePropsInGame, PresenceOnlineType, PresencePartyData,
+  EOSConnectMessage, EOSPartyInviteData, EOSPartyJoinRequestData, EOSPartyMemberUpdateData,
+  EOSPresencePropsInGame, PresenceOnlineType, FortnitePartyPresenceData,
+  FortnitePartyMemberData, EOSPartyUpdateData,
 } from '../../resources/structs';
-import type ClientParty from '../structures/party/ClientParty';
 
-const INVITATION_EXPIRATION_MS = 60 * 60 * 1000;
 const JOIN_REQUEST_EXPIRATION_MS = 60 * 1000;
+
+type EOSPartyScopedData = Pick<EOSPartyMemberUpdateData, 'party_id'>;
 
 /**
  * Represents the client's EOS Connect STOMP manager (i.e. chat messages)
@@ -36,7 +42,7 @@ class STOMP extends Base {
   private privateSubscriptionId?: string;
   private pingInterval?: NodeJS.Timeout;
   private connectionRetryCount = 0;
-  private partyRecreationInProgress = false;
+  private partyEventQueue = new AsyncQueue();
 
   public get isConnected() {
     return this.connection?.readyState === WebSocket.OPEN;
@@ -102,9 +108,7 @@ class STOMP extends Base {
 
       this.connectionRetryCount += 1;
 
-      const retryDelay = Promise.withResolvers<void>();
-      setTimeout(retryDelay.resolve, 5000);
-      await retryDelay.promise;
+      await new Promise((res) => setTimeout(res, 5000));
 
       try {
         await this.connect();
@@ -115,32 +119,42 @@ class STOMP extends Base {
     });
 
     this.connection!.on('message', async (raw: WebSocket.RawData) => {
-      const text = STOMP.decodeRawData(raw);
+      const text = decodeRawData(raw);
       const message = STOMPMessage.fromString(text);
+
       if (message.command === 'CONNECTED') {
         this.subscribeEAS(message.headers.session);
         return;
       }
-      if ((message.command !== 'MESSAGE' && message.command !== 'ERROR') || !message.body) return;
-      let parsed: unknown;
+
+      if (!message.body) return;
+      if (message.command !== 'MESSAGE' && message.command !== 'ERROR') return;
+
+      let data: unknown;
       try {
-        parsed = JSON.parse(message.body);
+        data = JSON.parse(message.body);
       } catch {
         this.client.debug(`[STOMP] Invalid message body: ${message.body}`);
         return;
       }
+
       if (message.command === 'ERROR') {
-        if (STOMP.isAuthenticationErrorFrame(parsed)) {
+        if (STOMP.isAuthenticationErrorFrame(data)) {
           this.client.debug('[STOMP] Authentication token is invalid; reconnecting...');
           this.connection?.close();
         }
+
         return;
       }
-      if (!STOMP.isEOSConnectMessage(parsed)) {
+
+      if (!STOMP.isEOSConnectMessage(data)) {
         this.client.debug(`[STOMP] Invalid message body: ${message.body}`);
         return;
       }
-      const data = parsed;
+
+      if (data.type.startsWith('party.v2.') && this.client.config.disablePartyService) return;
+
+      this.client.emit('stomp:message', message.body);
 
       switch (data.type) {
         case 'core.connect.v1.connected':
@@ -156,39 +170,75 @@ class STOMP extends Base {
           this.client.debug(`[STOMP] Successfully connected (${((Date.now() - connectionStartTime) / 1000).toFixed(2)}s)`);
           resolve();
           break;
+
         case 'core.connect.v1.connect-failed':
           clearTimeout(connectionTimeout);
           reject(new STOMPConnectionError(data.message, data.statusCode));
           break;
+
         case 'social.chat.v1.NEW_WHISPER':
           await this.handleFriendMessage(data.payload.message, data.id);
           break;
+
         case 'social.chat.v1.NEW_MESSAGE':
           await this.handleChatMessage(data);
           break;
+
         case 'presence.v1.UPDATE':
           await this.handlePresence(data);
           break;
-        case 'party.v2.MEMBER_EXPIRED_PARTY_DISBANDED':
-          await this.handlePartyDisbanded(data.payload);
+
+        case 'party.v2.MEMBER_JOINED':
+          await this.handlePartyMemberJoined(data.payload);
           break;
+
+        case 'party.v2.MEMBER_LEFT':
+          await this.handlePartyMemberRemoved(data.payload);
+          break;
+
+        // Ignore, handled by XMPP
+        case 'party.v2.MEMBER_STATE_UPDATED':
+          break;
+
+        // A disconnect can recover; keep the roster until EOS expires the member.
+        case 'party.v2.MEMBER_DISCONNECTED':
+          break;
+
+        case 'party.v2.MEMBER_EXPIRED_AFTER_DISCONNECT':
+          await this.handlePartyMemberRemoved(data.payload, 'party:member:expired');
+          break;
+
+        // Not needed, already handled by member leave and kick events
+        case 'party.v2.MEMBER_EXPIRED_PARTY_DISBANDED':
+          break;
+
+        // Ignore, not needed
+        case 'party.v2.MEMBER_CONNECTED':
+        case 'party.v2.MEMBER_REFRESH_SUMMARY':
+          break;
+
+        case 'party.v2.PARTY_UPDATED':
+          await this.handlePartyUpdated(data.payload);
+          break;
+
+        case 'party.v2.MEMBER_KICKED':
+          await this.handlePartyKicked(data.payload);
+          break;
+
         case 'party.v2.INVITE':
         case 'party.v2.INVITE_CREATED':
           await this.handlePartyInvite(data.payload);
           break;
+
+        // Ignore for now
+        case 'party.v2.INVITE_EXPIRED':
+          break;
+
         case 'party.v2.JOIN_REQUEST':
         case 'party.v2.INTENTION':
           await this.handlePartyJoinRequest(data.payload);
           break;
-        case 'party.v2.JOIN_REQUEST_EXPIRED':
-        case 'party.v2.JOIN_REQUEST_CANCELLED':
-        case 'party.v2.JOIN_REQUEST_CANCELED':
-        case 'party.v2.JOIN_REQUEST_DECLINED':
-        case 'party.v2.INTENTION_EXPIRED':
-        case 'party.v2.INTENTION_CANCELLED':
-        case 'party.v2.INTENTION_CANCELED':
-        case 'party.v2.INTENTION_DECLINED':
-          break;
+
         default:
           this.client.debug(`[STOMP] Unknown message type: ${data.type}`);
           break;
@@ -198,11 +248,18 @@ class STOMP extends Base {
 
   private subscribeEAS(sessionId?: string) {
     const suffix = Math.floor(Math.random() * 0xffffffff).toString(16);
+
     this.publicSubscriptionId = `sub-eas-${suffix}`;
     this.privateSubscriptionId = `sub-eas-private-${suffix}`;
+
     const token = this.client.auth.sessions.get(AuthSessionStoreKey.FortniteEOS)!.accessToken;
     const destination = `deploymentId/${this.client.config.eosDeploymentId}/epicAccountId/${this.client.user.self!.id}`;
-    const baseHeaders = { authorization: `Bearer ${token}`, 'ec-coord-accept-language': 'en' };
+
+    const baseHeaders = {
+      authorization: `Bearer ${token}`,
+      'ec-coord-accept-language': 'en',
+    };
+
     this.sendMessage({
       command: 'SUBSCRIBE',
       headers: {
@@ -212,6 +269,7 @@ class STOMP extends Base {
         ...baseHeaders,
       },
     });
+
     this.sendMessage({
       command: 'SUBSCRIBE',
       headers: {
@@ -222,51 +280,47 @@ class STOMP extends Base {
         ...baseHeaders,
       },
     });
+
     this.pingInterval = setInterval(() => {
       if (this.isConnected) this.connection!.send('\n');
     }, 30000);
   }
 
-  private static decodeRawData(raw: WebSocket.RawData): string {
-    if (typeof raw === 'string') return raw;
-    if (Buffer.isBuffer(raw)) return raw.toString();
-    if (raw instanceof ArrayBuffer) return new TextDecoder().decode(raw);
-    return Buffer.concat(raw).toString();
-  }
-
   private static isEOSConnectMessage(value: unknown): value is EOSConnectMessage {
-    return typeof value === 'object' && value !== null
-      && 'type' in value && typeof value.type === 'string';
+    return typeof value === 'object' && value !== null && 'type' in value && typeof value.type === 'string';
   }
 
   private static isAuthenticationErrorFrame(value: unknown) {
-    return typeof value === 'object' && value !== null
-      && 'statusCode' in value && value.statusCode === 4019;
+    return typeof value === 'object' && value !== null && 'statusCode' in value && value.statusCode === 4019;
   }
 
   private async handleFriendMessage(message: { senderId: string; body: string; time: number }, id?: string) {
-    const { senderId, body, time } = message;
-    if (senderId === this.client.user.self!.id) return;
+    if (message.senderId === this.client.user.self!.id) return;
 
-    const friend = await this.client.xmpp.waitForFriend(senderId);
+    const friend = await this.client.waitForFriend(message.senderId);
     if (!friend) return;
 
     this.client.emit('friend:message', new ReceivedFriendMessage(this.client, {
-      content: decodeSTOMPMessageBody(body), author: friend, id: id || `${senderId}:${time}`, sentAt: new Date(time),
+      content: decodeSTOMPMessageBody(message.body),
+      author: friend,
+      id: id || `${message.senderId}:${message.time}`,
+      sentAt: new Date(message.time),
     }));
   }
 
   private async handleChatMessage(data: Extract<EOSConnectMessage, { type: 'social.chat.v1.NEW_MESSAGE' }>) {
     const { conversation, message } = data.payload;
+
     if (conversation.type === 'dm') {
       await this.handleFriendMessage(message, data.id);
       return;
     }
-    if (conversation.type !== 'epic_party') return;
+
+    if (conversation.type !== 'epic_party' || this.client.config.disablePartyService) return;
 
     await this.client.partyLock.wait();
     const eosPartyId = conversation.conversationId.replace(/^ep-/, '');
-    if (!this.client.party || this.client.party.eosPartyId !== eosPartyId
+    if (!this.client.party || this.client.party.eosId !== eosPartyId
       || message.senderId === this.client.user.self!.id) return;
 
     const author = this.client.party.members.get(message.senderId);
@@ -283,134 +337,212 @@ class STOMP extends Base {
 
   private async handlePresence(data: Extract<EOSConnectMessage, { type: 'presence.v1.UPDATE' }>) {
     await this.client.cacheLock.wait();
-    const friend = await this.client.xmpp.waitForFriend(data.payload.accountId);
+
+    const friend = await this.client.waitForFriend(data.payload.accountId);
     if (!friend) return;
+
     if (data.payload.status === 'offline') {
       friend.lastAvailableTimestamp = undefined;
       friend.party = undefined;
       this.client.emit('friend:offline', friend);
       return;
     }
-    const presence = data.payload.perNs.find((entry) => entry.productId === 'Fortnite' || entry.ns === this.client.config.eosDeploymentId);
+
+    const presence = data.payload.perNs
+      .find((entry) => entry.productId === 'Fortnite' || entry.ns === this.client.config.eosDeploymentId);
     if (!presence) return;
+
     const before = friend.presence;
     const after = new FriendPresence(this.client, presence, friend, presence.status);
+
     friend.lastAvailableTimestamp = Date.now();
     friend.presence = after;
+
     const rawParty = presence.props['party.joininfodata.286331153'];
     if (typeof rawParty === 'string') {
-      const partyData = FriendPresence.parsePropsValue<PresencePartyData>(rawParty);
+      const partyData = FriendPresence.parsePropsValue<FortnitePartyPresenceData>(rawParty);
       friend.party = new PresenceParty(this.client, partyData);
     }
+
     this.client.emit('friend:presence', before, after);
   }
 
   private async rebindEOSPartyConnection() {
-    // eslint-disable-next-line prefer-destructuring -- Keep the party stable through the awaited rebind.
-    const party = this.client.party;
-    if (!party?.eosPartyId || !this.publicConnectionId) return;
+    if (this.client.config.disablePartyService) return;
+
+    if (!this.client.party?.eosId || !this.publicConnectionId) return;
 
     try {
-      await this.client.eosParty.connect(party.eosPartyId, this.publicConnectionId);
-    } catch {
-      await this.recreateParty(party);
+      await this.client.eosParty.connect(this.client.party.eosId, this.publicConnectionId);
+    } catch (error) {
+      if (error instanceof RetryAbandonedError) return;
+      await this.client.initParty();
     }
   }
 
-  private async recreateParty(party: ClientParty, partyDisbanded = false) {
-    if (this.partyRecreationInProgress) return;
+  private async runPartyTransition<T>(transition: () => T): Promise<T | undefined> {
+    if (this.client.config.disablePartyService) return undefined;
 
-    this.partyRecreationInProgress = true;
+    await this.partyEventQueue.wait();
     try {
-      if (partyDisbanded) {
-        await this.leaveDisbandedParty(party);
+      await this.client.partyLock.wait();
+      this.client.partyLock.lock();
+      try {
+        if (this.client.config.disablePartyService) return undefined;
+        return transition();
+      } finally {
+        this.client.partyLock.unlock();
+      }
+    } finally {
+      this.partyEventQueue.shift();
+    }
+  }
+
+  private getCurrentParty(payload: EOSPartyScopedData): ClientParty | undefined {
+    const partyId = payload.party_id;
+
+    if (!partyId || !this.client.party || this.client.party.eosId !== partyId) return undefined;
+
+    return this.client.party;
+  }
+
+  private async handlePartyMemberJoined(payload: EOSPartyMemberUpdateData) {
+    await this.runPartyTransition(async () => {
+      const party = this.getCurrentParty(payload);
+      if (!party) return;
+
+      const data: FortnitePartyMemberData = {
+        id: payload.account_id,
+        account_id: payload.account_id,
+        account_dn: payload.account_dn,
+        joined_at: payload.joined_at,
+        updated_at: payload.updated_at,
+        revision: 0,
+        meta: {},
+      };
+
+      const memberId = payload.account_id;
+
+      if (memberId === this.client.user.self!.id) {
+        if (!party.me) party.members.set(memberId, new ClientPartyMember(party, data));
       } else {
-        await party.leave(false);
+        party.members.set(memberId, new PartyMember(party, data));
       }
 
-      await this.client.createParty();
-      if (this.client.party) this.client.emit('party:recreated', this.client.party);
-    } finally {
-      this.partyRecreationInProgress = false;
-    }
-  }
+      const member = party.members.get(memberId)!;
+      this.client.xmpp.metadataStore.flushMemberMetadata(party, member);
 
-  private async leaveDisbandedParty(party: ClientParty) {
-    this.client.partyLock.lock();
-    try {
-      await this.client.http.epicgamesRequest({
-        method: 'DELETE',
-        url: `${Endpoints.BR_PARTY}/parties/${party.id}/members/${this.client.user.self!.id}`,
-      }, AuthSessionStoreKey.Fortnite);
+      if (memberId === this.client.user.self!.id) await party.me.sendPatch(party.me.meta.schema);
 
-      if (this.client.party !== party) return;
+      if (!member.displayName) await member.fetch();
 
-      this.client.party = undefined;
-      await this.patchInternalPresence();
-    } finally {
-      this.client.partyLock.unlock();
-    }
-  }
+      await this.client.setStatus();
+      this.client.emit('party:member:joined', member);
 
-  private async handlePartyDisbanded(payload: EOSPartyDisbandedData) {
-    const partyId = payload.party_id ?? payload.partyId;
-    if (!partyId || !this.client.party || this.client.party.eosPartyId !== partyId) return;
-
-    await this.recreateParty(this.client.party, true);
-  }
-
-  private async handlePartyInvite(payload: EOSPartyInviteData) {
-    const partyId = payload.party_id ?? payload.partyId;
-    const inviterId = payload.sent_by ?? payload.inviter_id ?? payload.senderId;
-    if (!partyId || !inviterId || this.client.listenerCount('party:invite') === 0) return;
-
-    const sender = await this.client.xmpp.waitForFriend(inviterId);
-    if (!sender) return;
-
-    const sentAt = payload.sent_at ?? payload.sent ?? new Date().toISOString();
-    const expiresAt = payload.expires_at ?? new Date(Date.now() + INVITATION_EXPIRATION_MS).toISOString();
-    const party = this.createInvitationParty(partyId, sentAt);
-
-    this.client.emit('party:invite', new ReceivedPartyInvitation(this.client, party, sender, this.client.user.self!, {
-      eosPartyId: partyId,
-      sent_at: sentAt,
-      expires_at: expiresAt,
-    }));
-  }
-
-  private createInvitationParty(eosPartyId: string, sentAt: string) {
-    return new Party(this.client, {
-      id: getEOSLobbyId(eosPartyId, this.client.config.partyBuildId),
-      eosPartyId,
-      created_at: sentAt,
-      updated_at: sentAt,
-      config: {
-        type: 'DEFAULT',
-        joinability: 'OPEN',
-        discoverability: 'ALL',
-        sub_type: 'default',
-        max_size: 16,
-        invite_ttl: 3600,
-        join_confirmation: false,
-        intention_ttl: 60,
-      },
-      members: [],
-      meta: {},
-      invites: [],
-      revision: 0,
+      if (party.me.isLeader) await party.refreshSquadAssignments();
     });
   }
 
+  private async handlePartyMemberRemoved(
+    payload: EOSPartyMemberUpdateData,
+    event: 'party:member:left' | 'party:member:expired' = 'party:member:left',
+  ) {
+    await this.runPartyTransition(async () => {
+      if (!payload || typeof payload.account_id !== 'string') return;
+      const party = this.getCurrentParty(payload);
+      if (!party) return;
+      this.client.xmpp.metadataStore.discardMemberMetadata(party.id, payload.account_id);
+
+      const member = party.members.get(payload.account_id);
+      if (!member) return;
+
+      party.members.delete(member.id);
+
+      await this.client.initParty(this.client.config.createParty, false);
+      if (!this.client.party) await this.client.setStatus();
+      this.client.emit(event, member);
+
+      if (
+        party.me?.isLeader && payload.account_id !== this.client.user.self!.id
+        && party.id === this.client.party?.id
+      ) await party.refreshSquadAssignments();
+    });
+  }
+
+  private async handlePartyUpdated(payload: EOSPartyUpdateData) {
+    await this.runPartyTransition(() => {
+      const party = this.getCurrentParty(payload);
+      if (!party) return;
+
+      if (payload.revision <= party.eosRevision) return;
+
+      const prevLeaderId = party.eosLeaderId;
+
+      party.updateEOSData({
+        ...payload,
+        id: payload.party_id,
+        config: {
+          joinability: payload.party_privacy_type,
+          max_size: payload.max_number_of_members,
+        },
+      });
+
+      if (payload.party_lead !== prevLeaderId) {
+        const member = party.members.get(payload.party_lead);
+        if (!member) return;
+
+        this.client.emit('party:member:promoted', member);
+      }
+    });
+  }
+
+  private async handlePartyKicked(payload: EOSPartyMemberUpdateData) {
+    await this.runPartyTransition(async () => {
+      const party = this.getCurrentParty(payload);
+      if (!party) return;
+      this.client.xmpp.metadataStore.discardMemberMetadata(party.id, payload.account_id);
+
+      const member = party.members.get(payload.account_id);
+      if (!member) return;
+
+      party.members.delete(member.id);
+
+      await this.client.initParty(this.client.config.createParty, false);
+      if (!this.client.party) {
+        await this.client.setStatus();
+        return;
+      }
+
+      this.client.emit('party:member:kicked', member);
+
+      if (
+        party.me?.isLeader && payload.account_id !== this.client.user.self!.id
+        && party.id === this.client.party?.id
+      ) await party.refreshSquadAssignments();
+    });
+  }
+
+  private async handlePartyInvite(payload: EOSPartyInviteData) {
+    if (this.client.config.disablePartyService || this.client.listenerCount('party:invite') === 0
+      || (payload.invitee_id && payload.invitee_id !== this.client.user.self!.id)) return;
+
+    const sender = await this.client.waitForFriend(payload.inviter_id);
+    if (!sender || this.client.config.disablePartyService) return;
+
+    const invitation = new ReceivedPartyInvitation(this.client, sender, this.client.user.self!, payload);
+
+    this.client.emit('party:invite', invitation);
+  }
+
   private async handlePartyJoinRequest(payload: EOSPartyJoinRequestData) {
+    if (this.client.config.disablePartyService) return;
     const requesterId = payload.requester_id
-      ?? payload.requesterId
       ?? payload.sent_by
       ?? payload.inviter_id
-      ?? payload.senderId
       ?? payload.account_id;
     if (!requesterId || this.client.listenerCount('party:joinrequest') === 0) return;
 
-    const sender = await this.client.xmpp.waitForFriend(requesterId);
+    const sender = await this.client.waitForFriend(requesterId);
     if (!sender) return;
 
     const sentAt = payload.sent_at ?? payload.sent ?? new Date().toISOString();
@@ -423,53 +555,75 @@ class STOMP extends Base {
   }
 
   public async patchPresence(activityValue: string, props: EOSPresencePropsInGame, onlineType: PresenceOnlineType = 'online') {
-    const payload = {
-      status: onlineType, activity: { value: activityValue }, conn: { props: {} }, props,
-    };
-    if (!this.publicConnectionId) return;
-    await this.client.http.epicgamesRequest({
-      method: 'PATCH',
-      url: [
-        Endpoints.EOS_PRESENCE,
-        this.client.config.eosDeploymentId,
-        this.client.user.self!.id,
-        'presence',
-        encodeURIComponent(this.publicConnectionId),
-      ].join('/'),
-      headers: { 'Content-Type': 'application/json' },
-      data: payload,
-    }, AuthSessionStoreKey.FortniteEOS);
+    const { party } = this.client;
+    const { publicConnectionId } = this;
+    if (!publicConnectionId) return;
+
+    try {
+      await this.client.http.epicgamesRequest({
+        method: 'PATCH',
+        url: [
+          Endpoints.EOS_PRESENCE,
+          this.client.config.eosDeploymentId,
+          this.client.user.self!.id,
+          'presence',
+          encodeURIComponent(publicConnectionId),
+        ].join('/'),
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          status: onlineType, activity: { value: activityValue }, conn: { props: {} }, props,
+        },
+      }, AuthSessionStoreKey.FortniteEOS, () => (
+        this.client.party === party && this.publicConnectionId === publicConnectionId
+          ? RetryDecision.Retry
+          : RetryDecision.Abandon
+      ));
+    } catch (error) {
+      if (error instanceof RetryAbandonedError) return;
+      throw error;
+    }
   }
 
-  public async patchInternalPresence(party?: { eosPartyId?: string; isPrivate: boolean; size: number }) {
-    if (!this.privateConnectionId) return;
-    await this.client.http.epicgamesRequest({
-      method: 'PATCH',
-      url: [
-        Endpoints.EOS_PARTY.replace('/party', '/presence/internal/v1/_'),
-        this.client.user.self!.id,
-        'presence',
-        encodeURIComponent(this.privateConnectionId),
-      ].join('/'),
-      headers: { 'Content-Type': 'application/json' },
-      data: {
-        status: 'online',
-        activity: {},
-        conn: { props: {} },
-        ...party?.eosPartyId ? {
-          party: {
-            type: party.isPrivate ? 'INVITE_ONLY' : 'OPEN',
-            id: party.eosPartyId,
-            clientJoinable: true,
-            memberCount: party.size,
-            timestamp: new Date().toISOString(),
-          },
-        } : {},
-      },
-    }, AuthSessionStoreKey.FortniteEOS);
+  public async patchInternalPresence(party?: Party | ClientParty) {
+    const { privateConnectionId } = this;
+    if (!privateConnectionId) return;
+
+    try {
+      await this.client.http.epicgamesRequest({
+        method: 'PATCH',
+        url: [
+          Endpoints.EOS_PARTY.replace('/party', '/presence/internal/v1/_'),
+          this.client.user.self!.id,
+          'presence',
+          encodeURIComponent(privateConnectionId),
+        ].join('/'),
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          status: 'online',
+          activity: {},
+          conn: { props: {} },
+          ...party ? {
+            party: {
+              type: party.eosConfig.joinability,
+              id: party.eosId,
+              clientJoinable: party.eosConfig.joinability === 'OPEN',
+              memberCount: party.size,
+              timestamp: new Date().toISOString(),
+            },
+          } : {},
+        },
+      }, AuthSessionStoreKey.FortniteEOS, () => (
+        this.client.party === party && this.privateConnectionId === privateConnectionId
+          ? RetryDecision.Retry
+          : RetryDecision.Abandon
+      ));
+    } catch (error) {
+      if (error instanceof RetryAbandonedError) return;
+      throw error;
+    }
   }
 
-  public async disconnect() {
+  public disconnect() {
     if (this.pingInterval) clearInterval(this.pingInterval);
     this.pingInterval = undefined;
 

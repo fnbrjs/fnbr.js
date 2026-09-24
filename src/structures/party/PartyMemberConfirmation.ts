@@ -1,6 +1,6 @@
 import Endpoints from '../../../resources/Endpoints';
 import Base from '../../Base';
-import { AuthSessionStoreKey } from '../../../resources/enums';
+import { AuthSessionStoreKey, RetryDecision } from '../../../resources/enums';
 import type Client from '../../Client';
 import type ClientParty from './ClientParty';
 import type User from '../user/User';
@@ -23,6 +23,10 @@ class PartyMemberConfirmation extends Base {
    * The creation date of the request
    */
   public createdAt: Date;
+
+  private readonly retryDecision = () => (
+    this.client.party === this.party ? RetryDecision.Retry : RetryDecision.Abandon
+  );
 
   /**
    * @param client The main client
@@ -53,7 +57,7 @@ class PartyMemberConfirmation extends Base {
     await this.client.http.epicgamesRequest({
       method: 'POST',
       url: `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.user.id}/confirm`,
-    }, AuthSessionStoreKey.Fortnite);
+    }, AuthSessionStoreKey.Fortnite, this.retryDecision);
 
     this.party.pendingMemberConfirmations.delete(this.user.id);
   }
@@ -66,7 +70,7 @@ class PartyMemberConfirmation extends Base {
     await this.client.http.epicgamesRequest({
       method: 'POST',
       url: `${Endpoints.BR_PARTY}/parties/${this.party.id}/members/${this.user.id}/reject`,
-    }, AuthSessionStoreKey.Fortnite);
+    }, AuthSessionStoreKey.Fortnite, this.retryDecision);
 
     this.party.pendingMemberConfirmations.delete(this.user.id);
   }

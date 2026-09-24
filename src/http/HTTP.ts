@@ -1,9 +1,12 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import Base from '../Base';
 import AuthenticationMissingError from '../exceptions/AuthenticationMissingError';
 import { invalidTokenCodes } from '../../resources/constants';
 import EpicgamesAPIError from '../exceptions/EpicgamesAPIError';
+import RetryAbandonedError from '../exceptions/RetryAbandonedError';
+import { RetryDecision } from '../../resources/enums';
 import type { AuthSessionStoreKey } from '../../resources/enums';
+import type { EpicgamesAPIErrorData } from '../../resources/httpResponses';
 import type Client from '../Client';
 import type { AxiosInstance, HeadersDefaults, AxiosRequestConfig } from 'axios';
 
@@ -14,6 +17,8 @@ interface RequestHeaders {
 type RequestConfig = Omit<AxiosRequestConfig, 'headers'> & {
   headers?: RequestHeaders;
 };
+
+export type RetryDecisionCallback = () => RetryDecision;
 
 /**
  * Represents the client's HTTP manager
@@ -48,10 +53,14 @@ class HTTP extends Base {
   /**
    * Sends an HTTP request
    * @param config The request config
-   * @param auth The auth session to use
+   * @param retryDecision The callback deciding how to handle a rate limit retry
    * @param retries How many times this request has been retried (5xx errors)
    */
-  public async request<T = any>(config: RequestConfig, retries = 0): Promise<T> {
+  public async request<T = any>(
+    config: RequestConfig,
+    retryDecision?: RetryDecisionCallback,
+    retries = 0,
+  ): Promise<T> {
     const reqStartTime = Date.now();
     try {
       const response = await this.axios.request<T>({
@@ -67,9 +76,9 @@ class HTTP extends Base {
         + `${response.status} ${response.statusText}`, 'http');
 
       return response.data;
-    } catch (err: any) {
+    } catch (err: unknown) {
       const reqDuration = ((Date.now() - reqStartTime) / 1000);
-      if (err instanceof AxiosError) {
+      if (axios.isAxiosError<EpicgamesAPIErrorData>(err)) {
         const errResponse = err.response;
         const errResponseData = errResponse?.data;
 
@@ -77,24 +86,37 @@ class HTTP extends Base {
           + `${errResponse?.status} ${errResponse?.statusText}`, 'http');
 
         if (errResponse?.status.toString().startsWith('5') && retries < this.client.config.restRetryLimit) {
-          return this.request(config, retries + 1);
+          return this.request(config, retryDecision, retries + 1);
         }
 
-        if (errResponse && (errResponse.status === 429 || errResponseData?.errorCode === 'errors.com.epicgames.common.throttled')) {
+        if (
+          this.client.config.handleRatelimits && errResponse
+          && (errResponse.status === 429 || errResponseData?.errorCode === 'errors.com.epicgames.common.throttled')
+        ) {
           const retryString = errResponse.headers['retry-after']
-            || errResponseData?.messageVars?.[0]
-            || errResponseData?.errorMessage?.match(/(?<=in )\d+(?= second)/)?.[0];
+            || errResponseData?.messageVars[0]
+            || errResponseData?.errorMessage.match(/(?<=in )\d+(?= second)/)?.[0];
           const retryAfter = parseInt(retryString, 10);
           if (!Number.isNaN(retryAfter)) {
-            const sleepTimeout = (retryAfter * 1000) + 500;
-            await new Promise((res) => setTimeout(res, sleepTimeout));
+            let decision = retryDecision?.() ?? RetryDecision.Retry;
+            if (decision === RetryDecision.Abandon) throw new RetryAbandonedError();
+            if (decision === RetryDecision.Throw) throw err;
 
-            return this.request(config, retries);
+            await new Promise<void>((resolve) => {
+              setTimeout(resolve, (retryAfter * 1000) + 100);
+            });
+
+            decision = retryDecision?.() ?? RetryDecision.Retry;
+            if (decision === RetryDecision.Abandon) throw new RetryAbandonedError();
+            if (decision === RetryDecision.Throw) throw err;
+
+            return this.request(config, retryDecision, retries);
           }
         }
       } else {
+        const error = err instanceof Error ? err : new Error(String(err));
         this.client.debug(`${config.method?.toUpperCase() ?? 'GET'} ${config.url} `
-          + `(${reqDuration.toFixed(2)}s): ${err.name} - ${err.message}`, 'http');
+          + `(${reqDuration.toFixed(2)}s): ${error.name} - ${error.message}`, 'http');
       }
 
       throw err;
@@ -104,11 +126,17 @@ class HTTP extends Base {
   /**
    * Sends an HTTP request to the Fortnite API
    * @param config The request config
-   * @param includeAuthentication Whether to include authentication
+   * @param auth The auth session to use
+   * @param retryDecision The callback deciding how to handle a rate limit retry
    * @throws {EpicgamesAPIError}
    * @throws {AxiosError}
+   * @throws {RetryAbandonedError}
    */
-  public async epicgamesRequest<T = any>(config: RequestConfig, auth?: AuthSessionStoreKey): Promise<T> {
+  public async epicgamesRequest<T = any>(
+    config: RequestConfig,
+    auth?: AuthSessionStoreKey,
+    retryDecision?: RetryDecisionCallback,
+  ): Promise<T> {
     if (auth) {
       const authSession = this.client.auth.sessions.get(auth);
       if (!authSession) throw new AuthenticationMissingError(auth);
@@ -125,17 +153,18 @@ class HTTP extends Base {
             Authorization: `bearer ${this.client.auth.sessions.get(auth)!.accessToken}`,
           },
         },
-      });
-    } catch (err: any) {
-      if (err instanceof AxiosError) {
-        if (auth && invalidTokenCodes.includes(err.response?.data?.errorCode)) {
+      }, retryDecision);
+    } catch (err: unknown) {
+      if (axios.isAxiosError<EpicgamesAPIErrorData>(err)) {
+        const errorData = err.response?.data;
+        if (auth && errorData && invalidTokenCodes.includes(errorData.errorCode)) {
           await this.client.auth.sessions.get(auth)!.refresh();
 
-          return this.epicgamesRequest(config, auth);
+          return this.epicgamesRequest(config, auth, retryDecision);
         }
 
-        if (typeof err.response?.data?.errorCode === 'string') {
-          throw new EpicgamesAPIError(err.response.data, config, err.response.status);
+        if (errorData && err.response) {
+          throw new EpicgamesAPIError(errorData, config, err.response.status);
         }
       }
 

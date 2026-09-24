@@ -141,7 +141,7 @@ class Auth extends Base {
    * Accepts the Fortnite End User License Agreement (EULA)
    */
   private async acceptEULA() {
-    const accountId = this.sessions.get(AuthSessionStoreKey.Fortnite)!.accountId;
+    const { accountId } = (this.sessions.get(AuthSessionStoreKey.Fortnite)!);
 
     try {
       await this.client.http.epicgamesRequest({

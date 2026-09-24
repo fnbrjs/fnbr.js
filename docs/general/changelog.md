@@ -6,10 +6,14 @@
 * Party
   * Added `Party#eosPartyId`, the identifier paired with `Party#id` for party operations that require it.
   * Added the `party:recreated` event, emitted with the replacement `ClientParty` when the client's party is recreated.
+  * Added `Client#getRawFortniteParty()` to retrieve an unwrapped Fortnite lobby by lobby ID or EOS Party ID.
 
 ### Fixes
 * Party
   * Fixed party recreation failing when the client remained in its previous lobby after the party was disbanded.
+  * Party lifecycle notifications now preserve peer leaves when the EOS party disbands before the corresponding XMPP message.
+  * Accepting a party invitation no longer fails when leaving the old Fortnite lobby has already disbanded its linked EOS party.
+  * `Client#getParty()` now accepts either a Fortnite lobby ID or EOS Party ID and constructs a party from both Fortnite and EOS responses.
 
 * Stats
   * Fixed `Client#getBRAccountLevel()` failing when the requested season's level stat could not be queried through the multi-account stats endpoint.
@@ -17,10 +21,13 @@
 ### Changes
 * Party
   * **(Breaking)** `Client#joinParty()`, `Party#join()`, and `PresenceParty#join()` now reject unsupported party IDs instead of attempting to join them.
+  * **(Breaking)** EOS STOMP now owns party joins, leaves, kicks, and captain changes. `party:member:joined` can precede Fortnite metadata; use `party:member:updated` for cosmetics and readiness.
+  * `disablePartyService` now also suppresses STOMP party events and party chat. EOS invitation expiration invalidates received invitations.
   * `ClientParty#invite()`, `ReceivedPartyInvitation#accept()`, `ReceivedPartyInvitation#decline()`, and `ReceivedPartyJoinRequest#decline()` use the current party invitation and join-request flow.
   * `ClientParty#chat` sends and receives party messages through the current party chat conversation.
   * `Client` discovers the current party build ID from Fortnite matchmaking when `partyBuildId` is omitted; supplied values remain authoritative.
   * **(Breaking)** Removed `SentPartyInvitation#abort()`.
+  * **(Breaking)** Removed the `raw` argument from `Client#getParty()`; use `Client#getRawFortniteParty()` for the raw lobby.
 
 ## 4.2.0
 

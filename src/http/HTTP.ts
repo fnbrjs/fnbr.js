@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { randomUUID } from 'crypto';
 import Base from '../Base';
 import AuthenticationMissingError from '../exceptions/AuthenticationMissingError';
 import { invalidTokenCodes } from '../../resources/constants';
@@ -62,18 +63,28 @@ class HTTP extends Base {
     retries = 0,
   ): Promise<T> {
     const reqStartTime = Date.now();
-    try {
-      const response = await this.axios.request<T>({
-        ...config,
-        headers: {
-          'Accept-Language': this.client.config.language,
-          ...config.headers,
-        },
-      });
+    const reqId = randomUUID();
 
-      const reqDuration = ((Date.now() - reqStartTime) / 1000);
-      this.client.debug(`${config.method?.toUpperCase() ?? 'GET'} ${config.url} (${reqDuration.toFixed(2)}s): `
+    const httpConfig = {
+      ...config,
+      headers: {
+        'Accept-Language': this.client.config.language,
+        ...config.headers,
+      },
+    };
+
+    this.client.emit('http:request', reqId, httpConfig);
+
+    try {
+      const response = await this.axios.request<T>(httpConfig);
+
+      const reqDurationMs = Date.now() - reqStartTime;
+
+      const reqDurationHumanReadable = (reqDurationMs / 1000).toFixed(2);
+      this.client.debug(`${config.method?.toUpperCase() ?? 'GET'} ${config.url} (${reqDurationHumanReadable}s): `
         + `${response.status} ${response.statusText}`, 'http');
+
+      this.client.emit('http:response', reqId, httpConfig, response, reqDurationMs);
 
       return response.data;
     } catch (err: unknown) {
@@ -82,8 +93,16 @@ class HTTP extends Base {
         const errResponse = err.response;
         const errResponseData = errResponse?.data;
 
-        this.client.debug(`${config.method?.toUpperCase() ?? 'GET'} ${config.url} (${reqDuration.toFixed(2)}s): `
-          + `${errResponse?.status} ${errResponse?.statusText}`, 'http');
+        const reqDurationMs = Date.now() - reqStartTime;
+
+        const reqDurationHumanReadable = (reqDurationMs / 1000).toFixed(2);
+        const statusText = errResponse ? `${errResponse.status} ${errResponse.statusText}` : err.code ?? err.message;
+
+        this.client.debug(`${config.method?.toUpperCase() ?? 'GET'} ${config.url} (${reqDurationHumanReadable}s): `
+          + `${statusText}`, 'http');
+
+        if (errResponse) this.client.emit('http:response', reqId, httpConfig, errResponse, reqDurationMs);
+        else this.client.emit('http:error', reqId, httpConfig, err, reqDurationMs);
 
         if (errResponse?.status.toString().startsWith('5') && retries < this.client.config.restRetryLimit) {
           return this.request(config, retryDecision, retries + 1);

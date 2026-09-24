@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 import type { Collection } from '@discordjs/collection';
-import type { RawAxiosRequestConfig } from 'axios';
+import type { AxiosError, AxiosResponse, RawAxiosRequestConfig } from 'axios';
 import type { PathLike } from 'fs';
 import type defaultPartyMeta from './defaultPartyMeta.json';
 import type defaultPartyMemberMeta from './defaultPartyMemberMeta';
@@ -551,6 +551,31 @@ export interface ClientEvents {
   'stomp:message:error': (error: Error) => void;
 
   /**
+   * Emitted when the client sends an HTTP request
+   * @param reqId The request ID
+   * @param config The request config
+   */
+  'http:request': (reqId: string, config: RawAxiosRequestConfig) => void;
+
+  /**
+   * Emitted when the client receives an HTTP response
+   * @param reqId The request ID
+   * @param config The request config
+   * @param response The
+   * @param duration The duration of the request in milliseconds
+   */
+  'http:response': (reqId: string, config: RawAxiosRequestConfig, response: AxiosResponse, duration: number) => void;
+
+  /**
+   * Emitted when the client encounters an error. Specificaly when no HTTP response was received (eg. network error, timeout, etc)
+   * @param reqId The request ID
+   * @param config The request config
+   * @param error The error that occurred
+   * @param duration The duration of the request in milliseconds
+   */
+  'http:error': (reqId: string, config: RawAxiosRequestConfig, error: AxiosError, duration: number) => void;
+
+  /**
    * Emitted when the client recieved a party invitation
    * @param invitation The received party invitation
    */
@@ -587,12 +612,6 @@ export interface ClientEvents {
   'party:member:kicked': (member: PartyMember) => void;
 
   /**
-   * Emitted when a party member disconnected
-   * @param member The party member
-   */
-  'party:member:disconnected': (member: PartyMember) => void;
-
-  /**
    * Emitted when a party member gets promoted
    * @param member The party member
    */
@@ -615,12 +634,6 @@ export interface ClientEvents {
    * @param request The recieved join request
    */
   'party:joinrequest': (request: ReceivedPartyJoinRequest) => void;
-
-  /**
-   * Emitted after the EOS social party was recreated.
-   * @param party The replacement linked Fortnite lobby
-   */
-  'party:recreated': (party: ClientParty) => void;
 
   /**
    * Emitted when a party member updated their outfit

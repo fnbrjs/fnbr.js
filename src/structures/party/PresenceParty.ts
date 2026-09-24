@@ -24,18 +24,6 @@ class PresenceParty extends Base {
   public size?: number;
 
   /**
-   * The party type ID
-   * @deprecated This property is no longer used and will be removed in a future version
-   */
-  public typeId?: number;
-
-  /**
-   * The party key
-   * @deprecated This property is no longer used and will be removed in a future version
-   */
-  public key?: string;
-
-  /**
    * The party's app ID
    */
   public appId?: string;

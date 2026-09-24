@@ -539,22 +539,16 @@ export interface ClientEvents {
   'stomp:message': (body: any) => void;
 
   /**
-   * Emitted when an error occures while processing an incoming xmpp message
+   * Emitted when an error occured while processing an incoming xmpp message
    * @param error The error that occurred
    */
   'xmpp:message:error': (error: Error) => void;
 
   /**
-   * Emitted when an error occures while processing an incoming xmpp presence
+   * Emitted for an error that occured while processing an incoming STOMP message
    * @param error The error that occurred
    */
-  'xmpp:presence:error': (error: Error) => void;
-
-  /**
-   * Emitted when an error occures while processing an incoming xmpp chat message (either a friend or party message)
-   * @param error The error that occurred
-   */
-  'xmpp:chat:error': (error: Error) => void;
+  'stomp:message:error': (error: Error) => void;
 
   /**
    * Emitted when the client recieved a party invitation

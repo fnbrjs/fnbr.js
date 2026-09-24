@@ -158,90 +158,97 @@ class STOMP extends Base {
 
       this.client.emit('stomp:message', data);
 
-      switch (data.type) {
-        case 'core.connect.v1.connected':
-          if (!data.connectionId || !this.publicSubscriptionId || !this.privateSubscriptionId) {
-            reject(new STOMPConnectionError('EOS Connect did not provide Party v2 connection IDs'));
-            return;
-          }
-          clearTimeout(connectionTimeout);
-          this.connectionId = data.connectionId;
-          this.publicConnectionId = `${data.connectionId}#${this.publicSubscriptionId}`;
-          this.privateConnectionId = `${data.connectionId}#${this.privateSubscriptionId}`;
-          this.connectionRetryCount = 0;
-          this.client.debug(`[STOMP] Successfully connected (${((Date.now() - connectionStartTime) / 1000).toFixed(2)}s)`);
-          resolve();
-          break;
+      try {
+        switch (data.type) {
+          case 'core.connect.v1.connected':
+            if (!data.connectionId || !this.publicSubscriptionId || !this.privateSubscriptionId) {
+              reject(new STOMPConnectionError('EOS Connect did not provide Party v2 connection IDs'));
+              return;
+            }
+            clearTimeout(connectionTimeout);
+            this.connectionId = data.connectionId;
+            this.publicConnectionId = `${data.connectionId}#${this.publicSubscriptionId}`;
+            this.privateConnectionId = `${data.connectionId}#${this.privateSubscriptionId}`;
+            this.connectionRetryCount = 0;
+            this.client.debug(`[STOMP] Successfully connected (${((Date.now() - connectionStartTime) / 1000).toFixed(2)}s)`);
+            resolve();
+            break;
 
-        case 'core.connect.v1.connect-failed':
-          clearTimeout(connectionTimeout);
-          reject(new STOMPConnectionError(data.message, data.statusCode));
-          break;
+          case 'core.connect.v1.connect-failed':
+            clearTimeout(connectionTimeout);
+            reject(new STOMPConnectionError(data.message, data.statusCode));
+            break;
 
-        case 'social.chat.v1.NEW_WHISPER':
-          await this.handleFriendMessage(data.payload.message, data.id!);
-          break;
+          case 'social.chat.v1.NEW_WHISPER':
+            await this.handleFriendMessage(data.payload.message, data.id!);
+            break;
 
-        case 'social.chat.v1.NEW_MESSAGE':
-          await this.handleChatMessage(data);
-          break;
+          case 'social.chat.v1.NEW_MESSAGE':
+            await this.handleChatMessage(data);
+            break;
 
-        case 'presence.v1.UPDATE':
-          await this.handlePresence(data);
-          break;
+          case 'presence.v1.UPDATE':
+            await this.handlePresence(data);
+            break;
 
-        case 'party.v2.MEMBER_JOINED':
-          await this.handlePartyMemberJoined(data.payload);
-          break;
+          case 'party.v2.MEMBER_JOINED':
+            await this.handlePartyMemberJoined(data.payload);
+            break;
 
-        case 'party.v2.MEMBER_LEFT':
-          await this.handlePartyMemberRemoved(data.payload);
-          break;
+          case 'party.v2.MEMBER_LEFT':
+            await this.handlePartyMemberRemoved(data.payload);
+            break;
 
-        // Ignore, handled by XMPP
-        case 'party.v2.MEMBER_STATE_UPDATED':
-          break;
+            // Ignore, handled by XMPP
+          case 'party.v2.MEMBER_STATE_UPDATED':
+            break;
 
-        // A disconnect can recover; keep the roster until EOS expires the member.
-        case 'party.v2.MEMBER_DISCONNECTED':
-          break;
+            // A disconnect can recover; keep the roster until EOS expires the member.
+          case 'party.v2.MEMBER_DISCONNECTED':
+            break;
 
-        case 'party.v2.MEMBER_EXPIRED_AFTER_DISCONNECT':
-          await this.handlePartyMemberRemoved(data.payload, 'party:member:expired');
-          break;
+          case 'party.v2.MEMBER_EXPIRED_AFTER_DISCONNECT':
+            await this.handlePartyMemberRemoved(data.payload, 'party:member:expired');
+            break;
 
-        // Not needed, already handled by member leave and kick events
-        case 'party.v2.MEMBER_EXPIRED_PARTY_DISBANDED':
-          break;
+            // Not needed, already handled by member leave and kick events
+          case 'party.v2.MEMBER_EXPIRED_PARTY_DISBANDED':
+            break;
 
-        // Ignore, not needed
-        case 'party.v2.MEMBER_CONNECTED':
-        case 'party.v2.MEMBER_REFRESH_SUMMARY':
-          break;
+            // Ignore, not needed
+          case 'party.v2.MEMBER_CONNECTED':
+          case 'party.v2.MEMBER_REFRESH_SUMMARY':
+            break;
 
-        case 'party.v2.PARTY_UPDATED':
-          await this.handlePartyUpdated(data.payload);
-          break;
+          case 'party.v2.PARTY_UPDATED':
+            await this.handlePartyUpdated(data.payload);
+            break;
 
-        case 'party.v2.MEMBER_KICKED':
-          await this.handlePartyKicked(data.payload);
-          break;
+          case 'party.v2.MEMBER_KICKED':
+            await this.handlePartyKicked(data.payload);
+            break;
 
-        case 'party.v2.INVITE_CREATED':
-          await this.handlePartyInvite(data.payload);
-          break;
+          case 'party.v2.INVITE_CREATED':
+            await this.handlePartyInvite(data.payload);
+            break;
 
-        // Ignore for now
-        case 'party.v2.INVITE_EXPIRED':
-          break;
+            // Ignore for now
+          case 'party.v2.INVITE_EXPIRED':
+            break;
 
-        case 'party.v2.JOIN_REQUEST_CREATED':
-          await this.handlePartyJoinRequest(data.payload);
-          break;
+          case 'party.v2.JOIN_REQUEST_CREATED':
+            await this.handlePartyJoinRequest(data.payload);
+            break;
 
-        default:
-          this.client.debug(`[STOMP] Unknown message type: ${data.type}`);
-          break;
+          default:
+            this.client.debug(`[STOMP] Unknown message type: ${data.type}`);
+            break;
+        }
+      } catch (error) {
+        const errorString = error instanceof Error ? `${error.name} - ${error.message}` : String(error);
+
+        this.client.debug(`[STOMP] Error while processing ${data.type}: ${errorString}`);
+        this.client.emit('stomp:message:error', error instanceof Error ? error : new Error(errorString));
       }
     });
   }

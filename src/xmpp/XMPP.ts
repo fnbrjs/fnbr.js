@@ -314,9 +314,11 @@ class XMPP extends Base {
             }
           } break;
         }
-      } catch (err: any) {
-        this.client.debug(`[XMPP] Error while processing ${body.type}: ${err.name} - ${err.message}`);
-        this.client.emit('xmpp:message:error', err);
+      } catch (error) {
+        const errorString = error instanceof Error ? `${error.name} - ${error.message}` : String(error);
+
+        this.client.debug(`[XMPP] Error while processing ${body.type}: ${errorString}`);
+        this.client.emit('xmpp:message:error', error instanceof Error ? error : new Error(errorString));
       }
     });
   }

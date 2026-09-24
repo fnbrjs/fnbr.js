@@ -227,7 +227,6 @@ class STOMP extends Base {
           await this.handlePartyKicked(data.payload);
           break;
 
-        case 'party.v2.INVITE':
         case 'party.v2.INVITE_CREATED':
           await this.handlePartyInvite(data.payload);
           break;
@@ -236,8 +235,7 @@ class STOMP extends Base {
         case 'party.v2.INVITE_EXPIRED':
           break;
 
-        case 'party.v2.JOIN_REQUEST':
-        case 'party.v2.INTENTION':
+        case 'party.v2.JOIN_REQUEST_CREATED':
           await this.handlePartyJoinRequest(data.payload);
           break;
 

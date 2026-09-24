@@ -1810,11 +1810,6 @@ export interface EOSPresenceUpdateMessage extends BaseEOSConnectMessage {
   type: 'presence.v1.UPDATE';
 }
 
-export interface EOSConnectPartyInviteMessage extends BaseEOSConnectMessage {
-  type: 'party.v2.INVITE';
-  payload: EOSPartyInviteData;
-}
-
 export interface EOSConnectPartyInviteCreatedMessage extends BaseEOSConnectMessage {
   type: 'party.v2.INVITE_CREATED';
   payload: EOSPartyInviteData;
@@ -1826,27 +1821,7 @@ export interface EOSConnectPartyInviteExpiredMessage extends BaseEOSConnectMessa
 }
 
 export interface EOSConnectPartyJoinRequestMessage extends BaseEOSConnectMessage {
-  type: 'party.v2.JOIN_REQUEST';
-  payload: EOSPartyJoinRequestData;
-}
-
-export interface EOSConnectPartyIntentionMessage extends BaseEOSConnectMessage {
-  type: 'party.v2.INTENTION';
-  payload: EOSPartyJoinRequestData;
-}
-
-export type EOSConnectPartyInvalidatedJoinRequestType =
-  | 'party.v2.JOIN_REQUEST_EXPIRED'
-  | 'party.v2.JOIN_REQUEST_CANCELLED'
-  | 'party.v2.JOIN_REQUEST_CANCELED'
-  | 'party.v2.JOIN_REQUEST_DECLINED'
-  | 'party.v2.INTENTION_EXPIRED'
-  | 'party.v2.INTENTION_CANCELLED'
-  | 'party.v2.INTENTION_CANCELED'
-  | 'party.v2.INTENTION_DECLINED';
-
-export interface EOSConnectPartyInvalidatedJoinRequestMessage extends BaseEOSConnectMessage {
-  type: EOSConnectPartyInvalidatedJoinRequestType;
+  type: 'party.v2.JOIN_REQUEST_CREATED';
   payload: EOSPartyJoinRequestData;
 }
 
@@ -1891,12 +1866,9 @@ export interface EOSConnectMemberConnectedMessage extends BaseEOSConnectMessage 
 }
 
 export type EOSConnectPartyNotification =
-  | EOSConnectPartyInviteMessage
   | EOSConnectPartyInviteCreatedMessage
   | EOSConnectPartyInviteExpiredMessage
   | EOSConnectPartyJoinRequestMessage
-  | EOSConnectPartyIntentionMessage
-  | EOSConnectPartyInvalidatedJoinRequestMessage
   | EOSConnectPartyDisbandedMessage
   | EOSConnectPartyMemberMessage
   | EOSConnectPartyUpdatedMessage

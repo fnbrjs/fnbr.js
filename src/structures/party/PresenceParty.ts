@@ -1,8 +1,7 @@
 import Base from '../../Base';
 import PartyPermissionError from '../../exceptions/PartyPermissionError';
-import type { PresencePartyData } from '../../../resources/structs';
+import type { FortnitePartyPresenceData } from '../../../resources/structs';
 import type Client from '../../Client';
-import type Party from './Party';
 
 /**
  * Represents a party received by a friend's presence
@@ -23,18 +22,6 @@ class PresenceParty extends Base {
    * The party's member count
    */
   public size?: number;
-
-  /**
-   * The party type ID
-   * @deprecated This property is no longer used and will be removed in a future version
-   */
-  public typeId?: number;
-
-  /**
-   * The party key
-   * @deprecated This property is no longer used and will be removed in a future version
-   */
-  public key?: string;
 
   /**
    * The party's app ID
@@ -61,16 +48,16 @@ class PresenceParty extends Base {
    * @param client The main client
    * @param data The presence party's data
    */
-  constructor(client: Client, data: PresencePartyData) {
+  constructor(client: Client, data: FortnitePartyPresenceData) {
     super(client);
 
-    this.isPrivate = typeof data.bIsPrivate === 'boolean' && data.bIsPrivate;
-    this.id = data.p;
+    this.isPrivate = data.bIsPrivate ?? false;
+    this.id = data.partyId ?? data.p;
     this.size = data.pc;
-    this.appId = data.d;
-    this.buildId = data.b;
-    this.flags = data.f;
-    this.notAcceptingMembersReason = data.nAR;
+    this.appId = data.appId ?? data.d;
+    this.buildId = data.buildId ?? data.b;
+    this.flags = data.partyFlags ?? data.f;
+    this.notAcceptingMembersReason = data.notAcceptingReason ?? data.nAR;
   }
 
   /**
@@ -93,7 +80,7 @@ class PresenceParty extends Base {
   public async fetch() {
     if (this.isPrivate || !this.id) throw new PartyPermissionError();
 
-    return this.client.getParty(this.id) as Promise<Party>;
+    return this.client.getParty(this.id);
   }
 }
 

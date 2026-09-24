@@ -1,4 +1,5 @@
 import Base from '../../Base';
+import type { EOSPartyInviteData } from '../../../resources/structs';
 import type Client from '../../Client';
 import type ClientParty from './ClientParty';
 import type ClientUser from '../user/ClientUser';
@@ -10,9 +11,14 @@ import type Party from './Party';
  */
 abstract class BasePartyInvitation extends Base {
   /**
+   * The invite party's EOS ID
+   */
+  public eosPartyId: string;
+
+  /**
    * The party this invitation belongs to
    */
-  public party: Party | ClientParty;
+  public party?: Party | ClientParty;
 
   /**
    * The party this invitation belongs to
@@ -46,10 +52,18 @@ abstract class BasePartyInvitation extends Base {
    * @param receiver The friend (or the client user) who received this invitation
    * @param data The invitation data
    */
-  constructor(client: Client, party: Party | ClientParty, sender: Friend | ClientUser, receiver: Friend | ClientUser, data: any) {
+  constructor(
+    client: Client,
+    sender: Friend | ClientUser,
+    receiver: Friend | ClientUser,
+    data: Pick<EOSPartyInviteData, 'party_id' | 'sent_at' | 'expires_at'>,
+    party?: Party | ClientParty,
+  ) {
     super(client);
 
     this.party = party;
+
+    this.eosPartyId = data.party_id;
 
     this.sender = sender;
     this.receiver = receiver;
@@ -63,6 +77,16 @@ abstract class BasePartyInvitation extends Base {
    */
   public get isExpired() {
     return Date.now() > this.expiresAt.getTime();
+  }
+
+  /**
+   * Fetches the party this invitation belongs to.
+   * Note: This will not work for private parties
+   */
+  public async fetchParty(): Promise<Party> {
+    this.party = await this.client.getParty(this.eosPartyId);
+
+    return this.party;
   }
 }
 

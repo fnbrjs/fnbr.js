@@ -1,9 +1,14 @@
 name: "Test & Lint Code"
-on: ["push", "pull_request"]
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
 jobs:
   lint:
     name: "Test & Lint Code"
     runs-on: "ubuntu-latest"
+    if: github.repository_owner == 'fnbrjs'
 
     steps:
       - name: "Checkout Repository"
@@ -27,5 +32,3 @@ jobs:
         run: "npm run test"
         env:
           DEVICE_AUTH: ${{ secrets.TEST_DEVICE_AUTH }}
-
-

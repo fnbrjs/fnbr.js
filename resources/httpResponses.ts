@@ -879,3 +879,6 @@ export interface STWMissionAlertData {
   availableMissionAlerts: STWMissionAlertAvailableMissionAlert[];
   nextRefresh: Date;
 }
+export type FortniteMatchmakingResponse = Array<{
+  buildUniqueId: string | number;
+}>;

@@ -6,6 +6,8 @@ import { promises as fs } from 'fs';
 import { STWLeadSynergy } from '../../enums/Enums';
 import BinaryWriter from './BinaryWriter';
 import PowerLevelCurves from '../../resources/PowerLevelCurves';
+import PartyNotFoundError from '../exceptions/PartyNotFoundError';
+import type WebSocket from 'ws';
 import type {
   Schema, ReplayData, ReplayDataChunk, ReplayEvent,
   STWItemRarity, STWSurvivorType, STWSurvivorSquads,
@@ -61,6 +63,21 @@ export const makeSnakeCase = (obj: { [key: string]: any }): any => {
 };
 
 export const getRandomDefaultCharacter = () => defaultCharacters[Math.floor(Math.random() * defaultCharacters.length)];
+
+export const toFortniteLobbyId = (eosPartyId: string, partyBuildId?: string) => {
+  const netCL = partyBuildId?.split(':').pop();
+  if (!netCL || !/^\d+$/.test(netCL)) throw new Error('EOS party operations require a numeric party build ID');
+  return `${eosPartyId}-${netCL}-default`;
+};
+
+export const toEOSPartyId = (fnOrEOSId: string): string => {
+  if (/^[0-9a-f]{32}$/i.test(fnOrEOSId)) return fnOrEOSId;
+
+  const match = /^([0-9a-f]{32})-\d+-[A-Za-z0-9_-]+$/i.exec(fnOrEOSId);
+  if (!match) throw new PartyNotFoundError();
+
+  return match[1];
+};
 
 export const createPartyInvitation = (clientUserId: string, pingerId: string, data: any) => {
   const member = data.members.find((m: any) => m.account_id === pingerId);
@@ -605,4 +622,12 @@ export const decodeSTOMPMessageBody = (body?: string): string => {
   } catch {
     return '';
   }
+};
+
+export const decodeRawData = (raw: WebSocket.RawData): string => {
+  if (typeof raw === 'string') return raw;
+  if (Buffer.isBuffer(raw)) return raw.toString();
+  if (raw instanceof ArrayBuffer) return new TextDecoder().decode(raw);
+
+  return Buffer.concat(raw).toString();
 };

@@ -3,17 +3,14 @@ import PartyMemberMeta from './PartyMemberMeta';
 import User from '../user/User';
 import type Party from './Party';
 import type ClientParty from './ClientParty';
-import type { PartyMemberData, PartyMemberSchema, PartyMemberUpdateData } from '../../../resources/structs';
+import type {
+  FortnitePartyMemberData, FortnitePartyMemberSchema, FortnitePartyMemberUpdateData,
+} from '../../../resources/structs';
 
 /**
  * Represents a party member
  */
 class PartyMember extends User {
-  /**
-   * The member's role. "CAPTAIN" means leader
-   */
-  public role: string;
-
   /**
    * The date when this member joined the party
    */
@@ -43,18 +40,17 @@ class PartyMember extends User {
    * @param party The party this member belongs to
    * @param data The member's data
    */
-  constructor(party: Party | ClientParty, data: PartyMemberData) {
+  constructor(party: Party | ClientParty, fnData: FortnitePartyMemberData) {
     super(party.client, {
-      ...data,
-      displayName: data.account_dn,
-      id: data.account_id,
+      ...fnData,
+      displayName: fnData.account_dn,
+      id: fnData.account_id,
     });
 
     this.party = party;
-    this.role = data.role;
-    this.joinedAt = new Date(data.joined_at);
-    this.meta = new PartyMemberMeta(data.meta);
-    this.revision = data.revision;
+    this.joinedAt = new Date(fnData.joined_at);
+    this.meta = new PartyMemberMeta(fnData.meta);
+    this.revision = fnData.revision;
     this.receivedInitialStateUpdate = false;
   }
 
@@ -62,7 +58,7 @@ class PartyMember extends User {
    * Whether this member is the leader of the party
    */
   public get isLeader() {
-    return this.role === 'CAPTAIN';
+    return this.party.leader?.id === this.id;
   }
 
   /**
@@ -220,21 +216,43 @@ class PartyMember extends User {
   }
 
   /**
-   * Updates this members data
+   * Updates this member's Fortnite metadata.
    * @param data The update data
+   * @returns Whether any observable member data changed
    */
-  public updateData(data: PartyMemberUpdateData) {
-    if (data.revision > this.revision) this.revision = data.revision;
-    if (data.account_dn !== this.displayName) this.update({ id: this.id, displayName: data.account_dn, externalAuths: this.externalAuths });
+  public updateData(data: FortnitePartyMemberUpdateData): boolean {
+    if (data.revision < this.revision) return false;
 
-    this.meta.update(data.member_state_updated, true);
-    this.meta.remove(data.member_state_removed as (keyof PartyMemberSchema)[]);
+    this.revision = data.revision;
+    this.receivedInitialStateUpdate = true;
+
+    let changed = false;
+    if (data.account_dn !== undefined && data.account_dn !== this.displayName) {
+      this.update({ id: this.id, displayName: data.account_dn, externalAuths: this.externalAuths });
+      changed = true;
+    }
+
+    for (const [key, value] of Object.entries(data.member_state_updated)) {
+      const memberKey = key as keyof FortnitePartyMemberSchema;
+      if (value !== undefined && this.meta.schema[memberKey] !== value) {
+        this.meta.set(memberKey, value, true);
+        changed = true;
+      }
+    }
+    for (const key of data.member_state_removed) {
+      if (Object.prototype.hasOwnProperty.call(this.meta.schema, key)) {
+        this.meta.remove([key as keyof FortnitePartyMemberSchema]);
+        changed = true;
+      }
+    }
+
+    return changed;
   }
 
   /**
    * Converts this party member into an object
    */
-  public toObject(): PartyMemberData {
+  public toObject(): FortnitePartyMemberData {
     return {
       id: this.id,
       account_id: this.id,
@@ -242,7 +260,6 @@ class PartyMember extends User {
       updated_at: new Date().toISOString(),
       meta: this.meta.schema,
       revision: 0,
-      role: this.role,
       account_dn: this.displayName,
     };
   }

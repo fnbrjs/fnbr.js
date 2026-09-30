@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 import type { Collection } from '@discordjs/collection';
-import type { RawAxiosRequestConfig } from 'axios';
+import type { AxiosError, AxiosResponse, RawAxiosRequestConfig } from 'axios';
 import type { PathLike } from 'fs';
 import type defaultPartyMeta from './defaultPartyMeta.json';
 import type defaultPartyMemberMeta from './defaultPartyMemberMeta';
@@ -31,8 +31,9 @@ import type LauncherAuthSession from '../src/auth/LauncherAuthSession';
 import type FortniteClientCredentialsAuthSession from '../src/auth/FortniteClientCredentialsAuthSession';
 import type EOSAuthSession from '../src/auth/EOSAuthSession';
 
-export type PartyMemberSchema = Partial<typeof defaultPartyMemberMeta>;
-export type PartySchema = Partial<typeof defaultPartyMeta> & {
+export type FortnitePartyMemberSchema = Partial<typeof defaultPartyMemberMeta>;
+export type FortnitePartySchema = Partial<typeof defaultPartyMeta> & {
+  'Default:LeaderData_j'?: string;
   'urn:epic:cfg:presence-perm_s'?: string;
   'urn:epic:cfg:accepting-members_b'?: string;
   'urn:epic:cfg:invite-perm_s'?: string;
@@ -196,7 +197,7 @@ export interface AuthOptions {
   authClient?: AuthClient;
 }
 
-export interface PartyPrivacy {
+export interface FortnitePartyPrivacy {
   partyType: 'Public' | 'FriendsOnly' | 'Private';
   inviteRestriction: 'AnyMember' | 'LeaderOnly';
   onlyLeaderFriendsCanJoin: boolean;
@@ -205,18 +206,18 @@ export interface PartyPrivacy {
   acceptingMembers: boolean;
 }
 
-export interface PartyOptions {
+export interface FortnitePartyOptions {
   joinConfirmation?: boolean;
   joinability?: 'OPEN' | 'INVITE_AND_FORMER';
   discoverability?: 'ALL' | 'INVITED_ONLY';
-  privacy?: PartyPrivacy;
+  privacy?: FortnitePartyPrivacy;
   maxSize?: number;
   intentionTtl?: number;
   inviteTtl?: number;
   chatEnabled?: boolean;
 }
 
-export interface PartyConfig {
+export interface FortnitePartyConfig {
   type: 'DEFAULT';
   joinability: 'OPEN' | 'INVITE_AND_FORMER';
   discoverability: 'ALL' | 'INVITED_ONLY';
@@ -225,7 +226,7 @@ export interface PartyConfig {
   inviteTtl: number;
   intentionTtl: number;
   joinConfirmation: boolean;
-  privacy: PartyPrivacy;
+  privacy: FortnitePartyPrivacy;
 }
 
 export type PresenceOnlineType = 'online' | 'away' | 'chat' | 'dnd' | 'xa' | 'offline';
@@ -274,6 +275,12 @@ export interface ClientConfig {
   defaultOnlineType: PresenceOnlineType;
 
   /**
+   * Interval in milliseconds for refreshing the client's status. Set to 0 to disable it.
+   * Defaults to 10 minutes.
+   */
+  statusUpdateInterval: number;
+
+  /**
    * The client's platform (WIN by default)
    */
   platform: Platform;
@@ -307,7 +314,7 @@ export interface ClientConfig {
   /**
    * Default config used for creating parties
    */
-  partyConfig: PartyOptions;
+  partyConfig: FortnitePartyOptions;
 
   /**
    * Whether the client should create a party on startup
@@ -362,9 +369,10 @@ export interface ClientConfig {
   handleRatelimits: boolean;
 
   /**
-   * The party build id (does not change very often, don't change this unless you know what you're doing)
+   * The party build ID. When omitted, the current build ID is discovered once from Fortnite matchmaking.
+   * Supplying a value disables discovery and preserves the value as provided.
    */
-  partyBuildId: string;
+  partyBuildId?: string;
 
   /**
    * Whether the client should restart if a refresh token is invalid.
@@ -519,22 +527,53 @@ export interface ClientEvents {
   'user:unblocked': (blockedUser: BlockedUser) => void;
 
   /**
-   * Emitted when an error occures while processing an incoming xmpp message
+   * Emitted for an incoming XMPP notification.
+   * @param body The message body
+   */
+  'xmpp:message': (body: any) => void;
+
+  /**
+   * Emitted for an incoming STOMP notification.
+   * @param body The message body
+   */
+  'stomp:message': (body: any) => void;
+
+  /**
+   * Emitted when an error occured while processing an incoming xmpp message
    * @param error The error that occurred
    */
   'xmpp:message:error': (error: Error) => void;
 
   /**
-   * Emitted when an error occures while processing an incoming xmpp presence
+   * Emitted for an error that occured while processing an incoming STOMP message
    * @param error The error that occurred
    */
-  'xmpp:presence:error': (error: Error) => void;
+  'stomp:message:error': (error: Error) => void;
 
   /**
-   * Emitted when an error occures while processing an incoming xmpp chat message (either a friend or party message)
-   * @param error The error that occurred
+   * Emitted when the client sends an HTTP request
+   * @param reqId The request ID
+   * @param config The request config
    */
-  'xmpp:chat:error': (error: Error) => void;
+  'http:request': (reqId: string, config: RawAxiosRequestConfig) => void;
+
+  /**
+   * Emitted when the client receives an HTTP response
+   * @param reqId The request ID
+   * @param config The request config
+   * @param response The
+   * @param duration The duration of the request in milliseconds
+   */
+  'http:response': (reqId: string, config: RawAxiosRequestConfig, response: AxiosResponse, duration: number) => void;
+
+  /**
+   * Emitted when the client encounters an error. Specificaly when no HTTP response was received (eg. network error, timeout, etc)
+   * @param reqId The request ID
+   * @param config The request config
+   * @param error The error that occurred
+   * @param duration The duration of the request in milliseconds
+   */
+  'http:error': (reqId: string, config: RawAxiosRequestConfig, error: AxiosError, duration: number) => void;
 
   /**
    * Emitted when the client recieved a party invitation
@@ -571,12 +610,6 @@ export interface ClientEvents {
    * @param member The party member
    */
   'party:member:kicked': (member: PartyMember) => void;
-
-  /**
-   * Emitted when a party member disconnected
-   * @param member The party member
-   */
-  'party:member:disconnected': (member: PartyMember) => void;
 
   /**
    * Emitted when a party member gets promoted
@@ -826,7 +859,7 @@ export interface FriendMessageData extends MessageData {
   author: Friend | ClientUser;
 }
 
-export interface PartyMessageData extends MessageData {
+export interface FortnitePartyMessageData extends MessageData {
   author: PartyMember | ClientPartyMember;
   party: ClientParty;
 }
@@ -936,7 +969,7 @@ export interface FriendPresenceData {
   };
 }
 
-export interface PartyMemberData {
+export interface FortnitePartyMemberData {
   id: string;
   account_id: string;
   account_dn?: string;
@@ -944,10 +977,29 @@ export interface PartyMemberData {
   revision: number;
   updated_at: string;
   joined_at: string;
-  role: string;
 }
 
-export interface PartyMemberUpdateData {
+export interface FortnitePartyMemberJoinedData {
+  type: 'com.epicgames.social.party.notification.v0.MEMBER_JOINED';
+  ns: 'Fortnite';
+  sent: string;
+  party_id: string;
+  account_id: string;
+  account_dn?: string;
+  revision: number;
+  joined_at: string;
+  updated_at: string;
+  member_state_updated: Schema;
+  connection?: {
+    id: string;
+    meta: Schema;
+    connected_at: string;
+    updated_at: string;
+    yield_leadership?: boolean;
+  };
+}
+
+export interface FortnitePartyMemberUpdateData {
   account_id: string;
   account_dn?: string;
   revision: number;
@@ -955,7 +1007,7 @@ export interface PartyMemberUpdateData {
   member_state_removed: string[];
 }
 
-export interface PartyData {
+export interface FortnitePartyData {
   id: string;
   created_at: string;
   updated_at: string;
@@ -969,22 +1021,132 @@ export interface PartyData {
     join_confirmation: boolean;
     intention_ttl: number;
   };
-  members: PartyMemberData[];
-  meta: PartySchema;
+  members: FortnitePartyMemberData[];
+  meta: FortnitePartySchema;
   invites: any[];
   revision: number;
 }
 
-export interface PartyUpdateData {
+export interface EOSPartyDataConfig {
+  joinability: 'OPEN' | 'INVITE_ONLY';
+  max_size: number;
+}
+
+export interface EOSPartyData {
+  id: string;
+  party_lead: string;
+  created_at: string;
+  updated_at: string;
+  config: EOSPartyDataConfig;
+  meta: Record<string, unknown>;
+  revision: number;
+  chat_conversation_id: string;
+  is_reportable: boolean;
+  members?: EOSPartyMemberData[];
+}
+
+export interface EOSPartyUpdateData {
+  sent: string;
+  party_id: string;
+  party_lead: string;
+  meta: Record<string, unknown>;
+  party_privacy_type: 'OPEN' | 'INVITE_ONLY';
+  max_number_of_members: number;
+  chat_conversation_id: string;
+  created_at: string;
+  updated_at: string;
+  is_reportable: boolean;
+  revision: number;
+}
+
+export interface EOSPartyMemberData {
+  account_id: string;
+  meta: Record<string, unknown>;
+  revision: number;
+  updated_at: string;
+  joined_at: string;
+  suspended: boolean;
+  connections: {
+    id: string;
+    deployment_id: string;
+    connected_at: string;
+    updated_at: string;
+    is_first_party: boolean;
+    meta: Record<string, unknown>;
+    active_in_party_voice_room?: boolean;
+  }[];
+}
+
+export interface EOSPartyInviteData {
+  party_id: string;
+  inviter_id: string;
+  inviter_dn: string;
+  invitee_id: string;
+  sent_at: string;
+  sent: string;
+  expires_at: string;
+  updated_at: string;
+  auto: boolean;
+  platform: number;
+  meta: Record<string, string>;
+}
+
+export interface EOSPartyJoinRequestData {
+  requester_id?: string;
+  sent_by?: string;
+  inviter_id?: string;
+  account_id?: string;
+  sent_at?: string;
+  sent?: string;
+  expires_at?: string;
+}
+
+export interface EOSPartyMemberUpdateData {
+  party_id: string;
+  account_id: string;
+  account_dn: string;
+  sent: string;
+  revision: number;
+  joined_at: string;
+  updated_at: string;
+  suspended?: boolean;
+  member_state_overridden?: Record<string, unknown>;
+  connection?: {
+    id: string;
+    meta: Record<string, unknown>;
+    deployment_id: string;
+    connected_at: string;
+    updated_at: string;
+  };
+  member_state_updated?: Schema;
+  member_state_removed?: string[];
+}
+
+export interface EOSPartyUserState {
+  current?: EOSPartyData;
+  invites?: EOSPartyInviteData[];
+  join_requests?: EOSPartyJoinRequestData[];
+}
+
+export interface FortnitePartyUpdateData {
+  type: 'com.epicgames.social.party.notification.v0.PARTY_UPDATED';
+  ns: 'Fortnite';
+  sent: string;
+  party_id: string;
+  captain_id: string;
   revision: number;
   party_state_updated: Schema;
   party_state_removed: string[];
+  party_state_overridden: Record<string, unknown>;
   party_privacy_type: 'OPEN' | 'INVITE_AND_FORMER';
   max_number_of_members: number;
   party_sub_type: 'default';
   party_type: 'DEFAULT';
   invite_ttl_seconds: number;
-  discoverability: 'ALL' | 'INVITED_ONLY';
+  intention_ttl_seconds: number;
+  discoverability?: 'ALL' | 'INVITED_ONLY';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Island {
@@ -1005,7 +1167,7 @@ export interface Island {
   };
 }
 
-export interface PartyMemberIsland {
+export interface FortnitePartyMemberIsland {
   LinkId: string;
   MatchmakingSettingsV2?: Record<string, string>;
   Session: {
@@ -1103,7 +1265,7 @@ export interface TournamentWindowTemplate {
   templateData: TournamentWindowTemplateData;
 }
 
-export interface PresencePartyData {
+export interface FortnitePartyPresenceData {
   bIsPrivate?: boolean;
   /**
    * sourceDisplayName
@@ -1117,22 +1279,27 @@ export interface PresencePartyData {
    * partyId
    */
   p?: string;
+  partyId?: string;
   /**
    * appId
    */
   d?: string;
+  appId?: string;
   /**
    * buildId
    */
   b?: string;
+  buildId?: string;
   /**
    * partyFlags
    */
   f?: number;
+  partyFlags?: number;
   /**
    * notAcceptingMembersReason
    */
   nAR?: number;
+  notAcceptingReason?: number;
   /**
    * playerCount
    */
@@ -1543,6 +1710,7 @@ interface BaseEOSConnectMessage {
   timestamp: number; // unix
   id?: string;
   connectionId?: string;
+  payload?: unknown;
 }
 
 export interface EOSConnectCoreConnected extends BaseEOSConnectMessage {
@@ -1551,13 +1719,12 @@ export interface EOSConnectCoreConnected extends BaseEOSConnectMessage {
 
 export interface EOSConnectCoreConnectFailed extends BaseEOSConnectMessage {
   message: string;
-  statusCode: number; // i.e. 4005
+  statusCode: number;
   type: 'core.connect.v1.connect-failed';
 }
 
 export interface EOSConnectChatMemberLeftMessage extends BaseEOSConnectMessage {
   payload: {
-    // deployment id
     namespace: string;
     conversationId: string;
     members: string[];
@@ -1567,27 +1734,25 @@ export interface EOSConnectChatMemberLeftMessage extends BaseEOSConnectMessage {
 
 export interface EOSConnectChatNewMsgMessage extends BaseEOSConnectMessage {
   payload: {
-    // deployment id
     namespace: string;
     conversation: {
       conversationId: string;
-      type: string; // i.e. 'party'
+      type: string;
     };
     message: {
       body: string;
       senderId: string;
       time: number;
-    }
+    };
   };
   type: 'social.chat.v1.NEW_MESSAGE';
 }
 
 export interface EOSConnectChatConversionCreatedMessage extends BaseEOSConnectMessage {
   payload: {
-    // deployment id
     namespace: string;
     conversationId: string;
-    type: string; // i.e. 'party'
+    type: string;
     members: string[];
   };
   type: 'social.chat.v1.CONVERSATION_CREATED';
@@ -1595,13 +1760,12 @@ export interface EOSConnectChatConversionCreatedMessage extends BaseEOSConnectMe
 
 export interface EOSConnectChatNewWhisperMessage extends BaseEOSConnectMessage {
   payload: {
-    // deployment id
     namespace: string;
     message: {
       body: string;
       senderId: string;
       time: number;
-    }
+    };
   };
   type: 'social.chat.v1.NEW_WHISPER';
 }
@@ -1634,23 +1798,9 @@ export interface EOSPresencePropsInGame extends EOSPresenceProps {
   Event_PlayersAlive?: string;
 }
 
-export interface EOSPresenceInGame {
-  productId?: string;
-  appId?: string;
-  status: PresenceOnlineType;
-  activity: {
-    value: string;
-  };
-  ns: string;
-  props: EOSPresencePropsInGame;
-  conns?: {
-    id: string;
-    props: Record<string, unknown>;
-  }[];
-}
-
 export interface EOSPresencePerNs {
   ns: string;
+  productId?: string;
   status: PresenceOnlineType;
   activity: {
     value: string;
@@ -1662,18 +1812,84 @@ export interface EOSPresenceUpdateMessage extends BaseEOSConnectMessage {
   payload: {
     accountId: string;
     status: PresenceOnlineType;
-    perNs: EOSPresencePerNs[]
+    perNs: EOSPresencePerNs[];
   };
   type: 'presence.v1.UPDATE';
 }
 
+export interface EOSConnectPartyInviteCreatedMessage extends BaseEOSConnectMessage {
+  type: 'party.v2.INVITE_CREATED';
+  payload: EOSPartyInviteData;
+}
+
+export interface EOSConnectPartyInviteExpiredMessage extends BaseEOSConnectMessage {
+  type: 'party.v2.INVITE_EXPIRED';
+  payload: EOSPartyInviteData;
+}
+
+export interface EOSConnectPartyJoinRequestMessage extends BaseEOSConnectMessage {
+  type: 'party.v2.JOIN_REQUEST_CREATED';
+  payload: EOSPartyJoinRequestData;
+}
+
+export interface EOSConnectPartyDisbandedMessage extends BaseEOSConnectMessage {
+  type: 'party.v2.MEMBER_EXPIRED_PARTY_DISBANDED';
+  payload: EOSPartyMemberUpdateData;
+}
+
+export type EOSConnectPartyMemberMessageType =
+  | 'party.v2.MEMBER_JOINED'
+  | 'party.v2.MEMBER_LEFT'
+  | 'party.v2.MEMBER_STATE_UPDATED';
+
+export interface EOSConnectPartyMemberMessage extends BaseEOSConnectMessage {
+  type: EOSConnectPartyMemberMessageType;
+  payload: EOSPartyMemberUpdateData;
+}
+
+export interface EOSConnectPartyUpdatedMessage extends BaseEOSConnectMessage {
+  type: 'party.v2.PARTY_UPDATED';
+  payload: EOSPartyUpdateData;
+}
+
+export interface EOSConnectPartyMemberKickedMessage extends BaseEOSConnectMessage {
+  type: 'party.v2.MEMBER_KICKED';
+  payload: EOSPartyMemberUpdateData;
+}
+
+export interface EOSConnectPartyMemberDisconnectMessage extends BaseEOSConnectMessage {
+  type: 'party.v2.MEMBER_DISCONNECTED' | 'party.v2.MEMBER_EXPIRED_AFTER_DISCONNECT';
+  payload: EOSPartyMemberUpdateData;
+}
+
+export interface EOSConnectMemberRefreshSummaryMessage extends BaseEOSConnectMessage {
+  type: 'party.v2.MEMBER_REFRESH_SUMMARY';
+  payload: unknown;
+}
+
+export interface EOSConnectMemberConnectedMessage extends BaseEOSConnectMessage {
+  type: 'party.v2.MEMBER_CONNECTED';
+  payload: unknown;
+}
+
+export type EOSConnectPartyNotification =
+  | EOSConnectPartyInviteCreatedMessage
+  | EOSConnectPartyInviteExpiredMessage
+  | EOSConnectPartyJoinRequestMessage
+  | EOSConnectPartyDisbandedMessage
+  | EOSConnectPartyMemberMessage
+  | EOSConnectPartyUpdatedMessage
+  | EOSConnectPartyMemberKickedMessage
+  | EOSConnectPartyMemberDisconnectMessage
+  | EOSConnectMemberRefreshSummaryMessage
+  | EOSConnectMemberConnectedMessage;
+
 export type EOSConnectMessage =
-  // Core
   EOSConnectCoreConnected
   | EOSConnectCoreConnectFailed
-  // Social chat
   | EOSConnectChatConversionCreatedMessage
   | EOSConnectChatNewMsgMessage
   | EOSConnectChatMemberLeftMessage
   | EOSConnectChatNewWhisperMessage
+  | EOSConnectPartyNotification
   | EOSPresenceUpdateMessage;

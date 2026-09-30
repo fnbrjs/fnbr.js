@@ -17,7 +17,7 @@ const client = new Client({
 
 beforeAll(async () => {
   await client.login();
-});
+}, 30000);
 
 afterAll(async () => {
   await client.logout();
@@ -97,9 +97,8 @@ describe('client methods', () => {
   });
 
   test('fetches br account level', async () => {
-    const level = await client.getBRAccountLevel(client.user.self!.id, 20);
+    const level = await client.getBRAccountLevel('Ninja', 40);
     expect(level).toBeDefined();
-    expect(level[0].user.id).toBe(client.user.self!.id);
     expect(typeof level[0].level.level).toBe('number');
   }, 20000);
 

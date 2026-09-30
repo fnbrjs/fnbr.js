@@ -1,7 +1,7 @@
 import defaultPartyMemberMeta from '../../../resources/defaultPartyMemberMeta';
 import { getRandomDefaultCharacter } from '../../util/Util';
 import PartyMemberMeta from './PartyMemberMeta';
-import type { PartyMemberSchema } from '../../../resources/structs';
+import type { FortnitePartyMemberSchema } from '../../../resources/structs';
 import type PartyMember from './PartyMember';
 
 /**
@@ -17,7 +17,7 @@ class ClientPartyMemberMeta extends PartyMemberMeta {
    * @param member The party member
    * @param schema The schema
    */
-  constructor(member: PartyMember, schema: PartyMemberSchema) {
+  constructor(member: PartyMember, schema: FortnitePartyMemberSchema) {
     super({ ...defaultPartyMemberMeta });
 
     this.member = member;

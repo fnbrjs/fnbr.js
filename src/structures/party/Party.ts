@@ -1,5 +1,4 @@
 import { Collection } from '@discordjs/collection';
-import Endpoints from '../../../resources/Endpoints';
 import { PartyPrivacy } from '../../../enums/Enums';
 import Base from '../../Base';
 import PartyAlreadyJoinedError from '../../exceptions/PartyAlreadyJoinedError';
@@ -7,10 +6,10 @@ import { makeCamelCase, makeSnakeCase } from '../../util/Util';
 import ClientPartyMember from './ClientPartyMember';
 import PartyMember from './PartyMember';
 import PartyMeta from './PartyMeta';
-import { AuthSessionStoreKey } from '../../../resources/enums';
 import type Client from '../../Client';
 import type {
-  PartyConfig, PartyData, PartySchema, PartyUpdateData,
+  EOSPartyData, EOSPartyDataConfig, FortnitePartyConfig, FortnitePartyData, FortnitePartySchema,
+  FortnitePartyUpdateData,
 } from '../../../resources/structs';
 
 /**
@@ -23,6 +22,11 @@ class Party extends Base {
   public id: string;
 
   /**
+   * The party's EOS ID
+   */
+  public eosId: string;
+
+  /**
    * The party's creation date
    */
   public createdAt: Date;
@@ -30,7 +34,7 @@ class Party extends Base {
   /**
    * The party configuration
    */
-  public config: PartyConfig;
+  public config: FortnitePartyConfig;
 
   /**
    * A collection of the party members mapped by their ID
@@ -48,22 +52,50 @@ class Party extends Base {
   public revision: number;
 
   /**
-   * @param client The main client
-   * @param data The party's data
+   * The party's EOS revision
    */
-  constructor(client: Client, data: PartyData) {
+  public eosRevision: number;
+
+  /**
+   * The party's leader ID
+   */
+  public eosLeaderId: string;
+
+  /**
+   * The party's EOS chat conversation ID
+   */
+  public eosChatConversationId: string;
+
+  /**
+   * The party's EOS config
+   */
+  public eosConfig: EOSPartyDataConfig;
+
+  /**
+   * @param client The main client
+   * @param fnData The party's Fortnite data
+   * @param eosData The party's EOS data
+   */
+  constructor(client: Client, fnData: FortnitePartyData, eosData: EOSPartyData) {
     super(client);
 
-    this.id = data.id;
-    this.createdAt = new Date(data.created_at);
-    this.config = makeCamelCase(data.config);
+    this.id = fnData.id;
+    this.eosId = eosData.id;
+    this.createdAt = new Date(fnData.created_at);
+    this.config = makeCamelCase(fnData.config);
     this.config.privacy = this.config.joinability === 'OPEN' ? PartyPrivacy.PUBLIC : PartyPrivacy.PRIVATE;
-    this.meta = new PartyMeta(data.meta);
-    this.revision = data.revision || 0;
+    this.meta = new PartyMeta(fnData.meta);
+    this.revision = fnData.revision || 0;
+    this.eosRevision = eosData.revision;
 
-    this.members = new Collection(data.members.map((m) => {
-      if (m.account_id === this.client.user.self!.id) return [m.account_id, new ClientPartyMember(this, m)];
-      return [m.account_id, new PartyMember(this, m)];
+    this.eosLeaderId = eosData.party_lead;
+    this.eosChatConversationId = eosData.chat_conversation_id;
+    this.eosConfig = eosData.config;
+
+    // Only using fnData.members seems sufficient, for now
+    this.members = new Collection(fnData.members.map((fnM) => {
+      if (fnM.account_id === this.client.user.self!.id) return [fnM.account_id, new ClientPartyMember(this, fnM)];
+      return [fnM.account_id, new PartyMember(this, fnM)];
     }));
   }
 
@@ -85,7 +117,7 @@ class Party extends Base {
    * The party's leader
    */
   public get leader() {
-    return this.members.find((m: PartyMember) => m.role === 'CAPTAIN');
+    return this.members.get(this.eosLeaderId);
   }
 
   /**
@@ -119,74 +151,25 @@ class Party extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async join(skipRefresh = false) {
-    if (!skipRefresh) {
-      await this.fetch();
-    }
+    if (!skipRefresh) await this.fetch();
 
     if (this.members.get(this.client.user.self!.id)) throw new PartyAlreadyJoinedError();
-
-    this.client.partyLock.lock();
-    if (this.client.party) await this.client.party.leave(false);
-
-    try {
-      await this.client.http.epicgamesRequest({
-        method: 'POST',
-        url: `${Endpoints.BR_PARTY}/parties/${this.id}/members/${this.client.user.self!.id}/join`,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        data: {
-          connection: {
-            id: this.client.xmpp.JID,
-            meta: {
-              'urn:epic:conn:platform_s': this.client.config.platform,
-              'urn:epic:conn:type_s': 'game',
-            },
-            yield_leadership: false,
-          },
-          meta: {
-            'urn:epic:member:dn_s': this.client.user.self!.displayName,
-            'urn:epic:member:joinrequestusers_j': JSON.stringify({
-              users: [
-                {
-                  id: this.client.user.self!.id,
-                  dn: this.client.user.self!.displayName,
-                  plat: this.client.config.platform,
-                  data: JSON.stringify({
-                    CrossplayPreference: '1',
-                    SubGame_u: '1',
-                  }),
-                },
-              ],
-            }),
-          },
-        },
-      }, AuthSessionStoreKey.Fortnite);
-    } catch (e) {
-      this.client.partyLock.unlock();
-      await this.client.initParty(true, false);
-
-      throw e;
-    }
-
-    this.client.setClientParty(this);
-    this.client.partyLock.unlock();
+    await this.client.joinParty(this.id);
   }
 
   /**
    * Updates this party's data
    */
-  public updateData(data: PartyUpdateData) {
+  public updateFortniteData(data: FortnitePartyUpdateData) {
     if (data.revision > this.revision) this.revision = data.revision;
     this.meta.update(data.party_state_updated ?? {}, true);
-    this.meta.remove(data.party_state_removed as (keyof PartySchema & string)[] ?? []);
+    this.meta.remove(data.party_state_removed as (keyof FortnitePartySchema & string)[] ?? []);
 
     this.config.joinability = data.party_privacy_type;
     this.config.maxSize = data.max_number_of_members;
     this.config.subType = data.party_sub_type;
     this.config.type = data.party_type;
     this.config.inviteTtl = data.invite_ttl_seconds;
-    this.config.discoverability = data.discoverability;
 
     let privacy = this.meta.get('Default:PrivacySettings_j');
     privacy = Object.values(PartyPrivacy)
@@ -194,6 +177,17 @@ class Party extends Base {
         && val.inviteRestriction === privacy.PrivacySettings.partyInviteRestriction
         && val.onlyLeaderFriendsCanJoin === privacy.PrivacySettings.bOnlyLeaderFriendsCanJoin);
     if (privacy) this.config.privacy = privacy;
+  }
+
+  /**
+   * Updates this party's EOS data
+   */
+  public updateEOSData(data: EOSPartyData) {
+    if (data.revision > this.eosRevision!) this.eosRevision = data.revision;
+
+    this.eosLeaderId = data.party_lead;
+    this.eosChatConversationId = data.chat_conversation_id;
+    this.eosConfig = data.config;
   }
 
   /**
@@ -211,7 +205,7 @@ class Party extends Base {
    * @throws {EpicgamesAPIError}
    */
   public async fetch() {
-    const partyData = await this.client.getParty(this.id, true) as PartyData;
+    const partyData = await this.client.getRawFortniteParty(this.id);
 
     this.createdAt = new Date(partyData.created_at);
     this.config = makeCamelCase(partyData.config);
@@ -229,7 +223,7 @@ class Party extends Base {
   /**
    * Converts this party into an object
    */
-  public toObject(): PartyData {
+  public toObject(): FortnitePartyData {
     return {
       id: this.id,
       created_at: this.createdAt.toISOString(),
@@ -237,8 +231,22 @@ class Party extends Base {
       invites: [],
       members: this.members.map((m: PartyMember) => m.toObject()),
       meta: this.meta.schema,
-      revision: 0,
+      revision: this.revision,
       updated_at: new Date().toISOString(),
+    };
+  }
+
+  public toEOSObject(): EOSPartyData {
+    return {
+      id: this.eosId,
+      party_lead: this.eosLeaderId,
+      created_at: this.createdAt.toISOString(),
+      updated_at: new Date().toISOString(),
+      config: this.eosConfig,
+      meta: {},
+      revision: this.eosRevision,
+      chat_conversation_id: this.eosChatConversationId,
+      is_reportable: false,
     };
   }
 }

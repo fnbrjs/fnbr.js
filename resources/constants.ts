@@ -5,4 +5,5 @@ export const statsKeyRegex = new RegExp('^br_.*(lastmodified|playersoutlived|kil
 export const invalidTokenCodes = [
   'errors.com.epicgames.common.oauth.invalid_token',
   'errors.com.epicgames.common.authentication.token_verification_failed',
+  'errors.com.epicgames.unauthorized',
 ];

@@ -147,6 +147,7 @@ class HTTP extends Base {
    * @param config The request config
    * @param auth The auth session to use
    * @param retryDecision The callback deciding how to handle a rate limit retry
+   * @param authRetries How many times authentication has been retried (at most once)
    * @throws {EpicgamesAPIError}
    * @throws {AxiosError}
    * @throws {RetryAbandonedError}
@@ -155,6 +156,7 @@ class HTTP extends Base {
     config: RequestConfig,
     auth?: AuthSessionStoreKey,
     retryDecision?: RetryDecisionCallback,
+    authRetries = 0,
   ): Promise<T> {
     if (auth) {
       const authSession = this.client.auth.sessions.get(auth);
@@ -176,10 +178,10 @@ class HTTP extends Base {
     } catch (err: unknown) {
       if (axios.isAxiosError<EpicgamesAPIErrorData>(err)) {
         const errorData = err.response?.data;
-        if (auth && errorData && invalidTokenCodes.includes(errorData.errorCode)) {
+        if (authRetries === 0 && auth && errorData && invalidTokenCodes.includes(errorData.errorCode)) {
           await this.client.auth.sessions.get(auth)!.refresh();
 
-          return this.epicgamesRequest(config, auth, retryDecision);
+          return this.epicgamesRequest<T>(config, auth, retryDecision, authRetries + 1);
         }
 
         if (errorData && err.response) {

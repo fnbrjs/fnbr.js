@@ -766,6 +766,7 @@ class Client extends EventEmitter {
       const eosPartyData = await this.eosParty.getParty(eosPartyId);
 
       this.party = new ClientParty(this, fnPartyData, eosPartyData);
+      await this.party.updateMemberBasicInfo();
 
       await this.setStatus();
       this.startEOSPartyKeepAlive(eosPartyId);
@@ -894,7 +895,10 @@ class Client extends EventEmitter {
 
     try {
       const lobby = await this.getRawFortniteParty(toFortniteLobbyId(state.current.id, this.config.partyBuildId));
-      return new ClientParty(this, lobby, state.current);
+      const party = new ClientParty(this, lobby, state.current);
+      await party.updateMemberBasicInfo();
+
+      return party;
     } catch (error) {
       if (error instanceof PartyNotFoundError) return undefined;
       throw error;

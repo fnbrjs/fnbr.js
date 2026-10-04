@@ -218,6 +218,8 @@ class Party extends Base {
       if (m.account_id === this.client.user.self!.id) return [m.account_id, new ClientPartyMember(this, m)];
       return [m.account_id, new PartyMember(this, m)];
     }));
+
+    await this.updateMemberBasicInfo();
   }
 
   /**

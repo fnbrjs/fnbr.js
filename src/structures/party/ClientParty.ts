@@ -397,7 +397,13 @@ class ClientParty extends Party {
     if (!partyMember) throw new PartyMemberNotFoundError(member);
 
     try {
-      await this.client.eosParty.promote(this.eosId, partyMember.id);
+      await Promise.all([
+        this.client.http.epicgamesRequest({
+          method: 'POST',
+          url: `${Endpoints.BR_PARTY}/parties/${this.id}/members/${partyMember.id}/promote`,
+        }, AuthSessionStoreKey.Fortnite, this.retryDecision),
+        this.client.eosParty.promote(this.eosId, partyMember.id),
+      ]);
     } catch (e) {
       if (e instanceof EpicgamesAPIError && e.code === 'errors.com.epicgames.social.party.party_change_forbidden') {
         throw new PartyPermissionError();

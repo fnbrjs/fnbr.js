@@ -1,5 +1,5 @@
 import type {
-  PartyPrivacy as IPartyPrivacy, Platform as IPlatform, PresenceOnlineType as IPresenceOnlineType,
+  FortnitePartyPrivacy as IPartyPrivacy, Platform as IPlatform, PresenceOnlineType as IPresenceOnlineType,
   STWHeroType as ISTWHeroType, STWSchematicRangedSubType as ISTWSchematicRangedSubType,
   STWSchematicMeleeSubType as ISTWSchematicMeleeSubType, STWSchematicTrapSubType as ISTWSchematicTrapSubType,
   STWSchematicAlterationRarity as ISTWSchematicAlterationRarity, STWSchematicEvoType as ISTWSchematicEvoType,

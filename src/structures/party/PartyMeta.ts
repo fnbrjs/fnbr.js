@@ -1,10 +1,10 @@
 import Meta from '../../util/Meta';
-import type { Island, PartySchema } from '../../../resources/structs';
+import type { Island, FortnitePartySchema } from '../../../resources/structs';
 
 /**
  * Represents a party's meta
  */
-class PartyMeta extends Meta<PartySchema> {
+class PartyMeta extends Meta<FortnitePartySchema> {
   /**
    * The currently selected island
    */

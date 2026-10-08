@@ -1,5 +1,9 @@
 name: "Compile Code"
-on: ["push", "pull_request"]
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
 jobs:
   lint:
     name: "Compile Code (Node ${{ matrix.node }})"
@@ -7,7 +11,7 @@ jobs:
 
     strategy:
       matrix:
-        node: ["20", "22", "24"]
+        node: ["22", "24", "26"]
       fail-fast: false
 
     steps:

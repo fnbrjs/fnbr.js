@@ -12,6 +12,12 @@ export enum AuthSessionStoreKey {
   Launcher = 'launcher',
 }
 
+export enum RetryDecision {
+  Retry = 'retry',
+  Abandon = 'abandon',
+  Throw = 'throw',
+}
+
 export enum SignedMessageType {
   Persistent = 'Persistent',
   Party = 'Party',

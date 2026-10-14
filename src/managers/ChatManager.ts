@@ -78,7 +78,7 @@ class ChatManager extends Base {
 
   /**
    * Sends a message in the specified conversation (e.g. party chat)
-   * @param conversationId the conversation id, usually `p-[PARTYID]`
+   * @param conversationId the conversation ID; Party chat uses the linked Fortnite lobby ID
    * @param message the message object
    * @param allowedRecipients the account ids, that should receive the message
    * @returns the message id
@@ -91,32 +91,33 @@ class ChatManager extends Base {
     conversationType: ConversationType,
   ) {
     const correlationId = generateCustomCorrelationId();
+    const isParty = conversationType === ConversationType.Party;
+    const eosPartyId = isParty ? /^([0-9a-f]{32})-\d+-[A-Za-z0-9_-]+$/i.exec(conversationId)?.[1] : undefined;
+    if (isParty && !eosPartyId) throw new Error('Party chat requires an EOS-backed lobby ID');
+    const addressedConversationId = isParty ? `ep-${eosPartyId}` : conversationId;
+    const scope = isParty || conversationType === ConversationType.DirectMessage ? '_' : this.namespace;
 
     const { body, signature } = await this.createSignedMessage(
-      conversationId,
+      addressedConversationId,
       message.body,
-      conversationType === ConversationType.DirectMessage ? SignedMessageType.Persistent : SignedMessageType.Party,
+      isParty || conversationType === ConversationType.DirectMessage ? SignedMessageType.Persistent : SignedMessageType.Party,
     );
 
     await this.client.http.epicgamesRequest({
       method: 'POST',
-      url: `${Endpoints.EOS_CHAT}/v1/public/${conversationType === ConversationType.DirectMessage ? '_' : this.namespace}`
-        + `/conversations/${conversationId}/messages?fromAccountId=${this.client.user.self!.id}`,
+      url: `${Endpoints.EOS_CHAT}/v1/public/${scope}/conversations/${addressedConversationId}/messages?fromAccountId=${this.client.user.self!.id}`,
       headers: {
         'Content-Type': 'application/json',
         'X-Epic-Correlation-ID': correlationId,
       },
       data: {
         allowedRecipients,
-        message: {
-          body,
-        },
+        message: { body },
         isReportable: false,
         metadata: {
           TmV: '2',
           Pub: this.publicKeyData!.jwt,
           Sig: signature,
-          NPM: conversationType === ConversationType.Party ? '1' : undefined,
           PlfNm: this.client.config.platform,
           PlfId: this.client.user.self!.id,
         },

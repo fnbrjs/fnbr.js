@@ -1,12 +1,12 @@
 {
   "name": "fnbr",
-  "version": "4.3.1",
+  "version": "5.0.0",
   "description": "A library to interact with Epic Games' Fortnite HTTP and XMPP services",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "node generateExports.js && npx tsc",
-    "lint": "eslint src/**/*.ts resources/**/*.ts enums/**/*.ts",
+    "lint": "eslint \"src/**/*.ts\" \"resources/**/*.ts\" \"enums/**/*.ts\"",
     "test": "jest ./tests/",
     "prepare": "npm run build"
   },
@@ -37,17 +37,17 @@
     "promises"
   ],
   "devDependencies": {
-    "@jest/globals": "^30.0.5",
-    "@types/node": "^22.15.17",
-    "@typescript-eslint/eslint-plugin": "^5.60.1",
-    "@typescript-eslint/parser": "^5.60.1",
-    "eslint": "^8.31.0",
+    "@jest/globals": "^30.5.2",
+    "@types/node": "^26.6.2",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-config-airbnb-typescript": "^17.0.0",
-    "eslint-plugin-import": "^2.27.5",
-    "jest": "^30.0.5",
-    "ts-jest": "^29.4.0",
-    "typescript": "^5.8.3"
+    "eslint-config-airbnb-typescript": "^18.0.0",
+    "eslint-plugin-import": "^2.32.0",
+    "jest": "^30.5.2",
+    "ts-jest": "^29.4.12",
+    "typescript": "^6.0.3"
   },
   "dependencies": {
     "@discordjs/collection": "^2.1.1",

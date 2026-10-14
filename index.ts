@@ -30,6 +30,7 @@ export { default as PartyMaxSizeReachedError } from './src/exceptions/PartyMaxSi
 export { default as PartyMemberNotFoundError } from './src/exceptions/PartyMemberNotFoundError';
 export { default as PartyNotFoundError } from './src/exceptions/PartyNotFoundError';
 export { default as PartyPermissionError } from './src/exceptions/PartyPermissionError';
+export { default as RetryAbandonedError } from './src/exceptions/RetryAbandonedError';
 export { default as STOMPConnectionError } from './src/exceptions/STOMPConnectionError';
 export { default as STOMPConnectionTimeoutError } from './src/exceptions/STOMPConnectionTimeoutError';
 export { default as SendMessageError } from './src/exceptions/SendMessageError';

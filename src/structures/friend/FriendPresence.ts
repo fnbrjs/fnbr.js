@@ -46,12 +46,6 @@ class FriendPresence extends Base {
   public isJoinable: boolean;
 
   /**
-   * Whether the friend has voice support
-   * @deprecated This property is no longer used and will be removed in a future version
-   */
-  public hasVoiceSupport?: boolean;
-
-  /**
    * The id of the game session the friend is currently in
    */
   public sessionId?: string;
@@ -87,12 +81,6 @@ class FriendPresence extends Base {
   public partyMaxSize?: number;
 
   /**
-   * The join key of the game session the friend is currently in (if the game session is joinable)
-   * @deprecated This property is no longer used and will be removed in a future version
-   */
-  public gameSessionJoinKey?: string;
-
-  /**
    * The stats of the game the friend is currently in
    */
   public gameplayStats?: PresenceGameplayStats;
@@ -106,7 +94,7 @@ class FriendPresence extends Base {
     super(client);
 
     this.friend = friend;
-    this.status = data.activity.value;
+    this.status = data.activity?.value;
     this.receivedAt = new Date();
     this.onlineType = onlineType;
     this.platform = data.props.EOS_Platform;

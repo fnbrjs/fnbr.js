@@ -1,5 +1,5 @@
 import BaseMessage from '../BaseMessage';
-import type { PartyMessageData } from '../../../resources/structs';
+import type { FortnitePartyMessageData } from '../../../resources/structs';
 import type Client from '../../Client';
 import type ClientParty from './ClientParty';
 import type PartyMember from './PartyMember';
@@ -22,7 +22,7 @@ class PartyMessage extends BaseMessage {
    * @param client The main client
    * @param data The message's data
    */
-  constructor(client: Client, data: PartyMessageData) {
+  constructor(client: Client, data: FortnitePartyMessageData) {
     super(client, data);
 
     this.party = data.party;

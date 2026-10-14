@@ -18,6 +18,13 @@ class ReceivedPartyJoinRequest extends BasePartyJoinRequest {
   public async accept() {
     return this.client.invite(this.sender.id);
   }
+
+  /**
+   * Declines this EOS Party v2 join request.
+   */
+  public async decline() {
+    await this.client.eosParty.declineJoinRequest(this.sender.id);
+  }
 }
 
 export default ReceivedPartyJoinRequest;

@@ -112,10 +112,9 @@ class Friend extends User {
 
   /**
    * Sends a party join request to this friend.
-   * When the friend confirms this, a party invite will be sent to the client
    * @throws {EpicgamesAPIError}
    */
-  public async sendJoinRequest() {
+  public sendJoinRequest() {
     return this.client.sendRequestToJoin(this.id);
   }
 

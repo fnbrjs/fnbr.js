@@ -1,6 +1,6 @@
 import defaultPartyMeta from '../../../resources/defaultPartyMeta.json';
 import PartyMeta from './PartyMeta';
-import type { PartySchema } from '../../../resources/structs';
+import type { FortnitePartySchema } from '../../../resources/structs';
 import type ClientParty from './ClientParty';
 import type PartyMember from './PartyMember';
 
@@ -17,13 +17,16 @@ class ClientPartyMeta extends PartyMeta {
    * @param party The party
    * @param schema The schema
    */
-  constructor(party: ClientParty, schema: PartySchema) {
+  constructor(party: ClientParty, schema: FortnitePartySchema) {
     super({ ...defaultPartyMeta });
 
     this.party = party;
 
     this.refreshSquadAssignments();
     this.updatePrivacy();
+
+    this.set('Default:LeaderData_j', { LeaderData: { epicPartyId: this.party.eosId } });
+
     if (schema) this.update(schema, true);
   }
 

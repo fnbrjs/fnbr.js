@@ -1,12 +1,12 @@
 import Meta from '../../util/Meta';
 import type {
-  BannerMeta, BattlePassMeta, CosmeticsVariantMeta, PartyMemberIsland, MatchMeta, PartyMemberSchema, Platform,
+  BannerMeta, BattlePassMeta, CosmeticsVariantMeta, FortnitePartyMemberIsland, MatchMeta, FortnitePartyMemberSchema, Platform,
 } from '../../../resources/structs';
 
 /**
  * Represents a party member meta
  */
-class PartyMemberMeta extends Meta<PartyMemberSchema> {
+class PartyMemberMeta extends Meta<FortnitePartyMemberSchema> {
   /**
    * Internal helper to get the primary loadout slots object
    */
@@ -55,14 +55,14 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
    * Whether the member is ready
    */
   public get isReady() {
-    return this.get('Default:LobbyState_j')?.LobbyState?.inGameReadyCheckStatus === 'Ready';
+    return this.get('Default:MatchmakingInfo_j')?.MatchmakingInfo?.readyStatus === 'Ready';
   }
 
   /**
    * Whether the member is sitting out
    */
   public get isSittingOut() {
-    return this.get('Default:LobbyState_j')?.LobbyState?.inGameReadyCheckStatus === 'SittingOut';
+    return this.get('Default:MatchmakingInfo_j')?.MatchmakingInfo?.readyStatus === 'SittingOut';
   }
 
   /**
@@ -138,7 +138,7 @@ class PartyMemberMeta extends Meta<PartyMemberSchema> {
   /**
    * The current island info
    */
-  public get island(): PartyMemberIsland {
+  public get island(): FortnitePartyMemberIsland {
     const island = this.get('Default:MatchmakingInfo_j')?.MatchmakingInfo?.currentIsland?.island;
     if (typeof island === 'string') return JSON.parse(island);
     return island;

@@ -8,7 +8,10 @@ jobs:
   lint:
     name: "Test & Lint Code"
     runs-on: "ubuntu-latest"
-    if: github.repository_owner == 'fnbrjs'
+    if: >-
+      github.repository == 'fnbrjs/fnbr.js' &&
+      github.actor != 'dependabot[bot]' &&
+      !github.event.pull_request.head.repo.fork
 
     steps:
       - name: "Checkout Repository"

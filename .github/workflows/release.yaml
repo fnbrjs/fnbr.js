@@ -1,0 +1,158 @@
+name: "Release"
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version committed in package.json and package-lock.json (e.g. 5.0.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.repository == 'fnbrjs/fnbr.js'
+    runs-on: ubuntu-latest
+    # npm must trust this environment so publishing cannot bypass its approval gate.
+    environment: npm-release
+    permissions:
+      contents: write
+      id-token: write
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: "Validate Release"
+        id: release
+        uses: actions/github-script@v8
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        with:
+          script: |
+            const { readFileSync } = require('node:fs');
+            const { execFileSync } = require('node:child_process');
+            const version = process.env.RELEASE_VERSION;
+            if (context.ref !== 'refs/heads/main') throw new Error('Releases must run from main');
+            if (version !== version.trim() || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) {
+              throw new Error('Enter a stable version without a v prefix, e.g. 5.0.0');
+            }
+
+            const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+            const lock = JSON.parse(readFileSync('package-lock.json', 'utf8'));
+            if (pkg.name !== 'fnbr' || lock.name !== pkg.name || lock.packages?.['']?.name !== pkg.name) {
+              throw new Error('Package and lockfile must identify fnbr');
+            }
+            if (pkg.version !== version || lock.version !== version || lock.packages?.['']?.version !== version) {
+              throw new Error('Input must match package.json and both package-lock.json version fields');
+            }
+
+            const tag = `v${version}`;
+            const existingTag = execFileSync('git', ['tag', '--list', tag], { encoding: 'utf8' }).trim();
+            if (existingTag) {
+              const commit = execFileSync('git', ['rev-parse', `${tag}^{commit}`], { encoding: 'utf8' }).trim();
+              if (commit !== context.sha) throw new Error(`${tag} already points to another commit`);
+            }
+
+            const response = await fetch(`https://registry.npmjs.org/fnbr/${version}`);
+            let published = false;
+            if (response.ok) {
+              const metadata = await response.json();
+              if (Number(process.env.GITHUB_RUN_ATTEMPT) === 1 || metadata.gitHead !== context.sha) {
+                throw new Error(`fnbr@${version} is already published; recovery requires rerunning the same source commit`);
+              }
+              published = true;
+              core.info('This commit is already published; recovering the GitHub release only');
+            } else if (response.status !== 404) {
+              throw new Error(`npm registry check failed: HTTP ${response.status}`);
+            }
+
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              ...context.repo,
+              per_page: 100,
+            });
+            const previous = releases
+              .filter((release) => !release.draft && !release.prerelease && release.tag_name !== tag)
+              .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at))[0];
+            if (!previous) throw new Error('No previous stable GitHub release found for the comparison link');
+
+            const body = [
+              `Full list of changes: https://github.com/fnbrjs/fnbr.js/compare/${previous.tag_name}...${tag}`,
+              '',
+              `Read the changelog: https://fnbr.js.org/#/docs/main/main/general/changelog?scrollTo=${version.replaceAll('.', '')}`,
+            ].join('\n');
+            core.setOutput('tag', tag);
+            core.setOutput('body', body);
+            core.setOutput('published', String(published));
+
+      - name: "Set Up NodeJS"
+        if: steps.release.outputs.published != 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: "Install OIDC-Compatible npm"
+        if: steps.release.outputs.published != 'true'
+        run: npm install --global npm@11
+
+      # npm ci runs prepare, which generates exports and builds dist/.
+      - name: "Install Dependencies and Build"
+        if: steps.release.outputs.published != 'true'
+        run: npm ci
+
+      - name: "Publish to npm"
+        if: steps.release.outputs.published != 'true'
+        run: npm publish --ignore-scripts --access public --tag latest
+
+      - name: "Create GitHub Tag and Release"
+        uses: actions/github-script@v8
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_BODY: ${{ steps.release.outputs.body }}
+        with:
+          script: |
+            const tag = process.env.RELEASE_TAG;
+            try {
+              const { data: release } = await github.rest.repos.getReleaseByTag({
+                ...context.repo,
+                tag,
+              });
+              if (release.draft || release.prerelease) throw new Error(`${tag} already has a draft or prerelease`);
+              core.info(`GitHub release already exists: ${release.html_url}`);
+              return;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+
+            const { data: release } = await github.rest.repos.createRelease({
+              ...context.repo,
+              tag_name: tag,
+              target_commitish: context.sha,
+              name: tag,
+              body: process.env.RELEASE_BODY,
+              draft: false,
+              prerelease: false,
+              make_latest: 'true',
+            });
+            core.info(`Created ${release.html_url}`);
+
+  # Tags created with GITHUB_TOKEN do not trigger the documentation push workflow.
+  documentation:
+    needs: release
+    uses: ./.github/workflows/docgen.yaml
+    with:
+      ref: refs/tags/${{ needs.release.outputs.tag }}
+    secrets:
+      BOT_PAT: ${{ secrets.BOT_PAT }}

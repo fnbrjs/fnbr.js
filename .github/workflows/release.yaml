@@ -21,6 +21,8 @@ jobs:
     permissions:
       contents: write
       id-token: write
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
 
     steps:
       - name: "Checkout Repository"
@@ -143,3 +145,12 @@ jobs:
               make_latest: 'true',
             });
             core.info(`Created ${release.html_url}`);
+
+  # Tags created with GITHUB_TOKEN do not trigger the documentation push workflow.
+  documentation:
+    needs: release
+    uses: ./.github/workflows/docgen.yaml
+    with:
+      ref: refs/tags/${{ needs.release.outputs.tag }}
+    secrets:
+      BOT_PAT: ${{ secrets.BOT_PAT }}

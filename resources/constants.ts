@@ -7,3 +7,5 @@ export const invalidTokenCodes = [
   'errors.com.epicgames.common.authentication.token_verification_failed',
   'errors.com.epicgames.unauthorized',
 ];
+
+export const connectionRetryDelays = [5000, 15000, 60000, 600000];

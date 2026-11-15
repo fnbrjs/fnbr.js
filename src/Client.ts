@@ -31,6 +31,7 @@ import FortniteServerStatus from './structures/FortniteServerStatus';
 import EpicgamesServerStatus from './structures/EpicgamesServerStatus';
 import TournamentManager from './managers/TournamentManager';
 import { AuthSessionStoreKey } from '../resources/enums';
+import { connectionRetryDelays } from '../resources/constants';
 import EpicgamesAPIError from './exceptions/EpicgamesAPIError';
 import RetryAbandonedError from './exceptions/RetryAbandonedError';
 import UserManager from './managers/UserManager';
@@ -153,6 +154,7 @@ class Client extends EventEmitter {
    */
   private eosPartyKeepAliveTimer?: NodeJS.Timeout;
   private statusUpdateTimer?: NodeJS.Timeout;
+  private partyRecovery?: Promise<void>;
 
   /**
    * @param config The client's configuration options
@@ -172,7 +174,10 @@ class Client extends EventEmitter {
       platform: 'WIN',
       defaultPartyMemberMeta: {},
       xmppKeepAliveInterval: 30,
-      xmppMaxConnectionRetries: 2,
+      xmppMaxConnectionRetries: 4,
+      xmppConnectionRetryBackoff: [...connectionRetryDelays],
+      stompMaxConnectionRetries: 4,
+      stompConnectionRetryBackoff: [...connectionRetryDelays],
       createParty: true,
       forceNewParty: true,
       disablePartyService: false,
@@ -221,6 +226,18 @@ class Client extends EventEmitter {
         ...config.partyConfig,
       },
     };
+
+    for (const key of ['xmppConnectionRetryBackoff', 'stompConnectionRetryBackoff'] as const) {
+      const backoff = this.config[key];
+      if (!Array.isArray(backoff) || backoff.length === 0) {
+        throw new TypeError(`${key} must be a non-empty array of delays in milliseconds`);
+      }
+      for (const delay of backoff) {
+        if (!Number.isInteger(delay) || delay < 0 || delay > 2147483647) {
+          throw new RangeError(`${key} delays must be integers between 0 and 2147483647 milliseconds`);
+        }
+      }
+    }
 
     this.timeouts = new Set();
     this.intervals = new Set();
@@ -271,6 +288,7 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async login() {
+    this.partyRecovery = undefined;
     await this.auth.authenticate();
     await this.user.fetchSelf();
 
@@ -316,20 +334,24 @@ class Client extends EventEmitter {
   }
 
   /**
-   * Logs the client out.
-   * Also clears all caches, etc
+   * Logs out, clears local state, and emits `disconnected` even if token revocation fails.
    */
   public async logout() {
+    this.partyRecovery = undefined;
     if (this.statusUpdateTimer) {
       this.clearInterval(this.statusUpdateTimer);
       this.statusUpdateTimer = undefined;
     }
-    await this.auth.revokeAllTokens();
+    this.isReady = false;
     this.xmpp.disconnect();
     this.stomp.disconnect();
     this.destroy();
-    this.isReady = false;
-    this.emit('disconnected');
+    this.party = undefined;
+    try {
+      await this.auth.revokeAllTokens();
+    } finally {
+      this.emit('disconnected');
+    }
   }
 
   /**
@@ -353,12 +375,15 @@ class Client extends EventEmitter {
     this.party = await this.getClientParty();
 
     if (!forceNew && this.party) {
-      const { publicConnectionId } = this.requireEOSPartyConnections();
-      await this.eosParty.connect(this.party.eosId, publicConnectionId);
-
-      this.startEOSPartyKeepAlive(this.party.eosId);
-
-      return;
+      try {
+        const { publicConnectionId } = this.requireEOSPartyConnections();
+        await this.eosParty.connect(this.party.eosId, publicConnectionId);
+        this.startEOSPartyKeepAlive(this.party.eosId);
+        return;
+      } catch (error) {
+        if (!createNew || !(error instanceof EpicgamesAPIError) || error.httpStatus !== 404) throw error;
+        this.party = undefined;
+      }
     }
 
     if (createNew) {
@@ -367,6 +392,22 @@ class Client extends EventEmitter {
 
       await this.createParty();
     }
+  }
+
+  /**
+   * Restores a previously existing party, creating one with client defaults if it is gone.
+   */
+  public async recoverParty(hadParty: boolean) {
+    if (!hadParty || this.config.disablePartyService) return;
+    if (!this.xmpp.isConnected || !this.stomp.isConnected || !this.stomp.publicConnectionId || !this.stomp.privateConnectionId) return;
+
+    if (!this.partyRecovery) {
+      const recovery = this.initParty(true, false).finally(() => {
+        if (this.partyRecovery === recovery) this.partyRecovery = undefined;
+      });
+      this.partyRecovery = recovery;
+    }
+    await this.partyRecovery;
   }
 
   /**

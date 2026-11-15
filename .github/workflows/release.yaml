@@ -18,6 +18,8 @@ jobs:
   release:
     if: github.repository == 'fnbrjs/fnbr.js'
     runs-on: ubuntu-latest
+    # npm must trust this environment so publishing cannot bypass its approval gate.
+    environment: npm-release
     permissions:
       contents: write
       id-token: write

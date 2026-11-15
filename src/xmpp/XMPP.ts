@@ -178,7 +178,7 @@ class XMPP extends Base {
     }
   }
 
-  private async restoreConnection(lifecycle: number) {
+  private async restoreConnection(lifecycle: number, hadParty: boolean) {
     const promise = this.connect();
     const { connection } = this;
     const checkConnection = () => {
@@ -191,9 +191,7 @@ class XMPP extends Base {
       checkConnection();
       if (this.client.config.fetchFriends) await this.client.updateCaches();
       checkConnection();
-      if (!this.client.config.disablePartyService) {
-        await this.client.initParty(this.client.config.createParty, this.client.config.forceNewParty);
-      }
+      await this.client.recoverParty(hadParty);
       checkConnection();
       return connection;
     } catch (error) {
@@ -202,7 +200,7 @@ class XMPP extends Base {
     }
   }
 
-  private recover(attempt = 0, lifecycle = this.lifecycle): void {
+  private recover(hadParty: boolean, attempt = 0, lifecycle = this.lifecycle): void {
     if (lifecycle !== this.lifecycle) return;
     if (attempt >= this.client.config.xmppMaxConnectionRetries) {
       this.recovering = false;
@@ -220,14 +218,14 @@ class XMPP extends Base {
       if (lifecycle !== this.lifecycle) return;
       this.retryTimer = undefined;
       try {
-        const connection = await this.restoreConnection(lifecycle);
+        const connection = await this.restoreConnection(lifecycle, hadParty);
         if (lifecycle !== this.lifecycle) return;
         if (this.connection !== connection || !this.isConnected) throw new Error('XMPP connection disconnected');
         this.recovering = false;
       } catch (error) {
         if (lifecycle !== this.lifecycle) return;
         this.client.debug(`[XMPP] Reconnect failed: ${String(error)}`);
-        this.recover(attempt + 1, lifecycle);
+        this.recover(hadParty, attempt + 1, lifecycle);
       }
     }, delay);
   }
@@ -242,10 +240,11 @@ class XMPP extends Base {
         this.cancelConnect(new Error('XMPP connection disconnected'));
         return;
       }
+      const hadParty = !!this.client.party;
       this.closeConnection(connection);
       if (this.recovering) return;
       this.recovering = true;
-      this.recover();
+      this.recover(hadParty);
     });
 
     connection.on('raw:incoming', (raw) => this.client.debug(`IN ${raw}`, 'xmpp'));

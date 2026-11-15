@@ -46,7 +46,7 @@ class STOMP extends Base {
   private reconnecting = false;
   private lifecycle = 0;
   private cancelConnect?: () => void;
-  private cancelRebind?: () => void;
+  private cancelPartyRestore?: () => void;
   private partyEventQueue = new AsyncQueue();
   private handledMessages = new STOMPMessageDedupe(100);
 
@@ -107,8 +107,9 @@ class STOMP extends Base {
           finish(new STOMPConnectionError(`Connection closed before initialization: ${reason}`));
           return;
         }
+        const hadParty = !!this.client.party;
         this.clearConnection();
-        this.reconnect(reason.toString());
+        this.reconnect(reason.toString(), hadParty);
       });
 
       connection.once('open', () => {
@@ -132,7 +133,7 @@ class STOMP extends Base {
     });
   }
 
-  private reconnect(reason: string) {
+  private reconnect(reason: string, hadParty: boolean) {
     if (this.reconnecting) return;
     this.reconnecting = true;
     const { lifecycle } = this;
@@ -157,7 +158,7 @@ class STOMP extends Base {
         try {
           await connecting;
           if (this.lifecycle !== lifecycle) return;
-          if (connection && this.connection === connection) await this.rebindEOSPartyConnection(connection);
+          if (connection && this.connection === connection) await this.restoreParty(connection, hadParty);
           if (this.lifecycle !== lifecycle) return;
           if (this.connection === connection && this.isConnected) {
             this.reconnecting = false;
@@ -447,33 +448,20 @@ class STOMP extends Base {
     this.client.emit('friend:presence', before, after);
   }
 
-  private async rebindEOSPartyConnection(connection: WebSocket) {
-    if (this.client.config.disablePartyService) return;
+  private async restoreParty(connection: WebSocket, hadParty: boolean) {
+    if (!hadParty || this.connection !== connection) return;
 
-    const { party } = this.client;
-    const { publicConnectionId } = this;
-    const eosPartyId = party?.eosId;
-    if (!eosPartyId || !publicConnectionId || this.connection !== connection) return;
-
-    try {
-      // Release the transport wait on socket loss, without cancelling the HTTP request.
-      await new Promise<void>((resolve, reject) => {
-        const cancel = () => reject(new STOMPConnectionError('Party rebind cancelled'));
-        this.cancelRebind = cancel;
-        this.client.eosParty.connect(eosPartyId, publicConnectionId).then(() => {
-          if (this.cancelRebind === cancel) this.cancelRebind = undefined;
-          resolve();
-        }, (error) => {
-          if (this.cancelRebind === cancel) this.cancelRebind = undefined;
-          reject(error);
-        });
+    await new Promise<void>((resolve, reject) => {
+      const cancel = () => reject(new STOMPConnectionError('Party restoration cancelled'));
+      this.cancelPartyRestore = cancel;
+      this.client.recoverParty(hadParty).then(() => {
+        if (this.cancelPartyRestore === cancel) this.cancelPartyRestore = undefined;
+        resolve();
+      }, (error) => {
+        if (this.cancelPartyRestore === cancel) this.cancelPartyRestore = undefined;
+        reject(error);
       });
-    } catch (error) {
-      if (this.connection !== connection || this.client.party !== party
-        || this.publicConnectionId !== publicConnectionId) return;
-      if (error instanceof RetryAbandonedError) return;
-      await this.client.initParty(true, true);
-    }
+    });
   }
 
   private async runPartyTransition<T>(transition: () => T): Promise<T | undefined> {
@@ -742,12 +730,12 @@ class STOMP extends Base {
   }
 
   private clearConnection() {
-    const { cancelConnect, cancelRebind, connection } = this;
+    const { cancelConnect, cancelPartyRestore, connection } = this;
     this.cancelConnect = undefined;
-    this.cancelRebind = undefined;
+    this.cancelPartyRestore = undefined;
     this.connection = undefined;
     cancelConnect?.();
-    cancelRebind?.();
+    cancelPartyRestore?.();
     clearInterval(this.pingInterval);
     this.pingInterval = undefined;
 

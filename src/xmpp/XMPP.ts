@@ -14,6 +14,7 @@ import XMPPConnectionTimeoutError from '../exceptions/XMPPConnectionTimeoutError
 import XMPPConnectionError from '../exceptions/XMPPConnectionError';
 import XMPPMetadataStore from './XMPPMetadataStore';
 import type { Agent } from 'stanza';
+import type { StreamError } from 'stanza/protocol';
 
 /**
  * Represents the client's XMPP manager
@@ -26,10 +27,15 @@ class XMPP extends Base {
    */
   private connection?: Agent;
 
-  /**
-   * The amount of times the XMPP agent has tried to reconnect
-   */
-  private connectionRetryCount = 0;
+  private connectionPromise?: Promise<void>;
+
+  private cancelConnect?: (error: Error) => void;
+
+  private retryTimer?: ReturnType<typeof setTimeout>;
+
+  private recovering = false;
+
+  private lifecycle = 0;
 
   /**
    * Whether the XMPP agent is connected
@@ -61,7 +67,9 @@ class XMPP extends Base {
       throw new AuthenticationMissingError(AuthSessionStoreKey.Fortnite);
     }
 
-    this.connection = createStanzaClient({
+    if (this.connectionPromise) return this.connectionPromise;
+    if (this.isConnected) return undefined;
+    const connection = createStanzaClient({
       jid: `${this.client.user.self!.id}@${Endpoints.EPIC_PROD_ENV}`,
       server: Endpoints.EPIC_PROD_ENV,
       transports: {
@@ -76,82 +84,175 @@ class XMPP extends Base {
       resource: `V2:Fortnite:${this.client.config.platform}::${crypto.randomBytes(16).toString('hex').toUpperCase()}`,
     });
 
-    this.connection.enableKeepAlive({
-      interval: this.client.config.xmppKeepAliveInterval,
-    });
-
-    this.setupEvents();
-
+    this.connection = connection;
     this.client.debug('[XMPP] Connecting...');
     const connectionStartTime = Date.now();
 
-    return new Promise<void>((res, rej) => {
-      const timeout = setTimeout(() => {
-        rej(new XMPPConnectionTimeoutError(this.client.config.xmppConnectionTimeout));
-      }, this.client.config.xmppConnectionTimeout);
-
-      this.connection!.once('session:started', () => {
-        clearTimeout(timeout);
-        this.client.debug(`[XMPP] Successfully connected (${((Date.now() - connectionStartTime) / 1000).toFixed(2)}s)`);
-        this.connectionRetryCount = 0;
-
-        if (sendStatusWhenConnected) this.client.setStatus();
-
-        res();
-      });
-
-      this.connection?.once('stream:error', (err) => {
-        clearTimeout(timeout);
-        rej(new XMPPConnectionError(err));
-      });
-
-      this.connection!.connect();
+    let resolve!: () => void;
+    let reject!: (error: Error) => void;
+    const promise = new Promise<void>((resolvePromise, rejectPromise) => {
+      resolve = resolvePromise;
+      reject = rejectPromise;
     });
+    let settled = false;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    let onStarted: () => void;
+    let onError: (error: StreamError) => void;
+    const settle = (error?: Error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      connection.removeListener('session:started', onStarted);
+      connection.removeListener('stream:error', onError);
+      if (this.connection === connection) {
+        this.connectionPromise = undefined;
+        this.cancelConnect = undefined;
+      }
+      if (error) {
+        this.closeConnection(connection);
+        reject(error);
+      } else {
+        this.client.debug(`[XMPP] Successfully connected (${((Date.now() - connectionStartTime) / 1000).toFixed(2)}s)`);
+        resolve();
+      }
+    };
+    onStarted = async () => {
+      if (settled) return;
+      clearTimeout(timeout);
+      try {
+        if (sendStatusWhenConnected) await this.client.setStatus();
+        settle();
+      } catch (error) {
+        settle(error instanceof Error ? error : new Error(String(error)));
+      }
+    };
+    onError = (error: StreamError) => settle(new XMPPConnectionError(error));
+    this.connectionPromise = promise;
+    this.cancelConnect = settle;
+    try {
+      timeout = setTimeout(() => {
+        settle(new XMPPConnectionTimeoutError(this.client.config.xmppConnectionTimeout));
+      }, this.client.config.xmppConnectionTimeout);
+      connection.once('session:started', onStarted);
+      connection.once('stream:error', onError);
+      connection.enableKeepAlive({
+        interval: this.client.config.xmppKeepAliveInterval,
+      });
+      this.setupEvents(connection);
+      connection.connect();
+    } catch (error) {
+      settle(error instanceof Error ? error : new Error(String(error)));
+    }
+    return promise;
   }
 
   /**
-   * Disconnects the XMPP client.
-   * Also performs a cleanup
+   * Disconnects the XMPP client
    */
   public disconnect() {
+    this.lifecycle += 1;
+    this.recovering = false;
+    clearTimeout(this.retryTimer);
+    this.retryTimer = undefined;
+    this.cancelConnect?.(new Error('XMPP connection disconnected'));
+    if (this.connection) this.closeConnection(this.connection);
     this.metadataStore.clear();
-    if (!this.connection) return;
-
-    this.connection.disableKeepAlive();
-    this.connection.removeAllListeners();
-    this.connection.disconnect();
-    this.connection = undefined;
-
     this.client.debug('[XMPP] Disconnected');
+  }
+
+  private closeConnection(connection: Agent) {
+    if (this.connection === connection) {
+      this.connection = undefined;
+      this.metadataStore.clear();
+    }
+    connection.removeAllListeners();
+    try {
+      connection.disableKeepAlive();
+    } catch (error) {
+      this.client.debug(`[XMPP] Keepalive cleanup failed: ${String(error)}`);
+    }
+    try {
+      connection.disconnect();
+    } catch (error) {
+      this.client.debug(`[XMPP] Disconnect failed: ${String(error)}`);
+    }
+  }
+
+  private async restoreConnection(lifecycle: number) {
+    const promise = this.connect();
+    const { connection } = this;
+    const checkConnection = () => {
+      if (lifecycle !== this.lifecycle || this.connection !== connection || !connection?.sessionStarted) {
+        throw new Error('XMPP connection disconnected');
+      }
+    };
+    try {
+      await promise;
+      checkConnection();
+      if (this.client.config.fetchFriends) await this.client.updateCaches();
+      checkConnection();
+      if (!this.client.config.disablePartyService) {
+        await this.client.initParty(this.client.config.createParty, this.client.config.forceNewParty);
+      }
+      checkConnection();
+      return connection;
+    } catch (error) {
+      if (lifecycle === this.lifecycle && connection && this.connection === connection) this.closeConnection(connection);
+      throw error;
+    }
+  }
+
+  private recover(attempt = 0, lifecycle = this.lifecycle): void {
+    if (lifecycle !== this.lifecycle) return;
+    if (attempt >= this.client.config.xmppMaxConnectionRetries) {
+      this.recovering = false;
+      this.client.debug('[XMPP] Disconnected, retry limit reached');
+      this.client.logout().catch((error: unknown) => {
+        this.client.debug(`[XMPP] Logout failed: ${String(error)}`);
+      });
+      return;
+    }
+
+    const backoff = this.client.config.xmppConnectionRetryBackoff;
+    const delay = backoff[Math.min(attempt, backoff.length - 1)];
+    this.client.debug(`[XMPP] Disconnected, reconnecting in ${delay / 1000} seconds...`);
+    this.retryTimer = setTimeout(async () => {
+      if (lifecycle !== this.lifecycle) return;
+      this.retryTimer = undefined;
+      try {
+        const connection = await this.restoreConnection(lifecycle);
+        if (lifecycle !== this.lifecycle) return;
+        if (this.connection !== connection || !this.isConnected) throw new Error('XMPP connection disconnected');
+        this.recovering = false;
+      } catch (error) {
+        if (lifecycle !== this.lifecycle) return;
+        this.client.debug(`[XMPP] Reconnect failed: ${String(error)}`);
+        this.recover(attempt + 1, lifecycle);
+      }
+    }, delay);
   }
 
   /**
    * Registers all events
    */
-  private setupEvents() {
-    this.connection!.on('disconnected', async () => {
-      this.disconnect();
-
-      if (this.connectionRetryCount >= this.client.config.xmppMaxConnectionRetries) {
-        this.client.debug('[XMPP] Disconnected, reconnecting in 5 seconds...');
-        this.connectionRetryCount += 1;
-
-        await new Promise((res) => setTimeout(res, 5000));
-
-        await this.connect();
-        if (this.client.config.fetchFriends) await this.client.updateCaches();
-        if (!this.client.config.disablePartyService) await this.client.initParty(this.client.config.createParty, this.client.config.forceNewParty);
-      } else {
-        this.client.debug('[XMPP] Disconnected, retry limit reached');
-
-        await this.client.logout();
+  private setupEvents(connection: Agent) {
+    connection.on('disconnected', () => {
+      if (this.connection !== connection) return;
+      if (this.cancelConnect) {
+        this.cancelConnect(new Error('XMPP connection disconnected'));
+        return;
       }
+      this.closeConnection(connection);
+      if (this.recovering) return;
+      this.recovering = true;
+      this.recover();
     });
 
-    this.connection!.on('raw:incoming', (raw) => this.client.debug(`IN ${raw}`, 'xmpp'));
-    this.connection!.on('raw:outgoing', (raw) => this.client.debug(`OUT ${raw}`, 'xmpp'));
+    connection.on('raw:incoming', (raw) => this.client.debug(`IN ${raw}`, 'xmpp'));
+    connection.on('raw:outgoing', (raw) => this.client.debug(`OUT ${raw}`, 'xmpp'));
 
-    this.connection!.on('message', async (m) => {
+    connection.on('message', async (m) => {
+      if (this.connection !== connection) return;
       if (m.type && m.type !== 'normal') return;
       if (!m.body) return;
       if (m.from !== 'xmpp-admin@prod.ol.epicgames.com') return;

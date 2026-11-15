@@ -19,3 +19,7 @@ docs.json
 test.js
 
 .DS_Store
+
+# Agent stuff
+plans/
+AGENTS.md

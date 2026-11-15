@@ -297,9 +297,28 @@ export interface ClientConfig {
   xmppKeepAliveInterval: number;
 
   /**
-   * The maximum amount of times the client should try to reconnect to XMPP before giving up
+   * The maximum number of XMPP reconnect attempts before logout (4 by default).
    */
   xmppMaxConnectionRetries: number;
+
+  /**
+   * XMPP reconnect delays in milliseconds (defaults to [5000, 15000, 60000, 600000]).
+   * Must be non-empty, with integer delays from 0 to 2147483647. Attempts beyond the array repeat its last delay.
+   * The attempt limit is controlled separately by xmppMaxConnectionRetries.
+   */
+  xmppConnectionRetryBackoff: number[];
+
+  /**
+   * The maximum number of STOMP reconnect attempts before logout (4 by default).
+   */
+  stompMaxConnectionRetries: number;
+
+  /**
+   * STOMP reconnect delays in milliseconds (defaults to [5000, 15000, 60000, 600000]).
+   * Must be non-empty, with integer delays from 0 to 2147483647. Attempts beyond the array repeat its last delay.
+   * The attempt limit is controlled separately by stompMaxConnectionRetries.
+   */
+  stompConnectionRetryBackoff: number[];
 
   /**
    * Settings that affect the way the client caches certain data

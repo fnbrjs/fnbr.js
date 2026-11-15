@@ -42,7 +42,11 @@ class STOMP extends Base {
   private publicSubscriptionId?: string;
   private privateSubscriptionId?: string;
   private pingInterval?: NodeJS.Timeout;
-  private connectionRetryCount = 0;
+  private reconnectTimer?: NodeJS.Timeout;
+  private reconnecting = false;
+  private lifecycle = 0;
+  private cancelConnect?: () => void;
+  private cancelRebind?: () => void;
   private partyEventQueue = new AsyncQueue();
   private handledMessages = new STOMPMessageDedupe(100);
 
@@ -50,27 +54,65 @@ class STOMP extends Base {
     return this.connection?.readyState === WebSocket.OPEN;
   }
 
+  /**
+   * Connects to EOS Connect and waits for initialization.
+   */
   public async connect() {
+    this.disconnect();
+    const { lifecycle } = this;
+    await this.openConnection();
+    if (this.lifecycle !== lifecycle) throw new STOMPConnectionError('Connection cancelled');
+  }
+
+  private async openConnection() {
     const authSession = this.client.auth.sessions.get(AuthSessionStoreKey.FortniteEOS);
     if (!authSession) throw new AuthenticationMissingError(AuthSessionStoreKey.FortniteEOS);
-
     this.client.debug('[STOMP] Connecting...');
     const connectionStartTime = Date.now();
-    this.connection = new WebSocket(`wss://${Endpoints.EOS_STOMP}`, {
+    const connection = new WebSocket(`wss://${Endpoints.EOS_STOMP}`, {
       headers: {
         Authorization: `Bearer ${authSession.accessToken}`,
         'Epic-Connect-Device-Id': ' ',
         'Epic-Connect-Protocol': 'stomp',
       },
     });
+    this.connection = connection;
 
     return new Promise<void>((resolve, reject) => {
-      const connectionTimeout = setTimeout(() => {
-        this.disconnect();
-        reject(new STOMPConnectionTimeoutError(this.client.config.stompConnectionTimeout));
+      let settled = false;
+      let connected = false;
+      let connectionTimeout: NodeJS.Timeout;
+      const finish = (error?: Error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(connectionTimeout);
+        if (this.connection === connection) this.cancelConnect = undefined;
+        if (error) {
+          if (this.connection === connection) this.clearConnection();
+          reject(error);
+        } else {
+          connected = true;
+          resolve();
+        }
+      };
+      const cancel = () => finish(new STOMPConnectionError('Connection cancelled'));
+      this.cancelConnect = cancel;
+      connectionTimeout = setTimeout(() => {
+        finish(new STOMPConnectionTimeoutError(this.client.config.stompConnectionTimeout));
       }, this.client.config.stompConnectionTimeout);
 
-      this.connection!.once('open', () => {
+      connection.once('close', (_code, reason) => {
+        if (this.connection !== connection) return;
+        if (!connected) {
+          finish(new STOMPConnectionError(`Connection closed before initialization: ${reason}`));
+          return;
+        }
+        this.clearConnection();
+        this.reconnect(reason.toString());
+      });
+
+      connection.once('open', () => {
+        if (this.connection !== connection) return;
         this.sendMessage({
           command: 'CONNECT',
           headers: {
@@ -80,47 +122,67 @@ class STOMP extends Base {
           },
         });
 
-        this.registerEvents(resolve, reject, connectionStartTime, connectionTimeout);
+        this.registerEvents(connection, () => finish(), (error) => finish(error), connectionStartTime);
       });
 
-      this.connection!.once('error', (error) => {
+      connection.once('error', (error) => {
         this.client.debug(`[STOMP] Connection failed: ${error.message}`);
-
-        clearTimeout(connectionTimeout);
-        reject(new STOMPConnectionError(error.message));
+        finish(new STOMPConnectionError(error.message));
       });
     });
   }
 
-  private registerEvents(
-    resolve: () => void,
-    reject: (reason?: unknown) => void,
-    connectionStartTime: number,
-    connectionTimeout: NodeJS.Timeout,
-  ) {
-    this.connection!.on('close', async (code, reason) => {
-      this.disconnect();
+  private reconnect(reason: string) {
+    if (this.reconnecting) return;
+    this.reconnecting = true;
+    const { lifecycle } = this;
 
-      if (this.connectionRetryCount >= 2) {
-        this.connectionRetryCount = 0;
+    const retry = (attempt: number) => {
+      if (this.lifecycle !== lifecycle) return;
+      if (attempt >= this.client.config.stompMaxConnectionRetries) {
+        this.reconnecting = false;
         this.client.debug(`[STOMP] Disconnected, retry limit reached: ${reason}`);
-
+        this.client.logout().catch((error) => {
+          this.client.debug(`[STOMP] Logout failed: ${error instanceof Error ? error.message : String(error)}`);
+        });
         return;
       }
 
-      this.connectionRetryCount += 1;
+      const backoff = this.client.config.stompConnectionRetryBackoff;
+      const wait = backoff[Math.min(attempt, backoff.length - 1)];
+      this.reconnectTimer = setTimeout(async () => {
+        this.reconnectTimer = undefined;
+        const connecting = this.openConnection();
+        const { connection } = this;
+        try {
+          await connecting;
+          if (this.lifecycle !== lifecycle) return;
+          if (connection && this.connection === connection) await this.rebindEOSPartyConnection(connection);
+          if (this.lifecycle !== lifecycle) return;
+          if (this.connection === connection && this.isConnected) {
+            this.reconnecting = false;
+            return;
+          }
+        } catch (error) {
+          if (this.lifecycle !== lifecycle) return;
+          this.client.debug(`[STOMP] Reconnect failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        if (this.connection === connection) this.clearConnection();
+        retry(attempt + 1);
+      }, wait);
+    };
 
-      await new Promise((res) => setTimeout(res, 5000));
+    retry(0);
+  }
 
-      try {
-        await this.connect();
-        await this.rebindEOSPartyConnection();
-      } catch (error) {
-        this.client.debug(`[STOMP] Reconnect failed: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    });
-
-    this.connection!.on('message', async (raw: WebSocket.RawData) => {
+  private registerEvents(
+    connection: WebSocket,
+    resolve: () => void,
+    reject: (reason: Error) => void,
+    connectionStartTime: number,
+  ) {
+    connection.on('message', async (raw: WebSocket.RawData) => {
+      if (this.connection !== connection) return;
       const text = decodeRawData(raw);
       const message = STOMPMessage.fromString(text);
 
@@ -129,21 +191,26 @@ class STOMP extends Base {
         return;
       }
 
-      if (!message.body) return;
+      if (!message.body) {
+        if (message.command === 'ERROR') reject(new STOMPConnectionError('STOMP initialization failed'));
+        return;
+      }
       if (message.command !== 'MESSAGE' && message.command !== 'ERROR') return;
 
       let data: unknown;
       try {
         data = JSON.parse(message.body);
       } catch {
-        this.client.debug(`[STOMP] Invalid message body: ${message.body}`);
+        if (message.command === 'ERROR') reject(new STOMPConnectionError(message.body));
+        else this.client.debug(`[STOMP] Invalid message body: ${message.body}`);
         return;
       }
 
       if (message.command === 'ERROR') {
+        reject(new STOMPConnectionError(message.body));
         if (STOMP.isAuthenticationErrorFrame(data)) {
           this.client.debug('[STOMP] Authentication token is invalid; reconnecting...');
-          this.connection?.close();
+          connection.close();
         }
 
         return;
@@ -157,6 +224,7 @@ class STOMP extends Base {
       if (data.type.startsWith('party.v2.') && this.client.config.disablePartyService) return;
 
       this.client.emit('stomp:message', data);
+      if (this.connection !== connection) return;
 
       try {
         switch (data.type) {
@@ -165,17 +233,14 @@ class STOMP extends Base {
               reject(new STOMPConnectionError('EOS Connect did not provide Party v2 connection IDs'));
               return;
             }
-            clearTimeout(connectionTimeout);
             this.connectionId = data.connectionId;
             this.publicConnectionId = `${data.connectionId}#${this.publicSubscriptionId}`;
             this.privateConnectionId = `${data.connectionId}#${this.privateSubscriptionId}`;
-            this.connectionRetryCount = 0;
             this.client.debug(`[STOMP] Successfully connected (${((Date.now() - connectionStartTime) / 1000).toFixed(2)}s)`);
             resolve();
             break;
 
           case 'core.connect.v1.connect-failed':
-            clearTimeout(connectionTimeout);
             reject(new STOMPConnectionError(data.message, data.statusCode));
             break;
 
@@ -382,16 +447,32 @@ class STOMP extends Base {
     this.client.emit('friend:presence', before, after);
   }
 
-  private async rebindEOSPartyConnection() {
+  private async rebindEOSPartyConnection(connection: WebSocket) {
     if (this.client.config.disablePartyService) return;
 
-    if (!this.client.party?.eosId || !this.publicConnectionId) return;
+    const { party } = this.client;
+    const { publicConnectionId } = this;
+    const eosPartyId = party?.eosId;
+    if (!eosPartyId || !publicConnectionId || this.connection !== connection) return;
 
     try {
-      await this.client.eosParty.connect(this.client.party.eosId, this.publicConnectionId);
+      // Release the transport wait on socket loss, without cancelling the HTTP request.
+      await new Promise<void>((resolve, reject) => {
+        const cancel = () => reject(new STOMPConnectionError('Party rebind cancelled'));
+        this.cancelRebind = cancel;
+        this.client.eosParty.connect(eosPartyId, publicConnectionId).then(() => {
+          if (this.cancelRebind === cancel) this.cancelRebind = undefined;
+          resolve();
+        }, (error) => {
+          if (this.cancelRebind === cancel) this.cancelRebind = undefined;
+          reject(error);
+        });
+      });
     } catch (error) {
+      if (this.connection !== connection || this.client.party !== party
+        || this.publicConnectionId !== publicConnectionId) return;
       if (error instanceof RetryAbandonedError) return;
-      await this.client.initParty();
+      await this.client.initParty(true, true);
     }
   }
 
@@ -569,7 +650,17 @@ class STOMP extends Base {
     }));
   }
 
-  public async patchPresence(activityValue: string, props: EOSPresencePropsInGame, onlineType: PresenceOnlineType = 'online') {
+  /**
+   * Updates public EOS presence for the current connection.
+   * @param activityValue The activity text
+   * @param props The presence properties
+   * @param onlineType The online status
+   */
+  public async patchPresence(
+    activityValue: string,
+    props: EOSPresencePropsInGame,
+    onlineType: PresenceOnlineType = 'online',
+  ) {
     const { party } = this.client;
     const { publicConnectionId } = this;
     if (!publicConnectionId) return;
@@ -599,6 +690,10 @@ class STOMP extends Base {
     }
   }
 
+  /**
+   * Updates private EOS presence with the party's join information.
+   * @param party The party to advertise, or undefined to clear party information
+   */
   public async patchInternalPresence(party?: Party | ClientParty) {
     const { privateConnectionId } = this;
     if (!privateConnectionId) return;
@@ -639,15 +734,29 @@ class STOMP extends Base {
   }
 
   public disconnect() {
-    if (this.pingInterval) clearInterval(this.pingInterval);
+    this.lifecycle += 1;
+    this.reconnecting = false;
+    clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = undefined;
+    this.clearConnection();
+  }
+
+  private clearConnection() {
+    const { cancelConnect, cancelRebind, connection } = this;
+    this.cancelConnect = undefined;
+    this.cancelRebind = undefined;
+    this.connection = undefined;
+    cancelConnect?.();
+    cancelRebind?.();
+    clearInterval(this.pingInterval);
     this.pingInterval = undefined;
 
-    if (this.connection) {
-      this.connection.removeAllListeners();
-      if (this.connection.readyState === WebSocket.OPEN) this.connection.close();
+    if (connection) {
+      connection.removeAllListeners();
+      connection.on('error', () => {});
+      if (connection.readyState !== WebSocket.CLOSED) connection.terminate();
     }
 
-    this.connection = undefined;
     this.connectionId = undefined;
     this.publicConnectionId = undefined;
     this.privateConnectionId = undefined;

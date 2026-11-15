@@ -6,6 +6,15 @@ on:
       - '!docs'
     tags:
       - '*'
+  workflow_call:
+    inputs:
+      ref:
+        description: "Full ref to generate documentation for"
+        required: true
+        type: string
+    secrets:
+      BOT_PAT:
+        required: true
 jobs:
   docgen:
     if: github.repository_owner == 'fnbrjs'
@@ -18,23 +27,24 @@ jobs:
           git config --global user.email fnbr@tusinean.ro
 
       - name: Set Up NodeJS
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v6
         with:
           node-version: 22
 
       - name: Checkout Main Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
         with:
           path: main
+          ref: ${{ inputs.ref || github.ref }}
 
       - name: Checkout Main Repository Docs Branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
         with:
           path: docs
           ref: docs
 
       - name: Checkout DocGen Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
         with:
           repository: fnbrjs/docgen
           token: ${{ secrets.BOT_PAT }}
@@ -59,7 +69,7 @@ jobs:
       - uses: actions-ecosystem/action-regex-match@v2
         id: current_branch
         with:
-          text: ${{ github.ref }}
+          text: ${{ inputs.ref || github.ref }}
           regex: '(?<=\/)(\w|\d|\.)+$'
 
       - name: Deploy Documentation

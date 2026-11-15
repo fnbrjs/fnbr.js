@@ -4,30 +4,86 @@
 
 ### Additions
 * Party
-  * Added `Party#eosPartyId`, the identifier paired with `Party#id` for party operations that require it.
-  * Added the `party:recreated` event, emitted with the replacement `ClientParty` when the client's party is recreated.
-  * Added `Client#getRawFortniteParty()` to retrieve an unwrapped Fortnite lobby by lobby ID or EOS Party ID.
-
-### Fixes
-* Party
-  * Fixed party recreation failing when the client remained in its previous lobby after the party was disbanded.
-  * Party lifecycle notifications now preserve peer leaves when the EOS party disbands before the corresponding XMPP message.
-  * Accepting a party invitation no longer fails when leaving the old Fortnite lobby has already disbanded its linked EOS party.
-  * `Client#getParty()` now accepts either a Fortnite lobby ID or EOS Party ID and constructs a party from both Fortnite and EOS responses.
-
-* Stats
-  * Fixed `Client#getBRAccountLevel()` failing when the requested season's level stat could not be queried through the multi-account stats endpoint.
+  * Added `Party#eosId`, `Party#eosRevision`, `Party#eosLeaderId`, `Party#eosChatConversationId` and `Party#eosConfig`
+  * Added `Party#updateEOSData()` and `Party#toEOSObject()`
+  * Added `Client#eosParty` as the client's EOS party manager
+  * Added `Client#getRawFortniteParty()` to fetch raw Fortnite lobby data
+  * Added `Client#fetchPartyBuildId()`
+* Party Invitations
+  * Added `BasePartyInvitation#eosPartyId` and `BasePartyInvitation#fetchParty()`
+* Party Join Requests
+  * Added `ReceivedPartyJoinRequest#decline()`
+* Client Methods
+  * Added `Client#waitForFriend()`
+* Client Config
+  * Added `ClientOptions#statusUpdateInterval` to define after how many ms the client will refresh its status (10 minutes by default, set to 0 to disable)
+  * Added `ClientOptions#stompMaxConnectionRetries`
+  * Added `ClientOptions#xmppConnectionRetryBackoff` and `ClientOptions#stompConnectionRetryBackoff` to configure reconnect delays in milliseconds
+* Events
+  * Added `Client#xmpp:message`, `Client#stomp:message` and `Client#stomp:message:error`
+  * Added `Client#http:request`, `Client#http:response` and `Client#http:error`
+* Exceptions
+  * Added `RetryAbandonedError` for HTTP retries that are no longer needed
 
 ### Changes
 * Party
-  * **(Breaking)** `Client#joinParty()`, `Party#join()`, and `PresenceParty#join()` now reject unsupported party IDs instead of attempting to join them.
-  * **(Breaking)** EOS STOMP now owns party joins, leaves, kicks, and captain changes. `party:member:joined` can precede Fortnite metadata; use `party:member:updated` for cosmetics and readiness.
-  * `disablePartyService` now also suppresses STOMP party events and party chat. EOS invitation expiration invalidates received invitations.
-  * `ClientParty#invite()`, `ReceivedPartyInvitation#accept()`, `ReceivedPartyInvitation#decline()`, and `ReceivedPartyJoinRequest#decline()` use the current party invitation and join-request flow.
-  * `ClientParty#chat` sends and receives party messages through the current party chat conversation.
-  * `Client` discovers the current party build ID from Fortnite matchmaking when `partyBuildId` is omitted; supplied values remain authoritative.
-  * **(Breaking)** Removed `SentPartyInvitation#abort()`.
-  * **(Breaking)** Removed the `raw` argument from `Client#getParty()`; use `Client#getRawFortniteParty()` for the raw lobby.
+  * Updated party creation, joining, leaving, invitations, join requests, kicks, promotions and privacy settings to use the new EOS party service
+  * **(Breaking)** Party operations now require both XMPP and STOMP connections
+  * **(Breaking)** `Client#joinParty()`, `Party#join()` and `PresenceParty#join()` now only accept EOS party IDs or linked Fortnite lobby IDs
+  * **(Breaking)** `Party` and `ClientParty` constructors now require separate Fortnite and EOS party data
+  * **(Breaking)** Renamed `Party#updateData()` to `Party#updateFortniteData()`
+  * **(Breaking)** Removed `PartyMember#role` in favor of `PartyMember#isLeader` and `Party#leader`
+  * **(Breaking)** Removed the `raw` parameter from `Client#getParty()` in favor of `Client#getRawFortniteParty()`
+  * **(Breaking)** `Client#leaveParty()` now throws `PartyNotFoundError` if the client is not in a party
+* Party Member Joined Events
+  * **(Breaking)** `Client#party:member:joined` no longer waits for a member state update; use `Client#party:member:updated` to access cosmetics and readiness
+* Party Invitations
+  * **(Breaking)** `BasePartyInvitation#party` is now optional; use `BasePartyInvitation#fetchParty()` to fetch the party
+  * **(Breaking)** Removed `SentPartyInvitation#abort()`
+* Chatting
+  * **(Breaking)** `PartyChat#conversationId` now returns the Fortnite lobby ID instead of the lobby ID prefixed with `p-`
+  * **(Breaking)** Removed `ClientParty#chatBan()`
+  * **(Breaking)** Removed the deprecated `PartyChat#jid`, `PartyChat#nick`, `PartyChat#joinLock`, `PartyChat#isConnected`, `PartyChat#join()`, `PartyChat#leave()` and `PartyChat#ban()`
+* Presences
+  * **(Breaking)** Removed `FriendPresence#hasVoiceSupport`, `FriendPresence#gameSessionJoinKey`, `PresenceParty#typeId` and `PresenceParty#key`
+* Client Config
+  * `ClientOptions#partyBuildId` is now optional and will be fetched automatically if not provided
+  * XMPP and STOMP now default to four reconnect attempts, waiting 5 seconds, 15 seconds, 1 minute, and 10 minutes
+  * Attempts beyond the configured backoff schedule repeat its last delay
+* Events
+  * **(Breaking)** Removed `Client#xmpp:presence:error`, `Client#xmpp:chat:error` and `Client#party:member:disconnected`
+* Structures
+  * **(Breaking)** Renamed the `Party*` types in `resources/structs` to `FortniteParty*` and `PresencePartyData` to `FortnitePartyPresenceData`
+  * **(Breaking)** Removed `EOSPresenceInGame`
+
+### Fixes
+* Party
+  * Fixed issues with party recreation and leaving parties that have already been disbanded
+* Party Meta
+  * Fixed `ClientPartyMember#setReadiness()` and `PartyMember#isReady` to use the new matchmaking meta
+  * Fixed issues with large party and member meta updates and stale revisions
+  * Added, changed and removed various party meta keys to match what the game uses
+* Chatting
+  * Fixed sending and receiving party chat messages
+  * Fixed duplicate chat message events
+* Presences
+  * Fixed an issue that caused friend presences without an activity to throw an error
+  * Updated party presence parsing to support the new property names
+* Battle Royale Account Level
+  * Fixed `Client#getBRAccountLevel()` failing to fetch account levels
+* Fortnite EULA
+  * Updated to the new Fortnite access endpoint
+* HTTP Ratelimit Handling
+  * Fixed `ClientOptions#handleRatelimits` being ignored
+* Auth Refreshing
+  * Fixed automatic token refreshing for unauthorized responses
+  * Fixed repeated token refresh attempts when a request still fails after refreshing
+* Connections
+  * Fixed XMPP and STOMP recovery stopping prematurely after failed reconnect attempts
+  * Failed connection or state-restoration attempts now consume the retry limit; exhaustion logs out the client
+  * Disconnecting now cancels pending retries and rejects pending connection attempts, including an awaiting `login()`
+  * Reconnection now recovers a previously existing party, recreating it with client defaults if necessary; no party is created if none existed before
+  * Fixed logout cleanup and the `disconnected` event being skipped when token revocation fails
 
 ## 4.2.0
 

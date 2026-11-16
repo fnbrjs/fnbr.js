@@ -34,12 +34,12 @@ class AsyncLock {
    * Activates this lock
    */
   public lock() {
-    let resolve: any;
+    let resolve!: () => void;
     const promise = new Promise<void>((res) => {
       resolve = res;
     });
 
-    this.lockPromise = { promise, resolve: resolve as () => void };
+    this.lockPromise = { promise, resolve };
   }
 
   /**

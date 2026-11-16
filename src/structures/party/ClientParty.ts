@@ -145,7 +145,7 @@ class ClientParty extends Party {
     try {
       for (const [chunkIndex, entriesChunk] of chunks.entries()) {
         // Party revisions require each chunk to finish before the next one begins.
-        // eslint-disable-next-line no-await-in-loop
+
         await this.sendPatchChunk(Object.fromEntries(entriesChunk), chunkIndex === 0 ? deleted : []);
       }
     } finally {

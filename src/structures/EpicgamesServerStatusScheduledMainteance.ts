@@ -19,6 +19,7 @@ class EpicgamesServerStatusScheduledMainteance extends EpicgamesServerStatusInci
    * @param client The main client
    * @param data The server status data
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public constructor contract.
   constructor(client: Client, data: any) {
     super(client, data);
 

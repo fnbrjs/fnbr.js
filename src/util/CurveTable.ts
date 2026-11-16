@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 export interface CurveKey {
   KeyTime: number;
   KeyValue: number;

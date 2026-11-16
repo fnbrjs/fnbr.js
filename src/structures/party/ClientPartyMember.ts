@@ -55,7 +55,7 @@ class ClientPartyMember extends PartyMember {
     try {
       for (const entriesChunk of chunk(entries, 32)) {
         // Member revisions require each chunk to finish before the next one begins.
-        // eslint-disable-next-line no-await-in-loop
+
         await this.sendPatchChunk(Object.fromEntries(entriesChunk));
       }
       if (this.client.config.savePartyMemberMeta) this.client.lastPartyMemberMeta = this.meta.schema;

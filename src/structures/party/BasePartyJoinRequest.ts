@@ -33,6 +33,7 @@ abstract class BasePartyJoinRequest extends Base {
    * @param receiver The user who received the join request
    * @param data The party confirmation data
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public constructor contract.
   constructor(client: Client, sender: Friend | ClientUser, receiver: Friend | ClientUser, data: any) {
     super(client);
 

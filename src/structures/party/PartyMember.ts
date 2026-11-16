@@ -180,7 +180,9 @@ class PartyMember extends User {
    */
   public async kick() {
     // This is a very hacky solution, but it's required since we cannot import ClientParty (circular dependencies)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the method's public return type.
     if (typeof (this.party as any).kick !== 'function') throw new PartyPermissionError();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the method's public return type.
     return (this.party as any).kick(this.id);
   }
 
@@ -190,7 +192,9 @@ class PartyMember extends User {
    */
   public async promote() {
     // This is a very hacky solution, but it's required since we cannot import ClientParty (circular dependencies)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the method's public return type.
     if (typeof (this.party as any).promote !== 'function') throw new PartyPermissionError();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the method's public return type.
     return (this.party as any).promote(this.id);
   }
 
@@ -202,7 +206,9 @@ class PartyMember extends User {
    */
   public async hide(hide = true) {
     // This is a very hacky solution, but it's required since we cannot import ClientParty (circular dependencies)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the method's public return type.
     if (typeof (this.party as any).hideMember !== 'function') throw new PartyPermissionError();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the method's public return type.
     return (this.party as any).hideMember(this.id, hide);
   }
 
@@ -211,7 +217,9 @@ class PartyMember extends User {
    */
   public async chatBan() {
     // This is a very hacky solution, but it's required since we cannot import ClientParty (circular dependencies)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the method's public return type.
     if (typeof (this.party as any).chatBan !== 'function') throw new PartyPermissionError();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the method's public return type.
     return (this.party as any).chatBan(this.id);
   }
 

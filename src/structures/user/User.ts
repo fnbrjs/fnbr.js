@@ -1,4 +1,3 @@
-/* eslint-disable no-underscore-dangle */
 import Base from '../../Base';
 import UserNotFoundError from '../../exceptions/UserNotFoundError';
 import type { BRAccountLevel, ExternalAuths, UserData } from '../../../resources/structs';
@@ -45,7 +44,7 @@ class User extends Base {
    * The user's display name (In case its undefined, use {@link User#fetch})
    */
   public get displayName(): string | undefined {
-    return this._displayName || (Object.values(this.externalAuths)[0] && (Object.values(this.externalAuths)[0] as any).externalDisplayName);
+    return this._displayName || (Object.values(this.externalAuths)[0] && Object.values(this.externalAuths)[0]!.externalDisplayName);
   }
 
   /**

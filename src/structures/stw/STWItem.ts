@@ -24,6 +24,7 @@ class STWItem extends Base {
   /**
    * The item's attributes
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public property contract.
   public attributes: any;
 
   /**

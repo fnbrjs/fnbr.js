@@ -134,8 +134,8 @@ class FriendPresence extends Base {
 
     const gameplayStats = typeof data.props.FortGameplayStats === 'string'
       ? FriendPresence.parsePropsValue<{
-        state: string; playlist: string; numKills: number; bFellToDeath: boolean;
-      }>(data.props.FortGameplayStats)
+          state: string; playlist: string; numKills: number; bFellToDeath: boolean;
+        }>(data.props.FortGameplayStats)
       : undefined;
 
     this.gameplayStats = gameplayStats && {
@@ -147,6 +147,8 @@ class FriendPresence extends Base {
     };
   }
 
+  // Preserve the public generic contract.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-constraint, @typescript-eslint/no-explicit-any
   public static parsePropsValue<T extends any>(value: string): T {
     const type = value[0];
     const val = value.slice(1);
@@ -165,6 +167,7 @@ class FriendPresence extends Base {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public method's accepted value type.
   public static stringifyPropsValue(value: any): string {
     switch (typeof value) {
       case 'boolean':

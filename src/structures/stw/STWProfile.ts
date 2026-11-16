@@ -1,5 +1,3 @@
-/* eslint-disable class-methods-use-this */
-/* eslint-disable no-restricted-syntax */
 import PowerLevelCurves from '../../../resources/PowerLevelCurves';
 import { parseSTWSchematicTemplateId } from '../../util/Util';
 import STWHero from './STWHero';
@@ -89,7 +87,6 @@ class STWProfile extends User {
   constructor(client: Client, data: STWProfileData, userData: UserData) {
     super(client, userData);
 
-    // eslint-disable-next-line no-underscore-dangle
     this.profileId = data._id;
     this.createdAt = new Date(data.created);
     this.updatedAt = new Date(data.updated);

@@ -1,4 +1,3 @@
-/* eslint-disable camelcase */
 import type { Collection } from '@discordjs/collection';
 import type { AxiosError, AxiosResponse, RawAxiosRequestConfig } from 'axios';
 import type { PathLike } from 'fs';
@@ -44,7 +43,7 @@ export type FortnitePartySchema = Partial<typeof defaultPartyMeta> & {
 export type Schema = Record<string, string | undefined>;
 
 export type Language = 'de' | 'ru' | 'ko' | 'zh-hant' | 'pt-br' | 'en'
-| 'it' | 'fr' | 'zh-cn' | 'es' | 'ar' | 'ja' | 'pl' | 'es-419' | 'tr';
+  | 'it' | 'fr' | 'zh-cn' | 'es' | 'ar' | 'ja' | 'pl' | 'es-419' | 'tr';
 
 export type StringFunction = () => string;
 
@@ -90,7 +89,7 @@ export type AuthStringResolveable = string | PathLike | StringFunction | StringF
 export type Platform = 'WIN' | 'MAC' | 'PSN' | 'XBL' | 'SWT' | 'SWT2' | 'IOS' | 'AND' | 'PS5' | 'XSX' | 'LUNA';
 
 export type AuthClient = 'fortnitePCGameClient' | 'fortniteIOSGameClient' | 'fortniteAndroidGameClient'
-| 'fortniteSwitchGameClient' | 'fortniteCNGameClient' | 'launcherAppClient2' | 'Diesel - Dauntless';
+  | 'fortniteSwitchGameClient' | 'fortniteCNGameClient' | 'launcherAppClient2' | 'Diesel - Dauntless';
 
 export interface RefreshTokenData {
   /**
@@ -441,6 +440,7 @@ export interface MatchMeta {
   matchStartedAt?: Date;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Preserve interface declaration merging.
 export interface ClientOptions extends Partial<ClientConfig> { }
 
 export interface ClientEvents {
@@ -549,12 +549,14 @@ export interface ClientEvents {
    * Emitted for an incoming XMPP notification.
    * @param body The message body
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public event signature.
   'xmpp:message': (body: any) => void;
 
   /**
    * Emitted for an incoming STOMP notification.
    * @param body The message body
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public event signature.
   'stomp:message': (body: any) => void;
 
   /**
@@ -841,6 +843,7 @@ export interface EpicgamesServerStatusData {
     created_at: Date;
     updated_at: Date;
     position: number;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public data type.
     description?: any;
     showcase: boolean;
     start_date: string;
@@ -850,7 +853,9 @@ export interface EpicgamesServerStatusData {
     only_show_if_degraded: boolean;
     components: string[];
   }[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public data type.
   incidents: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public data type.
   scheduled_maintenances: any[];
   status: {
     indicator: string;
@@ -1042,6 +1047,7 @@ export interface FortnitePartyData {
   };
   members: FortnitePartyMemberData[];
   meta: FortnitePartySchema;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public data type.
   invites: any[];
   revision: number;
 }
@@ -1174,7 +1180,7 @@ export interface Island {
     version?: number;
   };
   woldId?: {
-    iD?: string,
+    iD?: string;
     ownerId?: string;
     name?: string;
   };
@@ -1350,11 +1356,13 @@ export interface BlurlStream {
     }[];
   }[];
   data: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public data type.
     subtitles: any;
     ucp?: string;
     audioonly: boolean;
     aspectratio?: string;
     partysync: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public data type.
     lrcs: any;
     duration?: number;
   };
@@ -1422,6 +1430,7 @@ export interface ReplayDownloadConfig {
   addStatsPlaceholder: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Preserve interface declaration merging.
 export interface ReplayDownloadOptions extends Partial<ReplayDownloadConfig> { }
 
 export interface EventTokensResponse {
@@ -1536,6 +1545,7 @@ export interface STWStatsGameplayStatData {
 }
 
 export interface STWStatsClientSettingsData {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public data type.
   pinnedQuestInstances?: any[];
 }
 

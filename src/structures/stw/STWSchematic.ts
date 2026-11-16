@@ -112,7 +112,9 @@ class STWSchematic extends STWItem {
    * Depends on the tier, level, and rarity value
    */
   public get powerLevel() {
-    if (!this.rarity || !this.tier) { return 1; }
+    if (!this.rarity || !this.tier) {
+      return 1;
+    }
     return calcSTWNonSurvivorPowerLevel(this.rarity, this.level, this.tier);
   }
 }

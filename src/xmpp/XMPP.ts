@@ -1,4 +1,3 @@
-/* eslint-disable max-len */
 import { createClient as createStanzaClient } from 'stanza';
 import crypto from 'crypto';
 import Base from '../Base';
@@ -94,10 +93,10 @@ class XMPP extends Base {
       resolve = resolvePromise;
       reject = rejectPromise;
     });
+
     let settled = false;
     let timeout: ReturnType<typeof setTimeout> | undefined;
-    let onStarted: () => void;
-    let onError: (error: StreamError) => void;
+
     const settle = (error?: Error) => {
       if (settled) return;
       settled = true;
@@ -116,7 +115,8 @@ class XMPP extends Base {
         resolve();
       }
     };
-    onStarted = async () => {
+
+    const onStarted = async () => {
       if (settled) return;
       clearTimeout(timeout);
       try {
@@ -126,18 +126,23 @@ class XMPP extends Base {
         settle(error instanceof Error ? error : new Error(String(error)));
       }
     };
-    onError = (error: StreamError) => settle(new XMPPConnectionError(error));
+
+    const onError = (error: StreamError) => settle(new XMPPConnectionError(error));
+
     this.connectionPromise = promise;
     this.cancelConnect = settle;
     try {
       timeout = setTimeout(() => {
         settle(new XMPPConnectionTimeoutError(this.client.config.xmppConnectionTimeout));
       }, this.client.config.xmppConnectionTimeout);
+
       connection.once('session:started', onStarted);
       connection.once('stream:error', onError);
+
       connection.enableKeepAlive({
         interval: this.client.config.xmppKeepAliveInterval,
       });
+
       this.setupEvents(connection);
       connection.connect();
     } catch (error) {
@@ -256,10 +261,11 @@ class XMPP extends Base {
       if (!m.body) return;
       if (m.from !== 'xmpp-admin@prod.ol.epicgames.com') return;
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Parsed messages have dynamically shaped payloads.
       let body: any;
       try {
         body = JSON.parse(m.body);
-      } catch (err) {
+      } catch {
         return;
       }
 

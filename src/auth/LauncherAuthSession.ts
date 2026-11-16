@@ -41,7 +41,7 @@ class LauncherAuthSession extends AuthSession<AuthSessionType.Launcher> {
       });
 
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   }
@@ -116,6 +116,7 @@ class LauncherAuthSession extends AuthSession<AuthSessionType.Launcher> {
     this.refreshTimeout = setTimeout(() => this.refresh(), this.expiresAt.getTime() - Date.now() - 15 * 60 * 1000);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public input contract.
   public static async create(client: Client, clientId: string, clientSecret: string, data: any) {
     const response = await client.http.epicgamesRequest<LauncherAuthData>({
       method: 'POST',

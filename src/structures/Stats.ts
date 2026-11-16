@@ -1,5 +1,3 @@
-/* eslint-disable class-methods-use-this */
-/* eslint-disable no-restricted-syntax */
 import Base from '../Base';
 import { createDefaultInputTypeStats, parseStatKey } from '../util/Util';
 import { statsKeyRegex } from '../../resources/constants';
@@ -66,8 +64,7 @@ class Stats extends Base {
 
     for (const key of Object.keys(data.stats)) {
       if (statsKeyRegex.test(key)) {
-        const [, statKey, inputType, playlistId]: [string, string, 'keyboardmouse' | 'gamepad' | 'touch', string] = key
-          .match(statsKeyRegex) as any;
+        const [, statKey, inputType, playlistId] = key.match(statsKeyRegex) as [string, string, 'keyboardmouse' | 'gamepad' | 'touch', string];
 
         const playlistType = typeof this.client.config.statsPlaylistTypeParser === 'function'
           ? this.client.config.statsPlaylistTypeParser(playlistId)
@@ -83,19 +80,19 @@ class Stats extends Base {
 
           if (parsedKey === 'lastModified') {
             if (!inputTypePlaylistStats.lastModified || (parsedValue as Date).getTime() > inputTypePlaylistStats.lastModified.getTime()) {
-              inputTypePlaylistStats.lastModified = (parsedValue as Date);
+              inputTypePlaylistStats.lastModified = parsedValue as Date;
             }
 
             if (!inputTypeAllStats.lastModified || (parsedValue as Date).getTime() > inputTypeAllStats.lastModified.getTime()) {
-              inputTypeAllStats.lastModified = (parsedValue as Date);
+              inputTypeAllStats.lastModified = parsedValue as Date;
             }
 
             if (!allPlaylistStats.lastModified || (parsedValue as Date).getTime() > allPlaylistStats.lastModified.getTime()) {
-              allPlaylistStats.lastModified = (parsedValue as Date);
+              allPlaylistStats.lastModified = parsedValue as Date;
             }
 
             if (!allAllStats.lastModified || (parsedValue as Date).getTime() > allAllStats.lastModified.getTime()) {
-              allAllStats.lastModified = (parsedValue as Date);
+              allAllStats.lastModified = parsedValue as Date;
             }
           } else {
             inputTypePlaylistStats[parsedKey] += parsedValue as number;

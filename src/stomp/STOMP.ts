@@ -1,5 +1,5 @@
 import { AsyncQueue } from '@sapphire/async-queue';
-import WebSocket from 'ws';
+import WS from 'ws';
 import Base from '../Base';
 import { AuthSessionStoreKey, RetryDecision } from '../../resources/enums';
 import AuthenticationMissingError from '../exceptions/AuthenticationMissingError';
@@ -35,7 +35,7 @@ type EOSPartyScopedData = Pick<EOSPartyMemberUpdateData, 'party_id'>;
  * Represents the client's EOS Connect STOMP manager (i.e. chat messages)
  */
 class STOMP extends Base {
-  private connection?: WebSocket;
+  private connection?: WS;
   public connectionId?: string;
   public publicConnectionId?: string;
   public privateConnectionId?: string;
@@ -51,7 +51,7 @@ class STOMP extends Base {
   private handledMessages = new STOMPMessageDedupe(100);
 
   public get isConnected() {
-    return this.connection?.readyState === WebSocket.OPEN;
+    return this.connection?.readyState === WS.OPEN;
   }
 
   /**
@@ -69,7 +69,7 @@ class STOMP extends Base {
     if (!authSession) throw new AuthenticationMissingError(AuthSessionStoreKey.FortniteEOS);
     this.client.debug('[STOMP] Connecting...');
     const connectionStartTime = Date.now();
-    const connection = new WebSocket(`wss://${Endpoints.EOS_STOMP}`, {
+    const connection = new WS(`wss://${Endpoints.EOS_STOMP}`, {
       headers: {
         Authorization: `Bearer ${authSession.accessToken}`,
         'Epic-Connect-Device-Id': ' ',
@@ -81,6 +81,8 @@ class STOMP extends Base {
     return new Promise<void>((resolve, reject) => {
       let settled = false;
       let connected = false;
+      // Keep cancellation safe even if invoked before the timer is assigned.
+      // eslint-disable-next-line prefer-const
       let connectionTimeout: NodeJS.Timeout;
       const finish = (error?: Error) => {
         if (settled) return;
@@ -177,12 +179,12 @@ class STOMP extends Base {
   }
 
   private registerEvents(
-    connection: WebSocket,
+    connection: WS,
     resolve: () => void,
     reject: (reason: Error) => void,
     connectionStartTime: number,
   ) {
-    connection.on('message', async (raw: WebSocket.RawData) => {
+    connection.on('message', async (raw: WS.RawData) => {
       if (this.connection !== connection) return;
       const text = decodeRawData(raw);
       const message = STOMPMessage.fromString(text);
@@ -448,7 +450,7 @@ class STOMP extends Base {
     this.client.emit('friend:presence', before, after);
   }
 
-  private async restoreParty(connection: WebSocket, hadParty: boolean) {
+  private async restoreParty(connection: WS, hadParty: boolean) {
     if (!hadParty || this.connection !== connection) return;
 
     await new Promise<void>((resolve, reject) => {
@@ -742,7 +744,7 @@ class STOMP extends Base {
     if (connection) {
       connection.removeAllListeners();
       connection.on('error', () => {});
-      if (connection.readyState !== WebSocket.CLOSED) connection.terminate();
+      if (connection.readyState !== WS.CLOSED) connection.terminate();
     }
 
     this.connectionId = undefined;

@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 import Base from '../Base';
 import type User from './user/User';
 import type Client from '../Client';

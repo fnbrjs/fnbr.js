@@ -31,6 +31,7 @@ class UserSearchResult extends User {
    * @param user The user
    * @param data The user entry data
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public constructor contract.
   constructor(client: Client, user: User, data: any) {
     super(client, user.toObject());
 

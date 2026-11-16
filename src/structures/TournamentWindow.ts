@@ -101,11 +101,13 @@ class TournamentWindow {
   /**
    * requireAllTokensCaller
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public property contract.
   public requireAllTokensCaller: any[];
 
   /**
    * requireAnyTokensCaller
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public property contract.
   public requireAnyTokensCaller: any[];
 
   /**

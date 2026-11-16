@@ -33,6 +33,7 @@ class EpicgamesAPIError extends Error {
   /**
    * The request data sent by the client
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public request data contract.
   public requestData?: any;
 
   /**

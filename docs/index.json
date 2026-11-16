@@ -17,6 +17,15 @@
     ]
   },
   {
+    "name": "migration guides",
+    "files": [
+      {
+        "name": "Migrating to 5.0.0",
+        "path": "5.0.0.md"
+      }
+    ]
+  },
+  {
     "name": "examples",
     "files": [
       {

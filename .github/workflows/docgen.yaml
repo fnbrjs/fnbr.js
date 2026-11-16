@@ -16,8 +16,36 @@ on:
       BOT_PAT:
         required: true
 jobs:
-  docgen:
+  select-ref:
     if: github.repository_owner == 'fnbrjs'
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.ref.outputs.name }}
+    steps:
+      - name: Select documentation ref
+        id: ref
+        shell: bash
+        env:
+          SOURCE_REF: ${{ inputs.ref || github.ref }}
+        run: |
+          case "$SOURCE_REF" in
+            refs/heads/*) name="${SOURCE_REF#refs/heads/}" ;;
+            refs/tags/*) name="${SOURCE_REF#refs/tags/}" ;;
+            *) echo "::error::Expected a full branch or tag ref"; exit 1 ;;
+          esac
+          if [[ "$name" == */* ]]; then
+            echo "Skipping documentation for refs containing slashes"
+            exit 0
+          fi
+          if [[ -z "$name" ]] || ! git check-ref-format "$SOURCE_REF"; then
+            echo "::error::Invalid documentation ref"
+            exit 1
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+  docgen:
+    needs: select-ref
+    if: needs.select-ref.outputs.name != ''
     name: Documentation
     runs-on: ubuntu-latest
     steps:
@@ -66,17 +94,11 @@ jobs:
         working-directory: ./docgen
         run: node . ../main
 
-      - uses: actions-ecosystem/action-regex-match@v2
-        id: current_branch
-        with:
-          text: ${{ inputs.ref || github.ref }}
-          regex: '(?<=\/)(\w|\d|\.)+$'
-
       - name: Deploy Documentation
         working-directory: ./docs
         shell: bash
         env:
-          CURRENT_BRANCH: ${{ steps.current_branch.outputs.match  }}
+          CURRENT_BRANCH: ${{ needs.select-ref.outputs.name }}
         run: |
           git pull https://fnbr-bot:${{ secrets.BOT_PAT }}@github.com/fnbrjs/fnbr.js docs
           mv ../docgen/docs.json ./${CURRENT_BRANCH}.json

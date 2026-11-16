@@ -8,10 +8,6 @@ jobs:
   lint:
     name: "Test & Lint Code"
     runs-on: "ubuntu-latest"
-    if: >-
-      github.repository == 'fnbrjs/fnbr.js' &&
-      github.actor != 'dependabot[bot]' &&
-      !github.event.pull_request.head.repo.fork
 
     steps:
       - name: "Checkout Repository"
@@ -31,7 +27,14 @@ jobs:
       - name: "Lint Code"
         run: "npx eslint -f .github/workflows/formatter.js src/**/*.ts || :"
 
-      - name: "Run Tests"
-        run: "npm run test"
+      - name: "Run Offline Tests"
+        run: "npm test -- --runInBand"
+
+      - name: "Run Live Tests"
+        if: >-
+          github.repository == 'fnbrjs/fnbr.js' &&
+          github.actor != 'dependabot[bot]' &&
+          !github.event.pull_request.head.repo.fork
+        run: "npm run test:live -- --runInBand"
         env:
           DEVICE_AUTH: ${{ secrets.TEST_DEVICE_AUTH }}

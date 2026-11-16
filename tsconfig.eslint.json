@@ -7,7 +7,8 @@
     "enums/**/*.ts",
     "test.js",
     "generateExports.js",
-    "tests/client.test.ts",
+    "tests/live/**/*.ts",
+    "tests/recovery/**/*.ts",
     "jest.config.js"
   ],
   "exclude": ["resources/**/*.json", "src/**/*.json"]

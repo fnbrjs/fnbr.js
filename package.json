@@ -8,7 +8,9 @@
     "build": "node generateExports.js && npx tsc",
     "lint": "eslint \"src/**/*.ts\" \"resources/**/*.ts\" \"enums/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" \"resources/**/*.ts\" \"enums/**/*.ts\" --fix",
-    "test": "jest ./tests/",
+    "test": "jest",
+    "test:recovery": "jest tests/recovery/",
+    "test:live": "jest --testMatch \"<rootDir>/tests/live/**/*.test.ts\"",
     "prepare": "npm run build"
   },
   "files": [

@@ -26,6 +26,8 @@
   * Added `RetryAbandonedError` for HTTP retries that are no longer needed
 
 ### Changes
+* Continuous Integration
+  * Offline tests and lint now run for Dependabot and fork pull requests; live-account tests retain their credential-related restrictions
 * Party
   * Updated party creation, joining, leaving, invitations, join requests, kicks, promotions and privacy settings to use the new EOS party service
   * **(Breaking)** Party operations now require both XMPP and STOMP connections

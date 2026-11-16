@@ -1,10 +1,9 @@
-// eslint-disable-next-line import-x/no-extraneous-dependencies
 import {
   afterAll,
   beforeAll,
   describe, expect, test,
 } from '@jest/globals';
-import { Client, UserNotFoundError } from '..';
+import { Client, UserNotFoundError } from '../..';
 
 const client = new Client({
   auth: {

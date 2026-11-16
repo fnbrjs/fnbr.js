@@ -28,14 +28,14 @@ jobs:
 
     steps:
       - name: "Checkout Repository"
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: "Validate Release"
         id: release
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           RELEASE_VERSION: ${{ inputs.version }}
         with:
@@ -97,7 +97,7 @@ jobs:
 
       - name: "Set Up NodeJS"
         if: steps.release.outputs.published != 'true'
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
@@ -117,7 +117,7 @@ jobs:
         run: npm publish --ignore-scripts --access public --tag latest
 
       - name: "Create GitHub Tag and Release"
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
           RELEASE_BODY: ${{ steps.release.outputs.body }}

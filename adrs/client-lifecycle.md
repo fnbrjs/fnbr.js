@@ -43,8 +43,20 @@ Log out the entire client, disconnecting both transports. Do not terminate the a
 
 ### An authenticated request rejects the access token
 
-Attempt one token refresh and retry the request once. If unsuccessful, report the failure; transport
-recovery does not perform a fresh login or replace invalid credentials.
+Attempt one token refresh and retry the request once. If unsuccessful, report the failure. Transport
+recovery does not perform a fresh login; optional automatic authentication restart is a separate policy.
+
+### A refresh token is invalid
+
+With `restartOnInvalidRefresh` enabled (default: false), a confirmed invalid Fortnite, Launcher, or EOS
+refresh token on a ready client's current session triggers one shared restart: clean up locally, then
+attempt one fresh login using configured authentication credentials, even if token revocation fails.
+Network errors, server errors, client-credentials renewal, and initial login failures do not trigger
+this policy. Failed restarts clean up and leave the client disconnected; failed logins are not retried,
+and consumed one-use credentials may prevent a fresh login. Explicit logout supersedes recovery.
+The original refresh call still rejects with its original error, even after a successful restart.
+With the option disabled, refresh failures do not force logout. Timer-triggered failures are caught
+and logged without credentials or response payloads.
 
 ### Explicit transport disconnect
 

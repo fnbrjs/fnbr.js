@@ -62,6 +62,7 @@ class EOSAuthSession extends AuthSession<AuthSessionType.EOS> {
   }
 
   public async refresh() {
+    const lifecycle = this.client.auth.lifecycle;
     this.refreshLock.lock();
 
     try {
@@ -73,6 +74,7 @@ class EOSAuthSession extends AuthSession<AuthSessionType.EOS> {
         grant_type: 'refresh_token',
         refresh_token: this.refreshToken,
       });
+      if (lifecycle !== this.client.auth.lifecycle) throw new Error('Authentication refresh cancelled');
 
       this.accessToken = response.access_token;
       this.expiresAt = new Date(response.expires_at);
@@ -80,14 +82,22 @@ class EOSAuthSession extends AuthSession<AuthSessionType.EOS> {
       this.refreshTokenExpiresAt = new Date(response.refresh_expires_at);
 
       this.initRefreshTimeout();
-    } finally {
+    } catch (error) {
       this.refreshLock.unlock();
+      await this.client.auth.handleRefreshFailure(this, error);
+      throw error;
     }
+
+    this.refreshLock.unlock();
   }
 
   public initRefreshTimeout() {
     clearTimeout(this.refreshTimeout);
-    this.refreshTimeout = setTimeout(() => this.refresh(), this.expiresAt.getTime() - Date.now() - 15 * 60 * 1000);
+    this.refreshTimeout = setTimeout(() => {
+      this.refresh().catch(() => {
+        this.client.debug('[AUTH] Scheduled EOS session refresh failed');
+      });
+    }, this.expiresAt.getTime() - Date.now() - 15 * 60 * 1000);
   }
 
   private static async authenticate(
@@ -116,10 +126,12 @@ class EOSAuthSession extends AuthSession<AuthSessionType.EOS> {
     createPayload: Record<string, string>,
     basePayload: Record<string, string>,
   ) {
+    const lifecycle = client.auth.lifecycle;
     const auth = await EOSAuthSession.authenticate(client, clientId, clientSecret, {
       ...basePayload,
       ...createPayload,
     });
+    if (lifecycle !== client.auth.lifecycle) throw new Error('Authentication session creation cancelled');
 
     const session = new EOSAuthSession(client, auth, clientSecret, basePayload);
 

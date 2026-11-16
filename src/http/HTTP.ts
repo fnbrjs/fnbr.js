@@ -187,7 +187,7 @@ class HTTP extends Base {
           return this.epicgamesRequest<T>(config, auth, retryDecision, authRetries + 1);
         }
 
-        if (errorData && err.response) {
+        if (errorData && typeof errorData.errorCode === 'string' && err.response) {
           throw new EpicgamesAPIError(errorData, config, err.response.status);
         }
       }

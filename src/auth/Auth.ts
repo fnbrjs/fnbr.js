@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { Collection } from '@discordjs/collection';
 import { promises as fs } from 'fs';
 import { URL } from 'url';
@@ -16,6 +17,8 @@ import type {
   DeviceAuthWithSnakeCaseSupport, AuthSessionStore,
 } from '../../resources/structs';
 import type Client from '../Client';
+import type AuthSession from './AuthSession';
+import type { AuthSessionType } from '../../resources/enums';
 
 type AuthSessionStoreType = AuthSessionStore<AuthSessionStoreKey,
   FortniteAuthSession
@@ -33,6 +36,74 @@ class Auth extends Base {
    */
   public sessions: AuthSessionStoreType;
 
+  /** Invalidates authentication recovery when login or logout supersedes it. */
+  public lifecycle = 0;
+
+  private recovery?: Promise<void>;
+
+  public clearRefreshTimeouts() {
+    for (const session of this.sessions.values()) {
+      clearTimeout(session.refreshTimeout);
+      session.refreshTimeout = undefined;
+    }
+  }
+
+  /** Restarts an established client once after a confirmed invalid refresh token. */
+  public async handleRefreshFailure(session: AuthSession<AuthSessionType>, error: unknown): Promise<void> {
+    const invalidRefresh = error instanceof EpicgamesAPIError
+      && error.code === 'errors.com.epicgames.account.auth_token.invalid_refresh_token'
+      && (error.httpStatus === 400 || error.httpStatus === 401);
+    const invalidGrant = axios.isAxiosError<{ error?: string }>(error)
+      && error.response?.status === 400 && error.response.data?.error === 'invalid_grant';
+    if (!invalidRefresh && !invalidGrant) return;
+    if (!this.sessions.some((current) => current === session)) return;
+    if (!this.client.config.restartOnInvalidRefresh || !this.client.isReady) return;
+    if (this.recovery) {
+      await this.recovery;
+      return;
+    }
+
+    const recovery = this.restartAfterInvalidRefresh().finally(() => {
+      if (this.recovery === recovery) this.recovery = undefined;
+    });
+    this.recovery = recovery;
+    await recovery;
+  }
+
+  private async restartAfterInvalidRefresh() {
+    this.client.debug('[AUTH] Refresh token invalid; restarting with configured credentials');
+    const logout = this.client.logout();
+    let lifecycle = this.lifecycle;
+    try {
+      await logout;
+    } catch {
+      this.client.debug('[AUTH] Token revocation failed during authentication restart');
+    }
+    if (lifecycle !== this.lifecycle) return;
+
+    this.sessions.clear();
+    const login = this.client.login();
+    lifecycle = this.lifecycle;
+    try {
+      await login;
+    } catch {
+      if (lifecycle !== this.lifecycle) return;
+      this.client.debug('[AUTH] Authentication restart failed; disconnecting');
+      try {
+        await this.client.logout();
+      } catch {
+        this.client.debug('[AUTH] Token revocation failed after authentication restart');
+      }
+    }
+  }
+
+  private ensureActive(lifecycle: number, session?: { refreshTimeout?: NodeJS.Timeout }) {
+    if (lifecycle === this.lifecycle) return;
+    clearTimeout(session?.refreshTimeout);
+    if (session) session.refreshTimeout = undefined;
+    throw new Error('Authentication cancelled');
+  }
+
   /**
    * @param client The main client
    */
@@ -46,6 +117,7 @@ class Auth extends Base {
    * Authenticates the client against EpicGames' API
    */
   public async authenticate() {
+    const lifecycle = this.lifecycle;
     this.client.debug('[AUTH] Authenticating...');
     const authStartTime = Date.now();
 
@@ -65,10 +137,12 @@ class Auth extends Base {
     } else {
       throw new Error('No valid auth method found! Please provide one in the client config');
     }
+    this.ensureActive(lifecycle);
 
     if ((!authCreds.launcherRefreshToken && this.client.listenerCount('refreshtoken:created') > 0)
       || (authCreds.createLauncherSession && !this.sessions.has(AuthSessionStoreKey.Launcher))) {
       const exchangeCode = await this.sessions.get(AuthSessionStoreKey.Fortnite)!.createExchangeCode();
+      this.ensureActive(lifecycle);
 
       const launcherSession = await LauncherAuthSession.create(
         this.client,
@@ -80,6 +154,7 @@ class Auth extends Base {
           token_type: 'eg1',
         },
       );
+      this.ensureActive(lifecycle, launcherSession);
 
       this.sessions.set(AuthSessionStoreKey.Launcher, launcherSession);
     }
@@ -89,15 +164,18 @@ class Auth extends Base {
         method: 'DELETE',
         url: `${Endpoints.OAUTH_TOKEN_KILL_MULTIPLE}?killType=OTHERS_ACCOUNT_CLIENT_SERVICE`,
       }, AuthSessionStoreKey.Fortnite);
+      this.ensureActive(lifecycle);
     }
 
     if (this.client.config.auth.checkEULA) {
       const eulaCheck = await this.acceptEULA();
+      this.ensureActive(lifecycle);
       if (!eulaCheck.alreadyAccepted) this.client.debug('[AUTH] Successfully accepted the EULA');
     }
 
     if (!authCreds.deviceAuth && this.client.listenerCount('deviceauth:created') > 0) {
       const deviceauth = await this.createDeviceAuth();
+      this.ensureActive(lifecycle);
 
       const deviceAuth = {
         accountId: deviceauth.accountId,
@@ -117,6 +195,7 @@ class Auth extends Base {
         token_type: 'eg1',
       },
     );
+    this.ensureActive(lifecycle, fortniteClientCredsSession);
 
     this.sessions.set(AuthSessionStoreKey.FortniteClientCredentials, fortniteClientCredsSession);
 
@@ -180,7 +259,9 @@ class Auth extends Base {
    * @param deviceAuthResolvable A resolvable device auth
    */
   private async deviceAuthAuthenticate(deviceAuthResolvable: DeviceAuthResolveable, authClient: AuthClient) {
+    const lifecycle = this.lifecycle;
     const deviceAuth: DeviceAuthWithSnakeCaseSupport = await resolveAuthObject(deviceAuthResolvable);
+    this.ensureActive(lifecycle);
 
     const fortniteSession = await FortniteAuthSession.create(this.client, AuthClients[authClient].clientId, AuthClients[authClient].secret, {
       grant_type: 'device_auth',
@@ -189,6 +270,7 @@ class Auth extends Base {
       secret: deviceAuth.secret,
       token_type: 'eg1',
     });
+    this.ensureActive(lifecycle, fortniteSession);
 
     this.sessions.set(AuthSessionStoreKey.Fortnite, fortniteSession);
   }
@@ -198,13 +280,16 @@ class Auth extends Base {
    * @param exchangeCodeResolvable A resolvable exchange code
    */
   private async exchangeCodeAuthenticate(exchangeCodeResolvable: AuthStringResolveable, authClient: AuthClient) {
+    const lifecycle = this.lifecycle;
     const exchangeCode = await resolveAuthString(exchangeCodeResolvable);
+    this.ensureActive(lifecycle);
 
     const fortniteSession = await FortniteAuthSession.create(this.client, AuthClients[authClient].clientId, AuthClients[authClient].secret, {
       grant_type: 'exchange_code',
       exchange_code: exchangeCode,
       token_type: 'eg1',
     });
+    this.ensureActive(lifecycle, fortniteSession);
 
     this.sessions.set(AuthSessionStoreKey.Fortnite, fortniteSession);
   }
@@ -214,6 +299,7 @@ class Auth extends Base {
    * @param authorizationCodeResolvable A resolvable authorization code
    */
   private async authorizationCodeAuthenticate(authorizationCodeResolvable: AuthStringResolveable, authClient: AuthClient) {
+    const lifecycle = this.lifecycle;
     let authorizationCode: string | undefined;
 
     switch (typeof authorizationCodeResolvable) {
@@ -233,12 +319,14 @@ class Auth extends Base {
       default:
         throw new TypeError(`The type "${typeof authorizationCodeResolvable}" does not resolve to a valid auth string`);
     }
+    this.ensureActive(lifecycle);
 
     const fortniteSession = await FortniteAuthSession.create(this.client, AuthClients[authClient].clientId, AuthClients[authClient].secret, {
       grant_type: 'authorization_code',
       code: authorizationCode,
       token_type: 'eg1',
     });
+    this.ensureActive(lifecycle, fortniteSession);
 
     this.sessions.set(AuthSessionStoreKey.Fortnite, fortniteSession);
   }
@@ -248,13 +336,16 @@ class Auth extends Base {
    * @param refreshTokenResolvable A resolvable refresh token
    */
   private async refreshTokenAuthenticate(refreshTokenResolvable: AuthStringResolveable, authClient: AuthClient) {
+    const lifecycle = this.lifecycle;
     const refreshToken = await resolveAuthString(refreshTokenResolvable);
+    this.ensureActive(lifecycle);
 
     const fortniteSession = await FortniteAuthSession.create(this.client, AuthClients[authClient].clientId, AuthClients[authClient].secret, {
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
       token_type: 'eg1',
     });
+    this.ensureActive(lifecycle, fortniteSession);
 
     this.sessions.set(AuthSessionStoreKey.Fortnite, fortniteSession);
   }
@@ -264,7 +355,9 @@ class Auth extends Base {
    * @param refreshTokenResolvable A resolvable refresh token
    */
   private async launcherRefreshTokenAuthenticate(refreshTokenResolvable: AuthStringResolveable, authClient: AuthClient) {
+    const lifecycle = this.lifecycle;
     const refreshToken = await resolveAuthString(refreshTokenResolvable);
+    this.ensureActive(lifecycle);
 
     const launcherSession = await LauncherAuthSession.create(
       this.client,
@@ -276,22 +369,27 @@ class Auth extends Base {
         token_type: 'eg1',
       },
     );
+    this.ensureActive(lifecycle, launcherSession);
 
     this.sessions.set(AuthSessionStoreKey.Launcher, launcherSession);
 
     const exchangeCode = await launcherSession.createExchangeCode();
+    this.ensureActive(lifecycle);
 
     const fortniteSession = await FortniteAuthSession.create(this.client, AuthClients[authClient].clientId, AuthClients[authClient].secret, {
       grant_type: 'exchange_code',
       exchange_code: exchangeCode,
       token_type: 'eg1',
     });
+    this.ensureActive(lifecycle, fortniteSession);
 
     this.sessions.set(AuthSessionStoreKey.Fortnite, fortniteSession);
   }
 
   private async fortniteEOSAuthenticate() {
+    const lifecycle = this.lifecycle;
     const exchangeCode = await this.sessions.get(AuthSessionStoreKey.Fortnite)!.createExchangeCode();
+    this.ensureActive(lifecycle);
     const authClient = this.client.config.auth.authClient!;
 
     const eosSession = await EOSAuthSession.create(
@@ -308,6 +406,7 @@ class Auth extends Base {
         deployment_id: this.client.config.eosDeploymentId,
       },
     );
+    this.ensureActive(lifecycle, eosSession);
 
     this.sessions.set(AuthSessionStoreKey.FortniteEOS, eosSession);
   }

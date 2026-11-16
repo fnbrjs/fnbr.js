@@ -291,9 +291,17 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   public async login() {
+    const lifecycle = ++this.auth.lifecycle;
+    this.isReady = false;
+    this.auth.clearRefreshTimeouts();
+    const ensureActive = () => {
+      if (lifecycle !== this.auth.lifecycle) throw new Error('Client login cancelled');
+    };
     this.partyRecovery = undefined;
     await this.auth.authenticate();
+    ensureActive();
     await this.user.fetchSelf();
+    ensureActive();
 
     this.initCacheSweeping();
 
@@ -307,13 +315,17 @@ class Client extends EventEmitter {
     } finally {
       this.cacheLock.unlock();
     }
+    ensureActive();
 
     if (!this.config.disablePartyService) {
       if (this.config.partyBuildId === undefined) await this.fetchPartyBuildId();
+      ensureActive();
       await this.initParty(this.config.createParty, this.config.forceNewParty);
+      ensureActive();
     }
 
     if (this.xmpp.isConnected && this.stomp.isConnected) await this.setStatus();
+    ensureActive();
 
     this.isReady = true;
     this.emit('ready');
@@ -340,6 +352,8 @@ class Client extends EventEmitter {
    * Logs out, clears local state, and emits `disconnected` even if token revocation fails.
    */
   public async logout() {
+    this.auth.lifecycle += 1;
+    this.auth.clearRefreshTimeouts();
     this.partyRecovery = undefined;
     if (this.statusUpdateTimer) {
       this.clearInterval(this.statusUpdateTimer);

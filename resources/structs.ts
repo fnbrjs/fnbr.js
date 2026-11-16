@@ -393,9 +393,10 @@ export interface ClientConfig {
   partyBuildId?: string;
 
   /**
-   * Whether the client should restart if a refresh token is invalid.
-   * Refresh tokens can be invalid if you logged in with another client on the same account.
-   * By default, this is set to false because two clients attempting to log into one account could result in an endless loop
+   * Whether a confirmed invalid refresh token should trigger one fresh login for a ready client.
+   * Defaults to false; enabling this can cause competing clients on the same account to restart each other.
+   * Uses configured authentication credentials, which may fail if one-use credentials were already consumed.
+   * Failed logins are not automatically retried.
    */
   restartOnInvalidRefresh: boolean;
 

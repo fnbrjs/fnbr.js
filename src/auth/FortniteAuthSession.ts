@@ -120,6 +120,7 @@ class FortniteAuthSession extends AuthSession<AuthSessionType.Fortnite> {
   }
 
   public async refresh() {
+    const lifecycle = this.client.auth.lifecycle;
     this.refreshLock.lock();
 
     try {
@@ -139,6 +140,7 @@ class FortniteAuthSession extends AuthSession<AuthSessionType.Fortnite> {
           token_type: 'eg1',
         }).toString(),
       });
+      if (lifecycle !== this.client.auth.lifecycle) throw new Error('Authentication refresh cancelled');
 
       this.accessToken = response.access_token;
       this.expiresAt = new Date(response.expires_at);
@@ -146,18 +148,27 @@ class FortniteAuthSession extends AuthSession<AuthSessionType.Fortnite> {
       this.refreshTokenExpiresAt = new Date(response.refresh_expires_at);
 
       this.initRefreshTimeout();
-    } finally {
+    } catch (error) {
       this.refreshLock.unlock();
+      await this.client.auth.handleRefreshFailure(this, error);
+      throw error;
     }
+
+    this.refreshLock.unlock();
   }
 
   public initRefreshTimeout() {
     clearTimeout(this.refreshTimeout);
-    this.refreshTimeout = setTimeout(() => this.refresh(), this.expiresAt.getTime() - Date.now() - 15 * 60 * 1000);
+    this.refreshTimeout = setTimeout(() => {
+      this.refresh().catch(() => {
+        this.client.debug('[AUTH] Scheduled Fortnite session refresh failed');
+      });
+    }, this.expiresAt.getTime() - Date.now() - 15 * 60 * 1000);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public input contract.
   public static async create(client: Client, clientId: string, clientSecret: string, data: any) {
+    const lifecycle = client.auth.lifecycle;
     const response = await client.http.epicgamesRequest<FortniteAuthData>({
       method: 'POST',
       url: Endpoints.OAUTH_TOKEN_CREATE,
@@ -167,6 +178,7 @@ class FortniteAuthSession extends AuthSession<AuthSessionType.Fortnite> {
       },
       data: new URLSearchParams(data).toString(),
     });
+    if (lifecycle !== client.auth.lifecycle) throw new Error('Authentication session creation cancelled');
 
     const session = new FortniteAuthSession(client, response, clientSecret);
     session.initRefreshTimeout();

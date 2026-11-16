@@ -78,6 +78,7 @@
 * Auth Refreshing
   * Fixed automatic token refreshing for unauthorized responses
   * Fixed repeated token refresh attempts when a request still fails after refreshing
+  * Fixed `ClientOptions#restartOnInvalidRefresh` to attempt one fresh login after an invalid refresh token, and catch scheduled refresh failures
 * Connections
   * Fixed XMPP and STOMP recovery stopping prematurely after failed reconnect attempts
   * Failed connection or state-restoration attempts now consume the retry limit; exhaustion logs out the client

@@ -56,7 +56,7 @@ class STWManager extends Base {
       },
     }, AuthSessionStoreKey.Fortnite);
 
-    return newsResponse.news.messages.map((m: any) => new STWNewsMessage(this.client, m));
+    return newsResponse.news.messages.map((m: unknown) => new STWNewsMessage(this.client, m));
   }
 
   /**

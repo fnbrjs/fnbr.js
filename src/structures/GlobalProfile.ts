@@ -37,6 +37,7 @@ class GlobalProfile extends Base {
    * @param data The avatar's data
    * @param user The user this avatar belongs to
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public constructor contract.
   constructor(client: Client, data: any, user: User) {
     super(client);
 

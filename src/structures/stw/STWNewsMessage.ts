@@ -45,13 +45,14 @@ class STWNewsMessage extends Base {
    * @param client The main client
    * @param data The news message data
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public constructor contract.
   constructor(client: Client, data: any) {
     super(client);
 
     this.title = data.title;
     this.body = data.body;
     this.image = new Image(this.client, { url: data.image });
-    // eslint-disable-next-line no-underscore-dangle
+
     this.type = data._type;
     this.adspace = data.adspace;
     this.isHidden = data.hidden;

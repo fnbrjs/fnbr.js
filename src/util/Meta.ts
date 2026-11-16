@@ -24,6 +24,7 @@ class Meta<T extends Schema> {
    * @param isRaw Whether the value should be added without further type checking
    * @returns A parsed version of the value
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve accepted metadata values.
   public set(key: keyof T & string, value: any, isRaw = false) {
     if (isRaw) {
       this.schema[key] = value.toString();
@@ -32,8 +33,10 @@ class Meta<T extends Schema> {
 
     const keyType = key.slice(-1);
     if (keyType === 'j') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic schema properties may have narrower types.
       this.schema[key] = JSON.stringify(value) as any;
     } else if (keyType === 'U') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic schema properties may have narrower types.
       this.schema[key] = parseInt(value, 10).toString() as any;
     } else {
       this.schema[key] = value.toString();

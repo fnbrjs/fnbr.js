@@ -65,6 +65,7 @@ class EpicgamesServerStatusIncident extends Base {
    * @param client The main client
    * @param data The server status data
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public constructor contract.
   constructor(client: Client, data: any) {
     super(client);
 
@@ -79,7 +80,9 @@ class EpicgamesServerStatusIncident extends Base {
     this.monitoringAt = data.monitoring_at ? new Date(data.monitoring_at) : undefined;
     this.resolvedAt = data.resolved_at ? new Date(data.resolved_at) : undefined;
 
-    this.incidentUpdates = data.incident_updates.map((u: any) => ({
+    this.incidentUpdates = data.incident_updates.map((u: {
+      id: string; status: string; body: string; created_at: string; display_at: string; updated_at: string;
+    }) => ({
       id: u.id,
       status: u.status,
       body: u.body,

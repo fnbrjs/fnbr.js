@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/indent */
-/* eslint-disable no-restricted-syntax */
 import { Collection } from '@discordjs/collection';
 import { promises as fs } from 'fs';
 import { URL } from 'url';

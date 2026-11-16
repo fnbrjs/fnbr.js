@@ -12,6 +12,7 @@ import type Client from '../Client';
 import type { AxiosInstance, HeadersDefaults, AxiosRequestConfig } from 'axios';
 
 interface RequestHeaders {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve accepted request header values.
   [key: string]: any;
 }
 
@@ -57,6 +58,7 @@ class HTTP extends Base {
    * @param retryDecision The callback deciding how to handle a rate limit retry
    * @param retries How many times this request has been retried (5xx errors)
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the default response type.
   public async request<T = any>(
     config: RequestConfig,
     retryDecision?: RetryDecisionCallback,
@@ -152,6 +154,7 @@ class HTTP extends Base {
    * @throws {AxiosError}
    * @throws {RetryAbandonedError}
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the default response type.
   public async epicgamesRequest<T = any>(
     config: RequestConfig,
     auth?: AuthSessionStoreKey,

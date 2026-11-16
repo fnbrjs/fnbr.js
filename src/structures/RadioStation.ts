@@ -25,6 +25,7 @@ class RadioStation extends Base {
    * @param client The main client
    * @param data The radio station's data
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public constructor contract.
   constructor(client: Client, data: any) {
     super(client);
 

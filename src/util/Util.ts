@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 import readline from 'readline';
 import zlib from 'zlib';
 import crypto from 'crypto';
@@ -7,7 +6,7 @@ import { STWLeadSynergy } from '../../enums/Enums';
 import BinaryWriter from './BinaryWriter';
 import PowerLevelCurves from '../../resources/PowerLevelCurves';
 import PartyNotFoundError from '../exceptions/PartyNotFoundError';
-import type WebSocket from 'ws';
+import type WS from 'ws';
 import type {
   Schema, ReplayData, ReplayDataChunk, ReplayEvent,
   STWItemRarity, STWSurvivorType, STWSurvivorSquads,
@@ -46,16 +45,18 @@ export const consoleQuestion = (question: string) => new Promise<string>((resolv
   });
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public input and return types.
 export const makeCamelCase = (obj: { [key: string]: any }): any => {
-  const returnObj: { [key: string]: any } = {};
+  const returnObj: { [key: string]: unknown } = {};
   Object.keys(obj).forEach((k) => {
     returnObj[k.split('_').map((s, i) => (i > 0 ? `${s.charAt(0).toUpperCase()}${s.slice(1)}` : s)).join('')] = obj[k];
   });
   return returnObj;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public input and return types.
 export const makeSnakeCase = (obj: { [key: string]: any }): any => {
-  const returnObj: { [key: string]: any } = {};
+  const returnObj: { [key: string]: unknown } = {};
   Object.keys(obj).forEach((k) => {
     returnObj[k.replace(/[A-Z]/g, (l) => `_${l.toLowerCase()}`)] = obj[k];
   });
@@ -79,8 +80,9 @@ export const toEOSPartyId = (fnOrEOSId: string): string => {
   return match[1];
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public invitation input contract.
 export const createPartyInvitation = (clientUserId: string, pingerId: string, data: any) => {
-  const member = data.members.find((m: any) => m.account_id === pingerId);
+  const member = data.members.find((m: { account_id: string }) => m.account_id === pingerId);
 
   const partyMeta = data.meta;
   const memberMeta = member.meta;
@@ -108,6 +110,7 @@ export const createPartyInvitation = (clientUserId: string, pingerId: string, da
   };
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public parsed-data return type.
 export const parseBlurlStream = (stream: Buffer) => new Promise<any>((res) => {
   zlib.inflate(stream.slice(8), (err, buffer) => {
     const data = JSON.parse(buffer.toString());
@@ -115,10 +118,10 @@ export const parseBlurlStream = (stream: Buffer) => new Promise<any>((res) => {
   });
 });
 
-const parseM3U8FileLine = (line: string): [string, any] => {
+const parseM3U8FileLine = (line: string): [string, string | Record<string, string>] => {
   const [key, value] = line.replace(/^#EXT-X-/, '').split(/:(.+)/);
 
-  let output: any;
+  let output: string | Record<string, string>;
 
   if (value.includes(',')) {
     output = {};
@@ -144,6 +147,7 @@ const parseM3U8FileLine = (line: string): [string, any] => {
 };
 
 export const parseM3U8File = (data: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public parsed-playlist return type.
   const output: any = {
     streams: [],
   };
@@ -284,8 +288,8 @@ export const buildReplay = (replayData: ReplayData, addStats: boolean) => {
     + (replayData.DataChunks?.map((c) => 8 + 16 + c.data.length).reduce((acc, cur) => acc + cur) || 0) // datachunks
     + (replayData.Events?.map((e) => 8 + 12 + e.Id.length + 5 + e.Group.length + 5
       + (e.Metadata ? e.Metadata.length + 5 : 5) + e.data.length).reduce((acc, cur) => acc + cur) || 0) // events
-    + (replayData.Checkpoints?.map((c) => 8 + 12 + c.Id.length + 5 + c.Group.length + 5
-      + (c.Metadata ? c.Metadata.length + 5 : 5) + c.data.length).reduce((acc, cur) => acc + cur) || 0); // checkpoints
+      + (replayData.Checkpoints?.map((c) => 8 + 12 + c.Id.length + 5 + c.Group.length + 5
+        + (c.Metadata ? c.Metadata.length + 5 : 5) + c.data.length).reduce((acc, cur) => acc + cur) || 0); // checkpoints
 
   const replay = new BinaryWriter(Buffer.alloc(finalReplayByteLength));
 
@@ -596,6 +600,7 @@ export const resolveAuthObject = async (obj: DeviceAuthResolveable) => {
   }
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-constraint, @typescript-eslint/no-explicit-any -- Preserve the public signature.
 export const chunk = <T extends any>(array: T[], maxSize: number): T[][] => {
   const chunkedArray: T[][] = [];
 
@@ -624,7 +629,7 @@ export const decodeSTOMPMessageBody = (body?: string): string => {
   }
 };
 
-export const decodeRawData = (raw: WebSocket.RawData): string => {
+export const decodeRawData = (raw: WS.RawData): string => {
   if (typeof raw === 'string') return raw;
   if (Buffer.isBuffer(raw)) return raw.toString();
   if (raw instanceof ArrayBuffer) return new TextDecoder().decode(raw);

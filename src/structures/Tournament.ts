@@ -56,11 +56,13 @@ class Tournament extends Base {
   /**
    * The tournament's app ID
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public property contract.
   public appId?: any;
 
   /**
    * The environment
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public property contract.
   public environment?: any;
 
   /**

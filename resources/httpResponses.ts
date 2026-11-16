@@ -41,12 +41,12 @@ export interface PublicKeyData {
 }
 
 export type PlatformMappings = {
-  // eslint-disable-next-line no-unused-vars
+
   [key in FullPlatform]?: string;
 };
 
 export type RegionMappings = {
-  // eslint-disable-next-line no-unused-vars
+
   [key in Region]?: string;
 };
 
@@ -112,6 +112,7 @@ export interface LeaderboardDef {
   leaderboardInstanceIdFormat: string;
   maxSessionHistorySize: number;
   useIndividualScores: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public response type.
   tiebreakerFormula: any;
   scoringRuleSetId: string;
   clampsToZero: boolean;
@@ -121,6 +122,7 @@ export interface LeaderboardDef {
   };
   hidePlayerScores: boolean;
   percentileAccuracy: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public response type.
   requiredPlayerListings: any[];
   discardZeroScore: boolean;
 }
@@ -141,7 +143,9 @@ export interface TournamentWindowData {
   requireAllTokens: string[];
   requireAnyTokens: string[];
   requireNoneTokensCaller: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public response type.
   requireAllTokensCaller: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public response type.
   requireAnyTokensCaller: any[];
   additionalRequirements: string[];
   teammateEligibility: string;
@@ -158,7 +162,9 @@ export interface TournamentData {
   displayDataId: string;
   eventGroup: string;
   announcementTime: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public response type.
   appId?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public response type.
   environment?: any;
   metadata: TournamentMetadata;
   eventWindows: TournamentWindowData[];
@@ -178,7 +184,7 @@ export interface TournamentDisplayData {
   schedule_info: string;
   primary_color: string;
   flavor_description: string;
-  square_poster_image : string;
+  square_poster_image: string;
   poster_front_image: string;
   short_format_title: string;
   title_line_2: string;
@@ -280,6 +286,7 @@ export interface TournamentWindowResults {
     tokens: string[];
     teamId: string;
   }[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public response type.
   liveSessions: any;
 }
 
@@ -371,6 +378,7 @@ export interface CreativeDiscoveryPanel {
 export interface STWProfileItemData {
   templateId: string;
   attributes: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public response type.
     [key: string]: any;
   };
   quantity: number;
@@ -455,7 +463,7 @@ export interface STWProfileHeroData extends STWProfileItemData {
     refundable: boolean;
     favorite: boolean;
     building_slot_used: number;
-  }
+  };
 }
 
 export interface STWProfileHeroLoadoutData extends STWProfileItemData {
@@ -476,7 +484,7 @@ export interface STWProfileHeroLoadoutData extends STWProfileItemData {
       gadget: string;
       slot_index: number;
     }[];
-  }
+  };
 }
 
 export interface STWProfileSchematicData extends STWProfileItemData {
@@ -491,7 +499,7 @@ export interface STWProfileSchematicData extends STWProfileItemData {
     refundable: boolean;
     alteration_base_rarities: STWSchematicAlterationRarity[];
     favorite: boolean;
-  }
+  };
 }
 
 export interface STWProfileStatsData {
@@ -541,10 +549,13 @@ export interface STWProfileStatsData {
     statName: string;
     statValue: number;
   }[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public response type.
   permissions: any[];
   unslot_mtx_spend: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public response type.
   twitch: any;
   client_settings: Partial<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public response type.
     pinnedQuestInstances: any[];
   }>;
   research_levels: Partial<{
@@ -563,6 +574,7 @@ export interface STWProfileStatsData {
   inventory_limit_bonus: number;
   matches_played: number;
   xp_lost: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public response type.
   mode_loadouts: any[];
   last_applied_loadout: string;
   daily_rewards: Partial<{
@@ -727,6 +739,7 @@ export interface STWTheaterData {
       bRespectTileRequirements: boolean;
       bAllowQuickplay: boolean;
     }[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public response type.
     gameplayModifierList: any[];
   };
   tiles: {

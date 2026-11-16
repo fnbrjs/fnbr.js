@@ -62,13 +62,14 @@ class NewsMessage extends Base {
    * @param client The main client
    * @param data The news message data
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public constructor contract.
   constructor(client: Client, data: any) {
     super(client);
     const newsData = data.contentFields;
 
     this.title = newsData.title;
     this.body = newsData.body;
-    this.images = newsData.image.map((i: any) => new Image(this.client, i));
+    this.images = newsData.image.map((i: ConstructorParameters<typeof Image>[1]) => new Image(this.client, i));
     this.entryType = newsData.entryType;
     this.buttonTextOverride = newsData.buttonTextOverride;
     this.tabTitleOverride = newsData.tabTitleOverride;

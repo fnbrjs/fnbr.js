@@ -34,6 +34,7 @@ class PartyMemberConfirmation extends Base {
    * @param user The user who requested to join the party
    * @param data The party confirmation data
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Preserve the public constructor contract.
   constructor(client: Client, party: ClientParty, user: User, data: any) {
     super(client);
 

@@ -146,7 +146,7 @@ export const Platform: Readonly<IPlatformEnum> = Object.freeze({
   PLAYSTATION_5: 'PS5',
 });
 
-export const Playlist : Readonly<PlaylistEnum> = Object.freeze({
+export const Playlist: Readonly<PlaylistEnum> = Object.freeze({
   SOLO: 'playlist_defaultsolo',
   DUO: 'playlist_defaultduo',
   TRIOS: 'playlist_trios',

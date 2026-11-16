@@ -1,4 +1,3 @@
-/* eslint-disable no-template-curly-in-string */
 import { AxiosError } from 'axios';
 import Endpoints from '../../resources/Endpoints';
 import Base from '../Base';
@@ -26,14 +25,14 @@ class TournamentManager extends Base {
    * @param responseType The response type
    */
   private async downloadReplayCDNFile(url: string, responseType: ResponseType) {
-    const fileLocationInfo = await this.client.http.epicgamesRequest({
+    const fileLocationInfo = await this.client.http.epicgamesRequest<{ files: Record<string, { readLink: string }> }>({
       method: 'GET',
       url,
     }, AuthSessionStoreKey.Fortnite);
 
     const file = await this.client.http.request({
       method: 'GET',
-      url: (Object.values(fileLocationInfo.files)[0] as any).readLink,
+      url: Object.values(fileLocationInfo.files)[0].readLink,
       responseType,
     });
 
@@ -53,9 +52,9 @@ class TournamentManager extends Base {
 
     const resolvedUsers = await this.client.user.fetchMultiple(users);
 
-    const userChunks: string[][] = resolvedUsers.map((u) => u.id).reduce((resArr: any[], usr, i) => {
+    const userChunks: string[][] = resolvedUsers.map((u) => u.id).reduce((resArr: string[][], usr, i) => {
       const chunkIndex = Math.floor(i / 16);
-      // eslint-disable-next-line no-param-reassign
+
       if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
       resArr[chunkIndex].push(usr);
       return resArr;
@@ -98,8 +97,8 @@ class TournamentManager extends Base {
         ?.find((td: TournamentDisplayData) => td.tournament_display_id === t.displayDataId);
 
       if (!tournamentDisplayData) {
-        tournamentDisplayData = (Object.values(tournamentsInfo) as any[])
-          .find((tdr: any) => tdr.tournament_info?.tournament_display_id === t.displayDataId)?.tournament_info;
+        tournamentDisplayData = Object.values<{ tournament_info?: TournamentDisplayData }>(tournamentsInfo)
+          .find((tdr) => tdr.tournament_info?.tournament_display_id === t.displayDataId)?.tournament_info;
       }
 
       if (!tournamentDisplayData) {
@@ -180,8 +179,8 @@ class TournamentManager extends Base {
         ?.find((td: TournamentDisplayData) => td.tournament_display_id === t.displayDataId);
 
       if (!tournamentDisplayData) {
-        tournamentDisplayData = (Object.values(tournamentsInfo) as any[])
-          .find((tdr: any) => tdr.tournament_info?.tournament_display_id === t.displayDataId)?.tournament_info;
+        tournamentDisplayData = Object.values<{ tournament_info?: TournamentDisplayData }>(tournamentsInfo)
+          .find((tdr) => tdr.tournament_info?.tournament_display_id === t.displayDataId)?.tournament_info;
       }
 
       if (!tournamentDisplayData) {

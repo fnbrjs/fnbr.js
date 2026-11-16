@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 import { EventEmitter } from 'events';
 import Enums from '../enums/Enums';
 import {
@@ -60,13 +59,13 @@ class Client extends EventEmitter {
   /**
    * Timeouts set by {@link Client#setTimeout} that are still active
    */
-  // eslint-disable-next-line no-undef
+
   private timeouts: Set<NodeJS.Timeout>;
 
   /**
    * Intervals set by {@link Client#setInterval} that are still active
    */
-  // eslint-disable-next-line no-undef
+
   private intervals: Set<NodeJS.Timeout>;
 
   /**
@@ -169,6 +168,8 @@ class Client extends EventEmitter {
       httpDebug: undefined,
       xmppDebug: undefined,
       defaultStatus: undefined,
+      // Preserve access through the public, mutable Enums object.
+      // eslint-disable-next-line import-x/no-named-as-default-member
       defaultOnlineType: Enums.PresenceOnlineType.ONLINE,
       statusUpdateInterval: 10 * 60 * 1000,
       platform: 'WIN',
@@ -217,6 +218,8 @@ class Client extends EventEmitter {
         ...config.auth,
       },
       partyConfig: {
+        // Preserve access through the public, mutable Enums object.
+        // eslint-disable-next-line import-x/no-named-as-default-member
         privacy: Enums.PartyPrivacy.PUBLIC,
         joinConfirmation: false,
         joinability: 'OPEN',
@@ -472,18 +475,26 @@ class Client extends EventEmitter {
     this.friend.pendingList.clear();
     this.user.blocklist.clear();
 
+    // The HTTP response is dynamically typed.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     friendsSummary.friends.forEach((f: any) => {
       this.friend.list.set(f.accountId, new Friend(this, { ...f, id: f.accountId }));
     });
 
+    // The HTTP response is dynamically typed.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     friendsSummary.incoming.forEach((f: any) => {
       this.friend.pendingList.set(f.accountId, new IncomingPendingFriend(this, { ...f, id: f.accountId }));
     });
 
+    // The HTTP response is dynamically typed.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     friendsSummary.outgoing.forEach((f: any) => {
       this.friend.pendingList.set(f.accountId, new OutgoingPendingFriend(this, { ...f, id: f.accountId }));
     });
 
+    // The HTTP response is dynamically typed.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     friendsSummary.blocklist.forEach((u: any) => {
       this.user.blocklist.set(u.accountId, new BlockedUser(this, { ...u, id: u.accountId }));
     });
@@ -558,13 +569,16 @@ class Client extends EventEmitter {
   public waitForEvent<U extends keyof ClientEvents>(
     event: U,
     timeout = 5000,
-    // eslint-disable-next-line no-unused-vars
+
     filter?: (...args: Parameters<ClientEvents[U]>) => boolean,
   ): Promise<Parameters<ClientEvents[U]>> {
-    return new Promise<any>((res, rej) => {
-      // eslint-disable-next-line no-undef
+    return new Promise<Parameters<ClientEvents[U]>>((res, rej) => {
+      // The listener can run before the timeout is assigned.
+      // eslint-disable-next-line prefer-const
       let rejectionTimeout: NodeJS.Timeout;
 
+      // EventEmitter's generic listener accepts the original dynamically typed argument list.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const handler = (...data: any) => {
         if (!filter || filter(...data)) {
           this.removeListener(event, handler);
@@ -595,7 +609,7 @@ class Client extends EventEmitter {
       this.setMaxListeners(this.getMaxListeners() + 1);
       const friend = await this.waitForEvent('friend:added', 5000, (f) => f.id === id);
       return friend[0];
-    } catch (e) {
+    } catch {
       return undefined;
     } finally {
       this.setMaxListeners(this.getMaxListeners() - 1);
@@ -608,7 +622,9 @@ class Client extends EventEmitter {
    * @param delay Time to wait before executing (in milliseconds)
    * @param args Arguments for the function
    */
-  // eslint-disable-next-line no-unused-vars
+
+  // Preserve the existing permissive timer callback and argument contract.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public setTimeout(fn: (...args: any) => any, delay: number, ...args: any) {
     const timeout = setTimeout(() => {
       fn(args);
@@ -622,7 +638,7 @@ class Client extends EventEmitter {
    * Clears a timeout
    * @param timeout Timeout to cancel
    */
-  // eslint-disable-next-line no-undef
+
   public clearTimeout(timeout: NodeJS.Timeout) {
     clearTimeout(timeout);
     this.timeouts.delete(timeout);
@@ -634,7 +650,9 @@ class Client extends EventEmitter {
    * @param delay Time to wait between executions (in milliseconds)
    * @param args Arguments for the function
    */
-  // eslint-disable-next-line no-unused-vars
+
+  // Preserve the existing permissive timer callback and argument contract.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public setInterval(fn: (...args: any) => any, delay: number, ...args: any) {
     const interval = setInterval(fn, delay, ...args);
     this.intervals.add(interval);
@@ -645,7 +663,7 @@ class Client extends EventEmitter {
    * Clears an interval.
    * @param interval Interval to cancel
    */
-  // eslint-disable-next-line no-undef
+
   public clearInterval(interval: NodeJS.Timeout) {
     clearInterval(interval);
     this.intervals.delete(interval);
@@ -666,13 +684,13 @@ class Client extends EventEmitter {
         if (typeof this.config.debug === 'function') this.config.debug(message);
         break;
       case 'http':
-        if (typeof this.config.httpDebug === 'function') { this.config.httpDebug(message); }
+        if (typeof this.config.httpDebug === 'function') this.config.httpDebug(message);
         break;
       case 'xmpp':
-        if (typeof this.config.xmppDebug === 'function') { this.config.xmppDebug(message); }
+        if (typeof this.config.xmppDebug === 'function') this.config.xmppDebug(message);
         break;
       case 'stomp':
-        if (typeof this.config.stompDebug === 'function') { this.config.stompDebug(message); }
+        if (typeof this.config.stompDebug === 'function') this.config.stompDebug(message);
         break;
     }
   }
@@ -1024,6 +1042,8 @@ class Client extends EventEmitter {
       inviteTtl: configured.inviteTtl ?? 3600,
       intentionTtl: configured.intentionTtl ?? 60,
       joinConfirmation: configured.joinConfirmation ?? false,
+      // Preserve access through the public, mutable Enums object.
+      // eslint-disable-next-line import-x/no-named-as-default-member
       privacy: configured.privacy ?? Enums.PartyPrivacy.PUBLIC,
     };
   }
@@ -1175,6 +1195,8 @@ class Client extends EventEmitter {
 
       const data = parseM3U8File(s.data);
 
+      // The playlist parser returns dynamically typed stream entries.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let variants = data.streams.map((ss: any) => ({
         data: {
           codecs: ss.data.CODECS?.split(',') || [],
@@ -1191,13 +1213,17 @@ class Client extends EventEmitter {
       }));
 
       if (!streamMetaData.audioonly) {
+        // The parser's dynamically typed result propagates to variants.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const audioStreamUrl = variants.find((v: any) => v.type === 'audio')?.url;
 
         if (audioStreamUrl) {
+          // The parser's dynamically typed result propagates to variants.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           variants = variants.map((v: any) => ({
             ...v,
             stream: Buffer.from(v.type !== 'video' ? v.stream : v.stream.replace('#EXTINF:', '#EXT-X-STREAM-INF:AUDIO="group_audio"\n'
-              + `#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="group_audio",NAME="audio",DEFAULT=YES,URI="${audioStreamUrl}"\n#EXTINF:`), 'utf8'),
+            + `#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="group_audio",NAME="audio",DEFAULT=YES,URI="${audioStreamUrl}"\n#EXTINF:`), 'utf8'),
           }));
         }
       }
@@ -1219,9 +1245,8 @@ class Client extends EventEmitter {
   /*                           FORTNITE BATTLE ROYALE                           */
   /* -------------------------------------------------------------------------- */
 
-  // eslint-disable-next-line no-unused-vars
   public async getBRStats(user: string, startTime?: number, endTime?: number): Promise<Stats>;
-  // eslint-disable-next-line no-unused-vars
+
   public async getBRStats(user: string[], startTime?: number, endTime?: number, stats?: string[]): Promise<Stats[]>;
 
   /**
@@ -1270,9 +1295,9 @@ class Client extends EventEmitter {
 
     const idChunks: string[][] = resolvedUsers
       .map((u) => u.id)
-      .reduce((resArr: any[], id, i) => {
+      .reduce((resArr: string[][], id, i) => {
         const chunkIndex = Math.floor(i / 51);
-        // eslint-disable-next-line no-param-reassign
+
         if (!resArr[chunkIndex]) resArr[chunkIndex] = [];
         resArr[chunkIndex].push(id);
         return resArr;
@@ -1302,6 +1327,8 @@ class Client extends EventEmitter {
    * @param customPayload Extra data to send in the request body for a personalized news response (battle pass level, country, etc)
    * @throws {EpicgamesAPIError}
    */
+  // Preserve the permissive payload and response contract and access through the mutable Enums object.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, import-x/no-named-as-default-member
   public async getBRNews(language = Enums.Language.ENGLISH, customPayload?: any): Promise<any> {
     const news = await this.http.epicgamesRequest({
       method: 'POST',
@@ -1360,6 +1387,8 @@ class Client extends EventEmitter {
 
     const radioStations = fortniteContent.radioStations.radioStationList.stations;
 
+    // The HTTP response is dynamically typed.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return radioStations.map((s: any) => new RadioStation(this, s));
   }
 
@@ -1441,7 +1470,7 @@ class Client extends EventEmitter {
    * @throws {EpicgamesAPIError}
    */
   // kept for backwards compatibility
-  // eslint-disable-next-line @typescript-eslint/default-param-last
+
   public async getCreativeDiscoveryPanels(gameVersion = '19.40', region: Region): Promise<CreativeDiscoveryPanel[]> {
     const creativeDiscovery = await this.http.epicgamesRequest({
       method: 'POST',

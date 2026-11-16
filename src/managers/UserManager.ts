@@ -139,16 +139,16 @@ class UserManager extends Base {
   }
 
   public async search(prefix: string, platform: UserSearchPlatform = 'epic'): Promise<UserSearchResult[]> {
-    const results = await this.client.http.epicgamesRequest({
+    const results = await this.client.http.epicgamesRequest<{ accountId: string }[]>({
       method: 'GET',
       url: `${Endpoints.ACCOUNT_SEARCH}/${this.self!.id}?prefix=${encodeURIComponent(prefix)}&platform=${platform}`,
     }, AuthSessionStoreKey.Fortnite);
 
-    const users = await this.fetchMultiple(results.map((r: any) => r.accountId) as string[]);
+    const users = await this.fetchMultiple(results.map((r) => r.accountId));
 
     return results
-      .filter((r: any) => users.some((u) => u.id === r.accountId))
-      .map((r: any) => new UserSearchResult(this.client, users.find((u) => u.id === r.accountId)!, r));
+      .filter((r) => users.some((u) => u.id === r.accountId))
+      .map((r) => new UserSearchResult(this.client, users.find((u) => u.id === r.accountId)!, r));
   }
 
   /**
@@ -177,13 +177,13 @@ class UserManager extends Base {
 
     const userChunks = chunk(users, 100);
 
-    const avatars = await Promise.all(userChunks.map((uc) => this.client.http.epicgamesRequest({
+    const avatars = await Promise.all(userChunks.map((uc) => this.client.http.epicgamesRequest<{ accountId: string }[]>({
       method: 'GET',
       url: `${Endpoints.ACCOUNT_AVATAR}/fortnite/ids?accountIds=${uc.map((u) => u.id).join(',')}`,
     }, AuthSessionStoreKey.Fortnite)));
 
     return avatars
-      .map((a) => a.map((ar: any) => new Avatar(this.client, ar, users.find((u) => u.id === ar.accountId)!)))
+      .map((a) => a.map((ar) => new Avatar(this.client, ar, users.find((u) => u.id === ar.accountId)!)))
       .flat(1);
   }
 
@@ -213,7 +213,7 @@ class UserManager extends Base {
 
     const userChunks = chunk(users, 100);
 
-    const globalProfiles = await Promise.all(userChunks.map((uc) => this.client.http.epicgamesRequest({
+    const globalProfiles = await Promise.all(userChunks.map((uc) => this.client.http.epicgamesRequest<{ profiles: { accountId: string }[] }>({
       method: 'PUT',
       url: Endpoints.ACCOUNT_GLOBAL_PROFILE,
       headers: {
@@ -226,7 +226,7 @@ class UserManager extends Base {
     }, AuthSessionStoreKey.Fortnite)));
 
     return globalProfiles
-      .map((a) => a.profiles.map((ar: any) => new GlobalProfile(this.client, ar, users.find((u) => u.id === ar.accountId)!)))
+      .map((a) => a.profiles.map((ar) => new GlobalProfile(this.client, ar, users.find((u) => u.id === ar.accountId)!)))
       .flat(1);
   }
 

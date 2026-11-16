@@ -69,7 +69,7 @@ class EpicgamesServerStatusComponent extends Base {
   /**
    * The component's subcomponents
    */
-  // eslint-disable-next-line no-use-before-define
+
   public components?: EpicgamesServerStatusComponent[];
 
   /**

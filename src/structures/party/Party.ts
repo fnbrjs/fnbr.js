@@ -213,7 +213,6 @@ class Party extends Base {
     this.meta = new PartyMeta(partyData.meta);
     this.revision = partyData.revision || 0;
 
-    // eslint-disable-next-line arrow-body-style
     this.members = new Collection(partyData.members.map((m) => {
       if (m.account_id === this.client.user.self!.id) return [m.account_id, new ClientPartyMember(this, m)];
       return [m.account_id, new PartyMember(this, m)];

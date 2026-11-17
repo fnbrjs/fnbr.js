@@ -682,9 +682,10 @@ class STOMP extends Base {
 
   /**
    * Updates private EOS presence with the party's join information.
+   * @param onlineType The presence's online type (e.g. "online" or "away")
    * @param party The party to advertise, or undefined to clear party information
    */
-  public async patchInternalPresence(party?: Party | ClientParty) {
+  public async patchInternalPresence(onlineType: PresenceOnlineType, party?: Party | ClientParty) {
     const { privateConnectionId } = this;
     if (!privateConnectionId) return;
 
@@ -699,7 +700,7 @@ class STOMP extends Base {
         ].join('/'),
         headers: { 'Content-Type': 'application/json' },
         data: {
-          status: 'online',
+          status: onlineType,
           activity: {},
           conn: { props: {} },
           ...party ? {

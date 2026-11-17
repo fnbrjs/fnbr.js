@@ -782,7 +782,7 @@ class Client extends EventEmitter {
       onlineType || this.config.defaultOnlineType,
     );
 
-    await this.stomp.patchInternalPresence(this.party);
+    await this.stomp.patchInternalPresence(onlineType || this.config.defaultOnlineType, this.party);
   }
 
   /**

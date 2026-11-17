@@ -69,6 +69,7 @@
 * Presences
   * Fixed an issue that caused friend presences without an activity to throw an error
   * Updated party presence parsing to support the new property names
+  * The client will now correctly handle "away" as an online type
 * Battle Royale Account Level
   * Fixed `Client#getBRAccountLevel()` failing to fetch account levels
 * Fortnite EULA

@@ -122,7 +122,7 @@ class ClientParty extends Party {
       }
 
       this.client.party = undefined;
-      await this.client.stomp.patchInternalPresence(this);
+      await this.client.stomp.patchInternalPresence(this.client.config.defaultOnlineType, this);
     } finally {
       this.client.partyLock.unlock();
     }

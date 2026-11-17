@@ -15,6 +15,9 @@ on:
     secrets:
       BOT_PAT:
         required: true
+permissions:
+  contents: read
+
 jobs:
   select-ref:
     if: github.repository_owner == 'fnbrjs'
@@ -70,6 +73,7 @@ jobs:
         with:
           path: docs
           ref: docs
+          persist-credentials: false
 
       - name: Checkout DocGen Repository
         uses: actions/checkout@v7

@@ -57,7 +57,7 @@ jobs:
               throw new Error('Input must match package.json and both package-lock.json version fields');
             }
 
-            const tag = `v${version}`;
+            const tag = version;
             const existingTag = execFileSync('git', ['tag', '--list', tag], { encoding: 'utf8' }).trim();
             if (existingTag) {
               const commit = execFileSync('git', ['rev-parse', `${tag}^{commit}`], { encoding: 'utf8' }).trim();
@@ -140,7 +140,7 @@ jobs:
               ...context.repo,
               tag_name: tag,
               target_commitish: context.sha,
-              name: tag,
+              name: `v${tag}`,
               body: process.env.RELEASE_BODY,
               draft: false,
               prerelease: false,

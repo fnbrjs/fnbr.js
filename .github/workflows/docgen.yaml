@@ -15,6 +15,9 @@ on:
     secrets:
       BOT_PAT:
         required: true
+permissions:
+  contents: read
+
 jobs:
   select-ref:
     if: github.repository_owner == 'fnbrjs'

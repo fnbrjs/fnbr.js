@@ -73,6 +73,7 @@ jobs:
         with:
           path: docs
           ref: docs
+          persist-credentials: false
 
       - name: Checkout DocGen Repository
         uses: actions/checkout@v7

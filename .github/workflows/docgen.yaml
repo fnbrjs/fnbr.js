@@ -13,7 +13,7 @@ on:
         required: true
         type: string
     secrets:
-      BOT_PAT:
+      APP_PRIVATE_KEY:
         required: true
 permissions:
   contents: read
@@ -52,11 +52,6 @@ jobs:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-      - name: Setup git
-        run: |
-          git config --global user.name "FNBR Bot"
-          git config --global user.email fnbr@tusinean.ro
-
       - name: Set Up NodeJS
         uses: actions/setup-node@v7
         with:
@@ -75,12 +70,23 @@ jobs:
           ref: docs
           persist-credentials: false
 
+      - name: Create DocGen read token
+        id: docgen-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: fnbrjs
+          repositories: docgen
+          permission-contents: read
+
       - name: Checkout DocGen Repository
         uses: actions/checkout@v7
         with:
           repository: fnbrjs/docgen
-          token: ${{ secrets.BOT_PAT }}
+          token: ${{ steps.docgen-token.outputs.token }}
           path: docgen
+          persist-credentials: false
 
       - name: Install Main Repository Dependencies
         working-directory: ./main
@@ -98,14 +104,29 @@ jobs:
         working-directory: ./docgen
         run: node . ../main
 
+      - name: Create documentation write token
+        id: docs-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: fnbrjs
+          repositories: fnbr.js
+          permission-contents: write
+
       - name: Deploy Documentation
         working-directory: ./docs
         shell: bash
         env:
           CURRENT_BRANCH: ${{ needs.select-ref.outputs.name }}
+          APP_SLUG: ${{ steps.docs-token.outputs.app-slug }}
+          GH_TOKEN: ${{ steps.docs-token.outputs.token }}
         run: |
-          git pull https://fnbr-bot:${{ secrets.BOT_PAT }}@github.com/fnbrjs/fnbr.js docs
+          bot_id="$(gh api "/users/${APP_SLUG}[bot]" --jq .id)"
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${bot_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git -c credential.helper= -c credential.helper='!gh auth git-credential' pull origin docs
           mv ../docgen/docs.json ./${CURRENT_BRANCH}.json
           git add . -A
           git commit -m "Docs build for ${CURRENT_BRANCH}: ${GITHUB_SHA}"
-          git push https://fnbr-bot:${{ secrets.BOT_PAT }}@github.com/fnbrjs/fnbr.js docs
+          git -c credential.helper= -c credential.helper='!gh auth git-credential' push origin HEAD:docs

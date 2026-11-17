@@ -155,4 +155,4 @@ jobs:
     with:
       ref: refs/tags/${{ needs.release.outputs.tag }}
     secrets:
-      BOT_PAT: ${{ secrets.BOT_PAT }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}

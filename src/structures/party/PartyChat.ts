@@ -51,6 +51,7 @@ class PartyChat extends Base {
         .filter((m) => m.id !== this.client.user.self!.id)
         .map((x) => x.id),
       ConversationType.Party,
+      this.party.isReportable,
     );
 
     return new PartyMessage(this.client, {

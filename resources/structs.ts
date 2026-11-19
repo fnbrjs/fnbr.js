@@ -1753,6 +1753,20 @@ export interface EOSConnectCoreConnectFailed extends BaseEOSConnectMessage {
   type: 'core.connect.v1.connect-failed';
 }
 
+export interface EOSConnectChatMembersJoinMessage extends BaseEOSConnectMessage {
+  payload: {
+    namespace: string;
+    msgId: string;
+    createdAt: string;
+    time: number;
+    conversationId: string;
+    type: string;
+    members: string[];
+    isReportable: boolean;
+  };
+  type: 'social.chat.v1.MEMBERS_JOIN';
+}
+
 export interface EOSConnectChatMemberLeftMessage extends BaseEOSConnectMessage {
   payload: {
     namespace: string;
@@ -1919,6 +1933,7 @@ export type EOSConnectMessage =
   | EOSConnectCoreConnectFailed
   | EOSConnectChatConversionCreatedMessage
   | EOSConnectChatNewMsgMessage
+  | EOSConnectChatMembersJoinMessage
   | EOSConnectChatMemberLeftMessage
   | EOSConnectChatNewWhisperMessage
   | EOSConnectPartyNotification

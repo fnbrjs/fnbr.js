@@ -255,6 +255,10 @@ class STOMP extends Base {
             await this.handleChatMessage(data);
             break;
 
+          case 'social.chat.v1.MEMBERS_JOIN':
+            await this.handleChatMembersJoin(data.payload, connection);
+            break;
+
           case 'presence.v1.UPDATE':
             await this.handlePresence(data);
             break;
@@ -385,6 +389,21 @@ class STOMP extends Base {
       id: ensuredId,
       sentAt: new Date(message.time),
     }));
+  }
+
+  private async handleChatMembersJoin(
+    payload: Extract<EOSConnectMessage, { type: 'social.chat.v1.MEMBERS_JOIN' }>['payload'],
+    connection: WS,
+  ) {
+    if (this.client.config.disablePartyService || payload?.type !== 'epic_party'
+      || payload.namespace !== '_' || typeof payload.isReportable !== 'boolean') return;
+
+    // Chat membership can arrive while joinParty is still fetching the party.
+    await this.client.partyLock.wait();
+    const party = this.client.party;
+    if (this.connection !== connection || !party || payload.conversationId !== `ep-${party.eosId}`) return;
+
+    party.isReportable = payload.isReportable;
   }
 
   private async handleChatMessage(data: Extract<EOSConnectMessage, { type: 'social.chat.v1.NEW_MESSAGE' }>) {

@@ -67,7 +67,7 @@ class Party extends Base {
   public eosChatConversationId: string;
 
   /**
-   * Whether EOS requires party chat messages to be reportable
+   * Whether party chat messages are reportable
    */
   public isReportable: boolean;
 
@@ -193,7 +193,6 @@ class Party extends Base {
 
     this.eosLeaderId = data.party_lead;
     this.eosChatConversationId = data.chat_conversation_id;
-    this.isReportable = data.is_reportable;
     this.eosConfig = data.config;
   }
 

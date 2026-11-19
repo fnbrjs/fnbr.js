@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.0.1
+
+### Fixes
+* Chatting
+  * Fixed `ClientParty#sendMessage()` failing when the party chat requires messages to be reportable
+
 ## 5.0.0
 
 ### Additions

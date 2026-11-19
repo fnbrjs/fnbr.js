@@ -81,6 +81,8 @@ class ChatManager extends Base {
    * @param conversationId the conversation ID; Party chat uses the linked Fortnite lobby ID
    * @param message the message object
    * @param allowedRecipients the account ids, that should receive the message
+   * @param conversationType the conversation type
+   * @param isReportable the reportability flag required by the conversation
    * @returns the message id
    * @throws {EpicgamesAPIError}
    */
@@ -89,6 +91,7 @@ class ChatManager extends Base {
     message: ChatMessagePayload,
     allowedRecipients: string[],
     conversationType: ConversationType,
+    isReportable = false,
   ) {
     const correlationId = generateCustomCorrelationId();
     const isParty = conversationType === ConversationType.Party;
@@ -113,7 +116,7 @@ class ChatManager extends Base {
       data: {
         allowedRecipients,
         message: { body },
-        isReportable: false,
+        isReportable,
         metadata: {
           TmV: '2',
           Pub: this.publicKeyData!.jwt,

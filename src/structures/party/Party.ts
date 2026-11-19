@@ -67,6 +67,11 @@ class Party extends Base {
   public eosChatConversationId: string;
 
   /**
+   * Whether party chat messages are reportable
+   */
+  public isReportable: boolean;
+
+  /**
    * The party's EOS config
    */
   public eosConfig: EOSPartyDataConfig;
@@ -90,6 +95,7 @@ class Party extends Base {
 
     this.eosLeaderId = eosData.party_lead;
     this.eosChatConversationId = eosData.chat_conversation_id;
+    this.isReportable = eosData.is_reportable;
     this.eosConfig = eosData.config;
 
     // Only using fnData.members seems sufficient, for now
@@ -247,7 +253,7 @@ class Party extends Base {
       meta: {},
       revision: this.eosRevision,
       chat_conversation_id: this.eosChatConversationId,
-      is_reportable: false,
+      is_reportable: this.isReportable,
     };
   }
 }

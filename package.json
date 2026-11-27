@@ -55,7 +55,7 @@
   },
   "dependencies": {
     "@discordjs/collection": "^2.1.1",
-    "@sapphire/async-queue": "^1.5.5",
+    "@sapphire/async-queue": "^2.0.0",
     "axios": "^1.21.1",
     "stanza": "^12.22.1",
     "tslib": "^2.9.1",

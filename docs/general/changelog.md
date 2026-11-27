@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.0.2
+
+### Fixes
+* Presences
+  * Fixed the client appearing offline after STOMP reconnects
+
 ## 5.0.1
 
 ### Fixes

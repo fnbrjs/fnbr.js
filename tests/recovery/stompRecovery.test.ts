@@ -37,6 +37,7 @@ describe('STOMP recovery', () => {
     for (let outage = 0; outage < 2; outage += 1) {
       const before = stompSockets.length;
       const previousId = h.client.stomp.publicConnectionId;
+      const requestStart = h.requests.length;
       stompOutcomes.push('error', 'close');
       dropConnection('stomp');
 
@@ -55,6 +56,14 @@ describe('STOMP recovery', () => {
         connection_id: h.client.stomp.publicConnectionId,
         yield_leadership: false,
       });
+      const requests = h.requests.slice(requestStart);
+      const rebind = requests.findIndex(({ route }) => route === 'party-rebind');
+      expect(requests.findIndex(({ route }) => route === 'presence')).toBeGreaterThan(rebind);
+      expect(requests.filter(({ route }) => route === 'presence').map(({ method, url }) => [method, new URL(url).pathname.split('/').at(-1)]))
+        .toEqual([
+          ['PATCH', encodeURIComponent(h.client.stomp.publicConnectionId!)],
+          ['PATCH', encodeURIComponent(h.client.stomp.privateConnectionId!)],
+        ]);
       expect(h.disconnected).not.toHaveBeenCalled();
     }
     expect(h.requestsOf('party-rebind')).toHaveLength(2);

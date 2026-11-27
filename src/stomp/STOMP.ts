@@ -164,6 +164,10 @@ class STOMP extends Base {
           if (this.lifecycle !== lifecycle) return;
           if (this.connection === connection && this.isConnected) {
             this.reconnecting = false;
+            // Presence is scoped to the connection; republish under the new IDs after restoring the party.
+            this.client.setStatus().catch((error) => {
+              this.client.debug(`[STOMP] Presence refresh failed: ${error instanceof Error ? error.message : String(error)}`);
+            });
             return;
           }
         } catch (error) {
